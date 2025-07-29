@@ -381,14 +381,8 @@ var shannonServices = []ServiceQoSConfig{
 	// opBNB
 	evm.NewEVMServiceQoSConfig("opbnb", "0xcc", nil),
 
-	// Radix
-	evm.NewEVMServiceQoSConfig("radix", "0x1337", nil),
-
 	// Sui
 	evm.NewEVMServiceQoSConfig("sui", "0x101", nil),
-
-	// XRPL EVM Devnet
-	evm.NewEVMServiceQoSConfig("xrpl_evm_dev", "0x15f902", nil),
 
 	// TRON
 	evm.NewEVMServiceQoSConfig("tron", "0x2b6653dc", nil),
@@ -396,64 +390,229 @@ var shannonServices = []ServiceQoSConfig{
 	// Sei
 	evm.NewEVMServiceQoSConfig("sei", "0x531", nil),
 
-	// *** Near EVM Services ***
+	// TODO_TECHDEBT: Add support for Radix QoS
+	// Radix
+	// radix.NewRadixServiceQoSConfig("radix", "", nil),
 
 	// TODO_TECHDEBT: Add support for Near QoS
 	// Near
-	// near.NewNearServiceQoSConfig("near", "0x18d", nil),
+	// near.NewNearServiceQoSConfig("near", "", nil),
 
 	// *** Cosmos SDK Services ***
 
-	// TODO_MVP(@commoddity): Ensure that QoS observations are being applied correctly and that
-	// the correct chain ID is being used for each service in the CosmosSDK config.
+	// Akash - https://github.com/cosmos/chain-registry/blob/master/akash/chain.json#L9
+	cosmos.NewCosmosSDKServiceQoSConfig("akash", "akashnet-2", map[sharedtypes.RPCType]struct{}{
+		sharedtypes.RPCType_REST:      {}, // CosmosSDK
+		sharedtypes.RPCType_COMET_BFT: {},
+	}),
 
-	// Osmosis
+	// Arkeo - https://github.com/cosmos/chain-registry/blob/master/arkeo/chain.json#L9
+	cosmos.NewCosmosSDKServiceQoSConfig("arkeo", "arkeo-main-v1", map[sharedtypes.RPCType]struct{}{
+		sharedtypes.RPCType_REST:      {}, // CosmosSDK
+		sharedtypes.RPCType_COMET_BFT: {},
+	}),
+
+	// AtomOne - https://github.com/cosmos/chain-registry/blob/master/atomone/chain.json#L5
+	cosmos.NewCosmosSDKServiceQoSConfig("atomone", "atomone-1", map[sharedtypes.RPCType]struct{}{
+		sharedtypes.RPCType_REST:      {}, // CosmosSDK
+		sharedtypes.RPCType_COMET_BFT: {},
+	}),
+
+	// Babylon - https://github.com/cosmos/chain-registry/blob/master/babylon/chain.json#L9
+	cosmos.NewCosmosSDKServiceQoSConfig("babylon", "bbn-1", map[sharedtypes.RPCType]struct{}{
+		sharedtypes.RPCType_REST:      {}, // CosmosSDK
+		sharedtypes.RPCType_COMET_BFT: {},
+	}),
+
+	// Celestia - https://github.com/cosmos/chain-registry/blob/master/celestia/chain.json#L5
+	cosmos.NewCosmosSDKServiceQoSConfig("celestia", "celestia", map[sharedtypes.RPCType]struct{}{
+		sharedtypes.RPCType_REST:      {}, // CosmosSDK
+		sharedtypes.RPCType_COMET_BFT: {},
+	}),
+
+	// Cheqd - https://github.com/cosmos/chain-registry/blob/master/cheqd/chain.json#L9
+	cosmos.NewCosmosSDKServiceQoSConfig("cheqd", "cheqd-mainnet-1", map[sharedtypes.RPCType]struct{}{
+		sharedtypes.RPCType_REST:      {}, // CosmosSDK
+		sharedtypes.RPCType_COMET_BFT: {},
+	}),
+
+	// Chihuahua - https://github.com/cosmos/chain-registry/blob/master/chihuahua/chain.json#L9
+	cosmos.NewCosmosSDKServiceQoSConfig("chihuahua", "chihuahua-1", map[sharedtypes.RPCType]struct{}{
+		sharedtypes.RPCType_REST:      {}, // CosmosSDK
+		sharedtypes.RPCType_COMET_BFT: {},
+	}),
+
+	// Cosmos Hub - https://github.com/cosmos/chain-registry/blob/master/cosmoshub/chain.json#L5
+	cosmos.NewCosmosSDKServiceQoSConfig("cosmoshub", "cosmoshub-4", map[sharedtypes.RPCType]struct{}{
+		sharedtypes.RPCType_REST:      {}, // CosmosSDK
+		sharedtypes.RPCType_COMET_BFT: {},
+	}),
+
+	// Dungeon Chain - https://github.com/cosmos/chain-registry/blob/master/dungeon1/chain.json#L9
+	cosmos.NewCosmosSDKServiceQoSConfig("dungeon-chain", "dungeon-1", map[sharedtypes.RPCType]struct{}{
+		sharedtypes.RPCType_REST:      {}, // CosmosSDK
+		sharedtypes.RPCType_COMET_BFT: {},
+	}),
+
+	// Elys Network - https://github.com/cosmos/chain-registry/blob/master/elys/chain.json#L8
+	cosmos.NewCosmosSDKServiceQoSConfig("elys-network", "elys-1", map[sharedtypes.RPCType]struct{}{
+		sharedtypes.RPCType_REST:      {}, // CosmosSDK
+		sharedtypes.RPCType_COMET_BFT: {},
+	}),
+
+	// Fetch - https://github.com/cosmos/chain-registry/blob/master/fetchhub/chain.json#L8
+	cosmos.NewCosmosSDKServiceQoSConfig("fetch", "fetchhub-4", map[sharedtypes.RPCType]struct{}{
+		sharedtypes.RPCType_REST:      {}, // CosmosSDK
+		sharedtypes.RPCType_COMET_BFT: {},
+	}),
+
+	// Jackal - https://github.com/cosmos/chain-registry/blob/master/jackal/chain.json#L5
+	cosmos.NewCosmosSDKServiceQoSConfig("jackal", "jackal-1", map[sharedtypes.RPCType]struct{}{
+		sharedtypes.RPCType_REST:      {}, // CosmosSDK
+		sharedtypes.RPCType_COMET_BFT: {},
+	}),
+
+	// Juno - https://github.com/cosmos/chain-registry/blob/master/juno/chain.json#L9
+	cosmos.NewCosmosSDKServiceQoSConfig("juno", "juno-1", map[sharedtypes.RPCType]struct{}{
+		sharedtypes.RPCType_REST:      {}, // CosmosSDK
+		sharedtypes.RPCType_COMET_BFT: {},
+	}),
+
+	// KYVE - https://github.com/cosmos/chain-registry/blob/master/kyve/chain.json#L5
+	cosmos.NewCosmosSDKServiceQoSConfig("kyve", "kyve-1", map[sharedtypes.RPCType]struct{}{
+		sharedtypes.RPCType_REST:      {}, // CosmosSDK
+		sharedtypes.RPCType_COMET_BFT: {},
+	}),
+
+	// Namada TODO_TECHDEBT(@commoddity): Namada is not a conventional Cosmos SDK chain and likely requires a custom implementation.
+	// Reference: https://github.com/buildwithgrove/path/issues/376#issuecomment-3127611273
+	// cosmos.NewCosmosSDKServiceQoSConfig("namada", "", map[sharedtypes.RPCType]struct{}{
+	// 	sharedtypes.RPCType_REST:      {}, // CosmosSDK
+	// 	sharedtypes.RPCType_COMET_BFT: {},
+	// }),
+
+	// Neutron - https://github.com/cosmos/chain-registry/blob/master/neutron/chain.json#L8
+	cosmos.NewCosmosSDKServiceQoSConfig("neutron", "neutron-1", map[sharedtypes.RPCType]struct{}{
+		sharedtypes.RPCType_REST:      {}, // CosmosSDK
+		sharedtypes.RPCType_COMET_BFT: {},
+	}),
+
+	// Nillion - https://github.com/cosmos/chain-registry/blob/master/nillion/chain.json#L8
+	cosmos.NewCosmosSDKServiceQoSConfig("nillion", "nillion-1", map[sharedtypes.RPCType]struct{}{
+		sharedtypes.RPCType_REST:      {}, // CosmosSDK
+		sharedtypes.RPCType_COMET_BFT: {},
+	}),
+
+	// Osmosis - https://github.com/cosmos/chain-registry/blob/master/osmosis/chain.json#L9
 	cosmos.NewCosmosSDKServiceQoSConfig("osmosis", "osmosis-1", map[sharedtypes.RPCType]struct{}{
 		sharedtypes.RPCType_REST:      {}, // CosmosSDK
 		sharedtypes.RPCType_COMET_BFT: {},
 	}),
 
-	// Pocket Mainnet and Beta Testnet
+	// Passage - https://github.com/cosmos/chain-registry/blob/master/passage/chain.json#L5
+	cosmos.NewCosmosSDKServiceQoSConfig("passage", "passage-2", map[sharedtypes.RPCType]struct{}{
+		sharedtypes.RPCType_REST:      {}, // CosmosSDK
+		sharedtypes.RPCType_COMET_BFT: {},
+	}),
+
+	// Persistence - https://github.com/cosmos/chain-registry/blob/master/persistence/chain.json#L5
+	cosmos.NewCosmosSDKServiceQoSConfig("persistence", "core-1", map[sharedtypes.RPCType]struct{}{
+		sharedtypes.RPCType_REST:      {}, // CosmosSDK
+		sharedtypes.RPCType_COMET_BFT: {},
+	}),
+
+	// Provenance - https://github.com/cosmos/chain-registry/blob/master/provenance/chain.json#L9
+	cosmos.NewCosmosSDKServiceQoSConfig("provenance", "pio-mainnet-1", map[sharedtypes.RPCType]struct{}{
+		sharedtypes.RPCType_REST:      {}, // CosmosSDK
+		sharedtypes.RPCType_COMET_BFT: {},
+	}),
+
+	// Pocket Mainnet - https://github.com/cosmos/chain-registry/blob/master/pocket/chain.json#L9
 	cosmos.NewCosmosSDKServiceQoSConfig("pocket", "pocket", map[sharedtypes.RPCType]struct{}{
 		sharedtypes.RPCType_REST:      {}, // CosmosSDK
 		sharedtypes.RPCType_COMET_BFT: {},
 	}),
 
-	// Pocket Mainnet
+	// Pocket Alpha Testnet - (Not in the chain registry - present here for onchain load testing)
 	cosmos.NewCosmosSDKServiceQoSConfig("pocket-alpha", "pocket-alpha", map[sharedtypes.RPCType]struct{}{
 		sharedtypes.RPCType_REST:      {}, // CosmosSDK
 		sharedtypes.RPCType_COMET_BFT: {},
 	}),
+
+	// Pocket Beta Testnet - https://github.com/cosmos/chain-registry/blob/master/testnets/pockettestnet/chain.json#L9
 	cosmos.NewCosmosSDKServiceQoSConfig("pocket-beta", "pocket-beta", map[sharedtypes.RPCType]struct{}{
 		sharedtypes.RPCType_REST:      {}, // CosmosSDK
 		sharedtypes.RPCType_COMET_BFT: {},
 	}),
 
-	// Pocket Beta Testnet
-	cosmos.NewCosmosSDKServiceQoSConfig("pocket-beta1", "pocket-beta1", map[sharedtypes.RPCType]struct{}{
-		sharedtypes.RPCType_REST:      {}, // CosmosSDK
-		sharedtypes.RPCType_COMET_BFT: {},
-	}),
-	cosmos.NewCosmosSDKServiceQoSConfig("pocket-beta2", "pocket-beta2", map[sharedtypes.RPCType]struct{}{
-		sharedtypes.RPCType_REST:      {}, // CosmosSDK
-		sharedtypes.RPCType_COMET_BFT: {},
-	}),
-	cosmos.NewCosmosSDKServiceQoSConfig("pocket-beta3", "pocket-beta3", map[sharedtypes.RPCType]struct{}{
-		sharedtypes.RPCType_REST:      {}, // CosmosSDK
-		sharedtypes.RPCType_COMET_BFT: {},
-	}),
-	cosmos.NewCosmosSDKServiceQoSConfig("pocket-beta4", "pocket-beta4", map[sharedtypes.RPCType]struct{}{
+	// Pocket Beta Testnet 1 - (Not in the chain registry - present here for onchain load testing)
+	cosmos.NewCosmosSDKServiceQoSConfig("pocket-beta1", "pocket-beta", map[sharedtypes.RPCType]struct{}{
 		sharedtypes.RPCType_REST:      {}, // CosmosSDK
 		sharedtypes.RPCType_COMET_BFT: {},
 	}),
 
-	// Cosmos Hub
-	cosmos.NewCosmosSDKServiceQoSConfig("cometbft", "cosmoshub-4", map[sharedtypes.RPCType]struct{}{
+	// Pocket Beta Testnet 2 - (Not in the chain registry - present here for onchain load testing)
+	cosmos.NewCosmosSDKServiceQoSConfig("pocket-beta2", "pocket-beta", map[sharedtypes.RPCType]struct{}{
+		sharedtypes.RPCType_REST:      {}, // CosmosSDK
 		sharedtypes.RPCType_COMET_BFT: {},
 	}),
 
-	// XRPL EVM
-	// Reference: https://docs.xrplevm.org/pages/developers/developing-smart-contracts/deploy-the-smart-contract#1.-set-up-your-wallet
+	// Pocket Beta Testnet 3 - (Not in the chain registry - present here for onchain load testing)
+	cosmos.NewCosmosSDKServiceQoSConfig("pocket-beta3", "pocket-beta", map[sharedtypes.RPCType]struct{}{
+		sharedtypes.RPCType_REST:      {}, // CosmosSDK
+		sharedtypes.RPCType_COMET_BFT: {},
+	}),
+
+	// Pocket Beta Testnet 4 - (Not in the chain registry - present here for onchain load testing)
+	cosmos.NewCosmosSDKServiceQoSConfig("pocket-beta4", "pocket-beta", map[sharedtypes.RPCType]struct{}{
+		sharedtypes.RPCType_REST:      {}, // CosmosSDK
+		sharedtypes.RPCType_COMET_BFT: {},
+	}),
+
+	// Quicksilver - https://github.com/cosmos/chain-registry/blob/master/quicksilver/chain.json#L9
+	cosmos.NewCosmosSDKServiceQoSConfig("quicksilver", "quicksilver-2", map[sharedtypes.RPCType]struct{}{
+		sharedtypes.RPCType_REST:      {}, // CosmosSDK
+		sharedtypes.RPCType_COMET_BFT: {},
+	}),
+
+	// Router - https://github.com/cosmos/chain-registry/blob/master/routerchain/chain.json#L5
+	cosmos.NewCosmosSDKServiceQoSConfig("router", "router_9600-1", map[sharedtypes.RPCType]struct{}{
+		sharedtypes.RPCType_REST:      {}, // CosmosSDK
+		sharedtypes.RPCType_COMET_BFT: {},
+		sharedtypes.RPCType_JSON_RPC:  {},
+	}),
+
+	// Seda - https://github.com/cosmos/chain-registry/blob/master/seda/chain.json#L9
+	cosmos.NewCosmosSDKServiceQoSConfig("seda", "seda-1", map[sharedtypes.RPCType]struct{}{
+		sharedtypes.RPCType_REST:      {}, // CosmosSDK
+		sharedtypes.RPCType_COMET_BFT: {},
+	}),
+
+	// Shentu - https://github.com/cosmos/chain-registry/blob/master/shentu/chain.json#L9
+	cosmos.NewCosmosSDKServiceQoSConfig("shentu", "shentu-2.2", map[sharedtypes.RPCType]struct{}{
+		sharedtypes.RPCType_REST:      {}, // CosmosSDK
+		sharedtypes.RPCType_COMET_BFT: {},
+	}),
+
+	// Side Protocol - https://github.com/cosmos/chain-registry/blob/master/sidechain/chain.json#L9
+	cosmos.NewCosmosSDKServiceQoSConfig("side-protocol", "sidechain-1", map[sharedtypes.RPCType]struct{}{
+		sharedtypes.RPCType_REST:      {}, // CosmosSDK
+		sharedtypes.RPCType_COMET_BFT: {},
+	}),
+
+	// Stargaze - https://github.com/cosmos/chain-registry/blob/master/stargaze/chain.json#L9
+	cosmos.NewCosmosSDKServiceQoSConfig("stargaze", "stargaze-1", map[sharedtypes.RPCType]struct{}{
+		sharedtypes.RPCType_REST:      {}, // CosmosSDK
+		sharedtypes.RPCType_COMET_BFT: {},
+	}),
+
+	// Stride - https://github.com/cosmos/chain-registry/blob/master/stride/chain.json#L9
+	cosmos.NewCosmosSDKServiceQoSConfig("stride", "stride-1", map[sharedtypes.RPCType]struct{}{
+		sharedtypes.RPCType_REST:      {}, // CosmosSDK
+		sharedtypes.RPCType_COMET_BFT: {},
+	}),
+
+	// XRPLEVM - https://github.com/cosmos/chain-registry/blob/master/xrplevm/chain.json#L9
 	cosmos.NewCosmosSDKServiceQoSConfig("xrplevm", "xrplevm_1440000-1", map[sharedtypes.RPCType]struct{}{
 		sharedtypes.RPCType_JSON_RPC:  {}, // XRPLEVM supports the EVM API over JSON-RPC.
 		sharedtypes.RPCType_REST:      {}, // CosmosSDK
@@ -461,7 +620,7 @@ var shannonServices = []ServiceQoSConfig{
 		sharedtypes.RPCType_WEBSOCKET: {}, // XRPLEVM supports the EVM API over JSON-RPC WebSockets.
 	}),
 
-	// XRPL EVM Testnet
+	// XRPLEVM Testnet - https://github.com/cosmos/chain-registry/blob/master/testnets/xrplevmtestnet/chain.json#L9
 	cosmos.NewCosmosSDKServiceQoSConfig("xrplevm-testnet", "xrplevm_1449000-1", map[sharedtypes.RPCType]struct{}{
 		sharedtypes.RPCType_JSON_RPC:  {}, // XRPLEVM supports the EVM API over JSON-RPC.
 		sharedtypes.RPCType_REST:      {}, // CosmosSDK
