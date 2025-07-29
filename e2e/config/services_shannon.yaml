@@ -645,29 +645,19 @@ services:
     service_id: "provenance"
     service_type: "cometbft"
 
-  # pocket-beta1
-  - name: "Shannon - pocket"
+  # Pocket Mainnet
+  - name: "Shannon - pocket (Pocket Mainnet) Test"
     service_id: "pocket"
     service_type: "cometbft"
-  # pocket-beta1
-  - name: "Shannon - pocket-beta1"
-    service_id: "pocket-beta1"
+
+  # Pocket Alpha Testnet
+  - name: "Shannon - pocket-alpha (Pocket Alpha Testnet) Test"
+    service_id: "pocket-alpha"
     service_type: "cometbft"
-  # pocket-beta2
-  - name: "Shannon - pocket-beta2"
-    service_id: "pocket-beta2"
-    service_type: "cometbft"
-  # pocket-beta3
-  - name: "Shannon - pocket-beta3"
-    service_id: "pocket-beta3"
-    service_type: "cometbft"
-  # pocket-beta4
-  - name: "Shannon - pocket-beta4"
-    service_id: "pocket-beta4"
-    service_type: "cometbft"
-  # pocket-beta5
-  - name: "Shannon - pocket-beta5"
-    service_id: "pocket-beta5"
+
+  # Pocket Beta Testnet
+  - name: "Shannon - pocket-beta (Pocket Beta Testnet) Test"
+    service_id: "pocket-beta"
     service_type: "cometbft"
 
   # Quicksilver
