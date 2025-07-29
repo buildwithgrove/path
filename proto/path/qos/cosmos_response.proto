@@ -30,12 +30,12 @@ message CosmosEndpointResponseValidationResult {
         //   - JSON
         //   - An integer
 	CosmosResponseValidationType response_validation_type = 1;
-	
+
 	// HTTP status code returned to the user.
 	// It is derived from the endpoint response payload and/or HTTP status code.
 	// e.g. for JSONRPC, it is based on the error code of the JSONRPC response.
 	int32 http_status_code = 2;
-	
+
 	// Validation error, if any.
 	// This is set if parsing the endpoint response fails.
 	optional CosmosResponseValidationError validation_error = 3;
@@ -48,15 +48,15 @@ message CosmosEndpointResponseValidationResult {
 	oneof parsed_response {
 		JsonRpcResponse response_jsonrpc = 4;
 
-		// Response to CometBFT request using method `health`
+		// Response to CometBFT request using method `/health`
 		CosmosResponseCometBFTHealth response_comet_bft_health = 5;
 
-		// Response to CometBFT request using method `status`
+		// Response to CometBFT request using method `/status`
 		CosmosResponseCometBFTStatus response_comet_bft_status = 6;
 
 		// Response to CosmosSDK request against API path `/cosmos/base/node/v1beta1/status`
 		CosmosResponseCosmosSDKStatus response_cosmos_sdk_status = 7;
-		
+
 		// For unrecognized responses.
 		// These are returned as-is to the user.
 		UnrecognizedResponse response_unrecognized = 8;
