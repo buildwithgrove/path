@@ -333,7 +333,7 @@ func (rc *requestContext) BroadcastAllObservations() {
 		}
 
 		// The service request context contains all the details the QoS needs to update its internal metrics about endpoint(s), which it should use to build
-		// the observation.QoSObservations struct.
+		// the qosobservations.Observations struct.
 		// This ensures that separate PATH instances can communicate and share their QoS observations.
 		// The QoS context will be nil if the target service ID is not specified correctly by the request.
 		var qosObservations qosobservations.Observations
