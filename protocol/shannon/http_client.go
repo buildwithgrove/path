@@ -18,42 +18,42 @@ import (
 	servicetypes "github.com/pokt-network/poktroll/x/service/types"
 )
 
-// httpClientWithTracing provides HTTP client functionality with debugging functionality.
+// httpClientWithDebugMetrics provides HTTP client functionality with debugging functionality.
 // It includes things like:
-// - Built-in request tracing
+// - Built-in request debugging
 // - Metrics collection
 // - Detailed logging
 // - Timeout debugging
 // - Connection issue visibility
-type httpClientWithTracing struct {
+type httpClientWithDebugMetrics struct {
 	httpClient *http.Client
 
 	// Atomic counters for monitoring
-	activeRequests   int64
-	totalRequests    int64
-	timeoutErrors    int64
-	connectionErrors int64
+	activeRequests   atomic.Uint64
+	totalRequests    atomic.Uint64
+	timeoutErrors    atomic.Uint64
+	connectionErrors atomic.Uint64
 }
 
 // requestMetrics holds detailed timing and status information for a single HTTP request
 type requestMetrics struct {
-	StartTime      time.Time
-	DNSLookupTime  time.Duration
-	ConnectTime    time.Duration
-	TLSTime        time.Duration
-	FirstByteTime  time.Duration
-	TotalTime      time.Duration
-	StatusCode     int
-	Error          error
-	ContextTimeout time.Duration
-	GoroutineCount int
-	URL            string
+	startTime      time.Time
+	dnsLookupTime  time.Duration
+	connectTime    time.Duration
+	tlsTime        time.Duration
+	firstByteTime  time.Duration
+	totalTime      time.Duration
+	statusCode     int
+	error          error
+	contextTimeout time.Duration
+	goroutineCount int
+	url            string
 }
 
-// newHTTPClientWithDefaultTracing creates a new HTTP client with optimized transport settings
-// and built-in request tracing capabilities using default configuration.
+// newDefaultHTTPClientWithDebugMetrics creates a new HTTP client with optimized transport settings
+// and built-in request debugging capabilities using default configuration.
 // TODO_TECHDEBT(@adshmh): Make HTTP client settings configurable
-func newHTTPClientWithDefaultTracing() *httpClientWithTracing {
+func newDefaultHTTPClientWithDebugMetrics() *httpClientWithDebugMetrics {
 	// Configure transport with optimized settings for high-concurrency usage
 	transport := &http.Transport{
 		DialContext: (&net.Dialer{
@@ -83,23 +83,23 @@ func newHTTPClientWithDefaultTracing() *httpClientWithTracing {
 		Timeout:   60 * time.Second, // Large fallback timeout (1 minute)
 	}
 
-	return &httpClientWithTracing{
+	return &httpClientWithDebugMetrics{
 		httpClient: httpClient,
 	}
 }
 
 // SendHTTPRelay sends an HTTP POST request with the relay data to the specified URL.
 // Uses the provided context for timeout and cancellation control.
-// Logs detailed metrics and tracing information on failure for debugging.
-func (h *httpClientWithTracing) SendHTTPRelay(
+// Logs detailed metrics and debugging information on failure for debugging.
+func (h *httpClientWithDebugMetrics) SendHTTPRelay(
 	ctx context.Context,
 	logger polylog.Logger,
 	endpointURL string,
 	relayRequest *servicetypes.RelayRequest,
 	headers map[string]string,
 ) ([]byte, error) {
-	// Set up tracing context and logging function
-	tracedCtx, recordRequest := h.setupRequestTracing(ctx, logger, endpointURL)
+	// Set up debugging context and logging function
+	debugCtx, recordRequest := h.setupRequestDebugging(ctx, logger, endpointURL)
 
 	var requestErr error
 	defer func() {
@@ -121,7 +121,7 @@ func (h *httpClientWithTracing) SendHTTPRelay(
 	}
 
 	req, err := http.NewRequestWithContext(
-		tracedCtx,
+		debugCtx,
 		http.MethodPost,
 		endpointURL,
 		bytes.NewReader(relayRequestBz),
@@ -142,7 +142,7 @@ func (h *httpClientWithTracing) SendHTTPRelay(
 	// Execute HTTP request
 	resp, err := h.httpClient.Do(req)
 	if err != nil {
-		requestErr = h.categorizeError(tracedCtx, err)
+		requestErr = h.categorizeError(debugCtx, err)
 		return nil, requestErr
 	}
 	defer resp.Body.Close()
@@ -157,61 +157,61 @@ func (h *httpClientWithTracing) SendHTTPRelay(
 	return responseBody, nil
 }
 
-// setupRequestTracing initializes request metrics, HTTP tracing context, and atomic counters.
-// Returns the traced context and a cleanup function that accepts an error parameter.
-func (h *httpClientWithTracing) setupRequestTracing(
+// setupRequestDebugging initializes request metrics, HTTP debugging context, and atomic counters.
+// Returns the debug context and a cleanup function that accepts an error parameter.
+func (h *httpClientWithDebugMetrics) setupRequestDebugging(
 	ctx context.Context,
 	logger polylog.Logger,
 	endpointURL string,
 ) (context.Context, func(error)) {
 	// Update atomic counters
-	atomic.AddInt64(&h.activeRequests, 1)
-	atomic.AddInt64(&h.totalRequests, 1)
+	h.activeRequests.Add(1)
+	h.totalRequests.Add(1)
 
 	startTime := time.Now()
 
 	// Initialize metrics collection
 	metrics := &requestMetrics{
-		StartTime:      startTime,
-		GoroutineCount: runtime.NumGoroutine(),
-		URL:            endpointURL,
+		startTime:      startTime,
+		goroutineCount: runtime.NumGoroutine(),
+		url:            endpointURL,
 	}
 
 	// Capture context timeout for logging
 	if deadline, ok := ctx.Deadline(); ok {
-		metrics.ContextTimeout = time.Until(deadline)
+		metrics.contextTimeout = time.Until(deadline)
 	}
 
 	// Create HTTP trace and add to context
 	trace := createHTTPTrace(metrics)
-	tracedCtx := httptrace.WithClientTrace(ctx, trace)
+	debugCtx := httptrace.WithClientTrace(ctx, trace)
 
 	// Return recorder function that logs request details.
 	requestRecorder := func(err error) {
-		atomic.AddInt64(&h.activeRequests, -1)
-		metrics.TotalTime = time.Since(metrics.StartTime)
-		metrics.Error = err
+		h.activeRequests.Add(^uint64(0)) // Atomic decrement
+		metrics.totalTime = time.Since(metrics.startTime)
+		metrics.error = err
 		if err != nil {
 			h.logRequestMetrics(logger, *metrics)
 		}
 	}
 
-	return tracedCtx, requestRecorder
+	return debugCtx, requestRecorder
 }
 
 // categorizeError categorizes HTTP client errors and updates counters for monitoring
-func (h *httpClientWithTracing) categorizeError(ctx context.Context, err error) error {
+func (h *httpClientWithDebugMetrics) categorizeError(ctx context.Context, err error) error {
 	if ctx.Err() == context.DeadlineExceeded {
-		atomic.AddInt64(&h.timeoutErrors, 1)
+		h.timeoutErrors.Add(1)
 		return fmt.Errorf("request timeout: %w", err)
 	} else {
-		atomic.AddInt64(&h.connectionErrors, 1)
+		h.connectionErrors.Add(1)
 		return fmt.Errorf("connection error: %w", err)
 	}
 }
 
 // readAndValidateResponse reads the response body and validates the HTTP status code
-func (h *httpClientWithTracing) readAndValidateResponse(resp *http.Response) ([]byte, error) {
+func (h *httpClientWithDebugMetrics) readAndValidateResponse(resp *http.Response) ([]byte, error) {
 	// Read response body with size protection
 	const maxResponseSize = 100 * 1024 * 1024 // 100MB limit
 	limitedReader := io.LimitReader(resp.Body, maxResponseSize)
@@ -239,7 +239,7 @@ func createHTTPTrace(metrics *requestMetrics) *httptrace.ClientTrace {
 		},
 		DNSDone: func(info httptrace.DNSDoneInfo) {
 			if !dnsStart.IsZero() {
-				metrics.DNSLookupTime = time.Since(dnsStart)
+				metrics.dnsLookupTime = time.Since(dnsStart)
 			}
 		},
 		ConnectStart: func(network, addr string) {
@@ -247,7 +247,7 @@ func createHTTPTrace(metrics *requestMetrics) *httptrace.ClientTrace {
 		},
 		ConnectDone: func(network, addr string, err error) {
 			if !connectStart.IsZero() {
-				metrics.ConnectTime = time.Since(connectStart)
+				metrics.connectTime = time.Since(connectStart)
 			}
 		},
 		TLSHandshakeStart: func() {
@@ -255,48 +255,34 @@ func createHTTPTrace(metrics *requestMetrics) *httptrace.ClientTrace {
 		},
 		TLSHandshakeDone: func(state tls.ConnectionState, err error) {
 			if !tlsStart.IsZero() {
-				metrics.TLSTime = time.Since(tlsStart)
+				metrics.tlsTime = time.Since(tlsStart)
 			}
 		},
 		GotFirstResponseByte: func() {
-			metrics.FirstByteTime = time.Since(metrics.StartTime)
+			metrics.firstByteTime = time.Since(metrics.startTime)
 		},
 	}
 }
 
 // logRequestMetrics logs comprehensive request metrics for debugging failed requests.
 // Only called when a request fails to avoid verbose logging on successful requests.
-func (h *httpClientWithTracing) logRequestMetrics(logger polylog.Logger, metrics requestMetrics) {
+func (h *httpClientWithDebugMetrics) logRequestMetrics(logger polylog.Logger, metrics requestMetrics) {
 	// Log detailed failure metrics using the provided structured logger
 	logger.With(
-		"url", metrics.URL,
-		"dns_lookup_ms", metrics.DNSLookupTime.Milliseconds(),
-		"connect_ms", metrics.ConnectTime.Milliseconds(),
-		"tls_ms", metrics.TLSTime.Milliseconds(),
-		"first_byte_ms", metrics.FirstByteTime.Milliseconds(),
-		"total_ms", metrics.TotalTime.Milliseconds(),
-		"status_code", metrics.StatusCode,
-		"timeout_ms", metrics.ContextTimeout.Milliseconds(),
-		"goroutines", metrics.GoroutineCount,
-		"active_requests", atomic.LoadInt64(&h.activeRequests),
-		"total_requests", atomic.LoadInt64(&h.totalRequests),
-		"timeout_errors", atomic.LoadInt64(&h.timeoutErrors),
-		"connection_errors", atomic.LoadInt64(&h.connectionErrors),
-	).Error().Err(metrics.Error).Msg("HTTP request failed - detailed timing breakdown")
+		"http_client_debug_url", metrics.url,
+		"http_client_debug_dns_lookup_ms", metrics.dnsLookupTime.Milliseconds(),
+		"http_client_debug_connect_ms", metrics.connectTime.Milliseconds(),
+		"http_client_debug_tls_ms", metrics.tlsTime.Milliseconds(),
+		"http_client_debug_first_byte_ms", metrics.firstByteTime.Milliseconds(),
+		"http_client_debug_total_ms", metrics.totalTime.Milliseconds(),
+		"http_client_debug_status_code", metrics.statusCode,
+		"http_client_debug_timeout_ms", metrics.contextTimeout.Milliseconds(),
+		"http_client_debug_goroutines", metrics.goroutineCount,
+		"http_client_debug_active_requests", h.activeRequests.Load(),
+		"http_client_debug_total_requests", h.totalRequests.Load(),
+		"http_client_debug_timeout_errors", h.timeoutErrors.Load(),
+		"http_client_debug_connection_errors", h.connectionErrors.Load(),
+	).Error().Err(metrics.error).Msg("HTTP request failed - detailed timing breakdown")
 }
 
-// TODO_TECHDEBT(@adshmh): Call this method as part of PATH signal handling.
-//
-// Close gracefully shuts down the HTTP client and logs final statistics
-func (h *httpClientWithTracing) Close() {
-	// Log basic shutdown info
-	fmt.Printf("HTTP_CLIENT_SHUTDOWN: active_requests=%d total_requests=%d timeout_errors=%d connection_errors=%d\n",
-		atomic.LoadInt64(&h.activeRequests),
-		atomic.LoadInt64(&h.totalRequests),
-		atomic.LoadInt64(&h.timeoutErrors),
-		atomic.LoadInt64(&h.connectionErrors),
-	)
-
-	// Close idle connections
-	h.httpClient.CloseIdleConnections()
-}
+// TODO_TECHDEBT(@adshmh): Add graceful shutdown support.
