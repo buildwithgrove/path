@@ -251,7 +251,7 @@ func newSessionSanctionKeyFromKey(key string) (sessionSanctionKey, error) {
 // It is called by the router to allow quick information about currently sanctioned endpoints.
 func (ses *sanctionedEndpointsStore) getSanctionDetails(serviceID protocol.ServiceID) devtools.ProtocolLevelDataResponse {
 	permanentSanctionDetails := make(map[protocol.EndpointAddr]devtools.SanctionedEndpoint)
-	sessionSanctionDetails := make(map[protocol.EndpointAddr]devtools.SanctionedEndpoint)
+	sessionSanctionDetails := make(map[string]devtools.SanctionedEndpoint)
 
 	// First get permanent sanctions
 	for endpointAddr, sanction := range ses.permanentSanctions {
@@ -293,7 +293,7 @@ func (ses *sanctionedEndpointsStore) getSanctionDetails(serviceID protocol.Servi
 			continue
 		}
 
-		sessionSanctionDetails[sanctionEndpointAddr] = sanction.sessionSanctionToDetails(
+		sessionSanctionDetails[sanctionKey.string()] = sanction.sessionSanctionToDetails(
 			sanctionEndpointAddr,
 			sanctionKey.sessionID,
 			protocolobservations.ShannonSanctionType_SHANNON_SANCTION_SESSION,

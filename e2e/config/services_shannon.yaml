@@ -560,6 +560,209 @@ services:
 
   # ------------- Cosmos SDK Services -------------
 
+  # Akash
+  - name: "Shannon - akash (Akash) Test"
+    service_id: "akash"
+    service_type: "cosmos_sdk"
+    cosmos_sdk_chain_id: "akashnet-2"
+    supported_apis: ["rest", "comet_bft"]
+
+  # Arkeo
+  - name: "Shannon - arkeo (Arkeo) Test"
+    service_id: "arkeo"
+    service_type: "cosmos_sdk"
+    cosmos_sdk_chain_id: "arkeo-main-v1"
+    supported_apis: ["rest", "comet_bft"]
+
+  # AtomOne
+  - name: "Shannon - atomone (AtomOne) Test"
+    service_id: "atomone"
+    service_type: "cosmos_sdk"
+    cosmos_sdk_chain_id: "atomone-1"
+    supported_apis: ["rest", "comet_bft"]
+
+  # Babylon
+  - name: "Shannon - babylon (Babylon) Test"
+    service_id: "babylon"
+    service_type: "cosmos_sdk"
+    cosmos_sdk_chain_id: "bbn-1"
+    supported_apis: ["rest", "comet_bft"]
+
+  # Celestia
+  - name: "Shannon - celestia (Celestia) Test"
+    service_id: "celestia"
+    service_type: "cosmos_sdk"
+    cosmos_sdk_chain_id: "celestia"
+    supported_apis: ["rest", "comet_bft"]
+
+  # Cheqd
+  - name: "Shannon - cheqd (Cheqd) Test"
+    service_id: "cheqd"
+    service_type: "cosmos_sdk"
+    cosmos_sdk_chain_id: "cheqd-mainnet-1"
+    supported_apis: ["rest", "comet_bft"]
+
+  # Chihuahua
+  - name: "Shannon - chihuahua (Chihuahua) Test"
+    service_id: "chihuahua"
+    service_type: "cosmos_sdk"
+    cosmos_sdk_chain_id: "chihuahua-1"
+    supported_apis: ["rest", "comet_bft"]
+
+  # Dungeon Chain
+  - name: "Shannon - dungeon-chain (Dungeon Chain) Test"
+    service_id: "dungeon-chain"
+    service_type: "cosmos_sdk"
+    cosmos_sdk_chain_id: "dungeon-1"
+    supported_apis: ["rest", "comet_bft"]
+
+  # Elys Network
+  - name: "Shannon - elys-network (Elys Network) Test"
+    service_id: "elys-network"
+    service_type: "cosmos_sdk"
+    cosmos_sdk_chain_id: "elys-1"
+    supported_apis: ["rest", "comet_bft"]
+
+  # Fetch
+  - name: "Shannon - fetch (Fetch) Test"
+    service_id: "fetch"
+    service_type: "cosmos_sdk"
+    cosmos_sdk_chain_id: "fetchhub-4"
+    supported_apis: ["rest", "comet_bft"]
+
+  # Jackal
+  - name: "Shannon - jackal (Jackal) Test"
+    service_id: "jackal"
+    service_type: "cosmos_sdk"
+    cosmos_sdk_chain_id: "jackal-1"
+    supported_apis: ["rest", "comet_bft"]
+
+  # Juno
+  - name: "Shannon - juno (Juno) Test"
+    service_id: "juno"
+    service_type: "cosmos_sdk"
+    cosmos_sdk_chain_id: "juno-1"
+    supported_apis: ["rest", "comet_bft"]
+
+  # KYVE
+  - name: "Shannon - kyve (KYVE) Test"
+    service_id: "kyve"
+    service_type: "cosmos_sdk"
+    cosmos_sdk_chain_id: "kyve-1"
+    supported_apis: ["rest", "comet_bft"]
+
+  # Neutron
+  - name: "Shannon - neutron (Neutron) Test"
+    service_id: "neutron"
+    service_type: "cosmos_sdk"
+    cosmos_sdk_chain_id: "neutron-1"
+    supported_apis: ["rest", "comet_bft"]
+
+  # Nillion
+  - name: "Shannon - nillion (Nillion) Test"
+    service_id: "nillion"
+    service_type: "cosmos_sdk"
+    cosmos_sdk_chain_id: "nillion-1"
+    supported_apis: ["rest", "comet_bft"]
+
+  # Osmosis
+  - name: "Shannon - osmosis (Osmosis) Test"
+    service_id: "osmosis"
+    service_type: "cosmos_sdk"
+    cosmos_sdk_chain_id: "osmosis"
+    supported_apis: ["rest", "comet_bft"]
+
+  # Passage
+  - name: "Shannon - passage (Passage) Test"
+    service_id: "passage"
+    service_type: "cosmos_sdk"
+    cosmos_sdk_chain_id: "passage-2"
+    supported_apis: ["rest", "comet_bft"]
+
+  # Persistence
+  - name: "Shannon - persistence (Persistence) Test"
+    service_id: "persistence"
+    service_type: "cosmos_sdk"
+    cosmos_sdk_chain_id: "core-1"
+    supported_apis: ["rest", "comet_bft"]
+
+  # Provenance
+  - name: "Shannon - provenance (Provenance) Test"
+    service_id: "provenance"
+    service_type: "cosmos_sdk"
+    cosmos_sdk_chain_id: "pio-mainnet-1"
+    supported_apis: ["rest", "comet_bft"]
+
+  # Pocket Mainnet
+  - name: "Shannon - pocket (Pocket Mainnet) Test"
+    service_id: "pocket"
+    service_type: "cosmos_sdk"
+    cosmos_sdk_chain_id: "pocket"
+    supported_apis: ["rest", "comet_bft"]
+
+  # Pocket Alpha Testnet
+  - name: "Shannon - pocket-alpha (Pocket Alpha Testnet) Test"
+    service_id: "pocket-alpha"
+    service_type: "cosmos_sdk"
+    cosmos_sdk_chain_id: "pocket-alpha"
+    supported_apis: ["rest", "comet_bft"]
+
+  # Pocket Beta Testnet
+  - name: "Shannon - pocket-beta (Pocket Beta Testnet) Test"
+    service_id: "pocket-beta"
+    service_type: "cosmos_sdk"
+    cosmos_sdk_chain_id: "pocket-beta"
+    supported_apis: ["rest", "comet_bft"]
+
+  # Quicksilver
+  - name: "Shannon - quicksilver (Quicksilver) Test"
+    service_id: "quicksilver"
+    service_type: "cosmos_sdk"
+    cosmos_sdk_chain_id: "quicksilver-2"
+    supported_apis: ["rest", "comet_bft"]
+
+  # Router
+  - name: "Shannon - router (Router) Test"
+    service_id: "router"
+    service_type: "cosmos_sdk"
+    cosmos_sdk_chain_id: "router_9600-1"
+    supported_apis: ["rest", "comet_bft", "json_rpc"]
+
+  # Seda
+  - name: "Shannon - seda (Seda) Test"
+    service_id: "seda"
+    service_type: "cosmos_sdk"
+    cosmos_sdk_chain_id: "seda-1"
+    supported_apis: ["rest", "comet_bft"]
+
+  # Shentu
+  - name: "Shannon - shentu (Shentu) Test"
+    service_id: "shentu"
+    service_type: "cosmos_sdk"
+    cosmos_sdk_chain_id: "shentu-2.2"
+    supported_apis: ["rest", "comet_bft"]
+
+  # Side Protocol
+  - name: "Shannon - side-protocol (Side Protocol) Test"
+    service_id: "side-protocol"
+    service_type: "cosmos_sdk"
+    cosmos_sdk_chain_id: "sidechain-1"
+    supported_apis: ["rest", "comet_bft"]
+
+  # Stargaze
+  - name: "Shannon - stargaze (Stargaze) Test"
+    service_id: "stargaze"
+    service_type: "cosmos_sdk"
+    cosmos_sdk_chain_id: "stargaze-1"
+    supported_apis: ["rest", "comet_bft"]
+
+  # Stride
+  - name: "Shannon - stride (Stride) Test"
+    service_id: "stride"
+    service_type: "cosmos_sdk"
+    cosmos_sdk_chain_id: "stride-1"
+    supported_apis: ["rest", "comet_bft"]
+
   # XRPLEVM
   - name: "Shannon - xrplevm (XRPL EVM MainNet) Test"
     service_id: "xrplevm"
@@ -587,66 +790,6 @@ services:
       contract_start_block: 368266
       transaction_hash: "0x2267b3846dd8c4d97e3c9c6d2687647480beaf840e333744335d4ccfea1b935a"
       call_data: "0x18160ddd"
-
-  # Osmosis
-  - name: "Shannon - osmosis (Osmosis) Test"
-    service_id: "osmosis"
-    service_type: "cosmos_sdk"
-    cosmos_sdk_chain_id: "osmosis"
-    supported_apis: ["rest", "comet_bft"]
-
-  # pocket
-  - name: "Shannon - pocket"
-    service_id: "pocket"
-    service_type: "cosmos_sdk"
-    cosmos_sdk_chain_id: "pocket"
-    supported_apis: ["rest", "comet_bft"]
-    
-  # pocket-beta1
-  - name: "Shannon - pocket-beta1"
-    service_id: "pocket-beta1"
-    service_type: "cosmos_sdk"
-    cosmos_sdk_chain_id: "pocket-beta1"
-    supported_apis: ["rest", "comet_bft"]
-  # pocket-beta2
-  - name: "Shannon - pocket-beta2"
-    service_id: "pocket-beta2"
-    service_type: "cosmos_sdk"
-    cosmos_sdk_chain_id: "pocket-beta2"
-    supported_apis: ["rest", "comet_bft"]
-  # pocket-beta3
-  - name: "Shannon - pocket-beta3"
-    service_id: "pocket-beta3"
-    service_type: "cosmos_sdk"
-    cosmos_sdk_chain_id: "pocket-beta3"
-    supported_apis: ["rest", "comet_bft"]
-  # pocket-beta4
-  - name: "Shannon - pocket-beta4"
-    service_id: "pocket-beta4"
-    service_type: "cosmos_sdk"
-    cosmos_sdk_chain_id: "pocket-beta4"
-    supported_apis: ["rest", "comet_bft"]
-
-  # pocket-alpha
-  - name: "Shannon - pocket-alpha"
-    service_id: "pocket-alpha"
-    service_type: "cosmos_sdk"
-    cosmos_sdk_chain_id: "pocket-alpha"
-    supported_apis: ["rest", "comet_bft"]
-
-  # pocket-beta
-  - name: "Shannon - pocket-beta"
-    service_id: "pocket-beta"
-    service_type: "cosmos_sdk"
-    cosmos_sdk_chain_id: "pocket-beta"
-    supported_apis: ["rest", "comet_bft"]
-
-  # Cosmos Hub
-  - name: "Shannon - cometbft (Cosmos Hub) Test"
-    service_id: "cometbft"
-    service_type: "cosmos_sdk"
-    cosmos_sdk_chain_id: "cosmoshub-4"
-    supported_apis: ["comet_bft"]
 
   # TODO_NEXT(@commoddity): Add `service_params` for the below services
 
