@@ -54,7 +54,7 @@ type Protocol struct {
 	sanctionedEndpointsStore *sanctionedEndpointsStore
 
 	// HTTP client used for sending relay requests to endpoints.
-	httpClient *httpClientWithTracing
+	httpClient *httpClientWithDebugMetrics
 }
 
 // NewProtocol instantiates an instance of the Shannon protocol integration.
@@ -90,7 +90,7 @@ func NewProtocol(
 
 		// HTTP client with HTTP tracing.
 		// Used to track any timeout/endpoint connectivity errors.
-		httpClient: newHTTPClientWithDefaultTracing(),
+		httpClient: newDefaultHTTPClientWithDebugMetrics(),
 	}
 
 	return protocolInstance, nil

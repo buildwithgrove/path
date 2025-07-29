@@ -72,7 +72,7 @@ type requestContext struct {
 	currentRelayMinerError *protocolobservations.ShannonRelayMinerError
 
 	// HTTP client used for sending relay requests to endpoints.
-	httpClient *httpClientWithTracing
+	httpClient *httpClientWithDebugMetrics
 }
 
 // HandleServiceRequest:
