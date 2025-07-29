@@ -243,10 +243,6 @@ func (lfn *LazyFullNode) GetSessionWithExtendedValidity(
 // - Contents of the request received by the underlying service's API server.
 
 func shannonJsonRpcHttpRequest(payload protocol.Payload, url string) (*http.Request, error) {
-	// POTENTIAL NULL ISSUE: If payload.Data contains the string "null", it will be sent as-is
-	// to the endpoint. This could happen if an empty Payload{} was marshaled somewhere upstream.
-	// This may be the cause of RelayMiner receiving "null" (base64: bnVsbA==) as request body.
-	// Consider adding validation here to check if payload.Data == "null" or is empty.
 	jsonRpcServiceReq, err := http.NewRequest(
 		payload.Method,
 		url,
