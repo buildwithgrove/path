@@ -18,8 +18,13 @@ import (
 	servicetypes "github.com/pokt-network/poktroll/x/service/types"
 )
 
-// httpClientWithTracing provides HTTP client functionality with built-in request tracing,
-// metrics collection, and detailed logging for debugging timeout and connection issues.
+// httpClientWithTracing provides HTTP client functionality with debugging functionality.
+// It includes things like:
+// - Built-in request tracing
+// - Metrics collection
+// - Detailed logging
+// - Timeout debugging
+// - Connection issue visibility
 type httpClientWithTracing struct {
 	httpClient *http.Client
 
