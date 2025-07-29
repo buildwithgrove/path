@@ -29,8 +29,8 @@ var (
 // Note that this check has an expiry as health checks should be performed periodically
 // to ensure the endpoint remains responsive.
 type endpointCheckCometBFTHealth struct {
-	// healthy stores the health status from the endpoint's response to a `status` request.
-	// It is nil if there has NOT been an observation of the endpoint's response to a `status` request.
+	// healthy stores the health status from the endpoint's response to a `health` request.
+	// It is nil if there has NOT been an observation of the endpoint's response to a `health` request.
 	healthy *bool
 
 	// expiresAt stores the time at which the last check expires.
