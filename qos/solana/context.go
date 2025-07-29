@@ -83,6 +83,9 @@ func (rc requestContext) GetServicePayload() protocol.Payload {
 		// TODO_MVP(@adshmh): find a way to guarantee this never happens,
 		// e.g. by storing the serialized form of the JSONRPC request
 		// at the time of creating the request context.
+		// POTENTIAL NULL ISSUE: Returning empty Payload{} on marshal error could lead to "null" 
+		// being sent as request body. This may be related to RelayMiner receiving "null" 
+		// (base64: bnVsbA==) as request body.
 		return protocol.Payload{}
 	}
 

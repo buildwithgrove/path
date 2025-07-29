@@ -28,6 +28,9 @@ func (id ID) String() string {
 	if id.strID != nil {
 		return *id.strID
 	}
+	// POTENTIAL NULL ISSUE: Returning literal string "null" here could propagate through
+	// the system and end up as request body content. This may be related to RelayMiner 
+	// receiving "null" (base64: bnVsbA==) as request body.
 	return "null"
 }
 

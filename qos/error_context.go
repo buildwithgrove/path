@@ -69,6 +69,9 @@ func (rec *RequestErrorContext) GetObservations() qosobservations.Observations {
 // Implements the gateway.RequestQoSContext interface.
 func (rec *RequestErrorContext) GetServicePayload() protocol.Payload {
 	rec.Logger.Warn().Msg("Invalid usage: RequestErrorContext.GetServicePayload() should never be called.")
+	// POTENTIAL NULL ISSUE: Returning empty Payload{} here could lead to "null" being sent
+	// as request body if this error context is used in request processing pipeline.
+	// This may be related to RelayMiner receiving "null" (base64: bnVsbA==) as request body.
 	return protocol.Payload{}
 }
 
