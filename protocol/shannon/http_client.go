@@ -127,7 +127,7 @@ func (h *httpClientWithDebugMetrics) SendHTTPRelay(
 
 	var requestErr error
 	defer func() {
-		recordRequest(requestErr)
+		requestRecorder(requestErr)
 	}()
 
 	// Validate URL format
@@ -195,7 +195,7 @@ func (h *httpClientWithDebugMetrics) setupRequestDebugging(
 	startTime := time.Now()
 
 	// Initialize metrics collection
-	metrics := &requestMetrics{
+	metrics := &httpRequestMetrics{
 		startTime:      startTime,
 		goroutineCount: runtime.NumGoroutine(),
 		url:            endpointURL,
@@ -254,7 +254,7 @@ func (h *httpClientWithDebugMetrics) readAndValidateResponse(resp *http.Response
 // createDetailedHTTPTrace creates comprehensive HTTP tracing using the httptrace library:
 // https://pkg.go.dev/net/http/httptrace
 // Captures granular timing for every phase of the HTTP request lifecycle to identify bottlenecks.
-func createDetailedHTTPTrace(metrics *requestMetrics) *httptrace.ClientTrace {
+func createDetailedHTTPTrace(metrics *httpRequestMetrics) *httptrace.ClientTrace {
 	var (
 		dnsStart, connectStart, tlsStart time.Time
 		getConnStart, wroteRequestStart  time.Time
@@ -338,7 +338,7 @@ func createDetailedHTTPTrace(metrics *requestMetrics) *httptrace.ClientTrace {
 
 // logRequestMetrics logs comprehensive request metrics for debugging failed requests.
 // Only called when a request fails to avoid verbose logging on successful requests.
-func (h *httpClientWithDebugMetrics) logRequestMetrics(logger polylog.Logger, metrics requestMetrics) {
+func (h *httpClientWithDebugMetrics) logRequestMetrics(logger polylog.Logger, metrics httpRequestMetrics) {
 	// Calculate derived timings for easier analysis
 	connectionEstablishmentTime := metrics.dnsLookupTime + metrics.connectTime + metrics.tlsTime
 	requestTransmissionTime := metrics.wroteHeadersTime + metrics.wroteRequestTime
