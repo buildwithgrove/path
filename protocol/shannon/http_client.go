@@ -73,8 +73,9 @@ type httpRequestMetrics struct {
 	error      error
 }
 
-// newDefaultHTTPClientWithDebugMetrics creates a new HTTP client with optimized transport settings
-// and built-in request debugging capabilities using default configuration.
+// newDefaultHTTPClientWithDebugMetrics creates a new HTTP client with:
+// - Transport settings configured for high-concurrency usage
+// - Built in request debugging capabilities and metrics tracking
 // TODO_TECHDEBT(@adshmh): Make HTTP client settings configurable
 func newDefaultHTTPClientWithDebugMetrics() *httpClientWithDebugMetrics {
 	// Configure transport with optimized settings for high-concurrency usage
