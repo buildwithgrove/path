@@ -3,11 +3,12 @@ package cosmos
 import (
 	"encoding/json"
 
+	"github.com/pokt-network/poktroll/pkg/polylog"
+
 	"github.com/buildwithgrove/path/gateway"
 	qosobservations "github.com/buildwithgrove/path/observation/qos"
 	"github.com/buildwithgrove/path/qos"
 	"github.com/buildwithgrove/path/qos/jsonrpc"
-	"github.com/pokt-network/poktroll/pkg/polylog"
 )
 
 // TODO_IMPROVE(@commoddity): Replace custom structs with official CometBFT types.
@@ -39,7 +40,7 @@ type (
 	}
 )
 
-// responseValidatorCometBFTStatus implements jsonrpcResponseValidator for status method
+// responseValidatorCometBFTStatus implements jsonrpcResponseValidator for `status` method
 // Takes a parsed JSONRPC response and validates it as a status response
 func responseValidatorCometBFTStatus(logger polylog.Logger, jsonrpcResponse jsonrpc.Response) response {
 	logger = logger.With("response_validator", "status")
@@ -136,7 +137,7 @@ func (r *responseCometBFTStatus) GetObservation() qosobservations.CosmosEndpoint
 			ValidationError:        nil, // No validation error for successfully processed responses
 			ParsedResponse: &qosobservations.CosmosEndpointResponseValidationResult_ResponseCometBftStatus{
 				ResponseCometBftStatus: &qosobservations.CosmosResponseCometBFTStatus{
-					CosmosSdkChainId:  r.cosmosSDKChainID,
+					ChainId:           r.cosmosSDKChainID,
 					CatchingUp:        r.catchingUp,
 					LatestBlockHeight: r.latestBlockHeight,
 				},

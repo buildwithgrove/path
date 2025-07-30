@@ -45,7 +45,8 @@ message ShannonRequestError {
 enum ShannonEndpointErrorType {
   SHANNON_ENDPOINT_ERROR_UNSPECIFIED = 0;
   // endpoint internal error: not recognized.
-  SHANNON_ENDPOINT_ERROR_INTERNAL = 1;
+  // DEPRECATED: Use more specific error types below (HTTP_UNKNOWN, RAW_PAYLOAD_UNKNOWN, UNKNOWN)
+  SHANNON_ENDPOINT_ERROR_INTERNAL = 1 [deprecated = true];
   // endpoint config error: e.g. DNS lookup error, TLS certificate error.
   SHANNON_ENDPOINT_ERROR_CONFIG = 2;
   // endpoint timeout on responding to relay request.
@@ -95,6 +96,13 @@ enum ShannonEndpointErrorType {
 
   // RelayRequest was canceled by PATH intentionally.
   SHANNON_ENDPOINT_REQUEST_CANCELED_BY_PATH = 33;
+
+  // New error types for better classification (added without renumbering existing ones)
+  // Error was recognized but specific classification failed.
+  // Only general category: HTTP, Raw Payload, General, is known.
+  SHANNON_ENDPOINT_ERROR_HTTP_UNKNOWN = 34;
+  SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_UNKNOWN = 35;
+  SHANNON_ENDPOINT_ERROR_UNKNOWN = 36;
 }
 
 // ShannonSanctionType specifies the duration type for endpoint sanctions

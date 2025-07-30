@@ -9,15 +9,16 @@ import (
 
 /* -------------------- CometBFT Health Check -------------------- */
 
-// ID for the CometBFT health check.
-// This number may be any arbitrary ID and is selected
-// to maintain a convention in the QoS packages of
-// consistent ID for a given check type.
+// CometBFT ID checks begin with 2 for JSON-RPC requests.
 //
-// CometBFT checks begin with 2.
+// This is an arbitrary ID selected by the engineering team at Grove.
+// It is used for compatibility with the JSON-RPC spec.
+// It is a loose convention in the QoS package.
+
+// ID for the CometBFT /health check.
 const idCometBFTHealthCheck = 2001
 
-// methodHealth is the CometBFT JSON-RPC method for getting the node health.
+// methodCometBFTHealth is the CometBFT JSON-RPC method for getting the node health.
 // Reference: https://docs.cometbft.com/v1.0/spec/rpc/#health
 const methodCometBFTHealth = jsonrpc.Method("health")
 
@@ -25,8 +26,8 @@ const methodCometBFTHealth = jsonrpc.Method("health")
 const checkHealthInterval = 30 * time.Second
 
 var (
-	errNoCometBFTHealthObs      = fmt.Errorf("endpoint has not had an observation of its response to a CometBFT '%q' request", methodCometBFTHealth)
-	errInvalidCometBFTHealthObs = fmt.Errorf("endpoint returned an invalid response to a CometBFT '%q' request", methodCometBFTHealth)
+	errNoHealthObs      = fmt.Errorf("endpoint has not had an observation of its response to a CometBFT '%q' request", methodCometBFTHealth)
+	errInvalidHealthObs = fmt.Errorf("endpoint returned an invalid response to a CometBFT '%q' request", methodCometBFTHealth)
 )
 
 // endpointCheckHealth is a check that ensures the endpoint is healthy.
@@ -44,7 +45,7 @@ type endpointCheckCometBFTHealth struct {
 }
 
 // getRequest returns a JSONRPC request to check if the endpoint is healthy.
-// eg. '{"jsonrpc":"2.0","id":1002,"method":"health"}'
+// eg. '{"jsonrpc":"2.0","id":2001,"method":"health"}'
 //
 // It is called in `request_validator_checks.go` to generate the endpoint checks.
 func (e *endpointCheckCometBFTHealth) getRequest() jsonrpc.Request {
@@ -58,7 +59,7 @@ func (e *endpointCheckCometBFTHealth) getRequest() jsonrpc.Request {
 // GetHealthy returns the parsed health status for the endpoint.
 func (e *endpointCheckCometBFTHealth) GetHealthy() (bool, error) {
 	if e.healthy == nil {
-		return false, errNoCometBFTHealthObs
+		return false, errNoHealthObs
 	}
 	return *e.healthy, nil
 }
