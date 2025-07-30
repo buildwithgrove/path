@@ -8,7 +8,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/gorilla/websocket"
 	"github.com/pokt-network/poktroll/pkg/polylog"
 	"github.com/pokt-network/poktroll/pkg/relayer/proxy"
 	apptypes "github.com/pokt-network/poktroll/x/application/types"
@@ -116,9 +115,9 @@ func (rc *requestContext) HandleServiceRequest(payload protocol.Payload) (protoc
 // HandleWebsocketRequest:
 // - Opens a persistent websocket connection to the selected endpoint.
 // - Satisfies gateway.ProtocolRequestContext interface.
-func (rc *requestContext) HandleWebsocketRequest(logger polylog.Logger, req *http.Request, w http.ResponseWriter) error {
+func (rc *requestContext) HandleWebsocketRequest(logger polylog.Logger, req *http.Request, w http.ResponseWriter) (gateway.WebsocketsBridge, error) {
 	if rc.selectedEndpoint == nil {
-		return fmt.Errorf("handleWebsocketRequest: no endpoint has been selected on service %s", rc.serviceID)
+		return nil, fmt.Errorf("handleWebsocketRequest: no endpoint has been selected on service %s", rc.serviceID)
 	}
 
 	wsLogger := logger.With(
@@ -129,31 +128,35 @@ func (rc *requestContext) HandleWebsocketRequest(logger polylog.Logger, req *htt
 
 	// Upgrade HTTP request from client to websocket connection.
 	// - Connection is passed to websocket bridge for Client <-> Gateway communication.
-	upgrader := websocket.Upgrader{CheckOrigin: func(r *http.Request) bool { return true }}
-	clientConn, err := upgrader.Upgrade(w, req, nil)
+	clientConn, err := websockets.UpgradeClientWebsocketConnection(wsLogger, req, w)
 	if err != nil {
-		wsLogger.Error().Err(err).Msg("Error upgrading websocket connection request")
-		return err
+		return nil, err
 	}
 
+	// Create a websocket bridge for the selected endpoint.
+	// One bridge represents a single persistent connection to a single endpoint.
+	//
+	// Note that this Bridge is returned by the Shannon protocol method and
+	// initialized in the Gateway package in order to pass gateway-level observations
+	// and data reporters without leaking Gateway-level data to the protocol package.
 	bridge, err := websockets.NewBridge(
 		wsLogger,
 		clientConn,
 		rc.selectedEndpoint,
 		rc.relayRequestSigner,
 		rc.fullNode,
+		rc.serviceID,
+		buildWebsocketBridgeEndpointObservation(rc.logger, rc.serviceID, *rc.selectedEndpoint),
 	)
 	if err != nil {
+		// TODO_TECHDEBT(@commoddity): introduce error classification for websocket bridge creation errors.
+		// Should these errors be protocol-level? For example, if the endpoint is selected for a websocket request,
+		// but does not have a websocket URL listed onchain, it should likely be a protocol-level error.
 		wsLogger.Error().Err(err).Msg("Error creating websocket bridge")
-		return err
+		return nil, err
 	}
 
-	// Run bridge in goroutine to avoid blocking main thread.
-	go bridge.Run()
-
-	wsLogger.Info().Msg("websocket connection established")
-
-	return nil
+	return bridge, nil
 }
 
 // GetObservations:

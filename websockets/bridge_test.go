@@ -9,7 +9,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/buildwithgrove/path/protocol"
 	"github.com/gorilla/websocket"
 	"github.com/pokt-network/poktroll/pkg/polylog/polyzero"
 	apptypes "github.com/pokt-network/poktroll/x/application/types"
@@ -17,6 +16,8 @@ import (
 	sessiontypes "github.com/pokt-network/poktroll/x/session/types"
 	sdk "github.com/pokt-network/shannon-sdk"
 	"github.com/stretchr/testify/require"
+
+	"github.com/buildwithgrove/path/protocol"
 )
 
 type (
@@ -113,11 +114,13 @@ func Test_Bridge_Run(t *testing.T) {
 				test.selectedEndpoint,
 				&relayRequestSigner{},
 				&fullNode{},
+				"service_id",
+				nil,
 			)
 			c.NoError(err)
 
 			// Start the bridge in a goroutine
-			go bridge.Run()
+			go bridge.Run(nil, nil)
 
 			// Wait for a short duration for test requests and events to get sent
 			<-time.After(2 * time.Second)

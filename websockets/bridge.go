@@ -16,9 +16,21 @@ import (
 	sharedtypes "github.com/pokt-network/poktroll/x/shared/types"
 	sdk "github.com/pokt-network/shannon-sdk"
 
+	"github.com/buildwithgrove/path/gateway"
+	"github.com/buildwithgrove/path/observation"
+	protocolobservations "github.com/buildwithgrove/path/observation/protocol"
 	"github.com/buildwithgrove/path/protocol"
 	"github.com/buildwithgrove/path/request"
 )
+
+// TODO_TECHDEBT(@commoddity, @adshmh): The websockets package contains a large amount of Shannon-specific logic.
+// This contradicts the design pattern of keeping all protocol-specific logic in the protocol/shannon package.
+// This should be refactored in one of two different ways:
+// 		1. Move the Shannon-specific logic to the protocol/shannon package but keep websocket-specific logic in the websockets package.
+// 		2. Move all websockets logic to the protocol/shannon package.
+
+// websockets.Bridge implements the gateway.WebsocketsBridge interface.
+var _ gateway.WebsocketsBridge = &Bridge{}
 
 // FullNode represents a Shannon FullNode as only Shannon supports websocket connections.
 // It is used only to validate the relay responses returned by the Endpoint.
@@ -43,12 +55,12 @@ type SelectedEndpoint interface {
 	Session() *sessiontypes.Session
 }
 
-// bridge routes data between an Endpoint and a Client.
-// One bridge represents a single WebSocket connection between
-// a Client and a WebSocket Endpoint.
+// Bridge routes data between an Endpoint and a Client.
+// One Bridge represents a single WebSocket connection
+// between a Client and a WebSocket Endpoint.
 //
 // Full data flow: Client <---clientConn---> PATH Bridge <---endpointConn---> Relay Miner Bridge <------> Endpoint
-type bridge struct {
+type Bridge struct {
 	// ctx is used to stop the bridge when the context is canceled from either connection
 	ctx context.Context
 
@@ -68,6 +80,30 @@ type bridge struct {
 	relayRequestSigner RelayRequestSigner
 	// fullNode is the FullNode that the bridge uses to validate relay responses
 	fullNode FullNode
+
+	// serviceID is the service ID that the bridge is connected to
+	serviceID protocol.ServiceID
+
+	// dataReporter is used to export, to the data pipeline, observations made in handling websocket messages.
+	dataReporter gateway.RequestResponseReporter
+
+	// gatewayObservations in the websocket bridge contain values that will be static for the duration
+	// of the specific Bridge's operation.
+	//
+	// For example, the RequestAuth used to authorize the request.
+	//
+	// As a websocket bridge represents a single persistent connection to a single endpoint,
+	// the gatewayObservations will be the same for the duration of the bridge's operation.
+	gatewayObservations *observation.GatewayObservations
+
+	// protocolObservations in the websocket bridge contain values that will be static for the duration
+	// of the specific Bridge's operation.
+	//
+	// For example, the selected endpoint.
+	//
+	// As a websocket bridge represents a single persistent connection to a single endpoint,
+	// the protocolObservations will be the same for the duration of the bridge's operation.
+	protocolObservations *protocolobservations.Observations
 }
 
 // NewBridge creates a new Bridge instance and a new connection to the Endpoint from the Endpoint URL
@@ -77,7 +113,9 @@ func NewBridge(
 	selectedEndpoint SelectedEndpoint,
 	relayRequestSigner RelayRequestSigner,
 	fullNode FullNode,
-) (*bridge, error) {
+	serviceID protocol.ServiceID,
+	protocolObservations *protocolobservations.Observations,
+) (*Bridge, error) {
 	logger = logger.With(
 		"component", "bridge",
 		"endpoint_url", selectedEndpoint.PublicURL(),
@@ -96,13 +134,18 @@ func NewBridge(
 	msgChan := make(chan message)
 
 	// Create bridge instance without connections first
-	b := &bridge{
-		logger:             logger,
+	b := &Bridge{
+		logger: logger,
+
+		ctx: ctx,
+
 		msgChan:            msgChan,
 		selectedEndpoint:   selectedEndpoint,
 		relayRequestSigner: relayRequestSigner,
 		fullNode:           fullNode,
-		ctx:                ctx,
+
+		serviceID:            serviceID,
+		protocolObservations: protocolObservations,
 	}
 
 	// Initialize connections with context and cancel function
@@ -177,8 +220,19 @@ func getBridgeRequestHeaders(session *sessiontypes.Session) http.Header {
 // through PATH between the Client and the selected websocket endpoint.
 //
 // Full data flow: Client <---clientConn---> PATH Bridge <---endpointConn---> Relay Miner Bridge <------> Endpoint
-func (b *bridge) Run() {
+func (b *Bridge) Run(
+	gatewayObservations *observation.GatewayObservations,
+	dataReporter gateway.RequestResponseReporter,
+) {
 	b.logger.Info().Msg("bridge operation started successfully")
+
+	// If observations are provided, use them to update the bridge's observations.
+	// These values, both gateway and protocol, are static for the duration of
+	// the bridge's operation. New observations will be set when a new Bridge is created.
+	b.gatewayObservations = gatewayObservations
+
+	// If a data reporter is provided, use it to publish observations.
+	b.dataReporter = dataReporter
 
 	// Listen for the context to be canceled and shut down the bridge
 	go func() {
@@ -204,7 +258,7 @@ func (b *bridge) Run() {
 //
 // This is important as it is expected that the RelayMiner connection will be closed on every session rollover
 // and it is critical that the closing of the connection propagates to the Client so they can reconnect.
-func (b *bridge) Shutdown(err error) {
+func (b *Bridge) Shutdown(err error) {
 	b.logger.Error().Err(err).Msg("🔌 ❌ Websocket bridge shutting down due to error!")
 
 	// Send close message to both connections and close the connections
@@ -230,7 +284,7 @@ func (b *bridge) Shutdown(err error) {
 
 // handleClientMessage processes a message from the Client and sends it to the Endpoint
 // It signs the request using the RelayRequestSigner and sends the signed request to the Endpoint
-func (b *bridge) handleClientMessage(msg message) {
+func (b *Bridge) handleClientMessage(msg message) {
 	b.logger.Debug().Msgf("received message from client: %s", string(msg.data))
 
 	// Sign the client message before sending it to the Endpoint
@@ -249,7 +303,7 @@ func (b *bridge) handleClientMessage(msg message) {
 
 // signClientMessage signs the client message in order to send it to the Endpoint
 // It uses the RelayRequestSigner to sign the request and returns the signed request
-func (b *bridge) signClientMessage(msg message) ([]byte, error) {
+func (b *Bridge) signClientMessage(msg message) ([]byte, error) {
 	unsignedRelayRequest := &servicetypes.RelayRequest{
 		Meta: servicetypes.RelayRequestMetadata{
 			SessionHeader:           b.selectedEndpoint.Session().GetHeader(),
@@ -275,21 +329,45 @@ func (b *bridge) signClientMessage(msg message) ([]byte, error) {
 // handleEndpointMessage processes a message from the Endpoint and sends it to the Client
 // It validates the relay response using the Shannon FullNode and sends the relay response to the Client
 // Subscription events pushed from the Endpoint to the Client will be handled here as well.
-func (b *bridge) handleEndpointMessage(msg message) {
+func (b *Bridge) handleEndpointMessage(msg message) {
 	b.logger.Debug().Msgf("received message from endpoint: %s", string(msg.data))
+
+	// At the end of each endpoint message, publish the observations.
+	messageObservations := b.initializeMessageObservations()
+
+	// Publish the observations to the data pipeline after the message is handled.
+	if b.dataReporter != nil {
+		defer b.dataReporter.Publish(messageObservations)
+	}
 
 	// Validate the relay response using the Shannon FullNode
 	relayResponse, err := b.fullNode.ValidateRelayResponse(sdk.SupplierAddress(b.selectedEndpoint.Supplier()), msg.data)
 	if err != nil {
+		// TODO_TECHDEBT(@commoddity, @adshmh): When the TODO_TECHDEBT at the top of this file is resolved,
+		// add a method to update the protocol observations based on the error in the ValidateRelayResponse method.
 		b.endpointConn.handleDisconnect(fmt.Errorf("handleEndpointMessage: error validating relay response: %w", err))
 		return
 	}
 
 	// Send the relay response or subscription push event to the Client
 	if err := b.clientConn.WriteMessage(msg.messageType, relayResponse.Payload); err != nil {
+		// TODO_TECHDEBT(@commoddity, @adshmh): When the TODO_TECHDEBT at the top of this file is resolved,
+		// add a method to update the protocol observations based on the error in the WriteMessage method.
+
 		// NOTE: On session rollover, the RelayMiner will disconnect the Endpoint connection, which will trigger this
 		// error. This is expected and the Client is expected to handle the reconnection in their connection logic.
 		b.clientConn.handleDisconnect(fmt.Errorf("handleEndpointMessage: error writing endpoint message to client: %w", err))
 		return
+	}
+}
+
+// initializeMessageObservations initializes the observations for a message.
+// It copies the static values from the bridge's observations to the message observations.
+// the observation may be modified based on possible errors, etc. in the websocket request handling.
+func (b *Bridge) initializeMessageObservations() *observation.RequestResponseObservations {
+	return &observation.RequestResponseObservations{
+		ServiceId: string(b.serviceID),
+		Gateway:   b.gatewayObservations,
+		Protocol:  b.protocolObservations,
 	}
 }
