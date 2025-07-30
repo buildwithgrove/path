@@ -10,6 +10,9 @@ import (
 // Reference: https://docs.cosmos.network/main/core/grpc_rest.html#status
 const apiPathCosmosStatus = "/cosmos/base/node/v1beta1/status"
 
+// TODO_IMPROVE(@commoddity): Consider adding check interval and expiry like CometBFT checks
+// if periodic validation becomes necessary for Cosmos SDK status checks.
+
 var (
 	errNoCosmosStatusObs      = fmt.Errorf("endpoint has not had an observation of its response to a %q request", apiPathCosmosStatus)
 	errInvalidCosmosStatusObs = fmt.Errorf("endpoint returned an invalid response to a %q request", apiPathCosmosStatus)
@@ -17,8 +20,11 @@ var (
 
 // endpointCheckCosmosStatus is a check that ensures the endpoint's Cosmos SDK status information is valid.
 // It is used to verify the endpoint's current block height.
+//
+// Note: Unlike CometBFT checks which have expiry, this check does not expire
+// as it's only used for basic height validation.
 type endpointCheckCosmosStatus struct {
-	// height stores the latest block height from the endpoint's response to a `/cosmos/base/node/v1beta1/status` request.
+	// latestBlockHeight stores the latest block height from the endpoint's response to a `/cosmos/base/node/v1beta1/status` request.
 	// It is nil if there has NOT been an observation of the endpoint's response to a `/cosmos/base/node/v1beta1/status` request.
 	latestBlockHeight *uint64
 }

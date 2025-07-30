@@ -12,18 +12,14 @@ import (
 	qosobservations "github.com/buildwithgrove/path/observation/qos"
 )
 
-// TODO_IMPROVE(@commoddity): The actual Cosmos SDK `node.StatusResponse` struct
-// causes an unmarshalling error due to type mismatch in all fields.
+// TODO_IMPROVE(@commoddity): Replace custom struct with official Cosmos SDK types.
 //
-// The following struct is a workaround to fix the unmarshalling error.
+// Current issue: The official `node.StatusResponse` struct expects int64 fields,
+// but the REST API returns string values, causing unmarshalling errors.
 //
-// The node returns all fields as strings, but the `node.StatusResponse` struct
-// expects all fields to be of type int64.
+// Workaround: Using custom `cosmosStatusResponse` struct with string fields.
 //
-// Update to use the Cosmos SDK `node.StatusResponse` struct once the issue is fixed.
 // Reference: https://github.com/cosmos/cosmos-sdk/blob/main/client/grpc/node/query.pb.go#L180
-//
-// The `cosmosStatusResponse` struct is a workaround to fix the unmarshalling error.
 
 // cosmosStatusResponse is the expected response from the /cosmos/base/node/v1beta1/status endpoint.
 // Only the `height` field is needed to satisfy the `/status` endpoint checks.
@@ -72,12 +68,11 @@ func responseValidatorCosmosStatus(
 type responseCosmosStatus struct {
 	logger polylog.Logger
 
-	// jsonRPCResponse stores the JSON-RPC response parsed from an endpoint's response bytes.
+	// restResponse stores the REST response bytes from the endpoint.
 	restResponse []byte
 
-	// height stores the latest block height of a
-	// response to a Cosmos SDK status request as a string.
-	// Comes from the `height` field in the `/cosmos/base/node/v1beta1/status` response.
+	// height stores the latest block height from the Cosmos SDK status response.
+	// Parsed from the `height` field in the `/cosmos/base/node/v1beta1/status` response.
 	// Reference: https://docs.cosmos.network/main/core/grpc_rest.html#status
 	height uint64
 }

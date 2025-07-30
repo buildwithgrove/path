@@ -13,7 +13,7 @@ type endpoint struct {
 	invalidResponseLastObserved  *time.Time
 
 	// CosmosSDK-specific checks
-	checkCometBFTStatus endpointCheckCometBFTStatus // Checks chain ID, catching up status, and latest block height via /status
-	checkCometBFTHealth endpointCheckCometBFTHealth // Checks node health via /health
-	checkCosmosStatus   endpointCheckCosmosStatus   // Checks Cosmos SDK status via /status
+	checkCometBFTStatus endpointCheckCometBFTStatus // Checks chain ID, catching up status, and latest block height via JSON-RPC `status`
+	checkCometBFTHealth endpointCheckCometBFTHealth // Checks node health via JSON-RPC `health`
+	checkCosmosStatus   endpointCheckCosmosStatus   // Checks Cosmos SDK status via REST `/cosmos/base/node/v1beta1/status`
 }
