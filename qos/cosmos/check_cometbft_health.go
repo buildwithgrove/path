@@ -9,12 +9,13 @@ import (
 
 /* -------------------- CometBFT Health Check -------------------- */
 
-// ID for the CometBFT health check.
-// This number may be any arbitrary ID and is selected
-// to maintain a convention in the QoS packages of
-// consistent ID for a given check type.
+// CometBFT ID checks begin with 2 for JSON-RPC requests.
 //
-// CometBFT checks begin with 2.
+// This is an arbitrary ID selected by the engineering team at Grove.
+// It is used for compatibility with the JSON-RPC spec.
+// It is a loose convention in the QoS package.
+
+// ID for the CometBFT /health check.
 const idHealthCheck = 2001
 
 // methodHealth is the CometBFT JSON-RPC method for getting the node health.
@@ -44,7 +45,7 @@ type endpointCheckCometBFTHealth struct {
 }
 
 // getRequest returns a JSONRPC request to check if the endpoint is healthy.
-// eg. '{"jsonrpc":"2.0","id":1002,"method":"health"}'
+// eg. '{"jsonrpc":"2.0","id":2001,"method":"health"}'
 //
 // It is called in `request_validator_checks.go` to generate the endpoint checks.
 func (e *endpointCheckCometBFTHealth) getRequest() jsonrpc.Request {

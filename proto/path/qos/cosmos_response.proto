@@ -24,11 +24,15 @@ enum CosmosResponseValidationType {
 
 // CosmosEndpointResponseValidationResult contains the outcome of contacting an endpoint
 message CosmosEndpointResponseValidationResult {
+	// Next free field number: 11
+
+	// CosmosResponseHealth response_health = 5;
+	// CosmosResponseStatus response_status = 6;
+	reserved 5, 6;
+ 	reserved "response_health", "response_status";
+
 	// The type of response expected.
-	// Examples:
-	//   - JSONRPC
-        //   - JSON
-        //   - An integer
+	// Examples: JSONRPC, JSON, integer, etc.
 	CosmosResponseValidationType response_validation_type = 1;
 
 	// HTTP status code returned to the user.
@@ -40,18 +44,10 @@ message CosmosEndpointResponseValidationResult {
 	// This is set if parsing the endpoint response fails.
 	optional CosmosResponseValidationError validation_error = 3;
 
-	// Reserved field numbers from removed fields:
-	// Field 5 was "response_health" - Response to Cosmos request against API path `/health`
-	// Field 6 was "response_status" - Response to Cosmos request against API path `/status`
-	reserved 5, 6;
-	reserved "response_health", "response_status";
-
-        // TODO_IMPROVE(@adshmh, @commoddity): Add other observations (archival, more endpoints, etc)
-        //
-	// The parsed response - JSON, JSONRPC, or any other format, including unstructured.
-	// Tracks details, including the reason for the returned HTTP status code.
+	// The parsed response; JSON, JSONRPC, REST, unstructured, etc..
 	// Only set if validation succeeded.
 	oneof parsed_response {
+		// JSONRPC response
 		JsonRpcResponse response_jsonrpc = 4;
 
 		// For unrecognized responses.
@@ -83,7 +79,7 @@ message CosmosResponseCometBFTStatus {
     string latest_block_height = 3;
 }
 
-// CosmosResponseCosmosSDKStatus stores the response to a CosmosSDK `/status` request
+// CosmosResponseCosmosSDKStatus stores the response to a CosmosSDK `/cosmos/base/node/v1beta1/status` request
 message CosmosResponseCosmosSDKStatus {
     uint64 latest_block_height = 1;
 }

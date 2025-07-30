@@ -15,9 +15,7 @@ import (
 /* -------------------- QoS Endpoint Check Generator -------------------- */
 
 // requestValidator provides the required synthetic QoS checks to the hydrator.
-//
-// This responsibility lies with the request validator because it is the component
-// that generates the request contexts for both JSONRPC and REST requests.
+// It generates requests for both JSONRPC and REST endpoints.
 var _ gateway.QoSEndpointCheckGenerator = &requestValidator{}
 
 // GetRequiredQualityChecks returns the list of quality checks required for an endpoint.
@@ -32,19 +30,15 @@ func (rv *requestValidator) GetRequiredQualityChecks(endpointAddr protocol.Endpo
 	// List of all synthetic QoS checks required for the endpoint.
 	var checks []gateway.RequestQoSContext
 
-	// If the service supports CometBFT, add the CometBFT endpoint checks.
+	// Add CometBFT JSONRPC checks if supported
 	if _, ok := supportedAPIs[sharedtypes.RPCType_COMET_BFT]; ok {
 		checks = append(checks, rv.getCometBFTEndpointChecks(endpoint)...)
 	}
 
-	// If the service supports CosmosSDK, add the CosmosSDK endpoint checks.
+	// Add CosmosSDK REST checks if supported
 	if _, ok := supportedAPIs[sharedtypes.RPCType_REST]; ok {
 		checks = append(checks, rv.getCosmosSDKEndpointChecks(endpoint)...)
 	}
-
-	// TODO_NEXT(@commoddity): Add endpoint checks for EVM JSON-RPC methods (sharedtypes.RPCType_JSON_RPC):
-	//     - `{"jsonrpc":"2.0","method":"eth_chainId","params":[],"id":1}`
-	//     - `{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}`
 
 	return checks
 }
@@ -54,6 +48,7 @@ func (rv *requestValidator) GetRequiredQualityChecks(endpointAddr protocol.Endpo
 func (rv *requestValidator) getCometBFTEndpointChecks(endpoint endpoint) []gateway.RequestQoSContext {
 	checks := []gateway.RequestQoSContext{}
 
+	// CometBFT 'health' method check
 	if rv.shouldCometBFTHealthCheckRun(endpoint.checkCometBFTHealth) {
 		checks = append(checks, rv.getJSONRPCRequestContextFromRequest(
 			sharedtypes.RPCType_COMET_BFT,
@@ -61,6 +56,7 @@ func (rv *requestValidator) getCometBFTEndpointChecks(endpoint endpoint) []gatew
 		))
 	}
 
+	// CometBFT 'status' method check
 	if rv.shouldCometBFTStatusCheckRun(endpoint.checkCometBFTStatus) {
 		checks = append(checks, rv.getJSONRPCRequestContextFromRequest(
 			sharedtypes.RPCType_COMET_BFT,
@@ -111,7 +107,7 @@ func (rv *requestValidator) getJSONRPCRequestContextFromRequest(
 	return context
 }
 
-// TODO_NEXT(@commoddity): Add getRESTRequestContextFromRequest method for generating Cosmos SDK quality checks.
+// getRESTRequestContextFromRequest prepares a gateway request context for a REST QoS endpoint check.
 func (rv *requestValidator) getRESTRequestContextFromRequest(
 	rpcType sharedtypes.RPCType,
 	restReq *http.Request,
