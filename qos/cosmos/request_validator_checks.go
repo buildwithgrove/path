@@ -48,7 +48,7 @@ func (rv *requestValidator) GetRequiredQualityChecks(endpointAddr protocol.Endpo
 func (rv *requestValidator) getCometBFTEndpointChecks(endpoint endpoint) []gateway.RequestQoSContext {
 	checks := []gateway.RequestQoSContext{}
 
-	// CometBFT /health check
+	// CometBFT 'health' method check
 	if rv.shouldCometBFTHealthCheckRun(endpoint.checkCometBFTHealth) {
 		checks = append(checks, rv.getJSONRPCRequestContextFromRequest(
 			sharedtypes.RPCType_COMET_BFT,
