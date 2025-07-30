@@ -71,7 +71,7 @@ type requestContext struct {
 	// - Set by trackRelayMinerError method and used when building observations.
 	currentRelayMinerError *protocolobservations.ShannonRelayMinerError
 
-	// HTTP client used for sending relay requests to endpoints.
+	// HTTP client used for sending relay requests to endpoints while also capturing various debug metrics
 	httpClient *httpClientWithDebugMetrics
 }
 
