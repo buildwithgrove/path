@@ -56,7 +56,7 @@ func (rv *requestValidator) getCometBFTEndpointChecks(endpoint endpoint) []gatew
 		))
 	}
 
-	// CometBFT /status check
+	// CometBFT 'status' method check
 	if rv.shouldCometBFTStatusCheckRun(endpoint.checkCometBFTStatus) {
 		checks = append(checks, rv.getJSONRPCRequestContextFromRequest(
 			sharedtypes.RPCType_COMET_BFT,
