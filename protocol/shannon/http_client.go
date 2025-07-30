@@ -41,16 +41,36 @@ type httpClientWithDebugMetrics struct {
 // requestMetrics holds detailed timing and status information for a single HTTP request
 type requestMetrics struct {
 	startTime      time.Time
-	dnsLookupTime  time.Duration
-	connectTime    time.Duration
-	tlsTime        time.Duration
-	firstByteTime  time.Duration
-	totalTime      time.Duration
-	statusCode     int
-	error          error
+	url            string
 	contextTimeout time.Duration
 	goroutineCount int
-	url            string
+
+	// DNS Resolution
+	dnsLookupTime time.Duration
+
+	// Connection Establishment
+	connectTime      time.Duration
+	connectionReused bool
+	remoteAddr       string
+	localAddr        string
+
+	// TLS Handshake
+	tlsTime time.Duration
+
+	// Connection Acquisition (from pool or new)
+	getConnTime time.Duration
+
+	// Request Writing
+	wroteHeadersTime time.Duration
+	wroteRequestTime time.Duration
+
+	// Response Waiting
+	firstByteTime time.Duration
+
+	// Overall
+	totalTime  time.Duration
+	statusCode int
+	error      error
 }
 
 // newDefaultHTTPClientWithDebugMetrics creates a new HTTP client with optimized transport settings
@@ -186,7 +206,7 @@ func (h *httpClientWithDebugMetrics) setupRequestDebugging(
 	}
 
 	// Create HTTP trace and add to context
-	trace := createHTTPTrace(metrics)
+	trace := createDetailedHTTPTrace(metrics)
 	debugCtx := httptrace.WithClientTrace(ctx, trace)
 
 	// Return recorder function that logs request details.
@@ -230,13 +250,18 @@ func (h *httpClientWithDebugMetrics) readAndValidateResponse(resp *http.Response
 	return responseBody, nil
 }
 
-// createHTTPTrace creates an HTTP trace using the httptrace library:
+// createDetailedHTTPTrace creates comprehensive HTTP tracing using the httptrace library:
 // https://pkg.go.dev/net/http/httptrace
-// The HTTP trace captures timing metrics for each phase of the HTTP request lifecycle.
-func createHTTPTrace(metrics *requestMetrics) *httptrace.ClientTrace {
-	var dnsStart, connectStart, tlsStart time.Time
+// Captures granular timing for every phase of the HTTP request lifecycle to identify bottlenecks.
+func createDetailedHTTPTrace(metrics *requestMetrics) *httptrace.ClientTrace {
+	var (
+		dnsStart, connectStart, tlsStart                   time.Time
+		getConnStart, wroteHeadersStart, wroteRequestStart time.Time
+		waitingForResponseStart                            time.Time
+	)
 
 	return &httptrace.ClientTrace{
+		// DNS Resolution Phase
 		DNSStart: func(info httptrace.DNSStartInfo) {
 			dnsStart = time.Now()
 		},
@@ -245,14 +270,19 @@ func createHTTPTrace(metrics *requestMetrics) *httptrace.ClientTrace {
 				metrics.dnsLookupTime = time.Since(dnsStart)
 			}
 		},
+
+		// Connection Establishment Phase
 		ConnectStart: func(network, addr string) {
 			connectStart = time.Now()
+			metrics.remoteAddr = addr
 		},
 		ConnectDone: func(network, addr string, err error) {
 			if !connectStart.IsZero() {
 				metrics.connectTime = time.Since(connectStart)
 			}
 		},
+
+		// TLS Handshake Phase
 		TLSHandshakeStart: func() {
 			tlsStart = time.Now()
 		},
@@ -261,8 +291,46 @@ func createHTTPTrace(metrics *requestMetrics) *httptrace.ClientTrace {
 				metrics.tlsTime = time.Since(tlsStart)
 			}
 		},
+
+		// Connection Acquisition Phase.
+		// Tracks potential connection pool exhaustion.
+		GetConn: func(hostPort string) {
+			getConnStart = time.Now()
+		},
+		GotConn: func(info httptrace.GotConnInfo) {
+			if !getConnStart.IsZero() {
+				metrics.getConnTime = time.Since(getConnStart)
+			}
+			metrics.connectionReused = info.Reused
+			if info.Conn != nil {
+				metrics.localAddr = info.Conn.LocalAddr().String()
+			}
+		},
+
+		// Request Writing Phase
+		// Tracks potential write delays.
+		WroteHeaders: func() {
+			// Headers written successfully, now writing body
+			wroteHeadersStart = time.Now()
+			if !getConnStart.IsZero() {
+				metrics.wroteHeadersTime = time.Since(getConnStart)
+			}
+			wroteRequestStart = time.Now()
+		},
+		WroteRequest: func(info httptrace.WroteRequestInfo) {
+			// Entire request (headers + body) written successfully
+			if !wroteRequestStart.IsZero() {
+				metrics.wroteRequestTime = time.Since(wroteRequestStart)
+			}
+			// Now waiting for server response
+			waitingForResponseStart = time.Now()
+		},
+
+		// Response Reading Phase
 		GotFirstResponseByte: func() {
-			metrics.firstByteTime = time.Since(metrics.startTime)
+			if !waitingForResponseStart.IsZero() {
+				metrics.firstByteTime = time.Since(waitingForResponseStart)
+			}
 		},
 	}
 }
@@ -270,20 +338,45 @@ func createHTTPTrace(metrics *requestMetrics) *httptrace.ClientTrace {
 // logRequestMetrics logs comprehensive request metrics for debugging failed requests.
 // Only called when a request fails to avoid verbose logging on successful requests.
 func (h *httpClientWithDebugMetrics) logRequestMetrics(logger polylog.Logger, metrics requestMetrics) {
+	// Calculate derived timings for easier analysis
+	connectionEstablishmentTime := metrics.dnsLookupTime + metrics.connectTime + metrics.tlsTime
+	requestTransmissionTime := metrics.wroteHeadersTime + metrics.wroteRequestTime
+
 	// Log detailed failure metrics using the provided structured logger
 	logger.With(
+		// Request identification
 		"http_client_debug_url", metrics.url,
-		"http_client_debug_dns_lookup_ms", metrics.dnsLookupTime.Milliseconds(),
-		"http_client_debug_connect_ms", metrics.connectTime.Milliseconds(),
-		"http_client_debug_tls_ms", metrics.tlsTime.Milliseconds(),
-		"http_client_debug_first_byte_ms", metrics.firstByteTime.Milliseconds(),
 		"http_client_debug_total_ms", metrics.totalTime.Milliseconds(),
-		"http_client_debug_status_code", metrics.statusCode,
 		"http_client_debug_timeout_ms", metrics.contextTimeout.Milliseconds(),
+		"http_client_debug_status_code", metrics.statusCode,
+
+		// Phase 1: DNS Resolution
+		"http_client_debug_dns_lookup_ms", metrics.dnsLookupTime.Milliseconds(),
+
+		// Phase 2: Connection Management
+		"http_client_debug_get_conn_ms", metrics.getConnTime.Milliseconds(), // Time to get connection from pool
+		"http_client_debug_connection_reused", metrics.connectionReused, // Was connection reused?
+		"http_client_debug_connect_ms", metrics.connectTime.Milliseconds(), // TCP connection time (if new)
+		"http_client_debug_tls_ms", metrics.tlsTime.Milliseconds(), // TLS handshake time (if new)
+		"http_client_debug_connection_establishment_ms", connectionEstablishmentTime.Milliseconds(), // Total setup time
+
+		// Phase 3: Request Transmission
+		"http_client_debug_wrote_headers_ms", metrics.wroteHeadersTime.Milliseconds(), // Time to write headers
+		"http_client_debug_wrote_request_ms", metrics.wroteRequestTime.Milliseconds(), // Time to write body
+		"http_client_debug_request_transmission_ms", requestTransmissionTime.Milliseconds(), // Total write time
+
+		// Phase 4: Response Waiting
+		"http_client_debug_first_byte_ms", metrics.firstByteTime.Milliseconds(), // Time waiting for server response
+
+		// Connection details
+		"http_client_debug_remote_addr", metrics.remoteAddr,
+		"http_client_debug_local_addr", metrics.localAddr,
+
+		// System state
 		"http_client_debug_goroutines", metrics.goroutineCount,
 		"http_client_debug_active_requests", h.activeRequests.Load(),
 		"http_client_debug_total_requests", h.totalRequests.Load(),
 		"http_client_debug_timeout_errors", h.timeoutErrors.Load(),
 		"http_client_debug_connection_errors", h.connectionErrors.Load(),
-	).Error().Err(metrics.error).Msg("HTTP request failed - detailed timing breakdown")
+	).Error().Err(metrics.error).Msg("HTTP request failed - detailed phase breakdown for timeout debugging")
 }
