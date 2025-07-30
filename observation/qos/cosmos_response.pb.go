@@ -7,11 +7,12 @@
 package qos
 
 import (
-	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
-	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
+
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
+	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 )
 
 const (
@@ -131,10 +132,7 @@ func (CosmosResponseValidationType) EnumDescriptor() ([]byte, []int) {
 type CosmosEndpointResponseValidationResult struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The type of response expected.
-	// Examples:
-	//   - JSONRPC
-	//   - JSON
-	//   - An integer
+	// Examples: JSONRPC, JSON, integer, etc.
 	ResponseValidationType CosmosResponseValidationType `protobuf:"varint,1,opt,name=response_validation_type,json=responseValidationType,proto3,enum=path.qos.CosmosResponseValidationType" json:"response_validation_type,omitempty"`
 	// HTTP status code returned to the user.
 	// It is derived from the endpoint response payload and/or HTTP status code.
@@ -143,10 +141,7 @@ type CosmosEndpointResponseValidationResult struct {
 	// Validation error, if any.
 	// This is set if parsing the endpoint response fails.
 	ValidationError *CosmosResponseValidationError `protobuf:"varint,3,opt,name=validation_error,json=validationError,proto3,enum=path.qos.CosmosResponseValidationError,oneof" json:"validation_error,omitempty"`
-	// TODO_IMPROVE(@adshmh, @commoddity): Add other observations (archival, more endpoints, etc)
-	//
-	// The parsed response - JSON, JSONRPC, or any other format, including unstructured.
-	// Tracks details, including the reason for the returned HTTP status code.
+	// The parsed response; JSON, JSONRPC, REST, unstructured, etc..
 	// Only set if validation succeeded.
 	//
 	// Types that are valid to be assigned to ParsedResponse:
@@ -269,6 +264,7 @@ type isCosmosEndpointResponseValidationResult_ParsedResponse interface {
 }
 
 type CosmosEndpointResponseValidationResult_ResponseJsonrpc struct {
+	// JSONRPC response
 	ResponseJsonrpc *JsonRpcResponse `protobuf:"bytes,4,opt,name=response_jsonrpc,json=responseJsonrpc,proto3,oneof"`
 }
 
@@ -416,7 +412,7 @@ func (x *CosmosResponseCometBFTStatus) GetLatestBlockHeight() string {
 	return ""
 }
 
-// CosmosResponseCosmosSDKStatus stores the response to a CosmosSDK `/status` request
+// CosmosResponseCosmosSDKStatus stores the response to a CosmosSDK `/cosmos/base/node/v1beta1/status` request
 type CosmosResponseCosmosSDKStatus struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
 	LatestBlockHeight uint64                 `protobuf:"varint,1,opt,name=latest_block_height,json=latestBlockHeight,proto3" json:"latest_block_height,omitempty"`

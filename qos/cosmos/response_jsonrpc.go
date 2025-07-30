@@ -30,7 +30,7 @@ const (
 type jsonrpcResponseValidator func(polylog.Logger, jsonrpc.Response) response
 
 var (
-	// All response types must implement the response interface.
+	// All response types must implement the response validator interface.
 	_ jsonrpcResponseValidator = responseValidatorCometBFTHealth
 	_ jsonrpcResponseValidator = responseValidatorCometBFTStatus
 

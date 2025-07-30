@@ -6,9 +6,10 @@ import (
 	"math/rand"
 	"time"
 
+	sharedtypes "github.com/pokt-network/poktroll/x/shared/types"
+
 	"github.com/buildwithgrove/path/protocol"
 	"github.com/buildwithgrove/path/qos/selector"
-	sharedtypes "github.com/pokt-network/poktroll/x/shared/types"
 )
 
 var (
@@ -187,10 +188,10 @@ func (ss *serviceState) basicEndpointValidation(endpoint endpoint) error {
 	return nil
 }
 
-// validateEndpointCometBFTChecks validates the endpoint's CometBFT checks.
-// Checks:
-//   - Health status
-//   - Status information
+// validateEndpointCometBFTChecks validates the endpoint's CometBFT checks:
+// - Health status via `/health` endpoint
+// - Chain ID and sync status via `/status` endpoint
+// - Block height within acceptable sync tolerance
 func (ss *serviceState) validateEndpointCometBFTChecks(endpoint endpoint) error {
 	// Check if the endpoint's health status is valid.
 	if err := ss.isCometBFTHealthValid(endpoint.checkCometBFTHealth); err != nil {

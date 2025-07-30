@@ -1,15 +1,16 @@
 package cosmos
 
 import (
-	"github.com/buildwithgrove/path/qos/jsonrpc"
 	"github.com/pokt-network/poktroll/pkg/polylog"
+
+	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
 
 var (
 	// CosmosSDK response IDs for different request types:
-	// - REST-like responses: -1
-	// TODO_NEXT(@adshmh): Use proper JSON-RPC ID response validation that works for all CosmosSDK chains.
-	restLikeResponseID = jsonrpc.IDFromInt(-1)
+	// * JSON-RPC id for REST responses: -1
+	// TODO_NEXT(@adshmh): Use proper JSON-RPC ID response validation that works for all Cosmos SDK chains.
+	jsonRPCIdForRESTResponses = jsonrpc.IDFromInt(-1)
 )
 
 // unmarshalRESTRequestEndpointResponse routes REST endpoint responses to appropriate validators.
@@ -26,14 +27,12 @@ func unmarshalRESTRequestEndpointResponse(
 
 	// CometBFT /status endpoint returns a JSONRPC response.
 	// Reference: https://docs.cometbft.com/v1.0/spec/rpc/#status
+	// TODO_TECHDEBT(@adshmh): Refactor to properly separate response validation functionality shared between REST and JSONRPC.
 	case "/status":
-		// TODO_TECHDEBT(@adshmh): Refactor to properly separate response validation functionality shared between REST and JSONRPC.
-		//
 		// Build a JSONRPC request with the correct method and ID to use JSONRPC validator.
 		// `/status` returns a JSONRPC response.
 		jsonrpcReq := jsonrpc.Request{
-			// Use -1 as Response
-			ID:     restLikeResponseID,
+			ID:     jsonRPCIdForRESTResponses,
 			Method: "status",
 		}
 		return unmarshalJSONRPCRequestEndpointResponse(logger, jsonrpcReq, endpointResponseBz)
@@ -42,11 +41,8 @@ func unmarshalRESTRequestEndpointResponse(
 	// Reference: https://docs.cometbft.com/v1.0/spec/rpc/#health
 	case "/health":
 		// TODO_TECHDEBT(@adshmh): Refactor to properly separate response validation functionality shared between REST and JSONRPC.
-		//
-		// Build a JSONRPC request with the correct method and ID to use JSONRPC validator.
 		jsonrpcReq := jsonrpc.Request{
-			// Use -1 as Response
-			ID:     restLikeResponseID,
+			ID:     jsonRPCIdForRESTResponses,
 			Method: "health",
 		}
 		return unmarshalJSONRPCRequestEndpointResponse(logger, jsonrpcReq, endpointResponseBz)
