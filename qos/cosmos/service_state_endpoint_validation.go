@@ -22,10 +22,10 @@ var (
 //   - An invalid response.
 //
 // CometBFT-specific checks if the endpoint has recently returned:
-//   - /status - invalid chain ID
-//   - /status - catching up
-//   - /status - block height outside sync allowance
-//   - /health - unhealthy
+//   - 'status' - invalid chain ID
+//   - 'status' - catching up
+//   - 'status' - block height outside sync allowance
+//   - 'health' - unhealthy
 //
 // CosmosSDK-specific checks if the endpoint has recently returned:
 //   - /cosmos/base/node/v1beta1/status - block height outside sync allowance
