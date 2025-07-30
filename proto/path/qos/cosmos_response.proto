@@ -30,15 +30,21 @@ message CosmosEndpointResponseValidationResult {
         //   - JSON
         //   - An integer
 	CosmosResponseValidationType response_validation_type = 1;
-	
+
 	// HTTP status code returned to the user.
 	// It is derived from the endpoint response payload and/or HTTP status code.
 	// e.g. for JSONRPC, it is based on the error code of the JSONRPC response.
 	int32 http_status_code = 2;
-	
+
 	// Validation error, if any.
 	// This is set if parsing the endpoint response fails.
 	optional CosmosResponseValidationError validation_error = 3;
+
+	// Reserved field numbers from removed fields:
+	// Field 5 was "response_health" - Response to Cosmos request against API path `/health`
+	// Field 6 was "response_status" - Response to Cosmos request against API path `/status`
+	reserved 5, 6;
+	reserved "response_health", "response_status";
 
         // TODO_IMPROVE(@adshmh, @commoddity): Add other observations (archival, more endpoints, etc)
         //
@@ -48,21 +54,25 @@ message CosmosEndpointResponseValidationResult {
 	oneof parsed_response {
 		JsonRpcResponse response_jsonrpc = 4;
 
-		// Response to CometBFT request using method `health`
-		CosmosResponseCometBFTHealth response_comet_bft_health = 5;
-
-		// Response to CometBFT request using method `status`
-		CosmosResponseCometBFTStatus response_comet_bft_status = 6;
-
-		// Response to CosmosSDK request against API path `/cosmos/base/node/v1beta1/status`
-		CosmosResponseCosmosSDKStatus response_cosmos_sdk_status = 7;
-
-		// Response to Ethereum JSONRPC request using method `eth_chainId`
-		CosmosResponseEVMJSONRPCChainID response_evm_jsonrpc_chain_id = 8;
-		
 		// For unrecognized responses.
 		// These are returned as-is to the user.
-		UnrecognizedResponse response_unrecognized = 9;
+		UnrecognizedResponse response_unrecognized = 7;
+
+		// Response to CometBFT request using method `health`
+		// Reference: https://docs.cometbft.com/v1.0/spec/rpc/#health
+		CosmosResponseCometBFTHealth response_comet_bft_health = 8;
+
+		// Response to CometBFT request using method `status`
+		// Reference: https://docs.cometbft.com/v1.0/spec/rpc/#status
+		CosmosResponseCometBFTStatus response_comet_bft_status = 9;
+
+		// Response to CosmosSDK request against API path `/cosmos/base/node/v1beta1/status`
+		// Reference: https://docs.cosmos.network/api#tag/Service/operation/Status
+		CosmosResponseCosmosSDKStatus response_cosmos_sdk_status = 10;
+
+		// Response to Ethereum JSONRPC request using method `eth_chainId`
+		// Reference: https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_chainid
+		CosmosResponseEVMJSONRPCChainID response_evm_jsonrpc_chain_id = 11;
 	}
 }
 
