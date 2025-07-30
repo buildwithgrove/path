@@ -123,7 +123,7 @@ func (h *httpClientWithDebugMetrics) SendHTTPRelay(
 	headers map[string]string,
 ) ([]byte, error) {
 	// Set up debugging context and logging function
-	debugCtx, recordRequest := h.setupRequestDebugging(ctx, logger, endpointURL)
+	debugCtx, requestRecorder := h.setupRequestDebugging(ctx, logger, endpointURL)
 
 	var requestErr error
 	defer func() {
