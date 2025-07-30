@@ -255,9 +255,9 @@ func (h *httpClientWithDebugMetrics) readAndValidateResponse(resp *http.Response
 // Captures granular timing for every phase of the HTTP request lifecycle to identify bottlenecks.
 func createDetailedHTTPTrace(metrics *requestMetrics) *httptrace.ClientTrace {
 	var (
-		dnsStart, connectStart, tlsStart                   time.Time
-		getConnStart, wroteHeadersStart, wroteRequestStart time.Time
-		waitingForResponseStart                            time.Time
+		dnsStart, connectStart, tlsStart time.Time
+		getConnStart, wroteRequestStart  time.Time
+		waitingForResponseStart          time.Time
 	)
 
 	return &httptrace.ClientTrace{
@@ -292,8 +292,8 @@ func createDetailedHTTPTrace(metrics *requestMetrics) *httptrace.ClientTrace {
 			}
 		},
 
-		// Connection Acquisition Phase.
-		// Tracks potential connection pool exhaustion.
+		// Connection Acquisition Phase
+		// Tracks potential connection pool exhaustions.
 		GetConn: func(hostPort string) {
 			getConnStart = time.Now()
 		},
@@ -310,11 +310,11 @@ func createDetailedHTTPTrace(metrics *requestMetrics) *httptrace.ClientTrace {
 		// Request Writing Phase
 		// Tracks potential write delays.
 		WroteHeaders: func() {
-			// Headers written successfully, now writing body
-			wroteHeadersStart = time.Now()
+			// Headers written successfully, time from connection acquisition to headers completion
 			if !getConnStart.IsZero() {
 				metrics.wroteHeadersTime = time.Since(getConnStart)
 			}
+			// Start timing request body writing
 			wroteRequestStart = time.Now()
 		},
 		WroteRequest: func(info httptrace.WroteRequestInfo) {
