@@ -38,7 +38,7 @@ type httpClientWithDebugMetrics struct {
 	connectionErrors atomic.Uint64
 }
 
-// requestMetrics holds detailed timing and status information for a single HTTP request
+// httpRequestMetrics holds detailed timing and status information for a single HTTP request
 type requestMetrics struct {
 	startTime      time.Time
 	url            string
