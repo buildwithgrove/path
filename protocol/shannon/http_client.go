@@ -21,7 +21,7 @@ import (
 // Maximum length of an HTTP response's body.
 const maxResponseSize = 100 * 1024 * 1024 // 100MB limit
 
-// httpClientWithDebugMetrics provides HTTP client functionality with debugging functionality.
+// httpClientWithDebugMetrics provides HTTP client functionality with embedded tracking of debug metrics.
 // It includes things like:
 // - Built-in request debugging
 // - Metrics collection
