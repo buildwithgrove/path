@@ -23,6 +23,9 @@ func unmarshalRESTRequestEndpointResponse(
 ) response {
 	// Route to specific unmarshalers based on endpoint path
 	switch requestPath {
+
+	// CometBFT /status endpoint returns a JSONRPC response.
+	// Reference: https://docs.cometbft.com/v1.0/spec/rpc/#status
 	case "/status":
 		// TODO_TECHDEBT(@adshmh): Refactor to properly separate response validation functionality shared between REST and JSONRPC.
 		//
@@ -35,6 +38,8 @@ func unmarshalRESTRequestEndpointResponse(
 		}
 		return unmarshalJSONRPCRequestEndpointResponse(logger, jsonrpcReq, endpointResponseBz)
 
+	// CometBFT /health endpoint returns a JSONRPC response.
+	// Reference: https://docs.cometbft.com/v1.0/spec/rpc/#health
 	case "/health":
 		// TODO_TECHDEBT(@adshmh): Refactor to properly separate response validation functionality shared between REST and JSONRPC.
 		//
@@ -46,21 +51,21 @@ func unmarshalRESTRequestEndpointResponse(
 		}
 		return unmarshalJSONRPCRequestEndpointResponse(logger, jsonrpcReq, endpointResponseBz)
 
-	// Cosmos SDK /cosmos/base/node/v1beta1/status endpoint returns a JSON response.
+	// Cosmos SDK /cosmos/base/node/v1beta1/status endpoint returns a REST JSON response.
+	// Reference: https://docs.cosmos.network/api#tag/Service/operation/Status
 	case apiPathCosmosStatus:
 		response, err := responseValidatorCosmosStatus(logger, endpointResponseBz)
 		if err != nil {
-			jsonrpcReq := jsonrpc.Request{
-				// Use nil ID for CosmosSDK JSONRPC responses.
-				ID:     jsonrpc.ID{},
-				Method: apiPathCosmosStatus,
+			// For Cosmos SDK status endpoint, return a generic response if the response is not valid.
+			return responseRESTUnrecognized{
+				logger:             logger,
+				endpointResponseBz: endpointResponseBz,
 			}
-			return unmarshalJSONRPCRequestEndpointResponse(logger, jsonrpcReq, endpointResponseBz)
 		}
 		return response
 
 	default:
-		// For unrecognized endpoints, use the generic unmarshaler
+		// For unrecognized endpoints, return a generic response.
 		return responseRESTUnrecognized{
 			logger:             logger,
 			endpointResponseBz: endpointResponseBz,

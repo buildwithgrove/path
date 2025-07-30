@@ -3,6 +3,8 @@ package noop
 import (
 	"net/http"
 
+	sharedtypes "github.com/pokt-network/poktroll/x/shared/types"
+
 	"github.com/buildwithgrove/path/gateway"
 	qosobservations "github.com/buildwithgrove/path/observation/qos"
 	"github.com/buildwithgrove/path/protocol"
@@ -55,7 +57,10 @@ func (rc *requestContext) GetServicePayload() protocol.Payload {
 	payload := protocol.Payload{
 		Data:            string(rc.httpRequestBody),
 		Method:          rc.httpRequestMethod,
+		Path:            "", // set below
+		Headers:         map[string]string{},
 		TimeoutMillisec: rc.endpointResponseTimeoutMillisec,
+		RPCType:         sharedtypes.RPCType_UNKNOWN_RPC,
 	}
 	if rc.httpRequestPath != "" {
 		payload.Path = rc.httpRequestPath

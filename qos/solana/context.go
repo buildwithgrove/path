@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
+	sharedtypes "github.com/pokt-network/poktroll/x/shared/types"
 
 	"github.com/buildwithgrove/path/gateway"
 	qosobservations "github.com/buildwithgrove/path/observation/qos"
@@ -15,8 +16,8 @@ import (
 )
 
 const (
-	// The default timeout when sending a request to
-	// a Solana blockchain endpoint.
+	// defaultServiceRequestTimeoutMillisec is the default timeout when sending a request to a Solana blockchain endpoint.
+	// TODO_IMPROVE(@adshmh): Support method level specific timeouts and allow the user to configure them.
 	defaultServiceRequestTimeoutMillisec = 15_000
 )
 
@@ -80,23 +81,17 @@ type requestContext struct {
 func (rc requestContext) GetServicePayload() protocol.Payload {
 	reqBz, err := json.Marshal(rc.JSONRPCReq)
 	if err != nil {
-		// TODO_MVP(@adshmh): find a way to guarantee this never happens,
-		// e.g. by storing the serialized form of the JSONRPC request
-		// at the time of creating the request context.
-		return protocol.Payload{}
+		rc.logger.Error().Err(err).Msg("SHOULD RARELY HAPPEN: requestContext.GetServicePayload() should never fail marshaling the JSONRPC request.")
+		return protocol.EmptyErrorPayload()
 	}
 
 	return protocol.Payload{
-		Data: string(reqBz),
-		// Method is alway POST for Solana.
-		Method: http.MethodPost,
-
-		// Path field is not used for Solana.
-
-		// TODO_IMPROVE: adjust the timeout based on the request method:
-		// An endpoint may need more time to process certain requests,
-		// as indicated by the request's method and/or parameters.
+		Data:            string(reqBz),
+		Method:          http.MethodPost, // Method is alway POST for Solana.
+		Path:            "",              // Path field is not used for Solana.
+		Headers:         map[string]string{},
 		TimeoutMillisec: defaultServiceRequestTimeoutMillisec,
+		RPCType:         sharedtypes.RPCType_JSON_RPC,
 	}
 }
 
