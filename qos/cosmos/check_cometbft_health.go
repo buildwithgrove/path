@@ -9,48 +9,56 @@ import (
 
 /* -------------------- CometBFT Health Check -------------------- */
 
-const idHealthCheck = 1002
+// ID for the CometBFT health check.
+// This number may be any arbitrary ID and is selected
+// to maintain a convention in the QoS packages of
+// consistent ID for a given check type.
+//
+// CometBFT checks begin with 2.
+const idCometBFTHealthCheck = 2001
 
 // methodHealth is the CometBFT JSON-RPC method for getting the node health.
 // Reference: https://docs.cometbft.com/v1.0/spec/rpc/#health
-const methodHealth = jsonrpc.Method("health")
+const methodCometBFTHealth = jsonrpc.Method("health")
 
 // TODO_IMPROVE(@commoddity): determine an appropriate interval for checking the health.
 const checkHealthInterval = 30 * time.Second
 
 var (
-	errNoHealthObs      = fmt.Errorf("endpoint has not had an observation of its response to a %q request", methodHealth)
-	errInvalidHealthObs = fmt.Errorf("endpoint returned an invalid response to a %q request", methodHealth)
+	errNoCometBFTHealthObs      = fmt.Errorf("endpoint has not had an observation of its response to a CometBFT '%q' request", methodCometBFTHealth)
+	errInvalidCometBFTHealthObs = fmt.Errorf("endpoint returned an invalid response to a CometBFT '%q' request", methodCometBFTHealth)
 )
 
-// endpointCheckHealth is a check that ensures the endpoint's health status is valid.
+// endpointCheckHealth is a check that ensures the endpoint is healthy.
 // It is used to verify the endpoint is healthy and responding to requests.
 //
 // Note that this check has an expiry as health checks should be performed periodically
 // to ensure the endpoint remains responsive.
 type endpointCheckCometBFTHealth struct {
-	// healthy stores the health status from the endpoint's response to a `status` request.
-	// It is nil if there has NOT been an observation of the endpoint's response to a `status` request.
+	// healthy stores the health status from the endpoint's response to a `health` request.
+	// It is nil if there has NOT been an observation of the endpoint's response to a `health` request.
 	healthy *bool
 
 	// expiresAt stores the time at which the last check expires.
 	expiresAt time.Time
 }
 
-// getRequest returns a JSONRPC request to check the health/status.
+// getRequest returns a JSONRPC request to check if the endpoint is healthy.
 // eg. '{"jsonrpc":"2.0","id":1002,"method":"health"}'
+//
+// It is called in `request_validator_checks.go` to generate the endpoint checks.
 func (e *endpointCheckCometBFTHealth) getRequest() jsonrpc.Request {
 	return jsonrpc.Request{
 		JSONRPC: jsonrpc.Version2,
-		ID:      jsonrpc.IDFromInt(idHealthCheck),
-		Method:  jsonrpc.Method(methodHealth),
+		ID:      jsonrpc.IDFromInt(idCometBFTHealthCheck),
+		Method:  jsonrpc.Method(methodCometBFTHealth),
 	}
 }
 
 // GetHealthy returns the parsed health status for the endpoint.
 func (e *endpointCheckCometBFTHealth) GetHealthy() (bool, error) {
 	if e.healthy == nil {
-		return false, errNoHealthObs
+		return false, errNoCometBFTHealthObs
 	}
 	return *e.healthy, nil
 }

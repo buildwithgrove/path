@@ -6,6 +6,12 @@ import (
 	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
 
+// ID for the block number check.
+// This number may be any arbitrary ID and is selected
+// to maintain a convention in the QoS packages of
+// consistent ID for a given check type.
+//
+// EVM checks begin with 1.
 const idBlockNumberCheck = 1002
 
 // methodBlockNumber is the JSON-RPC method for getting the latest block number.

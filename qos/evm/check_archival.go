@@ -7,6 +7,12 @@ import (
 	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
 
+// ID for the archival check.
+// This number may be any arbitrary ID and is selected
+// to maintain a convention in the QoS packages of
+// consistent ID for a given check type.
+//
+// EVM checks begin with 1.
 const idArchivalCheck = 1003
 
 // methodGetBalance is the JSON-RPC method for getting the balance of an account at a specific block number.

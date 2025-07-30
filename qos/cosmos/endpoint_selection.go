@@ -221,11 +221,11 @@ func (ss *serviceState) validateEndpointCometBFTChecks(endpoint endpoint) error 
 func (ss *serviceState) isCometBFTHealthValid(check endpointCheckCometBFTHealth) error {
 	healthy, err := check.GetHealthy()
 	if err != nil {
-		return fmt.Errorf("%w: %v", errNoHealthObs, err)
+		return fmt.Errorf("%w: %v", errNoCometBFTHealthObs, err)
 	}
 
 	if !healthy {
-		return fmt.Errorf("%w: endpoint reported unhealthy status", errInvalidHealthObs)
+		return fmt.Errorf("%w: endpoint reported unhealthy status", errInvalidCometBFTHealthObs)
 	}
 
 	return nil
