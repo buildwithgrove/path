@@ -39,7 +39,7 @@ type httpClientWithDebugMetrics struct {
 }
 
 // httpRequestMetrics holds detailed timing and status information for a single HTTP request
-type requestMetrics struct {
+type httpRequestMetrics struct {
 	startTime      time.Time
 	url            string
 	contextTimeout time.Duration
