@@ -17,7 +17,7 @@ var _ response = responseToBlockNumber{}
 // to the returned struct.
 func responseUnmarshallerBlockNumber(
 	logger polylog.Logger,
-	jsonrpcReq jsonrpc.Request,
+	_ jsonrpc.Request,
 	jsonrpcResp jsonrpc.Response,
 ) (response, error) {
 	// The endpoint returned an error: no need to do further processing of the response.

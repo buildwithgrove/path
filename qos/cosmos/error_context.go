@@ -79,9 +79,9 @@ func (ec *errorContext) GetObservations() qosobservations.Observations {
 // GetServicePayload should never be called.
 // It logs a warning and returns nil.
 // Implements the gateway.RequestQoSContext interface.
-func (ec *errorContext) GetServicePayload() protocol.Payload {
-	ec.logger.Warn().Msg("SHOULD NEVER HAPPEN: errorContext.GetServicePayload() should never be called.")
-	return protocol.EmptyErrorPayload()
+func (ec *errorContext) GetServicePayloads() []protocol.Payload {
+	ec.logger.Warn().Msg("SHOULD NEVER HAPPEN: errorContext.GetServicePayloads() should never be called.")
+	return []protocol.Payload{protocol.EmptyErrorPayload()}
 }
 
 // UpdateWithResponse should never be called.

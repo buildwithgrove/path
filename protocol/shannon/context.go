@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -25,6 +26,10 @@ import (
 
 // Maximum endpoint payload length for error logging (100 chars)
 const maxEndpointPayloadLenForLogging = 100
+
+// Minimum number of payloads to trigger batch processing
+// For fewer payloads, single request processing is used for better performance
+const minPayloadsForBatchProcessing = 2
 
 // requestContext provides all the functionality required by the gateway package
 // for handling a single service request.
@@ -77,15 +82,129 @@ type requestContext struct {
 
 // HandleServiceRequest:
 // - Satisfies gateway.ProtocolRequestContext interface.
-// - Uses supplied payload to send a relay request to an endpoint.
-// - Verifies and returns the response.
+// - Uses supplied payloads to send relay requests to an endpoint.
+// - Handles both single requests and JSON-RPC batch requests concurrently when beneficial.
+// - Returns responses as an array to match interface, but gateway currently expects single response.
 // - Captures RelayMinerError data when available for reporting purposes.
-func (rc *requestContext) HandleServiceRequest(payload protocol.Payload) (protocol.Response, error) {
+func (rc *requestContext) HandleServiceRequest(payloads []protocol.Payload) ([]protocol.Response, error) {
 	// Internal error: No endpoint selected.
 	if rc.selectedEndpoint == nil {
-		return rc.handleInternalError(fmt.Errorf("HandleServiceRequest: no endpoint has been selected on service %s", rc.serviceID))
+		response, err := rc.handleInternalError(fmt.Errorf("HandleServiceRequest: no endpoint has been selected on service %s", rc.serviceID))
+		return []protocol.Response{response}, err
 	}
 
+	// Handle empty payloads.
+	if len(payloads) == 0 {
+		response, err := rc.handleInternalError(fmt.Errorf("HandleServiceRequest: no payloads provided for service %s", rc.serviceID))
+		return []protocol.Response{response}, err
+	}
+
+	// For single payload, handle directly without additional overhead.
+	if len(payloads) == 1 {
+		response, err := rc.sendSingleRelay(payloads[0])
+		return []protocol.Response{response}, err
+	}
+
+	// For multiple payloads, decide whether to use batch processing.
+	// Use batch processing only when we have enough payloads to benefit from concurrency.
+	if len(payloads) >= minPayloadsForBatchProcessing {
+		return rc.sendBatchRelays(payloads)
+	}
+
+	// For fewer payloads, process sequentially to avoid goroutine overhead.
+	return rc.sendSequentialRelays(payloads)
+}
+
+// sendBatchRelays:
+// - Sends multiple relay requests concurrently to the selected endpoint.
+// - Handles JSON-RPC batch requests and returns individual responses.
+// - Uses goroutines for concurrent processing while maintaining response order.
+// - Returns all responses as separate entries in the response array.
+func (rc *requestContext) sendBatchRelays(payloads []protocol.Payload) ([]protocol.Response, error) {
+
+	// Create channels for collecting results.
+	resultChan := make(chan relayResult, len(payloads))
+	var wg sync.WaitGroup
+
+	// Record batch start time.
+	batchStartTime := time.Now()
+
+	// Launch goroutines for each payload.
+	for i, payload := range payloads {
+		wg.Add(1)
+		go func(index int, p protocol.Payload) {
+			defer wg.Done()
+
+			response, err := rc.sendSingleRelay(p)
+
+			resultChan <- relayResult{
+				index:    index,
+				response: response,
+				err:      err,
+			}
+		}(i, payload)
+	}
+
+	// Wait for all goroutines to complete.
+	wg.Wait()
+	close(resultChan)
+
+	// Collect results in order.
+	results := make([]relayResult, len(payloads))
+	for result := range resultChan {
+		results[result.index] = result
+	}
+
+	// Log batch completion for debugging.
+	rc.logger.Debug().
+		Int("batch_size", len(payloads)).
+		Dur("batch_duration", time.Since(batchStartTime)).
+		Msg("Concurrent batch relay processing completed")
+
+	// Convert results to response array and return first error if any.
+	return rc.convertResultsToResponses(results)
+}
+
+// sendSequentialRelays:
+// - Sends multiple relay requests sequentially to the selected endpoint.
+// - Used for smaller batch sizes where goroutine overhead exceeds benefits.
+// - Returns individual responses as separate entries in the response array.
+func (rc *requestContext) sendSequentialRelays(payloads []protocol.Payload) ([]protocol.Response, error) {
+	// Record batch start time.
+	batchStartTime := time.Now()
+
+	// Process payloads sequentially.
+	results := make([]relayResult, len(payloads))
+	for i, payload := range payloads {
+		response, err := rc.sendSingleRelay(payload)
+		results[i] = relayResult{
+			index:    i,
+			response: response,
+			err:      err,
+		}
+	}
+
+	// Log batch completion for debugging.
+	rc.logger.Debug().
+		Int("batch_size", len(payloads)).
+		Dur("batch_duration", time.Since(batchStartTime)).
+		Msg("Sequential batch relay processing completed")
+
+	// Convert results to response array and return first error if any.
+	return rc.convertResultsToResponses(results)
+}
+
+// relayResult holds the result of a single relay request for batch processing.
+type relayResult struct {
+	index    int
+	response protocol.Response
+	err      error
+}
+
+// sendSingleRelay:
+// - Handles a single relay request with full error handling and observation tracking.
+// - Extracted from original HandleServiceRequest logic for reuse in batch processing.
+func (rc *requestContext) sendSingleRelay(payload protocol.Payload) (protocol.Response, error) {
 	// Record endpoint query time.
 	endpointQueryTime := time.Now()
 
@@ -114,6 +233,38 @@ func (rc *requestContext) HandleServiceRequest(payload protocol.Payload) (protoc
 	// - Return response received from endpoint.
 	err = rc.handleEndpointSuccess(endpointQueryTime, &relayResponse)
 	return relayResponse, err
+}
+
+// convertResultsToResponses:
+// - Converts relay results into an array of protocol responses.
+// - Maintains the order of responses to match the order of input payloads.
+// - Returns the first error encountered, or nil if all succeeded.
+func (rc *requestContext) convertResultsToResponses(results []relayResult) ([]protocol.Response, error) {
+	if len(results) == 0 {
+		response, err := rc.handleInternalError(fmt.Errorf("convertResultsToResponses: no results to convert"))
+		return []protocol.Response{response}, err
+	}
+
+	// Create response array in the same order as input payloads.
+	responses := make([]protocol.Response, len(results))
+	var firstErr error
+
+	// Process results in order.
+	for i, result := range results {
+		responses[i] = result.response
+
+		// Track the first error encountered.
+		if result.err != nil && firstErr == nil {
+			firstErr = result.err
+		}
+	}
+
+	rc.logger.Debug().
+		Int("num_responses", len(responses)).
+		Bool("has_errors", firstErr != nil).
+		Msg("Response conversion completed")
+
+	return responses, firstErr
 }
 
 // HandleWebsocketRequest:

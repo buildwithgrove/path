@@ -18,7 +18,7 @@ var _ response = responseToChainID{}
 // adding any encountered errors to the returned struct for constructing a response payload.
 func responseUnmarshallerChainID(
 	logger polylog.Logger,
-	jsonrpcReq jsonrpc.Request,
+	_ jsonrpc.Request,
 	jsonrpcResp jsonrpc.Response,
 ) (response, error) {
 	// The endpoint returned an error: no need to do further processing of the response.

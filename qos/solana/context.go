@@ -76,16 +76,17 @@ type requestContext struct {
 	endpointResponses []endpointResponse
 }
 
+// TODO_IN_THIS_PR: handle batch requests for Solana
 // TODO_MVP(@adshmh): Ensure the JSONRPC request struct
 // can handle all valid service requests.
-func (rc requestContext) GetServicePayload() protocol.Payload {
+func (rc requestContext) GetServicePayloads() []protocol.Payload {
 	reqBz, err := json.Marshal(rc.JSONRPCReq)
 	if err != nil {
 		rc.logger.Error().Err(err).Msg("SHOULD RARELY HAPPEN: requestContext.GetServicePayload() should never fail marshaling the JSONRPC request.")
-		return protocol.EmptyErrorPayload()
+		return []protocol.Payload{protocol.EmptyErrorPayload()}
 	}
 
-	return protocol.Payload{
+	payload := protocol.Payload{
 		Data:            string(reqBz),
 		Method:          http.MethodPost, // Method is alway POST for Solana.
 		Path:            "",              // Path field is not used for Solana.
@@ -93,6 +94,8 @@ func (rc requestContext) GetServicePayload() protocol.Payload {
 		TimeoutMillisec: defaultServiceRequestTimeoutMillisec,
 		RPCType:         sharedtypes.RPCType_JSON_RPC,
 	}
+
+	return []protocol.Payload{payload}
 }
 
 // UpdateWithResponse is NOT safe for concurrent use
