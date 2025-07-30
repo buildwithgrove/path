@@ -69,6 +69,9 @@ type requestContext struct {
 	// - Tracks RelayMinerError data from the current relay response for reporting.
 	// - Set by trackRelayMinerError method and used when building observations.
 	currentRelayMinerError *protocolobservations.ShannonRelayMinerError
+
+	// HTTP client used for sending relay requests to endpoints while also capturing various debug metrics
+	httpClient *httpClientWithDebugMetrics
 }
 
 // HandleServiceRequest:
@@ -247,7 +250,14 @@ func (rc *requestContext) sendRelay(payload protocol.Payload) (*servicetypes.Rel
 	headers := buildHeaders(payload)
 
 	// Send the HTTP relay request
-	httpRelayResponseBz, err := sendHttpRelay(ctxWithTimeout, rc.selectedEndpoint.url, signedRelayReq, headers)
+	httpRelayResponseBz, err := rc.httpClient.SendHTTPRelay(
+		ctxWithTimeout,
+		hydratedLogger,
+		rc.selectedEndpoint.url,
+		signedRelayReq,
+		headers,
+	)
+
 	if err != nil {
 		// Endpoint failed to respond before the timeout expires.
 		// Wrap the net/http error with our classification error

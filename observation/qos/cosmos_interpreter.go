@@ -20,7 +20,7 @@ func (i *CosmosSDKObservationInterpreter) GetCosmosSdkChainID() string {
 		i.Logger.ProbabilisticDebugInfo(polylog.ProbabilisticDebugInfoProb).Msg("SHOULD RARELY HAPPEN: Cannot get Cosmos SDK chain ID: nil observations")
 		return ""
 	}
-	return i.Observations.CosmosSdkChainId
+	return i.Observations.ChainId
 }
 
 // GetEVMChainID returns the EVM chain identifier from observations.

@@ -36,8 +36,7 @@ type endpointCheckCosmosStatus struct {
 // It is called in `request_validator_checks.go` to generate the endpoint checks.
 func (e *endpointCheckCosmosStatus) getRequest() *http.Request {
 	// Create URL with just the path component.
-	// No need to check the errors here as the `apiPathCosmosStatus`
-	// is a constant and guaranteed to be valid.
+	// Ignoring errors because `apiPathCosmosStatus` is a constant.
 	url, _ := url.Parse(apiPathCosmosStatus)
 	req, _ := http.NewRequestWithContext(context.Background(), http.MethodGet, "", nil)
 	req.URL = url // Set the URL to the parsed path.

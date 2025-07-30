@@ -7,12 +7,13 @@ import (
 	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
 
-// ID for the archival check.
-// This number may be any arbitrary ID and is selected
-// to maintain a convention in the QoS packages of
-// consistent ID for a given check type.
+// EVM checks begin with 1 for JSON-RPC requests.
 //
-// EVM checks begin with 1.
+// This is an arbitrary ID selected by the engineering team at Grove.
+// It is used for compatibility with the JSON-RPC spec.
+// It is a loose convention in the QoS package.
+
+// ID for the eth_getBalance check which is used to verify the endpoint is archival.
 const idArchivalCheck = 1003
 
 // methodGetBalance is the JSON-RPC method for getting the balance of an account at a specific block number.
