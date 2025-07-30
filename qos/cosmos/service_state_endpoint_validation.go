@@ -77,8 +77,8 @@ func (ss *serviceState) basicEndpointValidation(endpoint endpoint) error {
 }
 
 // validateEndpointCometBFTChecks validates the endpoint's CometBFT checks:
-// - Health status via `/health` endpoint
-// - Chain ID and sync status via `/status` endpoint
+// - Health status via `health` method
+// - Chain ID and sync status via `status` method
 // - Block height within acceptable sync tolerance
 func (ss *serviceState) validateEndpointCometBFTChecks(endpoint endpoint) error {
 	// Check if the endpoint's health status is valid.
