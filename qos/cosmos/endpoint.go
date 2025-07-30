@@ -14,12 +14,12 @@ type endpoint struct {
 
 	// *** CometBFT-specific checks ***
 
-	// Checks chain ID, catching up status, and latest block height via JSON-RPC `status`
+	// Checks chain ID, catching up status, and latest block height via JSON-RPC `status` method
 	checkCometBFTStatus endpointCheckCometBFTStatus
-	// Checks node health via JSON-RPC `health`
+	// Checks node health via JSON-RPC `health` method
 	checkCometBFTHealth endpointCheckCometBFTHealth
 
 	// *** CosmosSDK-specific checks ***
-	// Checks Cosmos SDK status via REST `/cosmos/base/node/v1beta1/status`
+	// Checks Cosmos SDK status via REST `/cosmos/base/node/v1beta1/status` URL path
 	checkCosmosStatus endpointCheckCosmosStatus
 }

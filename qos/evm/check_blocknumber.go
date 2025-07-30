@@ -6,7 +6,6 @@ import (
 	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
 
-// TODO_DOCUMENT(@commoddity): Document this loose convention.
 // EVM checks begin with 1 for JSON-RPC requests.
 //
 // This is an arbitrary ID selected by the engineering team at Grove.

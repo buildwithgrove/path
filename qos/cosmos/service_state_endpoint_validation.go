@@ -22,10 +22,10 @@ var (
 //   - An invalid response.
 //
 // CometBFT-specific checks if the endpoint has recently returned:
-//   - /status - invalid chain ID
-//   - /status - catching up
-//   - /status - block height outside sync allowance
-//   - /health - unhealthy
+//   - `status` - invalid chain ID
+//   - `status` - catching up
+//   - `status` - block height outside sync allowance
+//   - `health` - unhealthy
 //
 // CosmosSDK-specific checks if the endpoint has recently returned:
 //   - /cosmos/base/node/v1beta1/status - block height outside sync allowance
@@ -77,8 +77,8 @@ func (ss *serviceState) basicEndpointValidation(endpoint endpoint) error {
 }
 
 // validateEndpointCometBFTChecks validates the endpoint's CometBFT checks:
-// - Health status via `/health` endpoint
-// - Chain ID and sync status via `/status` endpoint
+// - Health status via `health` method
+// - Chain ID and sync status via `status` method
 // - Block height within acceptable sync tolerance
 func (ss *serviceState) validateEndpointCometBFTChecks(endpoint endpoint) error {
 	// Check if the endpoint's health status is valid.
