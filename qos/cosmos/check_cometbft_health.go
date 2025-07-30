@@ -7,12 +7,8 @@ import (
 	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
 
-// TODO_IMPROVE: Create an interface that partially or completely captures the
-// interface exposed by endpointCheckCometBFTHealth.
-
 /* -------------------- CometBFT Health Check -------------------- */
 
-// TODO_DOCUMENT(@commoddity): Document this loose convention.
 // CometBFT ID checks begin with 2 for JSON-RPC requests.
 //
 // This is an arbitrary ID selected by the engineering team at Grove.
