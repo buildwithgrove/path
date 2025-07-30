@@ -13,13 +13,10 @@ import (
 )
 
 // TODO_IMPROVE(@commoddity): Replace custom struct with official Cosmos SDK types.
-//
-// Current issue: The official `node.StatusResponse` struct expects int64 fields,
-// but the REST API returns string values, causing unmarshalling errors.
-//
-// Workaround: Using custom `cosmosStatusResponse` struct with string fields.
-//
-// Reference: https://github.com/cosmos/cosmos-sdk/blob/main/client/grpc/node/query.pb.go#L180
+// - Current issue: The official `node.StatusResponse` struct expects int64 fields,
+//   but the REST API returns string values, causing unmarshalling errors.
+// - Workaround: Using custom `cosmosStatusResponse` struct with string fields.
+// - Reference: https://github.com/cosmos/cosmos-sdk/blob/main/client/grpc/node/query.pb.go#L180
 
 // cosmosStatusResponse is the expected response from the /cosmos/base/node/v1beta1/status endpoint.
 // Only the `height` field is needed to satisfy the `/status` endpoint checks.
