@@ -26,10 +26,10 @@ const methodCometBFTStatus = jsonrpc.Method("status")
 const checkStatusInterval = 30 * time.Second
 
 var (
-	errNoStatusObs       = fmt.Errorf("endpoint has not had an observation of its response to a CometBFT '%q' request", methodCometBFTStatus)
-	errInvalidStatusObs  = fmt.Errorf("endpoint returned an invalid response to a CometBFT '%q' request", methodCometBFTStatus)
-	errInvalidChainIDObs = fmt.Errorf("endpoint returned an invalid chain ID in its response to a CometBFT '%q' request", methodCometBFTStatus)
-	errCatchingUpObs     = fmt.Errorf("endpoint is catching up to the network in its response to a CometBFT '%q' request", methodCometBFTStatus)
+	errNoCometBFTStatusObs       = fmt.Errorf("endpoint has not had an observation of its response to a CometBFT '%q' request", methodCometBFTStatus)
+	errInvalidCometBFTStatusObs  = fmt.Errorf("endpoint returned an invalid response to a CometBFT '%q' request", methodCometBFTStatus)
+	errInvalidCometBFTChainIDObs = fmt.Errorf("endpoint returned an invalid chain ID in its response to a CometBFT '%q' request", methodCometBFTStatus)
+	errCatchingUpCometBFTObs     = fmt.Errorf("endpoint is catching up to the network in its response to a CometBFT '%q' request", methodCometBFTStatus)
 )
 
 // endpointCheckCometBFTStatus is a check that ensures the endpoint's status information is valid.
@@ -71,10 +71,10 @@ func (e *endpointCheckCometBFTStatus) getRequest() jsonrpc.Request {
 // GetChainID returns the parsed chain ID value for the endpoint.
 func (e *endpointCheckCometBFTStatus) GetChainID() (string, error) {
 	if e.chainID == nil {
-		return "", errNoStatusObs
+		return "", errNoCometBFTStatusObs
 	}
 	if *e.chainID == "" {
-		return "", errInvalidChainIDObs
+		return "", errInvalidCometBFTStatusObs
 	}
 	return *e.chainID, nil
 }
@@ -82,7 +82,7 @@ func (e *endpointCheckCometBFTStatus) GetChainID() (string, error) {
 // GetCatchingUp returns whether the endpoint is catching up.
 func (e *endpointCheckCometBFTStatus) GetCatchingUp() (bool, error) {
 	if e.catchingUp == nil {
-		return false, errNoStatusObs
+		return false, errNoCometBFTStatusObs
 	}
 	return *e.catchingUp, nil
 }
@@ -90,10 +90,10 @@ func (e *endpointCheckCometBFTStatus) GetCatchingUp() (bool, error) {
 // GetLatestBlockHeight returns the parsed latest block height value for the endpoint.
 func (e *endpointCheckCometBFTStatus) GetLatestBlockHeight() (uint64, error) {
 	if e.latestBlockHeight == nil {
-		return 0, errNoStatusObs
+		return 0, errNoCometBFTStatusObs
 	}
 	if *e.latestBlockHeight == 0 {
-		return 0, errInvalidStatusObs
+		return 0, errInvalidCometBFTStatusObs
 	}
 	return *e.latestBlockHeight, nil
 }
