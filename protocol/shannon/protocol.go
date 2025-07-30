@@ -88,8 +88,7 @@ func NewProtocol(
 		// ownedApps is the list of apps owned by the gateway operator
 		ownedApps: ownedApps,
 
-		// HTTP client with HTTP tracing.
-		// Used to track any timeout/endpoint connectivity errors.
+		// HTTP client with embedded tracking of debug metrics.
 		httpClient: newDefaultHTTPClientWithDebugMetrics(),
 	}
 
