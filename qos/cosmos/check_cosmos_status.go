@@ -4,10 +4,11 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"net/url"
 )
 
 // GET Cosmos SDK status including node info and block height.
-// Reference: https://docs.cosmos.network/main/core/grpc_rest.html#status
+// Reference: https://docs.cosmos.network/api#tag/Service/operation/Status
 const apiPathCosmosStatus = "/cosmos/base/node/v1beta1/status"
 
 // TODO_IMPROVE(@commoddity): Consider adding check interval and expiry like CometBFT checks
@@ -29,16 +30,17 @@ type endpointCheckCosmosStatus struct {
 	latestBlockHeight *uint64
 }
 
-// GetRequest returns an HTTP request to check the Cosmos SDK status.
+// getRequest returns an HTTP request to check the Cosmos SDK status.
 // e.g. GET /cosmos/base/node/v1beta1/status
-// Uses a placeholder host that will be replaced with the actual endpoint URL later.
+//
+// It is called in `request_validator_checks.go` to generate the endpoint checks.
 func (e *endpointCheckCosmosStatus) getRequest() *http.Request {
-	// Use a placeholder URL to allow parsing of the URL.
-	// Only the path component of the URL is used.
-	// The actual URL is set when the endpoint is selected,
-	// then the path is appended to the URL.
-	fullURL := "http://placeholder.endpoint" + apiPathCosmosStatus
-	req, _ := http.NewRequestWithContext(context.Background(), http.MethodGet, fullURL, nil)
+	// Create URL with just the path component.
+	// No need to check the errors here as the `apiPathCosmosStatus`
+	// is a constant and guaranteed to be valid.
+	url, _ := url.Parse(apiPathCosmosStatus)
+	req, _ := http.NewRequestWithContext(context.Background(), http.MethodGet, "", nil)
+	req.URL = url // Set the URL to the parsed path.
 	return req
 }
 

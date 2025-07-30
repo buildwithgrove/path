@@ -73,7 +73,7 @@ type responseCosmosStatus struct {
 
 	// height stores the latest block height from the Cosmos SDK status response.
 	// Parsed from the `height` field in the `/cosmos/base/node/v1beta1/status` response.
-	// Reference: https://docs.cosmos.network/main/core/grpc_rest.html#status
+	// Reference: https://docs.cosmos.network/api#tag/Service/operation/Status
 	height uint64
 }
 
