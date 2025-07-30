@@ -53,7 +53,7 @@ type Protocol struct {
 	// sanctionedEndpointsStore tracks sanctioned endpoints
 	sanctionedEndpointsStore *sanctionedEndpointsStore
 
-	// HTTP client used for sending relay requests to endpoints.
+	// HTTP client used for sending relay requests to endpoints while also capturing & publishing various debug metrics.
 	httpClient *httpClientWithDebugMetrics
 }
 
