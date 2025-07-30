@@ -12,7 +12,14 @@ type endpoint struct {
 	hasReturnedUnmarshalingError bool
 	invalidResponseLastObserved  *time.Time
 
-	// CosmosSDK-specific checks
-	checkStatus endpointCheckStatus // Checks chain ID, catching up status, and latest block height via /status
-	checkHealth endpointCheckHealth // Checks node health via /health
+	// *** CometBFT-specific checks ***
+
+	// Checks chain ID, catching up status, and latest block height via JSON-RPC `status`
+	checkCometBFTStatus endpointCheckCometBFTStatus
+	// Checks node health via JSON-RPC `health`
+	checkCometBFTHealth endpointCheckCometBFTHealth
+
+	// *** CosmosSDK-specific checks ***
+	// Checks Cosmos SDK status via REST `/cosmos/base/node/v1beta1/status`
+	checkCosmosStatus endpointCheckCosmosStatus
 }
