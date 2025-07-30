@@ -125,13 +125,17 @@ func applyObservation(
 		applyCosmosSDKStatusObservation(endpoint, response.ResponseCosmosSdkStatus)
 		endpointWasMutated = true
 
+	// EVM `eth_chainId` method observation
+	// Reference: https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_chainid
+	case *qosobservations.CosmosEndpointResponseValidationResult_ResponseEvmJsonrpcChainId:
+		applyEVMChainIDObservation(endpoint, response.ResponseEvmJsonrpcChainId)
+		endpointWasMutated = true
+
 	// Unrecognized response observation
 	case *qosobservations.CosmosEndpointResponseValidationResult_ResponseUnrecognized:
 		applyUnrecognizedResponseObservation(endpoint, response.ResponseUnrecognized)
 		endpointWasMutated = true
-	case *qosobservations.CosmosEndpointResponseValidationResult_ResponseEvmJsonrpcChainId:
-		applyEVMChainIDObservation(endpoint, response.ResponseEvmJsonrpcChainId)
-		endpointWasMutated = true
+
 	}
 
 	return endpointWasMutated

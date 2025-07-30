@@ -15,20 +15,20 @@ import (
 // consistent ID for a given check type.
 //
 // CometBFT checks begin with 2.
-const idStatusCheck = 2002
+const idCometBFTStatusCheck = 2002
 
 // methodStatus is the CometBFT JSON-RPC method for getting the node status.
 // Reference: https://docs.cometbft.com/v1.0/spec/rpc/#status
-const methodStatusCheck = jsonrpc.Method("status")
+const methodCometBFTStatus = jsonrpc.Method("status")
 
 // TODO_IMPROVE(@commoddity): determine an appropriate interval for checking the status and/or make it configurable.
 const checkStatusInterval = 10 * time.Second
 
 var (
-	errNoCometBFTStatusObs       = fmt.Errorf("endpoint has not had an observation of its response to a %q request", methodStatusCheck)
-	errInvalidCometBFTStatusObs  = fmt.Errorf("endpoint returned an invalid response to a %q request", methodStatusCheck)
-	errInvalidCometBFTChainIDObs = fmt.Errorf("endpoint returned an invalid chain ID in its response to a %q request", methodStatusCheck)
-	errCometBFTCatchingUpObs     = fmt.Errorf("endpoint is catching up to the network in its response to a %q request", methodStatusCheck)
+	errNoCometBFTStatusObs       = fmt.Errorf("endpoint has not had an observation of its response to a CometBFT '%q' request", methodCometBFTStatus)
+	errInvalidCometBFTStatusObs  = fmt.Errorf("endpoint returned an invalid response to a CometBFT '%q' request", methodCometBFTStatus)
+	errInvalidCometBFTChainIDObs = fmt.Errorf("endpoint returned an invalid chain ID in its response to a CometBFT '%q' request", methodCometBFTStatus)
+	errCometBFTCatchingUpObs     = fmt.Errorf("endpoint is catching up to the network in its response to a CometBFT '%q' request", methodCometBFTStatus)
 )
 
 // endpointCheckCometBFTStatus is a check that ensures the endpoint's status information is valid.
@@ -62,8 +62,8 @@ type endpointCheckCometBFTStatus struct {
 func (e *endpointCheckCometBFTStatus) getRequest() jsonrpc.Request {
 	return jsonrpc.Request{
 		JSONRPC: jsonrpc.Version2,
-		ID:      jsonrpc.IDFromInt(idStatusCheck),
-		Method:  jsonrpc.Method(methodStatusCheck),
+		ID:      jsonrpc.IDFromInt(idCometBFTStatusCheck),
+		Method:  jsonrpc.Method(methodCometBFTStatus),
 	}
 }
 

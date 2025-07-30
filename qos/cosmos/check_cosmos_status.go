@@ -15,8 +15,8 @@ const apiPathCosmosStatus = "/cosmos/base/node/v1beta1/status"
 // if periodic validation becomes necessary for Cosmos SDK status checks.
 
 var (
-	errNoCosmosStatusObs      = fmt.Errorf("endpoint has not had an observation of its response to a %q request", apiPathCosmosStatus)
-	errInvalidCosmosStatusObs = fmt.Errorf("endpoint returned an invalid response to a %q request", apiPathCosmosStatus)
+	errNoCosmosStatusObs      = fmt.Errorf("endpoint has not had an observation of its response to a Cosmos SDK '%q' request", apiPathCosmosStatus)
+	errInvalidCosmosStatusObs = fmt.Errorf("endpoint returned an invalid response to a Cosmos SDK '%q' request", apiPathCosmosStatus)
 )
 
 // endpointCheckCosmosStatus is a check that ensures the endpoint's Cosmos SDK status information is valid.
