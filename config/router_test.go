@@ -64,6 +64,7 @@ func TestRouterConfig_hydrateRouterDefaults(t *testing.T) {
 				ReadTimeout:           defaultHTTPServerReadTimeout,
 				WriteTimeout:          defaultHTTPServerWriteTimeout,
 				IdleTimeout:           defaultHTTPServerIdleTimeout,
+				SystemOverheadAllowanceDuration: defaultSystemOverheadAllowanceDuration,
 			},
 		},
 		{
@@ -77,6 +78,7 @@ func TestRouterConfig_hydrateRouterDefaults(t *testing.T) {
 				ReadTimeout:           defaultHTTPServerReadTimeout,
 				WriteTimeout:          defaultHTTPServerWriteTimeout,
 				IdleTimeout:           defaultHTTPServerIdleTimeout,
+				SystemOverheadAllowanceDuration: defaultSystemOverheadAllowanceDuration,
 			},
 		},
 	}

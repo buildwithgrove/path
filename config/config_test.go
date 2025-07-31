@@ -53,6 +53,7 @@ func Test_LoadGatewayConfigFromYAML(t *testing.T) {
 					ReadTimeout:           defaultHTTPServerReadTimeout,
 					WriteTimeout:          defaultHTTPServerWriteTimeout,
 					IdleTimeout:           defaultHTTPServerIdleTimeout,
+					SystemOverheadAllowanceDuration: defaultSystemOverheadAllowanceDuration,
 				},
 				Logger: LoggerConfig{
 					Level: defaultLogLevel,
@@ -185,6 +186,7 @@ logger_config:
 					ReadTimeout:           defaultHTTPServerReadTimeout,
 					WriteTimeout:          defaultHTTPServerWriteTimeout,
 					IdleTimeout:           defaultHTTPServerIdleTimeout,
+					SystemOverheadAllowanceDuration: defaultSystemOverheadAllowanceDuration,
 				},
 				Logger: LoggerConfig{
 					Level: "debug",
