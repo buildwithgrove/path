@@ -2,6 +2,7 @@ package evm
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
@@ -76,7 +77,8 @@ func unmarshalResponse(
 	// Get the corresponding JSONRPC request for the response.
 	jsonrpcReq, ok := jsonrpcReqs[jsonrpcResponse.ID.String()]
 	if !ok {
-		// TODO_IN_THIS_PR: get a better error response for this case.
+		logger.Error().Msg("SHOULD NEVER HAPPEN: JSON-RPC ID not found in the response")
+		err := fmt.Errorf("JSON-RPC ID not found in the response")
 		return getGenericJSONRPCErrResponse(logger, getJsonRpcIDForErrorResponse(jsonrpcReqs), data, err), err
 	}
 

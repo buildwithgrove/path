@@ -3,6 +3,8 @@ package evm
 import (
 	"fmt"
 
+	"github.com/pokt-network/poktroll/pkg/polylog"
+
 	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
 
@@ -92,6 +94,19 @@ func newErrResponseBatchMarshalFailure(err error) jsonrpc.Response {
 			// Custom extension - not part of the official JSON-RPC spec
 			// Marks the error as retryable since this is an internal processing issue
 			"retryable": "true",
+		},
+	)
+}
+
+func getErrResponseJSONRequestIDNotFound(logger polylog.Logger, id jsonrpc.ID) jsonrpc.Response {
+	logger.Debug().Msg("JSON-RPC ID not found in the response")
+
+	return jsonrpc.GetErrorResponse(
+		jsonrpc.ID{},                            // Use null ID for batch-level failures per JSON-RPC spec
+		-32000,                                  // JSON-RPC standard server error code; https://www.jsonrpc.org/historical/json-rpc-2-0.html
+		"JSON-RPC ID not found in the response", // Error Message
+		map[string]string{
+			"error": "JSON-RPC ID not found in the response",
 		},
 	)
 }

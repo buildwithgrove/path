@@ -76,7 +76,7 @@ type requestContext struct {
 	endpointResponses []endpointResponse
 }
 
-// TODO_IN_THIS_PR: handle batch requests for Solana
+// TODO_NEXT(@commoddity): handle batch requests for Solana
 // TODO_MVP(@adshmh): Ensure the JSONRPC request struct
 // can handle all valid service requests.
 func (rc requestContext) GetServicePayloads() []protocol.Payload {
