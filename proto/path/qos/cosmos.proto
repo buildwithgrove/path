@@ -11,8 +11,14 @@ import "path/qos/request_error.proto";
 
 // CosmosRequestObservations captures all observations made while serving a single Cosmos blockchain service request.
 message CosmosRequestObservations {
+    // Next free index: 9
+
+    // string chain_id = 1;
+    reserved 1;
+    reserved "chain_id";
+
     // cosmos_chain_id is the blockchain identifier in the Cosmos ecosystem.
-    string cosmos_chain_id = 1;
+    string cosmos_chain_id = 8;
 
     // evm_chain_id is the EVM blockchain identifier for the Cosmos chain that has native EVM support, e.g. XRPLEVM, evmos, etc...
     string evm_chain_id = 7;

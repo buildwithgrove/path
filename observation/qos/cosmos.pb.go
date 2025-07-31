@@ -25,7 +25,7 @@ const (
 type CosmosRequestObservations struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// cosmos_chain_id is the blockchain identifier in the Cosmos ecosystem.
-	CosmosChainId string `protobuf:"bytes,1,opt,name=cosmos_chain_id,json=cosmosChainId,proto3" json:"cosmos_chain_id,omitempty"`
+	CosmosChainId string `protobuf:"bytes,8,opt,name=cosmos_chain_id,json=cosmosChainId,proto3" json:"cosmos_chain_id,omitempty"`
 	// evm_chain_id is the EVM blockchain identifier for the Cosmos chain that has native EVM support, e.g. XRPLEVM, evmos, etc...
 	EvmChainId string `protobuf:"bytes,7,opt,name=evm_chain_id,json=evmChainId,proto3" json:"evm_chain_id,omitempty"`
 	// service_id is the Pocket Network service identifier.
@@ -186,9 +186,9 @@ var File_path_qos_cosmos_proto protoreflect.FileDescriptor
 
 const file_path_qos_cosmos_proto_rawDesc = "" +
 	"\n" +
-	"\x15path/qos/cosmos.proto\x12\bpath.qos\x1a\x1dpath/qos/cosmos_request.proto\x1a\x1epath/qos/cosmos_response.proto\x1a\x1dpath/qos/request_origin.proto\x1a\x1cpath/qos/request_error.proto\"\xcc\x03\n" +
+	"\x15path/qos/cosmos.proto\x12\bpath.qos\x1a\x1dpath/qos/cosmos_request.proto\x1a\x1epath/qos/cosmos_response.proto\x1a\x1dpath/qos/request_origin.proto\x1a\x1cpath/qos/request_error.proto\"\xdc\x03\n" +
 	"\x19CosmosRequestObservations\x12&\n" +
-	"\x0fcosmos_chain_id\x18\x01 \x01(\tR\rcosmosChainId\x12 \n" +
+	"\x0fcosmos_chain_id\x18\b \x01(\tR\rcosmosChainId\x12 \n" +
 	"\fevm_chain_id\x18\a \x01(\tR\n" +
 	"evmChainId\x12\x1d\n" +
 	"\n" +
@@ -197,7 +197,7 @@ const file_path_qos_cosmos_proto_rawDesc = "" +
 	"\x0frequest_profile\x18\x04 \x01(\v2\x1e.path.qos.CosmosRequestProfileR\x0erequestProfile\x12K\n" +
 	"\x13request_level_error\x18\x05 \x01(\v2\x16.path.qos.RequestErrorH\x00R\x11requestLevelError\x88\x01\x01\x12X\n" +
 	"\x15endpoint_observations\x18\x06 \x03(\v2#.path.qos.CosmosEndpointObservationR\x14endpointObservationsB\x16\n" +
-	"\x14_request_level_error\"\xc1\x01\n" +
+	"\x14_request_level_errorJ\x04\b\x01\x10\x02R\bchain_id\"\xc1\x01\n" +
 	"\x19CosmosEndpointObservation\x12#\n" +
 	"\rendpoint_addr\x18\x01 \x01(\tR\fendpointAddr\x12\x7f\n" +
 	"#endpoint_response_validation_result\x18\x02 \x01(\v20.path.qos.CosmosEndpointResponseValidationResultR endpointResponseValidationResultB0Z.github.com/buildwithgrove/path/observation/qosb\x06proto3"
