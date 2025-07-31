@@ -1,6 +1,7 @@
 package shannon
 
 import (
+	"bufio"
 	"context"
 	"crypto/tls"
 	"fmt"
@@ -25,6 +26,10 @@ const maxResponseSize = 100 * 1024 * 1024 // 100MB limit
 // If headers are written but request body isn't written within this time, fail fast
 const requestBodyWriteTimeout = 1 * time.Second
 const recentHangingEndpointTimeout = 1 * time.Minute
+
+// Response timeout for detecting hanging responses
+// If response doesn't start within this time after request is sent, fail fast
+const responseStartTimeout = 1 * time.Second
 
 // httpClientWithDebugMetrics provides HTTP client functionality with embedded tracking of debug metrics.
 // It includes things like:
@@ -135,10 +140,10 @@ func (h *httpClientWithDebugMetrics) SendHTTPRelay(
 	// Fast-fail check: if this endpoint is known to be hanging, fail immediately
 	h.hangingMutex.RLock()
 	if lastDetection, isHanging := h.hangingEndpoints[endpointURL]; isHanging {
-		// Only fast-fail if the detection was recent (within last 5 minutes)
+		// Only fast-fail if the detection was recent (within last minute)
 		if time.Since(lastDetection) < recentHangingEndpointTimeout {
 			h.hangingMutex.RUnlock()
-			return nil, fmt.Errorf("fast-fail: endpoint %s is known hanging (blocks request body writes)", endpointURL)
+			return nil, fmt.Errorf("fast-fail: endpoint %s is known hanging (detected at %s)", endpointURL, lastDetection.Format("15:04:05"))
 		}
 		// Detection is old, remove it and continue
 		h.hangingMutex.RUnlock()
@@ -192,7 +197,7 @@ func (h *httpClientWithDebugMetrics) SendHTTPRelay(
 		req.Header.Set(key, value)
 	}
 
-	// Execute HTTP request
+	// Execute HTTP request to get response headers
 	resp, err := h.httpClient.Do(req)
 	if err != nil {
 		requestErr = h.categorizeError(debugCtx, err)
@@ -200,8 +205,8 @@ func (h *httpClientWithDebugMetrics) SendHTTPRelay(
 	}
 	defer resp.Body.Close()
 
-	// Read and validate response
-	responseBody, err := h.readAndValidateResponse(resp)
+	// Read response body with timeout detection for hanging responses
+	responseBody, err := h.readResponseWithHangDetection(resp, endpointURL, logger)
 	if err != nil {
 		requestErr = err
 		return nil, requestErr
@@ -261,23 +266,6 @@ func (h *httpClientWithDebugMetrics) categorizeError(ctx context.Context, err er
 		h.connectionErrors.Add(1)
 		return fmt.Errorf("connection error: %w", err)
 	}
-}
-
-// readAndValidateResponse reads the response body and validates the HTTP status code
-func (h *httpClientWithDebugMetrics) readAndValidateResponse(resp *http.Response) ([]byte, error) {
-	// Read response body with size protection
-	limitedReader := io.LimitReader(resp.Body, maxResponseSize)
-	responseBody, err := io.ReadAll(limitedReader)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read response body: %w", err)
-	}
-
-	// Validate HTTP status code
-	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices {
-		return nil, fmt.Errorf("%w: %d", errRelayEndpointHTTPError, resp.StatusCode)
-	}
-
-	return responseBody, nil
 }
 
 // createDetailedHTTPTrace creates comprehensive HTTP tracing using the httptrace library:
@@ -434,7 +422,8 @@ func (h *httpClientWithDebugMetrics) logRequestMetrics(logger polylog.Logger, me
 		h.hangingMutex.Unlock()
 		logger.Warn().
 			Str("endpoint_url", metrics.url).
-			Msg("Endpoint marked as hanging - future requests will fast-fail for 5 minutes")
+			Dur("fast_fail_duration", recentHangingEndpointTimeout).
+			Msg("Endpoint marked as hanging - future requests will fast-fail")
 	}
 }
 
@@ -461,4 +450,68 @@ func wrapBodyWithFailFast(body []byte, writeTimeout time.Duration) io.ReadCloser
 
 	close(writeStarted) // trigger the write immediately
 	return pr
+}
+
+// readResponseWithHangDetection reads the response body with timeout detection.
+// It only marks endpoints as hanging if no response data starts flowing within the timeout.
+// Once data starts flowing, it allows the response to complete normally.
+func (h *httpClientWithDebugMetrics) readResponseWithHangDetection(
+	resp *http.Response,
+	endpointURL string,
+	logger polylog.Logger,
+) ([]byte, error) {
+	// Channel to signal when first bytes are read and completion
+	firstBytesRead := make(chan struct{})
+	completed := make(chan struct{})
+	var responseBody []byte
+	var readErr error
+
+	// Read response body in a goroutine
+	go func() {
+		defer close(completed)
+
+		// Create a limited reader to prevent excessive memory usage
+		limitedReader := io.LimitReader(resp.Body, maxResponseSize)
+
+		// Use a buffered reader to detect first bytes
+		bufReader := bufio.NewReader(limitedReader)
+
+		// Try to peek at first byte to signal response has started
+		if _, err := bufReader.Peek(1); err == nil {
+			// Signal that response data is flowing
+			close(firstBytesRead)
+		}
+
+		// Read the full response
+		responseBody, readErr = io.ReadAll(bufReader)
+
+		// Validate HTTP status code
+		if readErr == nil && (resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices) {
+			readErr = fmt.Errorf("%w: %d", errRelayEndpointHTTPError, resp.StatusCode)
+		}
+	}()
+
+	// Wait for first bytes or timeout
+	select {
+	case <-firstBytesRead:
+		// Response data started flowing, wait for completion
+		<-completed
+		if readErr != nil {
+			return nil, fmt.Errorf("failed to read response body: %w", readErr)
+		}
+		return responseBody, nil
+
+	case <-time.After(responseStartTimeout):
+		// No response data started within timeout - mark as hanging
+		h.hangingMutex.Lock()
+		h.hangingEndpoints[endpointURL] = time.Now()
+		h.hangingMutex.Unlock()
+
+		logger.Warn().
+			Str("endpoint_url", endpointURL).
+			Dur("timeout", responseStartTimeout).
+			Msg("Response body read timeout - no data received, marking endpoint as hanging")
+
+		return nil, fmt.Errorf("response body timeout: no data received within %s", responseStartTimeout)
+	}
 }
