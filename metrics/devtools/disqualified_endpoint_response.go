@@ -43,7 +43,11 @@ type (
 		PermanentlySanctionedEndpoints map[protocol.EndpointAddr]SanctionedEndpoint `json:"permanently_sanctioned_endpoints"`
 
 		// A mapping from session sanction key to an endpoint sanction at the protocol level.
-		// DEV_NOTE: The key is a string since it is a compose of the session, endpoint address and other details.
+		//
+		// DEV_NOTE: The key is a string since it is a composite of the endpoint address and session ID.
+		// Example for the key "pokt1ggdpwj5stslx2e567qcm50wyntlym5c4n0dst8-https://im.oldgreg.org-1234567890":
+		//   - Endpoint address (supplier address + endpoint URL): "pokt1ggdpwj5stslx2e567qcm50wyntlym5c4n0dst8-https://im.oldgreg.org"
+		//   - Session ID: "1234567890"
 		SessionSanctionedEndpoints map[string]SanctionedEndpoint `json:"session_sanctioned_endpoints"`
 
 		// Counters related to sanctioning details
