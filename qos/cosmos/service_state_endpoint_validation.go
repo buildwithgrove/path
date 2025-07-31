@@ -73,6 +73,13 @@ func (ss *serviceState) basicEndpointValidation(endpoint endpoint) error {
 		}
 	}
 
+	// If the service supports EVM, validate the endpoint's EVM checks.
+	if _, ok := supportedAPIs[sharedtypes.RPCType_JSON_RPC]; ok {
+		if err := ss.validateEndpointEVMChecks(endpoint); err != nil {
+			return fmt.Errorf("EVM validation failed: %w", err)
+		}
+	}
+
 	return nil
 }
 
@@ -204,5 +211,34 @@ func (ss *serviceState) validateBlockHeightSyncAllowance(latestBlockHeight uint6
 		return fmt.Errorf("%w: block number %d is outside the sync allowance relative to min allowed block number %d and sync allowance %d",
 			errOutsideSyncAllowanceBlockNumberObs, latestBlockHeight, minAllowedBlockNumber, syncAllowance)
 	}
+	return nil
+}
+
+// validateEndpointEVMChecks validates the endpoint's EVM checks.
+// Checks:
+//   - EVM Chain ID matches expected EVM Chain ID.
+func (ss *serviceState) validateEndpointEVMChecks(endpoint endpoint) error {
+	if err := ss.isEVMChainIDValid(endpoint.checkEVMChainID); err != nil {
+		return fmt.Errorf("EVM chain ID validation failed: %w", err)
+	}
+
+	return nil
+}
+
+// isEVMChainIDValid returns an error if:
+//   - The endpoint has not had an observation of its response to a `eth_chainId` request.
+//   - The endpoint's chain ID does not match the expected chain ID.
+func (ss *serviceState) isEVMChainIDValid(check endpointCheckEVMChainID) error {
+	evmChainID, err := check.GetChainID()
+	if err != nil {
+		return err
+	}
+
+	expectedEVMChainID := ss.serviceQoSConfig.getEVMChainID()
+	if evmChainID != expectedEVMChainID {
+		return fmt.Errorf("%w: chain ID %s does not match expected chain ID %s",
+			errInvalidEVMChainIDObs, evmChainID, expectedEVMChainID)
+	}
+
 	return nil
 }
