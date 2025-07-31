@@ -27,10 +27,6 @@ import (
 // Maximum endpoint payload length for error logging (100 chars)
 const maxEndpointPayloadLenForLogging = 100
 
-// Minimum number of payloads to trigger batch processing
-// For fewer payloads, single request processing is used for better performance
-const minPayloadsForBatchProcessing = 2
-
 // requestContext provides all the functionality required by the gateway package
 // for handling a single service request.
 var _ gateway.ProtocolRequestContext = &requestContext{}
@@ -105,105 +101,106 @@ func (rc *requestContext) HandleServiceRequest(payloads []protocol.Payload) ([]p
 		return []protocol.Response{response}, err
 	}
 
-	// For multiple payloads, decide whether to use batch processing.
-	// Use batch processing only when we have enough payloads to benefit from concurrency.
-	if len(payloads) >= minPayloadsForBatchProcessing {
-		return rc.sendBatchRelays(payloads)
-	}
-
-	// For fewer payloads, process sequentially to avoid goroutine overhead.
-	return rc.sendSequentialRelays(payloads)
+	// For multiple payloads, use parallel processing.
+	return rc.handleParallelRelayRequests(payloads)
 }
 
-// sendBatchRelays:
-// - Sends multiple relay requests concurrently to the selected endpoint.
-// - Handles JSON-RPC batch requests and returns individual responses.
-// - Uses goroutines for concurrent processing while maintaining response order.
-// - Returns all responses as separate entries in the response array.
-func (rc *requestContext) sendBatchRelays(payloads []protocol.Payload) ([]protocol.Response, error) {
+// handleParallelRelayRequests orchestrates parallel relay requests to a single endpoint.
+// Uses concurrent processing while maintaining response order and proper error handling.
+func (rc *requestContext) handleParallelRelayRequests(payloads []protocol.Payload) ([]protocol.Response, error) {
+	logger := rc.logger.
+		With("method", "handleParallelRelayRequests").
+		With("num_payloads", len(payloads)).
+		With("service_id", rc.serviceID)
+	logger.Debug().Msg("Starting parallel relay processing")
 
-	// Create channels for collecting results.
-	resultChan := make(chan relayResult, len(payloads))
+	resultChan := rc.launchParallelRelays(payloads, logger)
+
+	return rc.waitForAllRelayResponses(logger, resultChan, len(payloads))
+}
+
+// parallelRelayResult holds the result of a single relay request for parallel processing.
+type parallelRelayResult struct {
+	index     int
+	response  protocol.Response
+	err       error
+	duration  time.Duration
+	startTime time.Time
+}
+
+// launchParallelRelays starts all parallel relay requests and returns a result channel
+func (rc *requestContext) launchParallelRelays(payloads []protocol.Payload, logger polylog.Logger) <-chan parallelRelayResult {
+	resultChan := make(chan parallelRelayResult, len(payloads))
 	var wg sync.WaitGroup
 
-	// Record batch start time.
-	batchStartTime := time.Now()
-
-	// Launch goroutines for each payload.
 	for i, payload := range payloads {
 		wg.Add(1)
-		go func(index int, p protocol.Payload) {
-			defer wg.Done()
-
-			response, err := rc.sendSingleRelay(p)
-
-			resultChan <- relayResult{
-				index:    index,
-				response: response,
-				err:      err,
-			}
-		}(i, payload)
+		go rc.executeRelayRequest(payload, i, resultChan, &wg)
 	}
 
-	// Wait for all goroutines to complete.
-	wg.Wait()
-	close(resultChan)
+	// Close channel when all goroutines complete
+	go func() {
+		wg.Wait()
+		close(resultChan)
+	}()
 
-	// Collect results in order.
-	results := make([]relayResult, len(payloads))
-	for result := range resultChan {
-		results[result.index] = result
-	}
-
-	// Log batch completion for debugging.
-	rc.logger.Debug().
-		Int("batch_size", len(payloads)).
-		Dur("batch_duration", time.Since(batchStartTime)).
-		Msg("Concurrent batch relay processing completed")
-
-	// Convert results to response array and return first error if any.
-	return rc.convertResultsToResponses(results)
+	return resultChan
 }
 
-// sendSequentialRelays:
-// - Sends multiple relay requests sequentially to the selected endpoint.
-// - Used for smaller batch sizes where goroutine overhead exceeds benefits.
-// - Returns individual responses as separate entries in the response array.
-func (rc *requestContext) sendSequentialRelays(payloads []protocol.Payload) ([]protocol.Response, error) {
-	// Record batch start time.
-	batchStartTime := time.Now()
+// executeRelayRequest handles a single relay request in a goroutine
+func (rc *requestContext) executeRelayRequest(
+	payload protocol.Payload,
+	index int,
+	resultChan chan<- parallelRelayResult,
+	wg *sync.WaitGroup,
+) {
+	defer wg.Done()
 
-	// Process payloads sequentially.
-	results := make([]relayResult, len(payloads))
-	for i, payload := range payloads {
-		response, err := rc.sendSingleRelay(payload)
-		results[i] = relayResult{
-			index:    i,
-			response: response,
-			err:      err,
+	startTime := time.Now()
+	response, err := rc.sendSingleRelay(payload)
+	duration := time.Since(startTime)
+
+	result := parallelRelayResult{
+		index:     index,
+		response:  response,
+		err:       err,
+		duration:  duration,
+		startTime: startTime,
+	}
+
+	resultChan <- result
+}
+
+// waitForAllRelayResponses waits for all relay responses and processes them
+func (rc *requestContext) waitForAllRelayResponses(
+	logger polylog.Logger,
+	resultChan <-chan parallelRelayResult,
+	numRequests int,
+) ([]protocol.Response, error) {
+	results := make([]parallelRelayResult, numRequests)
+	var firstErr error
+
+	// Collect all results
+	for result := range resultChan {
+		results[result.index] = result
+
+		if result.err != nil {
+			if firstErr == nil {
+				firstErr = result.err
+			}
+			logger.Warn().Err(result.err).
+				Msgf("Relay request %d failed after %dms", result.index, result.duration.Milliseconds())
+		} else {
+			logger.Debug().
+				Msgf("Relay request %d completed successfully in %dms", result.index, result.duration.Milliseconds())
 		}
 	}
 
-	// Log batch completion for debugging.
-	rc.logger.Debug().
-		Int("batch_size", len(payloads)).
-		Dur("batch_duration", time.Since(batchStartTime)).
-		Msg("Sequential batch relay processing completed")
-
-	// Convert results to response array and return first error if any.
-	return rc.convertResultsToResponses(results)
+	return rc.convertResultsToResponses(results, firstErr)
 }
 
-// relayResult holds the result of a single relay request for batch processing.
-type relayResult struct {
-	index    int
-	response protocol.Response
-	err      error
-}
-
-// sendSingleRelay:
-// - Handles a single relay request with full error handling and observation tracking.
-// - Extracted from original HandleServiceRequest logic for reuse in batch processing.
+// sendSingleRelay handles a single relay request with full error handling and observation tracking.
+// Extracted from original HandleServiceRequest logic for reuse in parallel processing.
 func (rc *requestContext) sendSingleRelay(payload protocol.Payload) (protocol.Response, error) {
 	// Record endpoint query time.
 	endpointQueryTime := time.Now()
@@ -235,11 +232,9 @@ func (rc *requestContext) sendSingleRelay(payload protocol.Payload) (protocol.Re
 	return relayResponse, err
 }
 
-// convertResultsToResponses:
-// - Converts relay results into an array of protocol responses.
-// - Maintains the order of responses to match the order of input payloads.
-// - Returns the first error encountered, or nil if all succeeded.
-func (rc *requestContext) convertResultsToResponses(results []relayResult) ([]protocol.Response, error) {
+// convertResultsToResponses converts parallel relay results into an array of protocol responses.
+// Maintains the order of responses to match the order of input payloads.
+func (rc *requestContext) convertResultsToResponses(results []parallelRelayResult, firstErr error) ([]protocol.Response, error) {
 	if len(results) == 0 {
 		response, err := rc.handleInternalError(fmt.Errorf("convertResultsToResponses: no results to convert"))
 		return []protocol.Response{response}, err
@@ -247,16 +242,10 @@ func (rc *requestContext) convertResultsToResponses(results []relayResult) ([]pr
 
 	// Create response array in the same order as input payloads.
 	responses := make([]protocol.Response, len(results))
-	var firstErr error
 
 	// Process results in order.
 	for i, result := range results {
 		responses[i] = result.response
-
-		// Track the first error encountered.
-		if result.err != nil && firstErr == nil {
-			firstErr = result.err
-		}
 	}
 
 	rc.logger.Debug().
