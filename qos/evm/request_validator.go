@@ -20,10 +20,6 @@ import (
 // Proposed change: Create a new ServiceRequest type containing raw payload data ([]byte)
 // Benefits: Decouples the qos package from HTTP-specific error handling.
 
-// maximum length of the error message stored in request validation failure observations and logs.
-// This is used to prevent overly verbose error messages from being stored in logs and metrics leading to excessive memory usage and cost.
-const maxErrMessageLen = 1000
-
 // TODO_TECHDEBT(@adshmh): Refactor the evmRequestValidator struct to be more generic and reusable.
 //
 // evmRequestValidator handles request validation, generating:
@@ -56,11 +52,7 @@ func (erv *evmRequestValidator) validateHTTPRequest(req *http.Request) (gateway.
 	// Parse and validate the JSONRPC request(s) - handles both single and batch requests
 	jsonrpcReqs, err := parseJSONRPCFromRequestBody(logger, body)
 	if err != nil {
-		// For error context, use the first request ID if available, otherwise use empty ID
-		var requestID jsonrpc.ID
-		if len(jsonrpcReqs) > 0 {
-			requestID = jsonrpcReqs[0].ID
-		}
+		requestID := getJsonRpcIDForErrorResponse(jsonrpcReqs)
 		// If no requests parsed or empty ID, requestID will be zero value (empty)
 		return erv.createRequestUnmarshalingFailureContext(requestID, err), false
 	}
@@ -197,14 +189,15 @@ func createHTTPBodyReadFailureObservation(
 //  1. Validating the request body format
 //  2. Detecting whether it's a single request or batch request
 //  3. Delegating to appropriate parsing methods
-//  4. Returning a normalized slice of JSON-RPC requests
+//  4. Returning a normalized map of JSON-RPC requests keyed by ID
+//  5. Validating no duplicate IDs exist in batch requests
 //
 // Supports both single requests and batch requests according to the JSON-RPC 2.0 specification.
 // Reference: https://www.jsonrpc.org/specification#batch
 func parseJSONRPCFromRequestBody(
 	logger polylog.Logger,
 	requestBody []byte,
-) ([]jsonrpc.Request, error) {
+) (map[string]jsonrpc.Request, error) {
 	// Step 1: Validate the request body format
 	trimmedBody, err := validateRequestBody(logger, requestBody)
 	if err != nil {
@@ -276,9 +269,10 @@ func detectRequestFormat(trimmedBody []byte) jsonrpcRequestFormat {
 // Performs validation to ensure:
 //   - The array can be unmarshaled into JSON-RPC request structures
 //   - The batch is not empty (per JSON-RPC 2.0 specification requirement)
+//   - No duplicate IDs exist (to ensure proper request-response correlation)
 //
-// Returns a slice of JSON-RPC requests on success, or an error with diagnostic information.
-func parseBatchRequest(logger polylog.Logger, requestBody []byte) ([]jsonrpc.Request, error) {
+// Returns a map of JSON-RPC requests keyed by ID on success, or an error with diagnostic information.
+func parseBatchRequest(logger polylog.Logger, requestBody []byte) (map[string]jsonrpc.Request, error) {
 	var jsonrpcRequests []jsonrpc.Request
 	err := json.Unmarshal(requestBody, &jsonrpcRequests)
 	if err != nil {
@@ -293,16 +287,32 @@ func parseBatchRequest(logger polylog.Logger, requestBody []byte) ([]jsonrpc.Req
 		return nil, fmt.Errorf("empty batch request not allowed")
 	}
 
+	// Convert slice to map and validate no duplicate IDs exist during conversion
+	jsonrpcReqsMap := make(map[string]jsonrpc.Request)
+	for i, req := range jsonrpcRequests {
+		// Check for duplicate IDs (skip notifications which have empty IDs)
+		if !req.ID.IsEmpty() {
+			if _, exists := jsonrpcReqsMap[req.ID.String()]; exists {
+				logger.Error().
+					Str("duplicate_id", req.ID.String()).
+					Int("request_index", i).
+					Msg("❌ Duplicate ID found in batch request")
+				return nil, fmt.Errorf("duplicate ID '%s' found in batch request - IDs must be unique for proper request-response correlation", req.ID.String())
+			}
+		}
+		jsonrpcReqsMap[req.ID.String()] = req
+	}
+
 	logger.Debug().Int("batch_size", len(jsonrpcRequests)).Msg("Parsed JSON-RPC batch request")
-	return jsonrpcRequests, nil
+	return jsonrpcReqsMap, nil
 }
 
 // parseSingleRequest handles parsing of single JSON-RPC requests (JSON objects).
-// Unmarshals the request body into a JSON-RPC request structure and wraps it
-// in a slice for consistent return type with batch requests.
+// Unmarshals the request body into a JSON-RPC request structure and returns it
+// in a map for consistent return type with batch requests.
 //
-// Returns a single-element slice containing the parsed JSON-RPC request.
-func parseSingleRequest(logger polylog.Logger, requestBody []byte) ([]jsonrpc.Request, error) {
+// Returns a single-element map containing the parsed JSON-RPC request keyed by ID.
+func parseSingleRequest(logger polylog.Logger, requestBody []byte) (map[string]jsonrpc.Request, error) {
 	var jsonrpcRequest jsonrpc.Request
 	err := json.Unmarshal(requestBody, &jsonrpcRequest)
 	if err != nil {
@@ -311,15 +321,20 @@ func parseSingleRequest(logger polylog.Logger, requestBody []byte) ([]jsonrpc.Re
 		return nil, err
 	}
 
+	// Create a map with the single request
+	jsonrpcReqsMap := map[string]jsonrpc.Request{
+		jsonrpcRequest.ID.String(): jsonrpcRequest,
+	}
+
 	logger.Debug().Msg("Parsed single JSON-RPC request")
-	return []jsonrpc.Request{jsonrpcRequest}, nil
+	return jsonrpcReqsMap, nil
 }
 
 // handleInvalidFormat processes request bodies that don't conform to valid JSON-RPC format.
 // This handles cases where the request body doesn't start with '{' (object) or '[' (array).
 //
 // Returns an error with diagnostic information including a preview of the invalid content.
-func handleInvalidFormat(logger polylog.Logger, requestBody []byte) ([]jsonrpc.Request, error) {
+func handleInvalidFormat(logger polylog.Logger, requestBody []byte) (map[string]jsonrpc.Request, error) {
 	requestPreview := log.Preview(string(requestBody))
 	logger.Error().Msgf("❌ Invalid JSON-RPC format - must start with '{' or '['. Request preview: %s", requestPreview)
 	return nil, fmt.Errorf("invalid JSON-RPC format - must be JSON object or array")

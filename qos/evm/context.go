@@ -81,7 +81,7 @@ type requestContext struct {
 	serviceState *serviceState
 
 	// JSON-RPC requests - supports both single and batch requests per JSON-RPC 2.0 spec
-	jsonrpcReqs []jsonrpc.Request
+	jsonrpcReqs map[string]jsonrpc.Request
 
 	// endpointResponses is the set of responses received from one or
 	// more endpoints as part of handling this service request.
@@ -95,7 +95,7 @@ type requestContext struct {
 // GetServicePayload implements the gateway.RequestQoSContext interface.
 // TODO_MVP(@adshmh): Ensure the JSONRPC request struct can handle all valid service requests.
 func (rc requestContext) GetServicePayloads() []protocol.Payload {
-	payloads := make([]protocol.Payload, len(rc.jsonrpcReqs))
+	var payloads []protocol.Payload
 
 	for _, req := range rc.jsonrpcReqs {
 		reqBz, err := json.Marshal(req)
@@ -106,8 +106,7 @@ func (rc requestContext) GetServicePayloads() []protocol.Payload {
 
 		payloads = append(payloads, protocol.Payload{
 			Data:            string(reqBz),
-			Method:          http.MethodPost, // Method is alway POST for EVM-based blockchains.
-			Path:            "",              // Path field is not used for EVM-based blockchains.
+			Method:          http.MethodPost, // Method is always POST for EVM-based blockchains.
 			Headers:         map[string]string{},
 			TimeoutMillisec: defaultServiceRequestTimeoutMillisec,
 			RPCType:         sharedtypes.RPCType_JSON_RPC,
@@ -123,14 +122,7 @@ func (rc *requestContext) UpdateWithResponse(endpointAddr protocol.EndpointAddr,
 	// This would be an extra safety measure, as the caller should have checked the returned value
 	// indicating the validity of the request when calling on QoS instance's ParseHTTPRequest
 
-	// For batch requests, use the first request for response unmarshalling
-	// TODO_FUTURE: Enhance to properly handle batch response processing
-	var jsonrpcReq jsonrpc.Request
-	if len(rc.jsonrpcReqs) > 0 {
-		jsonrpcReq = rc.jsonrpcReqs[0]
-	}
-
-	response, err := unmarshalResponse(rc.logger, jsonrpcReq, responseBz, endpointAddr)
+	response, err := unmarshalResponse(rc.logger, rc.jsonrpcReqs, responseBz, endpointAddr)
 
 	rc.endpointResponses = append(rc.endpointResponses,
 		endpointResponse{
@@ -147,15 +139,9 @@ func (rc *requestContext) UpdateWithResponse(endpointAddr protocol.EndpointAddr,
 func (rc requestContext) GetHTTPResponse() gateway.HTTPResponse {
 	// Use a noResponses struct if no responses were reported by the protocol from any endpoints.
 	if len(rc.endpointResponses) == 0 {
-		// For batch requests, use the first request for response processing
-		var jsonrpcReq jsonrpc.Request
-		if len(rc.jsonrpcReqs) > 0 {
-			jsonrpcReq = rc.jsonrpcReqs[0]
-		}
-
 		responseNoneObj := responseNone{
-			logger:     rc.logger,
-			jsonrpcReq: jsonrpcReq,
+			logger:      rc.logger,
+			jsonrpcReqs: rc.jsonrpcReqs,
 		}
 
 		return responseNoneObj.GetHTTPResponse()
@@ -223,15 +209,9 @@ func (rc requestContext) GetObservations() qosobservations.Observations {
 
 	// If no (zero) responses were received, create a single observation for the no-response scenario.
 	if len(rc.endpointResponses) == 0 {
-		// For batch requests, use the first request for response processing
-		var jsonrpcReq jsonrpc.Request
-		if len(rc.jsonrpcReqs) > 0 {
-			jsonrpcReq = rc.jsonrpcReqs[0]
-		}
-
 		responseNoneObj := responseNone{
-			logger:     rc.logger,
-			jsonrpcReq: jsonrpcReq,
+			logger:      rc.logger,
+			jsonrpcReqs: rc.jsonrpcReqs,
 		}
 		responseNoneObs := responseNoneObj.GetObservation()
 		observations = append(observations, &responseNoneObs)
@@ -250,16 +230,18 @@ func (rc requestContext) GetObservations() qosobservations.Observations {
 	validationResults = append(validationResults, rc.endpointSelectionMetadata.ValidationResults...)
 
 	// Return the set of observations for the JSONRPC request(s).
-	// For batch requests, use the first request for observation generation
-	var jsonrpcRequestObs *qosobservations.JsonRpcRequest
-	if len(rc.jsonrpcReqs) > 0 {
-		jsonrpcRequestObs = rc.jsonrpcReqs[0].GetObservation()
+	// TODO_IN_THIS_PR: determine if we want to send one observation per batch request with multiple json RPC requests.
+	// If so, we need to change the type of jsonrpcRequestObs to []*qosobservations.JsonRpcRequest.
+	var jsonrpcRequest *qosobservations.JsonRpcRequest
+	for _, req := range rc.jsonrpcReqs {
+		jsonrpcRequest = req.GetObservation()
+		break
 	}
 
 	return qosobservations.Observations{
 		ServiceObservations: &qosobservations.Observations_Evm{
 			Evm: &qosobservations.EVMRequestObservations{
-				JsonrpcRequest:       jsonrpcRequestObs,
+				JsonrpcRequest:       jsonrpcRequest,
 				ChainId:              rc.chainID,
 				ServiceId:            string(rc.serviceID),
 				RequestPayloadLength: uint32(rc.requestPayloadLength),
