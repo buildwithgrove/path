@@ -1,7 +1,6 @@
 package shannon
 
 import (
-	"bytes"
 	"context"
 	"crypto/tls"
 	"fmt"
@@ -11,6 +10,7 @@ import (
 	"net/http/httptrace"
 	"net/url"
 	"runtime"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -20,6 +20,11 @@ import (
 
 // Maximum length of an HTTP response's body.
 const maxResponseSize = 100 * 1024 * 1024 // 100MB limit
+
+// Fast-fail timeout for detecting blocked request body writes
+// If headers are written but request body isn't written within this time, fail fast
+const requestBodyWriteTimeout = 1 * time.Second
+const recentHangingEndpointTimeout = 1 * time.Minute
 
 // httpClientWithDebugMetrics provides HTTP client functionality with embedded tracking of debug metrics.
 // It includes things like:
@@ -36,6 +41,10 @@ type httpClientWithDebugMetrics struct {
 	totalRequests    atomic.Uint64
 	timeoutErrors    atomic.Uint64
 	connectionErrors atomic.Uint64
+
+	// Track hanging endpoints for fast-fail behavior
+	hangingEndpoints map[string]time.Time // URL -> last detection time
+	hangingMutex     sync.RWMutex         // Protects hangingEndpoints map
 }
 
 // httpRequestMetrics holds detailed timing and status information for a single HTTP request
@@ -108,7 +117,8 @@ func newDefaultHTTPClientWithDebugMetrics() *httpClientWithDebugMetrics {
 	}
 
 	return &httpClientWithDebugMetrics{
-		httpClient: httpClient,
+		httpClient:       httpClient,
+		hangingEndpoints: make(map[string]time.Time),
 	}
 }
 
@@ -122,6 +132,21 @@ func (h *httpClientWithDebugMetrics) SendHTTPRelay(
 	relayRequest *servicetypes.RelayRequest,
 	headers map[string]string,
 ) ([]byte, error) {
+	// Fast-fail check: if this endpoint is known to be hanging, fail immediately
+	h.hangingMutex.RLock()
+	if lastDetection, isHanging := h.hangingEndpoints[endpointURL]; isHanging {
+		// Only fast-fail if the detection was recent (within last 5 minutes)
+		if time.Since(lastDetection) < recentHangingEndpointTimeout {
+			h.hangingMutex.RUnlock()
+			return nil, fmt.Errorf("fast-fail: endpoint %s is known hanging (blocks request body writes)", endpointURL)
+		}
+		// Detection is old, remove it and continue
+		h.hangingMutex.RUnlock()
+		h.hangingMutex.Lock()
+		delete(h.hangingEndpoints, endpointURL)
+	}
+	h.hangingMutex.Unlock()
+
 	// Set up debugging context and logging function
 	debugCtx, requestRecorder := h.setupRequestDebugging(ctx, logger, endpointURL)
 
@@ -144,11 +169,13 @@ func (h *httpClientWithDebugMetrics) SendHTTPRelay(
 		return nil, requestErr
 	}
 
+	bodyReader := wrapBodyWithFailFast(relayRequestBz, requestBodyWriteTimeout)
+
 	req, err := http.NewRequestWithContext(
 		debugCtx,
 		http.MethodPost,
 		endpointURL,
-		bytes.NewReader(relayRequestBz),
+		bodyReader,
 	)
 	if err != nil {
 		requestErr = fmt.Errorf("failed to create HTTP request: %w", err)
@@ -294,7 +321,7 @@ func createDetailedHTTPTrace(metrics *httpRequestMetrics) *httptrace.ClientTrace
 		},
 
 		// Connection Acquisition Phase
-		// Tracks potential connection pool exhaustions.
+		// Tracks potential connection pool exhaustion.
 		GetConn: func(hostPort string) {
 			getConnStart = time.Now()
 		},
@@ -343,6 +370,15 @@ func (h *httpClientWithDebugMetrics) logRequestMetrics(logger polylog.Logger, me
 	connectionEstablishmentTime := metrics.dnsLookupTime + metrics.connectTime + metrics.tlsTime
 	requestTransmissionTime := metrics.wroteHeadersTime + metrics.wroteRequestTime
 
+	// Detect hanging network behavior pattern:
+	// - Headers were written successfully (wroteHeadersTime > 0)
+	// - But request body write failed or took 0ms (wroteRequestTime == 0)
+	// - Request timed out near the full timeout duration
+	isHangingPattern := metrics.wroteHeadersTime > 0 &&
+		metrics.wroteRequestTime == 0 &&
+		metrics.totalTime > 55*time.Second && // Close to 60s timeout
+		metrics.totalTime < 62*time.Second
+
 	// Log detailed failure metrics using the provided structured logger
 	logger.With(
 		// Request identification
@@ -379,5 +415,48 @@ func (h *httpClientWithDebugMetrics) logRequestMetrics(logger polylog.Logger, me
 		"http_client_debug_total_requests", h.totalRequests.Load(),
 		"http_client_debug_timeout_errors", h.timeoutErrors.Load(),
 		"http_client_debug_connection_errors", h.connectionErrors.Load(),
-	).Error().Err(metrics.error).Msg("HTTP request failed - detailed phase breakdown for timeout debugging")
+
+		// Hanging behavior detection
+		"http_client_debug_hanging_pattern", isHangingPattern,
+	).Error().Err(metrics.error).Msg(func() string {
+		if isHangingPattern {
+			return "HTTP request failed - HANGING NETWORK DETECTED: Headers accepted but request body write blocked"
+		}
+		return "HTTP request failed - detailed phase breakdown for timeout debugging"
+	}())
+
+	// If hanging pattern detected, mark this endpoint for fast-fail
+	if isHangingPattern {
+		h.hangingMutex.Lock()
+		h.hangingEndpoints[metrics.url] = time.Now()
+		h.hangingMutex.Unlock()
+		logger.Warn().
+			Str("endpoint_url", metrics.url).
+			Msg("Endpoint marked as hanging - future requests will fast-fail for 5 minutes")
+	}
+}
+
+// wrapBodyWithFailFast wraps a []byte into an io.ReadCloser using io.Pipe,
+// and fails fast if the write does not start within `writeTimeout`.
+func wrapBodyWithFailFast(body []byte, writeTimeout time.Duration) io.ReadCloser {
+	pr, pw := io.Pipe()
+
+	// Signal to control when the write starts
+	writeStarted := make(chan struct{})
+
+	go func() {
+		defer pw.Close()
+		select {
+		case <-writeStarted:
+			_, err := pw.Write(body)
+			if err != nil {
+				_ = pw.CloseWithError(fmt.Errorf("body write error: %w", err))
+			}
+		case <-time.After(writeTimeout):
+			_ = pw.CloseWithError(fmt.Errorf("fail-fast: request body write did not start within %s", writeTimeout))
+		}
+	}()
+
+	close(writeStarted) // trigger the write immediately
+	return pr
 }
