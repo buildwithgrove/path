@@ -47,12 +47,16 @@ func (i *EVMObservationInterpreter) GetRequestMethods() ([]string, bool) {
 		return nil, false
 	}
 
-	// Get the JSON-RPC requests from the observations
+	// Get the JSON-RPC requests from the observations.
+	// One request observation per JSON-RPC request.
+	//   - In the case of EVM batch requests, this will return multiple request observations.
+	//   - Non-EVM batch requests will return a single request observation.
 	requestObservations := i.Observations.GetRequestObservations()
 	if len(requestObservations) == 0 {
 		return nil, false
 	}
 
+	// Extract all JSONRPC request methods for the request observations.
 	var methods []string
 	for _, reqObs := range requestObservations {
 		if jsonrpcReq := reqObs.GetJsonrpcRequest(); jsonrpcReq != nil {

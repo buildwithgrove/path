@@ -46,10 +46,11 @@ func (drh *DataReporterHTTP) Publish(observations *observation.RequestResponseOb
 	// convert to legacy-formatted data records (may be multiple for EVM batch requests)
 	legacyDataRecords := buildLegacyDataRecords(logger, observations)
 
-	// Process each legacy data record.
+	// Process each legacy data record as a single relay for data pipeline and metering purposes.
 	//
-	// If EVM batch request, legacyDataRecords will be >1 record.
+	// If the observations are for an EVM batch request, legacyDataRecords will contain multiple records.
 	// As of PR #388 all other QoS observations are expected to be single records.
+	// Reference: https://github.com/buildwithgrove/path/pull/388
 	for i, legacyDataRecord := range legacyDataRecords {
 		recordLogger := logger.With("record_index", i, "total_records", len(legacyDataRecords))
 
