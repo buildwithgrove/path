@@ -144,8 +144,10 @@ func (h *httpClientWithDebugMetrics) SendHTTPRelay(
 		h.hangingMutex.RUnlock()
 		h.hangingMutex.Lock()
 		delete(h.hangingEndpoints, endpointURL)
+		h.hangingMutex.Unlock()
+	} else {
+		h.hangingMutex.RUnlock()
 	}
-	h.hangingMutex.Unlock()
 
 	// Set up debugging context and logging function
 	debugCtx, requestRecorder := h.setupRequestDebugging(ctx, logger, endpointURL)

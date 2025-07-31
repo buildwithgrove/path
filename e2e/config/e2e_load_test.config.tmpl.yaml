@@ -45,7 +45,7 @@ e2e_load_test_config:
 
 # Default configuration applied to all test cases (unless overridden)
 default_service_config:
-  global_rps: 1 # Requests per second (shared across all methods)
+  global_rps: 10 # Requests per second (shared across all methods)
   requests_per_method: 10 # Number of requests per method
   success_rate: 0.95 # Minimum required success rate (80%)
   max_p50_latency_ms: 10000ms # Max allowed P50 latency (ms)
