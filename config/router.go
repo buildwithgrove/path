@@ -24,7 +24,7 @@ const (
 	// https://pkg.go.dev/net/http#Server
 	// HTTP server's default timeout values.
 	defaultHTTPServerReadTimeout  = 60 * time.Second
-	defaultHTTPServerWriteTimeout = 90 * time.Second
+	defaultHTTPServerWriteTimeout = 120 * time.Second
 	defaultHTTPServerIdleTimeout  = 180 * time.Second
 )
 
