@@ -14,13 +14,11 @@ const (
 	// defaultMaxRequestHeaderBytes is the default maximum size of the HTTP request header.
 	defaultMaxRequestHeaderBytes = 2 * 1e6 // 2 MB
 
-	// HTTP server's default timeout values.
-	defaultHTTPServerReadTimeout = 10 * time.Second
-	defaultHTTPServerIdleTimeout = 120 * time.Second
-
-	// HTTP request handler's WriteTimeout.
 	// https://pkg.go.dev/net/http#Server
-	defaultHTTPServerWriteTimeout = 20 * time.Second
+	// HTTP server's default timeout values.
+	defaultHTTPServerReadTimeout  = 20 * time.Second
+	defaultHTTPServerWriteTimeout = 30 * time.Second
+	defaultHTTPServerIdleTimeout  = 120 * time.Second
 )
 
 /* --------------------------------- Router Config Struct -------------------------------- */

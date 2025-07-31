@@ -17,9 +17,6 @@ import (
 
 var _ gateway.ProtocolRequestContext = &requestContext{}
 
-// TODO_TECHDEBT(@adshmh): Make this configurable via either an env variable or YAML config.
-const defaultRelayTimeoutMillisec = 5000
-
 // requestContext captures all the data required for handling a single service request.
 type requestContext struct {
 	logger    polylog.Logger
@@ -68,8 +65,6 @@ func (rc *requestContext) HandleServiceRequest(payload protocol.Payload) (protoc
 		morseEndpoint,
 		rc.selectedEndpoint.session,
 		rc.selectedEndpoint.app.aat,
-		// TODO_FUTURE(@adshmh): support service-specific timeouts, passed from the Qos instance.
-		0, // SDK to use the default timeout.
 		payload,
 	)
 
@@ -118,7 +113,6 @@ func (rc *requestContext) sendRelay(
 	node provider.Node,
 	session provider.Session,
 	aat provider.PocketAAT,
-	timeoutMillisec int,
 	payload protocol.Payload,
 ) (provider.RelayOutput, error) {
 	fullNodeInput := &sdkrelayer.Input{
@@ -135,12 +129,7 @@ func (rc *requestContext) sendRelay(
 		Str("endpoint", node.PublicKey).
 		Msg("Sending relay to endpoint")
 
-	timeout := timeoutMillisec
-	if timeout == 0 {
-		timeout = defaultRelayTimeoutMillisec
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(timeout)*time.Millisecond)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	output, err := rc.fullNode.SendRelay(ctx, fullNodeInput)

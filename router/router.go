@@ -21,9 +21,9 @@ import (
 
 // Reserve time for system overhead, i.e. time spent on non-business logic operations.
 // Examples:
-// - time required to read the HTTP request's body.
-// - time required to write the prepared HTTP response.
-const systemOverheadAllowance = 5 * time.Second
+// - Read HTTP Request body
+// - Write HTTP Response
+const systemOverheadAllowance = 10 * time.Second
 
 type (
 	router struct {

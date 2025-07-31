@@ -25,6 +25,7 @@ import (
 
 // Maximum endpoint payload length for error logging (100 chars)
 const maxEndpointPayloadLenForLogging = 100
+const defaultShannonSendRelayTimeoutMillisec = 20_000
 
 // requestContext provides all the functionality required by the gateway package
 // for handling a single service request.
@@ -239,10 +240,8 @@ func (rc *requestContext) sendRelay(payload protocol.Payload) (*servicetypes.Rel
 	}
 
 	// Prepare a timeout context for the relay request.
-	timeout := time.Duration(payload.TimeoutMillisec) * time.Millisecond
-
-	// TODO_TECHDEBT(@adshmh): Using a new context to debug. Revert to using the request's original context.
-	ctxWithTimeout, cancelFn := context.WithTimeout(context.TODO(), timeout)
+	timeout := time.Duration(defaultShannonSendRelayTimeoutMillisec) * time.Millisecond
+	ctxWithTimeout, cancelFn := context.WithTimeout(rc.context, timeout)
 	defer cancelFn()
 
 	// Build headers including RPCType header

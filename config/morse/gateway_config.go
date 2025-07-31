@@ -17,9 +17,9 @@ const (
 	defaultMaxConnsPerHost     = 100
 	defaultMaxIdleConnsPerHost = 100
 	defaultMaxIdleConns        = 10_000
+	defaultDialTimeout         = 10 * time.Second
+	defaultKeepAliveTimeout    = 60 * time.Second
 	defaultIdleConnTimeout     = 90 * time.Second
-	defaultDialTimeout         = 3 * time.Second
-	defaultKeepAlive           = 30 * time.Second
 )
 
 const (
@@ -123,7 +123,7 @@ func (c *MorseGatewayConfig) hydrateTransport() {
 		c.Transport.DialTimeout = defaultDialTimeout
 	}
 	if c.Transport.KeepAlive == 0 {
-		c.Transport.KeepAlive = defaultKeepAlive
+		c.Transport.KeepAlive = defaultKeepAliveTimeout
 	}
 
 	c.FullNodeConfig.HttpConfig.Transport = &http.Transport{
