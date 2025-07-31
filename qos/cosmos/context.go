@@ -49,7 +49,6 @@ type response interface {
 	GetObservation() qosobservations.CosmosEndpointObservation
 }
 
-// TODO_IN_THIS_PR: handle batch requests for Cosmos
 // GetServicePayload builds the payload to send to blockchain endpoints
 func (rc *requestContext) GetServicePayloads() []protocol.Payload {
 	return []protocol.Payload{rc.servicePayload}

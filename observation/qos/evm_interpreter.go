@@ -34,33 +34,40 @@ type EVMObservationInterpreter struct {
 	Observations *EVMRequestObservations
 }
 
-// GetRequestMethod extracts the JSON-RPC method from the request.
-// Returns (method, true) if extraction succeeded
-// Returns ("", false) if request is invalid or missing
-func (i *EVMObservationInterpreter) GetRequestMethod() (string, bool) {
+// GetRequestMethods extracts all JSON-RPC methods from the request observations.
+// Returns (methods, true) if extraction succeeded
+// Returns (nil, false) if requests are invalid or missing
+func (i *EVMObservationInterpreter) GetRequestMethods() ([]string, bool) {
 	if i.Observations == nil {
-		return "", false
+		return nil, false
 	}
 
 	// Check for validation failures using the shared method
 	if _, reqError := i.checkRequestValidationFailures(); reqError != nil {
-		return "", false
+		return nil, false
 	}
 
-	// Get the JSON-RPC request from the observations
-	req := i.Observations.GetJsonrpcRequest()
-	if req == nil {
-		return "", false
+	// Get the JSON-RPC requests from the observations
+	requestObservations := i.Observations.GetRequestObservations()
+	if len(requestObservations) == 0 {
+		return nil, false
 	}
 
-	// Extract the method from the request
-	method := req.GetMethod()
-	if method == "" {
-		return "", false
+	var methods []string
+	for _, reqObs := range requestObservations {
+		if jsonrpcReq := reqObs.GetJsonrpcRequest(); jsonrpcReq != nil {
+			if method := jsonrpcReq.GetMethod(); method != "" {
+				methods = append(methods, method)
+			}
+		}
 	}
 
-	// Return the method and success flag
-	return method, true
+	if len(methods) == 0 {
+		return nil, false
+	}
+
+	// Return the methods and success flag
+	return methods, true
 }
 
 // GetChainID extracts the chain ID associated with the EVM observations.
@@ -140,12 +147,23 @@ func (i *EVMObservationInterpreter) GetEndpointObservations() ([]*EVMEndpointObs
 		return nil, false
 	}
 
-	observations := i.Observations.GetEndpointObservations()
-	if len(observations) == 0 {
+	// Get endpoint observations from request observations
+	requestObservations := i.Observations.GetRequestObservations()
+	if len(requestObservations) == 0 {
 		return nil, false
 	}
 
-	return observations, true
+	var allEndpointObservations []*EVMEndpointObservation
+	for _, reqObs := range requestObservations {
+		endpointObs := reqObs.GetEndpointObservations()
+		allEndpointObservations = append(allEndpointObservations, endpointObs...)
+	}
+
+	if len(allEndpointObservations) == 0 {
+		return nil, false
+	}
+
+	return allEndpointObservations, true
 }
 
 // checkRequestValidationFailures examines observations for request validation failures
@@ -174,7 +192,10 @@ func (i *EVMObservationInterpreter) checkRequestValidationFailures() (int, *EVMR
 // getEndpointResponseStatus interprets endpoint response observations to extract status information
 // Returns (httpStatusCode, requestError, error) tuple
 func (i *EVMObservationInterpreter) getEndpointResponseStatus() (int, *EVMRequestError, error) {
-	observations := i.Observations.GetEndpointObservations()
+	observations, ok := i.GetEndpointObservations()
+	if !ok {
+		return 0, nil, ErrEVMNoEndpointObservationsFound
+	}
 
 	// No endpoint observations indicates no responses were received
 	if len(observations) == 0 {

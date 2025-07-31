@@ -126,3 +126,9 @@ func (r responseToChainID) getResponsePayload() []byte {
 func (r responseToChainID) getHTTPStatusCode() int {
 	return r.jsonRPCResponse.GetRecommendedHTTPStatusCode()
 }
+
+// GetJSONRPCID returns the JSONRPC ID of the response.
+// Implements the response interface.
+func (r responseToChainID) GetJSONRPCID() jsonrpc.ID {
+	return r.jsonRPCResponse.ID
+}

@@ -46,6 +46,8 @@ type response interface {
 
 	// GetHTTPResponse returns the HTTP response to be sent back to the client.
 	GetHTTPResponse() httpResponse
+
+	GetJSONRPCID() jsonrpc.ID
 }
 
 var _ response = &endpointResponse{}
@@ -124,13 +126,11 @@ func (rc *requestContext) UpdateWithResponse(endpointAddr protocol.EndpointAddr,
 
 	response, err := unmarshalResponse(rc.logger, rc.jsonrpcReqs, responseBz, endpointAddr)
 
-	rc.endpointResponses = append(rc.endpointResponses,
-		endpointResponse{
-			EndpointAddr: endpointAddr,
-			response:     response,
-			unmarshalErr: err,
-		},
-	)
+	rc.endpointResponses = append(rc.endpointResponses, endpointResponse{
+		EndpointAddr: endpointAddr,
+		response:     response,
+		unmarshalErr: err,
+	})
 }
 
 // GetHTTPResponse builds the HTTP response that should be returned for
@@ -147,23 +147,22 @@ func (rc requestContext) GetHTTPResponse() gateway.HTTPResponse {
 		return responseNoneObj.GetHTTPResponse()
 	}
 
-	// Handle batch requests according to JSON-RPC 2.0 specification
-	// https://www.jsonrpc.org/specification#batch
-	if len(rc.jsonrpcReqs) > 1 {
-		return rc.getBatchHTTPResponse()
+	if len(rc.jsonrpcReqs) == 1 {
+		// return the only endpoint response reported to the context for single requests.
+		return rc.endpointResponses[0].GetHTTPResponse()
 	}
 
-	// return the last endpoint response reported to the context for single requests.
-	return rc.endpointResponses[len(rc.endpointResponses)-1].GetHTTPResponse()
+	// Handle batch requests according to JSON-RPC 2.0 specification
+	// https://www.jsonrpc.org/specification#batch
+	return rc.getBatchHTTPResponse()
 }
 
 // getBatchHTTPResponse handles batch requests by combining individual JSON-RPC responses
 // into an array according to the JSON-RPC 2.0 specification.
 // https://www.jsonrpc.org/specification#batch
-func (rc requestContext) getBatchHTTPResponse() httpResponse {
+func (rc requestContext) getBatchHTTPResponse() gateway.HTTPResponse {
 	// Collect individual response payloads
 	var individualResponses []json.RawMessage
-	var httpStatusCode int = http.StatusOK // Default to 200 OK for batch responses
 
 	// Process each endpoint response
 	for _, endpointResp := range rc.endpointResponses {
@@ -174,79 +173,50 @@ func (rc requestContext) getBatchHTTPResponse() httpResponse {
 		if len(payload) > 0 {
 			individualResponses = append(individualResponses, json.RawMessage(payload))
 		}
-
-		// If any individual response has an error status, use internal server error for the batch
-		if individualHTTPResp.GetHTTPStatusCode() >= 400 {
-			httpStatusCode = http.StatusInternalServerError
-		}
 	}
 
 	// According to JSON-RPC spec: "If there are no Response objects contained within the Response array
 	// as it is to be sent to the client, the server MUST NOT return an empty Array and should return nothing at all."
-	// However, since we're in the context of having endpointResponses, we should return the array.
+	// This can happen when all requests in the batch are notifications (which don't get responses)
+	// or when all individual responses are empty/invalid.
+	if len(individualResponses) == 0 {
+		emptyBatchResponse := getGenericResponseBatchEmpty(rc.logger)
+		return emptyBatchResponse.GetHTTPResponse()
+	}
 
 	// Combine individual responses into a JSON array
 	batchResponse, err := json.Marshal(individualResponses)
 	if err != nil {
-		rc.logger.Error().Err(err).Msg("Failed to marshal batch response")
-		// Return an internal server error response
-		return httpResponse{
-			responsePayload: []byte(`{"jsonrpc":"2.0","error":{"code":-32603,"message":"Internal error"},"id":null}`),
-			httpStatusCode:  http.StatusInternalServerError,
-		}
+		// Create a responseGeneric for batch marshaling failure and return its HTTP response
+		errorResponse := getGenericJSONRPCErrResponseBatchMarshalFailure(rc.logger, err)
+		return errorResponse.GetHTTPResponse()
 	}
 
 	return httpResponse{
 		responsePayload: batchResponse,
-		httpStatusCode:  httpStatusCode,
+		// According to the JSON-RPC 2.0 specification, even if individual responses
+		// in a batch contain errors, the entire batch should still return HTTP 200 OK.
+		httpStatusCode: http.StatusOK,
 	}
 }
 
 // GetObservations returns all endpoint observations from the request context.
 // Implements gateway.RequestQoSContext interface.
 func (rc requestContext) GetObservations() qosobservations.Observations {
-	var observations []*qosobservations.EVMEndpointObservation
+	// Create observations for each JSON-RPC request in the batch (or single request)
+	requestObservations := rc.createRequestObservations()
 
-	// If no (zero) responses were received, create a single observation for the no-response scenario.
-	if len(rc.endpointResponses) == 0 {
-		responseNoneObj := responseNone{
-			logger:      rc.logger,
-			jsonrpcReqs: rc.jsonrpcReqs,
-		}
-		responseNoneObs := responseNoneObj.GetObservation()
-		observations = append(observations, &responseNoneObs)
-	} else {
-		// Otherwise, process all responses as individual observations.
-		observations = make([]*qosobservations.EVMEndpointObservation, len(rc.endpointResponses))
-		for idx, endpointResponse := range rc.endpointResponses {
-			obs := endpointResponse.GetObservation()
-			obs.EndpointAddr = string(endpointResponse.EndpointAddr)
-			observations[idx] = &obs
-		}
-	}
-
-	// Convert validation results to proto format
-	var validationResults []*qosobservations.EndpointValidationResult
-	validationResults = append(validationResults, rc.endpointSelectionMetadata.ValidationResults...)
-
-	// Return the set of observations for the JSONRPC request(s).
-	// TODO_IN_THIS_PR: determine if we want to send one observation per batch request with multiple json RPC requests.
-	// If so, we need to change the type of jsonrpcRequestObs to []*qosobservations.JsonRpcRequest.
-	var jsonrpcRequest *qosobservations.JsonRpcRequest
-	for _, req := range rc.jsonrpcReqs {
-		jsonrpcRequest = req.GetObservation()
-		break
-	}
+	// Convert endpoint selection validation results to proto format
+	validationResults := rc.convertValidationResults()
 
 	return qosobservations.Observations{
 		ServiceObservations: &qosobservations.Observations_Evm{
 			Evm: &qosobservations.EVMRequestObservations{
-				JsonrpcRequest:       jsonrpcRequest,
 				ChainId:              rc.chainID,
 				ServiceId:            string(rc.serviceID),
 				RequestPayloadLength: uint32(rc.requestPayloadLength),
 				RequestOrigin:        rc.requestOrigin,
-				EndpointObservations: observations,
+				RequestObservations:  requestObservations,
 				EndpointSelectionMetadata: &qosobservations.EndpointSelectionMetadata{
 					RandomEndpointFallback: rc.endpointSelectionMetadata.RandomEndpointFallback,
 					ValidationResults:      validationResults,
@@ -254,6 +224,81 @@ func (rc requestContext) GetObservations() qosobservations.Observations {
 			},
 		},
 	}
+}
+
+// createRequestObservations creates observations for all JSON-RPC requests in the batch.
+// For batch requests, jsonrpcReqs contains multiple requests keyed by their ID strings.
+// For single requests, jsonrpcReqs contains one request.
+// Each observation correlates a JSON-RPC request with its corresponding endpoint response(s).
+func (rc requestContext) createRequestObservations() []*qosobservations.EVMRequestObservation {
+	// Handle the special case where no endpoint responses were received
+	if len(rc.endpointResponses) == 0 {
+		return rc.createNoResponseObservations()
+	}
+
+	// Create observations by correlating endpoint responses with their corresponding JSON-RPC requests
+	return rc.createResponseObservations()
+}
+
+// createNoResponseObservations creates a single observation when no endpoint responses were received.
+// This can happen when all endpoints are unreachable or fail to respond.
+// The observation includes all JSON-RPC requests from the batch but no endpoint observations.
+func (rc requestContext) createNoResponseObservations() []*qosobservations.EVMRequestObservation {
+	responseNoneObj := responseNone{
+		logger:      rc.logger,
+		jsonrpcReqs: rc.jsonrpcReqs,
+	}
+	responseNoneObs := responseNoneObj.GetObservation()
+
+	return []*qosobservations.EVMRequestObservation{
+		{EndpointObservations: []*qosobservations.EVMEndpointObservation{
+			&responseNoneObs,
+		}},
+	}
+}
+
+// createResponseObservations creates observations by correlating endpoint responses with their
+// corresponding JSON-RPC requests from the batch. Each endpoint response contains a JSON-RPC ID
+// that is used to look up the original request in the jsonrpcReqs map.
+//
+// For batch requests: multiple responses are correlated with multiple requests
+// For single requests: one response is correlated with one request
+func (rc requestContext) createResponseObservations() []*qosobservations.EVMRequestObservation {
+	var observations []*qosobservations.EVMRequestObservation
+
+	for _, endpointResp := range rc.endpointResponses {
+		responseIDStr := endpointResp.GetJSONRPCID().String()
+
+		// Look up the original JSON-RPC request using the response ID
+		// This correlation is critical for batch requests where multiple requests/responses
+		// need to be properly matched
+		jsonrpcReq, ok := rc.jsonrpcReqs[responseIDStr]
+		if !ok {
+			rc.logger.Error().Msgf("SHOULD RARELY HAPPEN: requestContext.createResponseObservations() should never fail to find the JSONRPC request for response ID: %s", responseIDStr)
+			continue
+		}
+
+		// Create observations for both the request and its corresponding endpoint response
+		endpointObs := endpointResp.GetObservation()
+
+		observations = append(observations, &qosobservations.EVMRequestObservation{
+			JsonrpcRequest: jsonrpcReq.GetObservation(),
+			EndpointObservations: []*qosobservations.EVMEndpointObservation{
+				&endpointObs,
+			},
+		})
+	}
+
+	return observations
+}
+
+// convertValidationResults converts endpoint selection validation results to proto format.
+// These results contain information about which endpoints were considered during selection
+// and why they were accepted or rejected.
+func (rc requestContext) convertValidationResults() []*qosobservations.EndpointValidationResult {
+	var validationResults []*qosobservations.EndpointValidationResult
+	validationResults = append(validationResults, rc.endpointSelectionMetadata.ValidationResults...)
+	return validationResults
 }
 
 func (rc *requestContext) GetEndpointSelector() protocol.EndpointSelector {

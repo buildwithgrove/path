@@ -12,73 +12,101 @@ import (
 	qosobservation "github.com/buildwithgrove/path/observation/qos"
 )
 
-// setLegacyFieldsFromQoSObservations populates legacy record with QoS observation data.
+// setLegacyFieldsFromQoSObservations populates legacy records with QoS observation data.
 // Currently supports:
-// - EVM observations
-// Future support planned for Solana and CometBFT
+// - EVM observations (returns multiple records based on RequestObservations)
+// - Solana observations (returns single record)
+// Future support planned for CometBFT
 //
 // Parameters:
 // - logger: logging interface
-// - legacyRecord: the record to populate
+// - baseLegacyRecord: the base record to populate
 // - observations: QoS observations data
-// Returns: the populated legacy record
+// Returns: slice of populated legacy records
 func setLegacyFieldsFromQoSObservations(
 	logger polylog.Logger,
-	legacyRecord *legacyRecord,
+	baseLegacyRecord *legacyRecord,
 	observations *qosobservation.Observations,
-) *legacyRecord {
+) []*legacyRecord {
 	if evmObservations := observations.GetEvm(); evmObservations != nil {
-		return setLegacyFieldsFromQoSEVMObservations(logger, legacyRecord, evmObservations)
+		return setLegacyFieldsFromQoSEVMObservations(logger, baseLegacyRecord, evmObservations)
 	}
 
 	// Use Solana observations to update the legacy record's fields.
 	if solanaObservations := observations.GetSolana(); solanaObservations != nil {
-		return setLegacyFieldsFromQoSSolanaObservations(logger, legacyRecord, solanaObservations)
+		populatedRecord := setLegacyFieldsFromQoSSolanaObservations(logger, baseLegacyRecord, solanaObservations)
+		return []*legacyRecord{populatedRecord}
 	}
 
-	return legacyRecord
+	return []*legacyRecord{baseLegacyRecord}
 }
 
 // qosEVMErrorTypeStr defines the prefix for EVM QoS error types in legacy records
 const qosEVMErrorTypeStr = "QOS_EVM"
 
-// setLegacyFieldsFromQoSEVMObservations populates legacy record with EVM-specific QoS data.
+// setLegacyFieldsFromQoSEVMObservations populates legacy records with EVM-specific QoS data.
 // It captures:
 // - Request payload size
 // - JSONRPC method information
 // - Error details (when applicable)
+// Creates one legacy record per RequestObservation
 //
 // Parameters:
 // - logger: logging interface
-// - legacyRecord: the record to populate
+// - baseLegacyRecord: the base record to copy for each method
 // - observations: EVM-specific QoS observations
-// Returns: the populated legacy record
+// Returns: slice of populated legacy records
 func setLegacyFieldsFromQoSEVMObservations(
 	logger polylog.Logger,
-	legacyRecord *legacyRecord,
+	baseLegacyRecord *legacyRecord,
 	observations *qosobservation.EVMRequestObservations,
-) *legacyRecord {
-	// In bytes: the length of the request: float64 type is for compatibility with the legacy data pipeline.
-	legacyRecord.RequestDataSize = float64(observations.RequestPayloadLength)
+) []*legacyRecord {
+	// Set common fields from observations
+	baseLegacyRecord.RequestDataSize = float64(observations.RequestPayloadLength)
 
 	evmInterpreter := &qosobservation.EVMObservationInterpreter{
 		Observations: observations,
 	}
 
-	// Extract the JSONRPC request's method.
-	jsonrpcRequestMethod, _ := evmInterpreter.GetRequestMethod()
-	legacyRecord.ChainMethod = jsonrpcRequestMethod
+	// Extract all JSONRPC request methods
+	jsonrpcRequestMethods, ok := evmInterpreter.GetRequestMethods()
+	if !ok || len(jsonrpcRequestMethods) == 0 {
+		// If no methods found, return single record with base data
+		populateErrorFields(baseLegacyRecord, evmInterpreter)
+		return []*legacyRecord{baseLegacyRecord}
+	}
 
+	// Create a separate legacy record for each method
+	var legacyRecords []*legacyRecord
+	for _, method := range jsonrpcRequestMethods {
+		// Create a copy of the base record
+		recordCopy := *baseLegacyRecord
+		legacyRecord := &recordCopy
+
+		// Set the method for this record
+		legacyRecord.ChainMethod = method
+
+		// Populate error fields if needed
+		populateErrorFields(legacyRecord, evmInterpreter)
+
+		legacyRecords = append(legacyRecords, legacyRecord)
+	}
+
+	return legacyRecords
+}
+
+// populateErrorFields sets error-related fields in the legacy record based on QoS observations
+func populateErrorFields(legacyRecord *legacyRecord, evmInterpreter *qosobservation.EVMObservationInterpreter) {
 	// ErrorType is already set at gateway or protocol level.
 	// Skip updating the error fields to preserve the original error.
 	if legacyRecord.ErrorType != "" {
-		return legacyRecord
+		return
 	}
 
 	_, requestErr, err := evmInterpreter.GetRequestStatus()
 	// Could not extract request error details, skip the rest of the updates.
 	if err != nil || requestErr == nil {
-		return legacyRecord
+		return
 	}
 
 	legacyRecord.ErrorMessage = requestErr.String()
@@ -91,8 +119,6 @@ func setLegacyFieldsFromQoSEVMObservations(
 	default:
 		legacyRecord.ErrorType = fmt.Sprintf("%s_UNKNOWN_ERROR", qosEVMErrorTypeStr)
 	}
-
-	return legacyRecord
 }
 
 // setLegacyFieldsFromQoSSolanaObservations populates legacy record with Solana-specific QoS data.

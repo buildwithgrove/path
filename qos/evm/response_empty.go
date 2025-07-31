@@ -68,3 +68,9 @@ func (r responseEmpty) getResponsePayload() []byte {
 func (r responseEmpty) getHTTPStatusCode() int {
 	return httpStatusResponseValidationFailureEmptyResponse
 }
+
+// GetJSONRPCID returns the JSONRPC ID of the response.
+// Implements the response interface.
+func (r responseEmpty) GetJSONRPCID() jsonrpc.ID {
+	return getJsonRpcIDForErrorResponse(r.jsonrpcReqs)
+}
