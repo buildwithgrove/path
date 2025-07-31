@@ -111,7 +111,8 @@ func classifyRelayError(logger polylog.Logger, err error) (protocolobservations.
 	}
 }
 
-// classifyHttpError classifies HTTP-related errors and returns the appropriate endpoint error type and sanction
+// classifyHttpError classifies HTTP-related errors.
+// It returns the appropriate endpoint error type and sanction to be applied to the endpoint.
 // Analyzes the raw error from sendHttpRelay and maps it to defined error types
 func classifyHttpError(logger polylog.Logger, err error) (protocolobservations.ShannonEndpointErrorType, protocolobservations.ShannonSanctionType) {
 	logger = logger.With("error_message", err.Error())
@@ -170,6 +171,7 @@ func classifyHttpError(logger polylog.Logger, err error) (protocolobservations.S
 		"err_preview", errStr[:min(100, len(errStr))],
 	).Warn().Msg("Unable to classify HTTP error - defaulting to internal error")
 
+	// SHANNON_ENDPOINT_ERROR_HTTP_UNKNOWN is the default if we have no details
 	return protocolobservations.ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_HTTP_UNKNOWN,
 		protocolobservations.ShannonSanctionType_SHANNON_SANCTION_SESSION
 }

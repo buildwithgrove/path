@@ -100,7 +100,14 @@ enum ShannonEndpointErrorType {
   // New error types for better classification (added without renumbering existing ones)
   // Error was recognized but specific classification failed.
   // Only general category: HTTP, Raw Payload, General, is known.
+
+  // ** SHANNON_ENDPOINT_ERROR_HTTP_UNKNOWN **
+  // PATH -> HTTP Request -> Endpoint
+  // HTTP Response is NOT received
+  // We cannot move forward with PATH business logic
+  // There is nothing to go to.
   SHANNON_ENDPOINT_ERROR_HTTP_UNKNOWN = 34;
+
   SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_UNKNOWN = 35;
   SHANNON_ENDPOINT_ERROR_UNKNOWN = 36;
 }
