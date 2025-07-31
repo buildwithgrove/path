@@ -61,7 +61,7 @@ func responseValidatorEVMChainID(logger polylog.Logger, jsonrpcResponse jsonrpc.
 		}
 	}
 
-	logger.Error().
+	logger.Debug().
 		Str("evm_chain_id", evmChainID).
 		Msg("Successfully parsed eth_chainId response")
 
