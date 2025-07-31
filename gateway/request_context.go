@@ -32,7 +32,7 @@ const (
 	// - If all endpoints are sanctioned, send parallel requests by default
 	// - Make this configurable at the gateway level yaml config
 	// - Enable parallel requests for gateways that maintain their own backend nodes as a special config
-	maxParallelRequests    = 1
+	maxParallelRequests    = 3
 	parallelRequestTimeout = 30 * time.Second
 )
 
