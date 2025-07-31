@@ -240,7 +240,9 @@ func (rc *requestContext) sendRelay(payload protocol.Payload) (*servicetypes.Rel
 
 	// Prepare a timeout context for the relay request.
 	timeout := time.Duration(payload.TimeoutMillisec) * time.Millisecond
-	ctxWithTimeout, cancelFn := context.WithTimeout(rc.context, timeout)
+
+	// TODO_TECHDEBT(@adshmh): Using a new context to debug. Revert to using the request's original context.
+	ctxWithTimeout, cancelFn := context.WithTimeout(context.TODO(), timeout)
 	defer cancelFn()
 
 	// Build headers including RPCType header
