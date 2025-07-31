@@ -93,7 +93,7 @@ func newDefaultHTTPClientWithDebugMetrics() *httpClientWithDebugMetrics {
 
 		// Timeout settings
 		TLSHandshakeTimeout:   10 * time.Second, // TLS handshake timeout
-		ResponseHeaderTimeout: 30 * time.Second, // Time to wait for response headers
+		ResponseHeaderTimeout: 70 * time.Second, // Time to wait for response headers
 
 		// Performance settings
 		DisableKeepAlives:  false, // Enable connection reuse
@@ -104,7 +104,7 @@ func newDefaultHTTPClientWithDebugMetrics() *httpClientWithDebugMetrics {
 	// Individual requests will use context deadlines for actual timeout control
 	httpClient := &http.Client{
 		Transport: transport,
-		Timeout:   60 * time.Second, // Large fallback timeout (1 minute)
+		Timeout:   80 * time.Second, // Large fallback timeout (80 seconds)
 	}
 
 	return &httpClientWithDebugMetrics{
