@@ -91,6 +91,7 @@ func (rc *requestContext) HandleServiceRequest(payload protocol.Payload) (protoc
 	endpointQueryTime := time.Now()
 
 	// Send the relay request.
+	rc.logger.Info().Msg("🚀 Starting relay request to selected endpoint")
 	response, err := rc.sendRelay(payload)
 
 	// Handle endpoint error and capture RelayMinerError data if available
@@ -247,6 +248,10 @@ func (rc *requestContext) sendRelay(payload protocol.Payload) (*servicetypes.Rel
 	ctxWithTimeout, cancel := context.WithTimeout(context.TODO(), timeout)
 	// ctxWithTimeout, cancel := context.WithTimeout(rc.context, timeout)
 	defer cancel()
+	
+	rc.logger.Info().
+		Dur("shannon_timeout", timeout).
+		Msg("🕐 Shannon context timeout set")
 
 	// Build headers including RPCType header
 	headers := buildHeaders(payload)

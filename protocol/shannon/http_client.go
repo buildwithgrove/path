@@ -177,7 +177,15 @@ func (h *httpClientWithDebugMetrics) SendHTTPRelay(
 	}
 
 	// Execute HTTP request
+	logger.Debug().
+		Str("endpoint_url", endpointURL).
+		Dur("context_timeout", responseHeaderTimeout).
+		Msg("Starting HTTP request with early timeout")
+		
+	startTime := time.Now()
 	resp, err := h.httpClient.Do(req)
+	requestDuration := time.Since(startTime)
+	
 	if err != nil {
 		// Check if the error was due to our early timeout
 		if earlyCtx.Err() == context.DeadlineExceeded {
@@ -185,13 +193,30 @@ func (h *httpClientWithDebugMetrics) SendHTTPRelay(
 			if transport, ok := h.httpClient.Transport.(*http.Transport); ok {
 				transport.CloseIdleConnections()
 			}
+			logger.Warn().
+				Str("endpoint_url", endpointURL).
+				Dur("actual_duration", requestDuration).
+				Dur("expected_timeout", responseHeaderTimeout).
+				Msg("Request cancelled due to early context timeout")
 			requestErr = fmt.Errorf("response header timeout: no headers received within %s", responseHeaderTimeout)
 			h.timeoutErrors.Add(1)
 			return nil, requestErr
 		}
+		
+		logger.Warn().
+			Str("endpoint_url", endpointURL).
+			Dur("actual_duration", requestDuration).
+			Err(err).
+			Msg("HTTP request failed with error")
 		requestErr = h.categorizeError(debugCtx, err)
 		return nil, requestErr
 	}
+	
+	logger.Debug().
+		Str("endpoint_url", endpointURL).
+		Dur("request_duration", requestDuration).
+		Int("status_code", resp.StatusCode).
+		Msg("HTTP request completed successfully")
 	defer resp.Body.Close()
 
 	// Cancel the early timeout since we got headers

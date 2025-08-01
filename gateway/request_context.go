@@ -198,14 +198,17 @@ func (rc *requestContext) BuildProtocolContextsFromHTTPRequest(httpReq *http.Req
 	}
 
 	// Select multiple endpoints for parallel relay attempts
+	logger.Info().Msgf("🎯 Attempting to select up to %d endpoints from %d available endpoints for service %s", maxParallelRequests, len(availableEndpoints), rc.serviceID)
 	selectedEndpoints, err := rc.qosCtx.GetEndpointSelector().SelectMultiple(availableEndpoints, maxParallelRequests)
 	if err != nil || len(selectedEndpoints) == 0 {
 		// no protocol context will be built: use the endpointLookup observation.
 		rc.updateProtocolObservations(&endpointLookupObs)
 		// log and return the error
-		logger.ProbabilisticDebugInfo(polylog.ProbabilisticDebugInfoProb).Msgf("no endpoints could be selected for the request from %d available endpoints", len(availableEndpoints))
+		logger.Error().Msgf("❌ Failed to select any endpoints for service %s from %d available: %v", rc.serviceID, len(availableEndpoints), err)
 		return fmt.Errorf("%w: no endpoints could be selected from %d available endpoints", errBuildProtocolContextsFromHTTPRequest, len(availableEndpoints))
 	}
+	
+	logger.Info().Msgf("✅ Successfully selected %d endpoints for service %s", len(selectedEndpoints), rc.serviceID)
 
 	// Log TLD diversity of selected endpoints
 	shannonmetrics.LogEndpointTLDDiversity(logger, selectedEndpoints)
