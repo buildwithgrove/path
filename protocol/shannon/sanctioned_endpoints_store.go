@@ -307,7 +307,7 @@ func (ses *sanctionedEndpointsStore) getSanctionDetails(serviceID protocol.Servi
 	return devtools.ProtocolLevelDataResponse{
 		PermanentlySanctionedEndpoints:    permanentSanctionDetails,
 		SessionSanctionedEndpoints:        sessionSanctionDetails,
-		PermamentSanctionedEndpointsCount: permanentSanctionedEndpointsCount,
+		PermanentSanctionedEndpointsCount: permanentSanctionedEndpointsCount,
 		SessionSanctionedEndpointsCount:   sessionSanctionedEndpointsCount,
 		TotalSanctionedEndpointsCount:     totalSanctionedEndpointsCount,
 	}
