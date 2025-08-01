@@ -32,9 +32,21 @@ debug_view_results_links:
 	@echo "##########################################################################################################"
 	@echo ""
 
-.PHONY: check_path_up
-# Internal helper: Checks if PATH is running at localhost:3070
-check_path_up:
+.PHONY: check_path_up_binary
+# Internal helper: Checks if PATH is running at localhost:3069
+check_path_up_binary:
+	@if ! nc -z localhost 3069 2>/dev/null; then \
+		echo "########################################################################"; \
+		echo "ERROR: PATH is not running on port 3069"; \
+		echo "Please start it with:"; \
+		echo "  make path_run"; \
+		echo "########################################################################"; \
+		exit 1; \
+	fi
+
+.PHONY: check_path_up_envoy
+# Internal helper: Checks if PATH + GUARD is running at localhost:3070
+check_path_up_envoy:
 	@if ! nc -z localhost 3070 2>/dev/null; then \
 		echo "########################################################################"; \
 		echo "ERROR: PATH is not running on port 3070"; \
@@ -55,49 +67,120 @@ check_relay_util:
 		echo "####################################################################################################"; \
 	fi
 
+###################################
+#### PATH binary Test Requests ####
+###################################
+
+# For all of the below requests:
+# - The PATH binary must be running
+#   - Run the PATH binary with:
+#     `make path_run``
+# - The PATH binary will be available at `localhost:3069`
+
+# For all of the below requests:
+# - The 'eth' service must be configured in the '.config.yaml' file.
+# - The application must be configured to serve requests for `eth` (Eth MainNet on Shannon)
+# - It is assumed that the network has suppliers running that service `eth` requests
+
+# The following are the various ways to make requests to PATH with the PATH binary running:
+# - Service ID: passed as the subdomain or in the 'Target-Service-Id' header
+
+.PHONY: test_healthz__binary
+test_healthz__binary: check_path_up_binary ## Test healthz request to PATH binary
+	curl http://localhost:3069/healthz
+
+.PHONY: test_request__binary__eth
+test_request__binary__eth: check_path_up_binary ## Test single eth_blockNumber request to PATH binary with service ID in header
+	curl http://localhost:3069/v1 \
+		-H "Target-Service-Id: eth" \
+		-H "Content-Type: application/json" \
+		-d '{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber"}'
+
+.PHONY: test_request__binary__eth__batch
+test_request__binary__eth__batch: check_path_up_binary ## Test batch request (eth_blockNumber, eth_chainId, eth_gasPrice) to PATH binary
+	curl http://localhost:3069/v1 \
+		-H "Target-Service-Id: eth" \
+		-H "Content-Type: application/json" \
+		-d '[{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber"}, {"jsonrpc": "2.0", "id": 2, "method": "eth_chainId"}, {"jsonrpc": "2.0", "id": 3, "method": "eth_gasPrice"}]'
+
+.PHONY: test_request__binary__relay_util__eth
+test_request__binary__relay_util__eth: check_path_up_binary check_relay_util  ## Test eth PATH binary with 100 eth_blockNumber requests using relay-util. Override service by running: SERVICE_ID=eth make test_request__binary__relay_util__eth
+	relay-util \
+		-u http://localhost:3069/v1 \
+		-H "Target-Service-Id: $${SERVICE_ID:-eth}" \
+		-H "Content-Type: application/json" \
+		-d '{"jsonrpc":"2.0","method":"eth_blockNumber","id":1}' \
+		-x 100 \
+		-b
+
+.PHONY: test_disqualified_endpoints__binary
+test_disqualified_endpoints__binary: check_path_up_binary ## Get list of currently disqualified eth endpoints with reasons
+	curl http://localhost:3069/disqualified_endpoints \
+		-H "Target-Service-Id: eth"
+
 ####################################
 #### PATH + GUARD Test Requests ####
 ####################################
 
 # For all of the below requests:
 # - The full PATH stack (including GUARD) must be running
+#   - Run the full PATH stack with:
+#     `make path_up`
+# - The full PATH stack will be available at `localhost:3070`
 
-# For all Shannon requests:
-# - The 'anvil' service must be configured in the '.config.yaml' file.
-# - The application must be configured to serve requests for `anvil` (Eth MainNet on Shannon)
-# - It is assumed that the network has suppliers running that service `anvil` requests
-
-# For all Morse requests:
-# - The application must be configured to serve requests for `F00C` (Eth MainNet on Morse)
-# - It is assumed that the network has suppliers running that service `F00C` requests
+# For all of the below requests:
+# - The 'eth' service must be configured in the '.config.yaml' file.
+# - The application must be configured to serve requests for `eth` (Eth MainNet on Shannon)
+# - It is assumed that the network has suppliers running that service `eth` requests
 
 # The following are the various ways to make requests to PATH with Envoy running:
 # - Auth: static API key, passed in the 'Authorization' header
 # - Service ID: passed as the subdomain or in the 'Target-Service-Id' header
 
-.PHONY: test_request__shannon_service_id_subdomain
-test_request__shannon_service_id_subdomain: check_path_up debug_relayminer_supplier_info_msg ## Test request with API key auth and the service ID passed as the subdomain
-	curl http://anvil.localhost:3070/v1 \
+.PHONY: test_healthz__envoy
+test_healthz__envoy: check_path_up_envoy ## Test healthz request to PATH + GUARD
+	curl http://localhost:3070/healthz
+
+.PHONY: test_request__envoy_subdomain__eth
+test_request__envoy_subdomain__eth: check_path_up_envoy debug_relayminer_supplier_info_msg ## Test request with API key auth and the service ID passed as the subdomain
+	curl http://eth.localhost:3070/v1 \
 		-H "Authorization: test_api_key" \
 		-d '{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }'
 
-.PHONY: test_request__shannon_service_id_header
-test_request__shannon_service_id_header: check_path_up debug_relayminer_supplier_info_msg ## Test request with API key auth and the service ID passed in the Target-Service-Id header
+.PHONY: test_request__envoy_header__eth
+test_request__envoy_header__eth: check_path_up_envoy debug_relayminer_supplier_info_msg ## Test request with API key auth and the service ID passed in the Target-Service-Id header
 	curl http://localhost:3070/v1 \
-		-H "Target-Service-Id: anvil" \
+		-H "Target-Service-Id: eth" \
 		-H "Authorization: test_api_key" \
-		-d '{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }'
+		-d '{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber"}'
 
-##################################
-#### Relay Util Test Requests ####
-##################################
+.PHONY: test_request__envoy_subdomain__eth_batch
+test_request__envoy_subdomain__eth_batch: check_path_up_envoy debug_relayminer_supplier_info_msg ## Test batch request with API key auth and service ID as subdomain
+	curl http://eth.localhost:3070/v1 \
+		-H "Authorization: test_api_key" \
+		-H "Content-Type: application/json" \
+		-d '[{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber"}, {"jsonrpc": "2.0", "id": 2, "method": "eth_chainId"}, {"jsonrpc": "2.0", "id": 3, "method": "eth_gasPrice"}]'
 
-.PHONY: test_request__shannon_relay_util_100
-test_request__shannon_relay_util_100: check_path_up check_relay_util debug_view_results_links  ## Test anvil PATH behind GUARD with 10 eth_blockNumber requests using relay-util. Override service by running: SERVICE_ID=eth make test_request__shannon_relay_util_100
+.PHONY: test_request__envoy_header__eth_batch
+test_request__envoy_header__eth_batch: check_path_up_envoy debug_relayminer_supplier_info_msg ## Test batch request with API key auth and service ID in header
+	curl http://localhost:3070/v1 \
+		-H "Target-Service-Id: eth" \
+		-H "Authorization: test_api_key" \
+		-H "Content-Type: application/json" \
+		-d '[{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber"}, {"jsonrpc": "2.0", "id": 2, "method": "eth_chainId"}, {"jsonrpc": "2.0", "id": 3, "method": "eth_gasPrice"}]'
+
+.PHONY: test_request__envoy_relay_util__eth
+test_request__envoy_relay_util__eth: check_path_up_envoy check_relay_util debug_view_results_links  ## Test eth PATH behind GUARD with 100 eth_blockNumber requests using relay-util. Override service by running: SERVICE_ID=eth make test_request__envoy_relay_util__eth
 	relay-util \
 		-u http://localhost:3070/v1 \
-		-H "target-service-id: $${SERVICE_ID:-anvil}" \
-		-H "authorization: test_api_key" \
+		-H "Target-Service-Id: $${SERVICE_ID:-eth}" \
+		-H "Authorization: test_api_key" \
+		-H "Content-Type: application/json" \
 		-d '{"jsonrpc":"2.0","method":"eth_blockNumber","id":1}' \
 		-x 100 \
 		-b
+
+.PHONT: test_disqualified_endpoints__envoy
+test_disqualified_endpoints__envoy: check_path_up_envoy ## Get list of currently disqualified eth endpoints with reasons
+	curl http://localhost:3070/disqualified_endpoints \
+		-H "Target-Service-Id: eth"
