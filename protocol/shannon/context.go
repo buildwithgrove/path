@@ -25,7 +25,7 @@ import (
 
 // Maximum endpoint payload length for error logging (100 chars)
 const maxEndpointPayloadLenForLogging = 100
-const defaultShannonSendRelayTimeoutMillisec = 60_000
+const defaultShannonSendRelayTimeoutMillisec = 5_000
 
 // requestContext provides all the functionality required by the gateway package
 // for handling a single service request.
