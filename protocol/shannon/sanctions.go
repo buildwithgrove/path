@@ -106,7 +106,7 @@ func classifyRelayError(logger polylog.Logger, err error) (protocolobservations.
 		logger.Error().Err(err).
 			Msg("Unrecognized relay error type encountered - code update needed to properly classify this error")
 
-		return protocolobservations.ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_INTERNAL,
+		return protocolobservations.ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_UNKNOWN,
 			protocolobservations.ShannonSanctionType_SHANNON_SANCTION_UNSPECIFIED
 	}
 }
@@ -170,7 +170,7 @@ func classifyHttpError(logger polylog.Logger, err error) (protocolobservations.S
 		"err_preview", errStr[:min(100, len(errStr))],
 	).Warn().Msg("Unable to classify HTTP error - defaulting to internal error")
 
-	return protocolobservations.ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_INTERNAL,
+	return protocolobservations.ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_HTTP_UNKNOWN,
 		protocolobservations.ShannonSanctionType_SHANNON_SANCTION_SESSION
 }
 
@@ -249,5 +249,5 @@ func classifyMalformedEndpointPayload(logger polylog.Logger, payloadContent stri
 	logger.With(
 		"endpoint_payload_preview", payloadContent[:min(100, len(payloadContent))],
 	).Warn().Msg("Unable to classify malformed endpoint payload - defaulting to internal error")
-	return protocolobservations.ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_INTERNAL, protocolobservations.ShannonSanctionType_SHANNON_SANCTION_SESSION
+	return protocolobservations.ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_UNKNOWN, protocolobservations.ShannonSanctionType_SHANNON_SANCTION_SESSION
 }

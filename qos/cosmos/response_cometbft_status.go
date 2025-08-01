@@ -3,27 +3,21 @@ package cosmos
 import (
 	"encoding/json"
 
+	"github.com/pokt-network/poktroll/pkg/polylog"
+
 	"github.com/buildwithgrove/path/gateway"
 	qosobservations "github.com/buildwithgrove/path/observation/qos"
 	"github.com/buildwithgrove/path/qos"
 	"github.com/buildwithgrove/path/qos/jsonrpc"
-	"github.com/pokt-network/poktroll/pkg/polylog"
 )
 
-// TODO_IMPROVE(@commoddity): The actual `coretypes.ResultStatus` struct causes
-// an unmarshalling error due to type mismatch in a number of fields:
-//   - Node returns string values for the following required field:
-//   - `sync_info.latest_block_height`
-//   - The `coretypes.ResultStatus` struct expects this field to be int64.
-//   - Many other non-required fields are also of the wrong type and will
-//     cause an unmarshalling error if the `coretypes.ResultStatus` struct is used.
+// TODO_IMPROVE(@commoddity): Replace custom structs with official CometBFT types.
 //
-// Update to use the CometBFT `coretypes.ResultStatus` struct once the issue is fixed.
+// Current issue: The official `coretypes.ResultStatus` expects int64 for `latest_block_height`,
+// but CometBFT JSON-RPC returns string values, causing unmarshalling errors.
 //
-// The following structs are a workaround to fix the unmarshalling error.
-//
-// These structs represent the subset of the JSON data from the CometBFT `ResultStatus` struct
-// needed to satisfy the `/status` endpoint checks.
+// Workaround: Using custom structs with string fields for compatibility.
+// Only includes fields needed for QoS validation (chain_id, catching_up, latest_block_height).
 //
 // Reference: https://github.com/cometbft/cometbft/blob/4226b0ea6ab4725ef807a16b86d6d24835bb45d4/rpc/core/types/responses.go#L100
 type (
@@ -46,7 +40,7 @@ type (
 	}
 )
 
-// responseValidatorCometBFTStatus implements jsonrpcResponseValidator for status method
+// responseValidatorCometBFTStatus implements jsonrpcResponseValidator for `status` method
 // Takes a parsed JSONRPC response and validates it as a status response
 func responseValidatorCometBFTStatus(logger polylog.Logger, jsonrpcResponse jsonrpc.Response) response {
 	logger = logger.With("response_validator", "status")
@@ -143,7 +137,7 @@ func (r *responseCometBFTStatus) GetObservation() qosobservations.CosmosEndpoint
 			ValidationError:        nil, // No validation error for successfully processed responses
 			ParsedResponse: &qosobservations.CosmosEndpointResponseValidationResult_ResponseCometBftStatus{
 				ResponseCometBftStatus: &qosobservations.CosmosResponseCometBFTStatus{
-					CosmosSdkChainId:  r.cosmosSDKChainID,
+					ChainId:           r.cosmosSDKChainID,
 					CatchingUp:        r.catchingUp,
 					LatestBlockHeight: r.latestBlockHeight,
 				},

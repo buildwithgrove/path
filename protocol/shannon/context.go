@@ -14,6 +14,7 @@ import (
 	apptypes "github.com/pokt-network/poktroll/x/application/types"
 	servicetypes "github.com/pokt-network/poktroll/x/service/types"
 	sessiontypes "github.com/pokt-network/poktroll/x/session/types"
+	sharedtypes "github.com/pokt-network/poktroll/x/shared/types"
 	sdk "github.com/pokt-network/shannon-sdk"
 
 	"github.com/buildwithgrove/path/gateway"
@@ -69,6 +70,9 @@ type requestContext struct {
 	// - Tracks RelayMinerError data from the current relay response for reporting.
 	// - Set by trackRelayMinerError method and used when building observations.
 	currentRelayMinerError *protocolobservations.ShannonRelayMinerError
+
+	// HTTP client used for sending relay requests to endpoints while also capturing various debug metrics
+	httpClient *httpClientWithDebugMetrics
 }
 
 // HandleServiceRequest:
@@ -187,8 +191,11 @@ func buildHeaders(payload protocol.Payload) map[string]string {
 		headers[key] = value
 	}
 
-	// Add RPCType header
-	headers[proxy.RPCTypeHeader] = strconv.Itoa(int(payload.RPCType))
+	// Set the RPCType HTTP header, if set on the payload.
+	// Used by endpoint/relay miner to determine correct backend service.
+	if payload.RPCType != sharedtypes.RPCType_UNKNOWN_RPC {
+		headers[proxy.RPCTypeHeader] = strconv.Itoa(int(payload.RPCType))
+	}
 
 	return headers
 }
@@ -238,7 +245,14 @@ func (rc *requestContext) sendRelay(payload protocol.Payload) (*servicetypes.Rel
 	headers := buildHeaders(payload)
 
 	// Send the HTTP relay request
-	httpRelayResponseBz, err := sendHttpRelay(ctxWithTimeout, rc.selectedEndpoint.url, signedRelayReq, headers)
+	httpRelayResponseBz, err := rc.httpClient.SendHTTPRelay(
+		ctxWithTimeout,
+		hydratedLogger,
+		rc.selectedEndpoint.url,
+		signedRelayReq,
+		headers,
+	)
+
 	if err != nil {
 		// Endpoint failed to respond before the timeout expires.
 		// Wrap the net/http error with our classification error

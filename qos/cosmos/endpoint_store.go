@@ -107,21 +107,35 @@ func applyObservation(
 
 	// Handle specific response types based on the parsed_response oneof field
 	switch response := validationResult.ParsedResponse.(type) {
+	// CometBFT `health` method observation
+	// Reference: https://docs.cometbft.com/v1.0/spec/rpc/#health
 	case *qosobservations.CosmosEndpointResponseValidationResult_ResponseCometBftHealth:
 		applyCometBFTHealthObservation(endpoint, response.ResponseCometBftHealth)
 		endpointWasMutated = true
+
+	// CometBFT `status` method observation
+	// Reference: https://docs.cometbft.com/v1.0/spec/rpc/#status
 	case *qosobservations.CosmosEndpointResponseValidationResult_ResponseCometBftStatus:
 		applyCometBFTStatusObservation(endpoint, response.ResponseCometBftStatus)
 		endpointWasMutated = true
+
+	// Cosmos SDK `status` method observation
+	// Reference: https://docs.cosmos.network/api#tag/Service/operation/Status
 	case *qosobservations.CosmosEndpointResponseValidationResult_ResponseCosmosSdkStatus:
 		applyCosmosSDKStatusObservation(endpoint, response.ResponseCosmosSdkStatus)
 		endpointWasMutated = true
-	case *qosobservations.CosmosEndpointResponseValidationResult_ResponseUnrecognized:
-		applyUnrecognizedResponseObservation(endpoint, response.ResponseUnrecognized)
-		endpointWasMutated = true
+
+	// EVM `eth_chainId` method observation
+	// Reference: https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_chainid
 	case *qosobservations.CosmosEndpointResponseValidationResult_ResponseEvmJsonrpcChainId:
 		applyEVMChainIDObservation(endpoint, response.ResponseEvmJsonrpcChainId)
 		endpointWasMutated = true
+
+	// Unrecognized response observation
+	case *qosobservations.CosmosEndpointResponseValidationResult_ResponseUnrecognized:
+		applyUnrecognizedResponseObservation(endpoint, response.ResponseUnrecognized)
+		endpointWasMutated = true
+
 	}
 
 	return endpointWasMutated
@@ -153,7 +167,7 @@ func applyCometBFTHealthObservation(endpoint *endpoint, healthResponse *qosobser
 
 // applyCometBFTStatusObservation updates the status check if a valid observation is provided.
 func applyCometBFTStatusObservation(endpoint *endpoint, statusResponse *qosobservations.CosmosResponseCometBFTStatus) {
-	chainID := statusResponse.CosmosSdkChainId
+	chainID := statusResponse.ChainId
 	catchingUp := statusResponse.CatchingUp
 	blockHeight := parseBlockHeightResponse(statusResponse.LatestBlockHeight)
 

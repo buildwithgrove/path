@@ -9,24 +9,36 @@ import (
 
 /* -------------------- CometBFT Status Check -------------------- */
 
-const idStatusCheck = 1003
+// CometBFT ID checks begin with 2 for JSON-RPC requests.
+//
+// This is an arbitrary ID selected by the engineering team at Grove.
+// It is used for compatibility with the JSON-RPC spec.
+// It is a loose convention in the QoS package.
 
-// methodStatus is the CometBFT JSON-RPC method for getting the node status.
+// ID for the CometBFT /status check.
+const idCometBFTStatusCheck = 2002
+
+// methodCometBFTStatus is the CometBFT JSON-RPC method for getting the node status.
 // Reference: https://docs.cometbft.com/v1.0/spec/rpc/#status
-const methodStatusCheck = jsonrpc.Method("status")
+const methodCometBFTStatus = jsonrpc.Method("status")
 
 // TODO_IMPROVE(@commoddity): determine an appropriate interval for checking the status and/or make it configurable.
-const checkStatusInterval = 10 * time.Second
+const checkStatusInterval = 30 * time.Second
 
 var (
-	errNoCometBFTStatusObs       = fmt.Errorf("endpoint has not had an observation of its response to a %q request", methodStatusCheck)
-	errInvalidCometBFTStatusObs  = fmt.Errorf("endpoint returned an invalid response to a %q request", methodStatusCheck)
-	errInvalidCometBFTChainIDObs = fmt.Errorf("endpoint returned an invalid chain ID in its response to a %q request", methodStatusCheck)
-	errCometBFTCatchingUpObs     = fmt.Errorf("endpoint is catching up to the network in its response to a %q request", methodStatusCheck)
+	errNoCometBFTStatusObs       = fmt.Errorf("endpoint has not had an observation of its response to a CometBFT '%q' request", methodCometBFTStatus)
+	errInvalidCometBFTStatusObs  = fmt.Errorf("endpoint returned an invalid response to a CometBFT '%q' request", methodCometBFTStatus)
+	errInvalidCometBFTChainIDObs = fmt.Errorf("endpoint returned an invalid chain ID in its response to a CometBFT '%q' request", methodCometBFTStatus)
+	errCatchingUpCometBFTObs     = fmt.Errorf("endpoint is catching up to the network in its response to a CometBFT '%q' request", methodCometBFTStatus)
 )
 
 // endpointCheckCometBFTStatus is a check that ensures the endpoint's status information is valid.
 // It is used to verify the endpoint is on the correct chain and not catching up.
+//
+// DEV_NOTE: The CometBFT status check returns a number of fields that we do not currently use but may wish to include as part of the status check in the future.
+// To see the full list of fields, see the CometBFT docs reference:
+//
+//	https://docs.cometbft.com/v1.0/spec/rpc/#status
 type endpointCheckCometBFTStatus struct {
 	// chainID stores the chain ID from the endpoint's response to a `status` request.
 	// It is nil if there has NOT been an observation of the endpoint's response to a `status` request.
@@ -45,12 +57,14 @@ type endpointCheckCometBFTStatus struct {
 }
 
 // getRequest returns a JSONRPC request to check the status.
-// eg. '{"jsonrpc":"2.0","id":1003,"method":"status"}'
+// eg. '{"jsonrpc":"2.0","id":2002,"method":"status"}'
+//
+// It is called in `request_validator_checks.go` to generate the endpoint checks.
 func (e *endpointCheckCometBFTStatus) getRequest() jsonrpc.Request {
 	return jsonrpc.Request{
 		JSONRPC: jsonrpc.Version2,
-		ID:      jsonrpc.IDFromInt(idStatusCheck),
-		Method:  jsonrpc.Method(methodStatusCheck),
+		ID:      jsonrpc.IDFromInt(idCometBFTStatusCheck),
+		Method:  jsonrpc.Method(methodCometBFTStatus),
 	}
 }
 

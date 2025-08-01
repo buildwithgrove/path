@@ -115,6 +115,9 @@ type ShannonEndpointErrorType int32
 const (
 	ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_UNSPECIFIED ShannonEndpointErrorType = 0
 	// endpoint internal error: not recognized.
+	// DEPRECATED: Use more specific error types below (HTTP_UNKNOWN, RAW_PAYLOAD_UNKNOWN, UNKNOWN)
+	//
+	// Deprecated: Marked as deprecated in path/protocol/shannon.proto.
 	ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_INTERNAL ShannonEndpointErrorType = 1
 	// endpoint config error: e.g. DNS lookup error, TLS certificate error.
 	ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_CONFIG ShannonEndpointErrorType = 2
@@ -160,6 +163,12 @@ const (
 	ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_TLS_HANDSHAKE            ShannonEndpointErrorType = 32
 	// RelayRequest was canceled by PATH intentionally.
 	ShannonEndpointErrorType_SHANNON_ENDPOINT_REQUEST_CANCELED_BY_PATH ShannonEndpointErrorType = 33
+	// New error types for better classification (added without renumbering existing ones)
+	// Error was recognized but specific classification failed.
+	// Only general category: HTTP, Raw Payload, General, is known.
+	ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_HTTP_UNKNOWN        ShannonEndpointErrorType = 34
+	ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_UNKNOWN ShannonEndpointErrorType = 35
+	ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_UNKNOWN             ShannonEndpointErrorType = 36
 )
 
 // Enum value maps for ShannonEndpointErrorType.
@@ -198,6 +207,9 @@ var (
 		31: "SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_DNS_RESOLUTION",
 		32: "SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_TLS_HANDSHAKE",
 		33: "SHANNON_ENDPOINT_REQUEST_CANCELED_BY_PATH",
+		34: "SHANNON_ENDPOINT_ERROR_HTTP_UNKNOWN",
+		35: "SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_UNKNOWN",
+		36: "SHANNON_ENDPOINT_ERROR_UNKNOWN",
 	}
 	ShannonEndpointErrorType_value = map[string]int32{
 		"SHANNON_ENDPOINT_ERROR_UNSPECIFIED":                          0,
@@ -233,6 +245,9 @@ var (
 		"SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_DNS_RESOLUTION":           31,
 		"SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_TLS_HANDSHAKE":            32,
 		"SHANNON_ENDPOINT_REQUEST_CANCELED_BY_PATH":                   33,
+		"SHANNON_ENDPOINT_ERROR_HTTP_UNKNOWN":                         34,
+		"SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_UNKNOWN":                  35,
+		"SHANNON_ENDPOINT_ERROR_UNKNOWN":                              36,
 	}
 )
 
@@ -782,10 +797,10 @@ const file_path_protocol_shannon_proto_rawDesc = "" +
 	"2SHANNON_REQUEST_ERROR_INTERNAL_DELEGATED_FETCH_APP\x10\b\x12B\n" +
 	">SHANNON_REQUEST_ERROR_INTERNAL_DELEGATED_APP_DOES_NOT_DELEGATE\x10\t\x125\n" +
 	"1SHANNON_REQUEST_ERROR_INTERNAL_SIGNER_SETUP_ERROR\x10\n" +
-	"*\xcc\r\n" +
+	"*\xcd\x0e\n" +
 	"\x18ShannonEndpointErrorType\x12&\n" +
-	"\"SHANNON_ENDPOINT_ERROR_UNSPECIFIED\x10\x00\x12#\n" +
-	"\x1fSHANNON_ENDPOINT_ERROR_INTERNAL\x10\x01\x12!\n" +
+	"\"SHANNON_ENDPOINT_ERROR_UNSPECIFIED\x10\x00\x12'\n" +
+	"\x1fSHANNON_ENDPOINT_ERROR_INTERNAL\x10\x01\x1a\x02\b\x01\x12!\n" +
 	"\x1dSHANNON_ENDPOINT_ERROR_CONFIG\x10\x02\x12\"\n" +
 	"\x1eSHANNON_ENDPOINT_ERROR_TIMEOUT\x10\x03\x120\n" +
 	",SHANNON_ENDPOINT_ERROR_PAYLOAD_UNMARSHAL_ERR\x10\x04\x122\n" +
@@ -817,7 +832,10 @@ const file_path_protocol_shannon_proto_rawDesc = "" +
 	"1SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_HTTP_TRANSPORT\x10\x1e\x125\n" +
 	"1SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_DNS_RESOLUTION\x10\x1f\x124\n" +
 	"0SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_TLS_HANDSHAKE\x10 \x12-\n" +
-	")SHANNON_ENDPOINT_REQUEST_CANCELED_BY_PATH\x10!*\x9b\x01\n" +
+	")SHANNON_ENDPOINT_REQUEST_CANCELED_BY_PATH\x10!\x12'\n" +
+	"#SHANNON_ENDPOINT_ERROR_HTTP_UNKNOWN\x10\"\x12.\n" +
+	"*SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_UNKNOWN\x10#\x12\"\n" +
+	"\x1eSHANNON_ENDPOINT_ERROR_UNKNOWN\x10$*\x9b\x01\n" +
 	"\x13ShannonSanctionType\x12 \n" +
 	"\x1cSHANNON_SANCTION_UNSPECIFIED\x10\x00\x12\x1c\n" +
 	"\x18SHANNON_SANCTION_SESSION\x10\x01\x12\x1e\n" +

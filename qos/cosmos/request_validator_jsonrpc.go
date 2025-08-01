@@ -19,6 +19,8 @@ const (
 	// maximum length of the error message stored in request validation failure observations and logs.
 	maxErrMessageLen = 1000
 
+	// defaultJSONRPCRequestTimeoutMillisec is the default timeout when sending a request to a Cosmos blockchain endpoint.
+	// TODO_IMPROVE(@adshmh): Support method level specific timeouts and allow the user to configure them.
 	defaultJSONRPCRequestTimeoutMillisec = 10_000
 )
 
@@ -113,22 +115,23 @@ func (rv *requestValidator) buildJSONRPCRequestContext(
 	}, true
 }
 
+// buildJSONRPCServicePayload builds a protocol payload for a JSONRPC request.
 func buildJSONRPCServicePayload(rpcType sharedtypes.RPCType, jsonrpcReq jsonrpc.Request) (protocol.Payload, error) {
 	// DEV_NOTE: marshaling the request, rather than using the original payload, is necessary.
 	// Otherwise, a request missing `id` field could fail.
 	// See the Request struct in `jsonrpc` package for the details.
 	reqBz, err := json.Marshal(jsonrpcReq)
 	if err != nil {
-		return protocol.Payload{}, err
+		return protocol.EmptyErrorPayload(), err
 	}
 
 	return protocol.Payload{
-		Data: string(reqBz),
-		// JSONRPC always uses POST
-		Method:          http.MethodPost,
+		Data:            string(reqBz),
+		Method:          http.MethodPost, // JSONRPC always uses POST
+		Path:            "",              // JSONRPC does not use paths
+		Headers:         map[string]string{},
 		TimeoutMillisec: defaultJSONRPCRequestTimeoutMillisec,
-		// Add the RPCType hint, so protocol sets correct HTTP headers for the endpoint.
-		RPCType: rpcType,
+		RPCType:         rpcType, // Add the RPCType hint the so protocol sets correct HTTP headers for the endpoint.
 	}, nil
 }
 
@@ -162,9 +165,10 @@ func (rv *requestValidator) buildJSONRPCRequestObservations(
 ) *qosobservations.CosmosRequestObservations {
 
 	return &qosobservations.CosmosRequestObservations{
-		CosmosSdkChainId: rv.cosmosSDKChainID,
-		ServiceId:        string(rv.serviceID),
-		RequestOrigin:    requestOrigin,
+		CosmosChainId: rv.cosmosChainID,
+		EvmChainId:    rv.evmChainID,
+		ServiceId:     string(rv.serviceID),
+		RequestOrigin: requestOrigin,
 		RequestProfile: &qosobservations.CosmosRequestProfile{
 			BackendServiceDetails: &qosobservations.BackendServiceDetails{
 				BackendServiceType: convertToProtoBackendServiceType(rpcType),
@@ -223,9 +227,10 @@ func (rv *requestValidator) createJSONRPCParseFailureObservation(
 	jsonrpcResponse jsonrpc.Response,
 ) *qosobservations.CosmosRequestObservations {
 	return &qosobservations.CosmosRequestObservations{
-		ServiceId:        string(rv.serviceID),
-		CosmosSdkChainId: rv.cosmosSDKChainID,
-		RequestOrigin:    qosobservations.RequestOrigin_REQUEST_ORIGIN_ORGANIC,
+		CosmosChainId: rv.cosmosChainID,
+		EvmChainId:    rv.evmChainID,
+		ServiceId:     string(rv.serviceID),
+		RequestOrigin: qosobservations.RequestOrigin_REQUEST_ORIGIN_ORGANIC,
 		RequestLevelError: &qosobservations.RequestError{
 			ErrorKind:      qosobservations.RequestErrorKind_REQUEST_ERROR_USER_ERROR_JSONRPC_PARSE_ERROR,
 			ErrorDetails:   truncateErrorMessage(err.Error()),
@@ -261,9 +266,10 @@ func (rv *requestValidator) createJSONRPCUnsupportedRPCTypeObservation(
 	jsonrpcResponse jsonrpc.Response,
 ) *qosobservations.CosmosRequestObservations {
 	return &qosobservations.CosmosRequestObservations{
-		ServiceId:        string(rv.serviceID),
-		CosmosSdkChainId: rv.cosmosSDKChainID,
-		RequestOrigin:    qosobservations.RequestOrigin_REQUEST_ORIGIN_ORGANIC,
+		CosmosChainId: rv.cosmosChainID,
+		EvmChainId:    rv.evmChainID,
+		ServiceId:     string(rv.serviceID),
+		RequestOrigin: qosobservations.RequestOrigin_REQUEST_ORIGIN_ORGANIC,
 		RequestProfile: &qosobservations.CosmosRequestProfile{
 			BackendServiceDetails: &qosobservations.BackendServiceDetails{
 				BackendServiceType: convertToProtoBackendServiceType(rpcType),
@@ -307,9 +313,10 @@ func (rv *requestValidator) createJSONRPCServicePayloadBuildFailureObservation(
 	jsonrpcResponse jsonrpc.Response,
 ) *qosobservations.CosmosRequestObservations {
 	return &qosobservations.CosmosRequestObservations{
-		ServiceId:        string(rv.serviceID),
-		CosmosSdkChainId: rv.cosmosSDKChainID,
-		RequestOrigin:    qosobservations.RequestOrigin_REQUEST_ORIGIN_ORGANIC,
+		CosmosChainId: rv.cosmosChainID,
+		EvmChainId:    rv.evmChainID,
+		ServiceId:     string(rv.serviceID),
+		RequestOrigin: qosobservations.RequestOrigin_REQUEST_ORIGIN_ORGANIC,
 		RequestProfile: &qosobservations.CosmosRequestProfile{
 			ParsedRequest: &qosobservations.CosmosRequestProfile_JsonrpcRequest{
 				JsonrpcRequest: jsonrpcReq.GetObservation(),

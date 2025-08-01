@@ -4,16 +4,18 @@ import (
 	"errors"
 	"net/url"
 
+	"github.com/pokt-network/poktroll/pkg/polylog"
+	sharedtypes "github.com/pokt-network/poktroll/x/shared/types"
+
 	"github.com/buildwithgrove/path/gateway"
 	qosobservations "github.com/buildwithgrove/path/observation/qos"
 	"github.com/buildwithgrove/path/protocol"
 	"github.com/buildwithgrove/path/qos"
 	"github.com/buildwithgrove/path/qos/jsonrpc"
-	"github.com/pokt-network/poktroll/pkg/polylog"
-	sharedtypes "github.com/pokt-network/poktroll/x/shared/types"
 )
 
 // Default timeout for REST requests
+// TODO_IMPROVE(@adshmh): Support method level specific timeouts and allow the user to configure them.
 const defaultRESTRequestTimeoutMillisec = 30000
 
 // validateRESTRequest validates a REST request by:
@@ -127,11 +129,10 @@ func buildRESTServicePayload(
 	return protocol.Payload{
 		Data:            string(httpRequestBody),
 		Method:          httpRequestMethod,
+		Path:            path,
+		Headers:         map[string]string{},
 		TimeoutMillisec: defaultRESTRequestTimeoutMillisec,
-		// Add the RPCType hint, so protocol sets correct HTTP headers for the endpoint.
-		RPCType: rpcType,
-		// Set the request path, including raw query, if used.
-		Path: path,
+		RPCType:         rpcType, // Add the RPCType hint, so protocol sets correct HTTP headers for the endpoint.
 	}
 }
 
@@ -156,9 +157,10 @@ func (rv *requestValidator) buildRESTRequestObservations(
 	// Note: We don't have access to headers here, but this would be where we'd extract it
 
 	return &qosobservations.CosmosRequestObservations{
-		CosmosSdkChainId: rv.cosmosSDKChainID,
-		ServiceId:        string(rv.serviceID),
-		RequestOrigin:    requestOrigin,
+		CosmosChainId: rv.cosmosChainID,
+		EvmChainId:    rv.evmChainID,
+		ServiceId:     string(rv.serviceID),
+		RequestOrigin: requestOrigin,
 		RequestProfile: &qosobservations.CosmosRequestProfile{
 			BackendServiceDetails: &qosobservations.BackendServiceDetails{
 				BackendServiceType: convertToProtoBackendServiceType(rpcType),
@@ -230,9 +232,10 @@ func (rv *requestValidator) createRESTUnsupportedRPCTypeObservation(
 	jsonrpcResponse jsonrpc.Response,
 ) *qosobservations.CosmosRequestObservations {
 	return &qosobservations.CosmosRequestObservations{
-		ServiceId:        string(rv.serviceID),
-		CosmosSdkChainId: rv.cosmosSDKChainID,
-		RequestOrigin:    qosobservations.RequestOrigin_REQUEST_ORIGIN_ORGANIC,
+		CosmosChainId: rv.cosmosChainID,
+		EvmChainId:    rv.evmChainID,
+		ServiceId:     string(rv.serviceID),
+		RequestOrigin: qosobservations.RequestOrigin_REQUEST_ORIGIN_ORGANIC,
 		RequestProfile: &qosobservations.CosmosRequestProfile{
 			BackendServiceDetails: &qosobservations.BackendServiceDetails{
 				BackendServiceType: convertToProtoBackendServiceType(rpcType),
