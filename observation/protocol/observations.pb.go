@@ -27,7 +27,7 @@ type Observations struct {
 	// Height of the blockchain block when processing the service request through a relay
 	BlockHeight uint64 `protobuf:"varint,1,opt,name=block_height,json=blockHeight,proto3" json:"block_height,omitempty"`
 	// Shannon protocol-specific observations
-	Shannon       *ShannonObservationsList `protobuf:"bytes,2,opt,name=shannon,proto3" json:"shannon,omitempty"`
+	Shannon       *ShannonObservationsList `protobuf:"bytes,3,opt,name=shannon,proto3" json:"shannon,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -80,10 +80,10 @@ var File_path_protocol_observations_proto protoreflect.FileDescriptor
 
 const file_path_protocol_observations_proto_rawDesc = "" +
 	"\n" +
-	" path/protocol/observations.proto\x12\rpath.protocol\x1a\x1bpath/protocol/shannon.proto\"s\n" +
+	" path/protocol/observations.proto\x12\rpath.protocol\x1a\x1bpath/protocol/shannon.proto\"\x80\x01\n" +
 	"\fObservations\x12!\n" +
 	"\fblock_height\x18\x01 \x01(\x04R\vblockHeight\x12@\n" +
-	"\ashannon\x18\x02 \x01(\v2&.path.protocol.ShannonObservationsListR\ashannonB5Z3github.com/buildwithgrove/path/observation/protocolb\x06proto3"
+	"\ashannon\x18\x03 \x01(\v2&.path.protocol.ShannonObservationsListR\ashannonJ\x04\b\x02\x10\x03R\x05morseB5Z3github.com/buildwithgrove/path/observation/protocolb\x06proto3"
 
 var (
 	file_path_protocol_observations_proto_rawDescOnce sync.Once

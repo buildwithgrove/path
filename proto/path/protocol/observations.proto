@@ -3,6 +3,8 @@ package path.protocol;
 
 option go_package = "github.com/buildwithgrove/path/observation/protocol";
 
+// Next free field index for Observations: 4
+
 import "path/protocol/shannon.proto";
 
 // Observations aggregates protocol-level observations collected during service request processing.
@@ -10,6 +12,10 @@ message Observations {
   // Height of the blockchain block when processing the service request through a relay
   uint64 block_height = 1;
 
+  // Reserved fields for backwards compatibility
+  reserved 2;  // Previously used for morse observations
+  reserved "morse";
+
   // Shannon protocol-specific observations
-  ShannonObservationsList shannon = 2;
+  ShannonObservationsList shannon = 3;
 }
