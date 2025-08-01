@@ -181,6 +181,15 @@ func createHTTPBodyReadFailureObservation(
 	}
 }
 
+// jsonrpcRequestFormat represents the detected format of a JSON-RPC request
+type jsonrpcRequestFormat int
+
+const (
+	jsonrpcInvalidFormat jsonrpcRequestFormat = iota
+	jsonrpcSingleRequest
+	jsonrpcBatchRequest
+)
+
 // TODO_MVP(@adshmh): Add a JSON-RPC request validator to reject invalid/unsupported
 // method calls early in request flow.
 //
@@ -217,15 +226,6 @@ func parseJSONRPCFromRequestBody(
 		return handleInvalidFormat(logger, requestBody)
 	}
 }
-
-// jsonrpcRequestFormat represents the detected format of a JSON-RPC request
-type jsonrpcRequestFormat int
-
-const (
-	jsonrpcInvalidFormat jsonrpcRequestFormat = iota
-	jsonrpcSingleRequest
-	jsonrpcBatchRequest
-)
 
 // validateRequestBody performs initial validation on the HTTP request body.
 // It trims whitespace and ensures the body is not empty.

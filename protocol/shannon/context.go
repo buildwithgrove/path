@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"maps"
 	"net/http"
 	"strconv"
 	"sync"
@@ -112,9 +113,10 @@ func (rc *requestContext) handleParallelRelayRequests(payloads []protocol.Payloa
 		With("method", "handleParallelRelayRequests").
 		With("num_payloads", len(payloads)).
 		With("service_id", rc.serviceID)
+
 	logger.Debug().Msg("Starting parallel relay processing")
 
-	resultChan := rc.launchParallelRelays(payloads, logger)
+	resultChan := rc.launchParallelRelays(payloads)
 
 	return rc.waitForAllRelayResponses(logger, resultChan, len(payloads))
 }
@@ -129,7 +131,7 @@ type parallelRelayResult struct {
 }
 
 // launchParallelRelays starts all parallel relay requests and returns a result channel
-func (rc *requestContext) launchParallelRelays(payloads []protocol.Payload, logger polylog.Logger) <-chan parallelRelayResult {
+func (rc *requestContext) launchParallelRelays(payloads []protocol.Payload) <-chan parallelRelayResult {
 	resultChan := make(chan parallelRelayResult, len(payloads))
 	var wg sync.WaitGroup
 
@@ -189,10 +191,7 @@ func (rc *requestContext) waitForAllRelayResponses(
 				firstErr = result.err
 			}
 			logger.Warn().Err(result.err).
-				Msgf("Relay request %d failed after %dms", result.index, result.duration.Milliseconds())
-		} else {
-			logger.Debug().
-				Msgf("Relay request %d completed successfully in %dms", result.index, result.duration.Milliseconds())
+				Msgf("Parallel relay request %d failed after %dms", result.index, result.duration.Milliseconds())
 		}
 	}
 
@@ -221,7 +220,7 @@ func (rc *requestContext) sendSingleRelay(payload protocol.Payload) (protocol.Re
 	relayResponse.EndpointAddr = rc.selectedEndpoint.Addr()
 	if err != nil {
 		// Wrap error with detailed message.
-		deserializeErr := fmt.Errorf("error deserializing endpoint into a POKTHTTP response: %w", err)
+		deserializeErr := fmt.Errorf("error deserializing endpoint into a response: %w", err)
 		return rc.handleEndpointError(endpointQueryTime, deserializeErr)
 	}
 
@@ -329,9 +328,7 @@ func buildHeaders(payload protocol.Payload) map[string]string {
 	headers := make(map[string]string)
 
 	// Copy existing headers from payload
-	for key, value := range payload.Headers {
-		headers[key] = value
-	}
+	maps.Copy(headers, payload.Headers)
 
 	// Set the RPCType HTTP header, if set on the payload.
 	// Used by endpoint/relay miner to determine correct backend service.

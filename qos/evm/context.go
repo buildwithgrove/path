@@ -94,7 +94,11 @@ type requestContext struct {
 	endpointSelectionMetadata EndpointSelectionMetadata
 }
 
-// GetServicePayload implements the gateway.RequestQoSContext interface.
+// GetServicePayloads returns the service payloads for the JSON-RPC requests in the request context.
+//
+// jsonrpcReqs is a map of JSON-RPC request IDs to JSON-RPC requests.
+// It is assigned to the request context in the `evmRequestValidator.validateHTTPRequest` method.
+//
 // TODO_MVP(@adshmh): Ensure the JSONRPC request struct can handle all valid service requests.
 func (rc requestContext) GetServicePayloads() []protocol.Payload {
 	var payloads []protocol.Payload
