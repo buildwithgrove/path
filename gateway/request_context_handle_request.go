@@ -52,12 +52,12 @@ func (rc *requestContext) HandleRelayRequest() error {
 
 	// If we have multiple protocol contexts, send parallel requests
 	if isParallel {
-		logger.Debug().Msgf("Handling %d parallel relay requests", len(rc.protocolContexts))
+		logger.Info().Msgf("🔄 Handling %d parallel relay requests", len(rc.protocolContexts))
 		return rc.handleParallelRelayRequests()
 	}
 
 	// Fallback to single request for backward compatibility
-	logger.Debug().Msg("Handling single relay request")
+	logger.Info().Msgf("📡 Handling single relay request (only %d protocol context available)", len(rc.protocolContexts))
 	return rc.handleSingleRelayRequest()
 }
 
