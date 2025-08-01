@@ -15,12 +15,12 @@ type CosmosSDKObservationInterpreter struct {
 }
 
 // GetChainID returns the blockchain identifier from observations.
-func (i *CosmosSDKObservationInterpreter) GetCosmosSdkChainID() string {
+func (i *CosmosSDKObservationInterpreter) GetCosmosChainID() string {
 	if i.Observations == nil {
 		i.Logger.ProbabilisticDebugInfo(polylog.ProbabilisticDebugInfoProb).Msg("SHOULD RARELY HAPPEN: Cannot get Cosmos SDK chain ID: nil observations")
 		return ""
 	}
-	return i.Observations.ChainId
+	return i.Observations.CosmosChainId
 }
 
 // GetEVMChainID returns the EVM chain identifier from observations.

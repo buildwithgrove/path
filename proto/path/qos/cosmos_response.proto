@@ -94,10 +94,10 @@ message CosmosResponseCosmosSDKStatus {
 message CosmosResponseEVMJSONRPCChainID {
 	// The HTTP status code received from the endpoint
 	int32 http_status_code = 1;
-  
+
 	// The chain ID value returned in the response
 	string evm_chain_id = 2;
-  }
+}
 
 // UnrecognizedResponse handles responses that are not validated before being returned to the user.
 message UnrecognizedResponse {

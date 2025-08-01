@@ -83,7 +83,7 @@ func (rv *requestValidator) createHTTPBodyReadFailureContext(err error) gateway.
 	response := jsonrpc.NewErrResponseInternalErr(jsonrpc.ID{}, err)
 
 	// Create the observations object with the HTTP body read failure observation
-	observations := createHTTPBodyReadFailureObservation(rv.serviceID, rv.chainID, err, response)
+	observations := rv.createHTTPBodyReadFailureObservation(err, response)
 
 	// Build and return the error context
 	return &qos.RequestErrorContext{
@@ -152,33 +152,15 @@ func createRequestUnmarshalingFailureObservation(
 	}
 }
 
-// createHTTPBodyReadFailureObservation:
-// - Creates an observation for Solana HTTP request body read failures
-// - Captures details for troubleshooting:
-//   - Chain ID
-//   - Error message
-//   - HTTP status code
-//
-// - Useful for diagnosing connectivity or parsing issues
-//
-// Parameters:
-//   - serviceID: Service identifier
-//   - chainID: Solana chain identifier
-//   - err: Error from HTTP body read
-//   - jsonrpcResponse: Associated JSONRPC error response
-//
-// Returns:
-//   - Structured observation with HTTP read failure details
-func createHTTPBodyReadFailureObservation(
-	serviceID protocol.ServiceID,
-	chainID string,
+// createHTTPBodyReadFailureObservation creates an observation for Solana HTTP request body read failures.
+func (rv *requestValidator) createHTTPBodyReadFailureObservation(
 	err error,
 	jsonrpcResponse jsonrpc.Response,
 ) *qosobservations.Observations_Solana {
 	return &qosobservations.Observations_Solana{
 		Solana: &qosobservations.SolanaRequestObservations{
-			ServiceId: string(serviceID),
-			ChainId:   chainID,
+			ChainId:   rv.chainID,
+			ServiceId: string(rv.serviceID),
 			RequestError: &qosobservations.RequestError{
 				ErrorKind:      qosobservations.RequestErrorKind_REQUEST_ERROR_USER_ERROR_JSONRPC_PARSE_ERROR,
 				ErrorDetails:   err.Error(),
