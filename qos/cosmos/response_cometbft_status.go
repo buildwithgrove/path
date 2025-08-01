@@ -3,27 +3,21 @@ package cosmos
 import (
 	"encoding/json"
 
+	"github.com/pokt-network/poktroll/pkg/polylog"
+
 	"github.com/buildwithgrove/path/gateway"
 	qosobservations "github.com/buildwithgrove/path/observation/qos"
 	"github.com/buildwithgrove/path/qos"
 	"github.com/buildwithgrove/path/qos/jsonrpc"
-	"github.com/pokt-network/poktroll/pkg/polylog"
 )
 
-// TODO_IMPROVE(@commoddity): The actual `coretypes.ResultStatus` struct causes
-// an unmarshalling error due to type mismatch in a number of fields:
-//   - Node returns string values for the following required field:
-//   - `sync_info.latest_block_height`
-//   - The `coretypes.ResultStatus` struct expects this field to be int64.
-//   - Many other non-required fields are also of the wrong type and will
-//     cause an unmarshalling error if the `coretypes.ResultStatus` struct is used.
+// TODO_IMPROVE(@commoddity): Replace custom structs with official CometBFT types.
 //
-// Update to use the CometBFT `coretypes.ResultStatus` struct once the issue is fixed.
+// Current issue: The official `coretypes.ResultStatus` expects int64 for `latest_block_height`,
+// but CometBFT JSON-RPC returns string values, causing unmarshalling errors.
 //
-// The following structs are a workaround to fix the unmarshalling error.
-//
-// These structs represent the subset of the JSON data from the CometBFT `ResultStatus` struct
-// needed to satisfy the `/status` endpoint checks.
+// Workaround: Using custom structs with string fields for compatibility.
+// Only includes fields needed for QoS validation (chain_id, catching_up, latest_block_height).
 //
 // Reference: https://github.com/cometbft/cometbft/blob/4226b0ea6ab4725ef807a16b86d6d24835bb45d4/rpc/core/types/responses.go#L100
 type (
@@ -46,9 +40,9 @@ type (
 	}
 )
 
-// responseValidatorStatus implements jsonrpcResponseValidator for /status endpoint
+// responseValidatorCometBFTStatus implements jsonrpcResponseValidator for /status endpoint
 // Takes a parsed JSONRPC response and validates it as a status response
-func responseValidatorStatus(logger polylog.Logger, jsonrpcResponse jsonrpc.Response) response {
+func responseValidatorCometBFTStatus(logger polylog.Logger, jsonrpcResponse jsonrpc.Response) response {
 	logger = logger.With("response_validator", "status")
 
 	// The endpoint returned an error: no need to do further processing of the response
@@ -58,7 +52,7 @@ func responseValidatorStatus(logger polylog.Logger, jsonrpcResponse jsonrpc.Resp
 			Int("jsonrpc_error_code", jsonrpcResponse.Error.Code).
 			Msg("Endpoint returned JSON-RPC error for /status request")
 
-		return &responseStatus{
+		return &responseCometBFTStatus{
 			logger:          logger,
 			jsonRPCResponse: jsonrpcResponse,
 		}
@@ -72,7 +66,7 @@ func responseValidatorStatus(logger polylog.Logger, jsonrpcResponse jsonrpc.Resp
 			Msg("Failed to marshal JSON-RPC result for /status")
 
 		// Return error response but still include the original JSONRPC response
-		return &responseStatus{
+		return &responseCometBFTStatus{
 			logger:          logger,
 			jsonRPCResponse: jsonrpcResponse,
 		}
@@ -87,7 +81,7 @@ func responseValidatorStatus(logger polylog.Logger, jsonrpcResponse jsonrpc.Resp
 			Msg("Failed to unmarshal JSON-RPC result into ResultStatus structure")
 
 		// Return error response but still include the original JSONRPC response
-		return &responseStatus{
+		return &responseCometBFTStatus{
 			logger:          logger,
 			jsonRPCResponse: jsonrpcResponse,
 		}
@@ -99,7 +93,7 @@ func responseValidatorStatus(logger polylog.Logger, jsonrpcResponse jsonrpc.Resp
 		Str("latest_block_height", result.SyncInfo.LatestBlockHeight).
 		Msg("Successfully parsed /status response")
 
-	return &responseStatus{
+	return &responseCometBFTStatus{
 		logger:            logger,
 		jsonRPCResponse:   jsonrpcResponse,
 		chainID:           result.NodeInfo.Network,
@@ -108,9 +102,9 @@ func responseValidatorStatus(logger polylog.Logger, jsonrpcResponse jsonrpc.Resp
 	}
 }
 
-// responseStatus captures the fields expected in a
+// responseCometBFTStatus captures the fields expected in a
 // response to a /status request (which returns JSON-RPC)
-type responseStatus struct {
+type responseCometBFTStatus struct {
 	logger polylog.Logger
 
 	// jsonRPCResponse stores the JSON-RPC response parsed from an endpoint's response bytes
@@ -135,14 +129,14 @@ type responseStatus struct {
 
 // GetObservation returns an observation using a /status request's response
 // Implements the response interface
-func (r *responseStatus) GetObservation() qosobservations.CosmosEndpointObservation {
+func (r *responseCometBFTStatus) GetObservation() qosobservations.CosmosEndpointObservation {
 	return qosobservations.CosmosEndpointObservation{
 		EndpointResponseValidationResult: &qosobservations.CosmosEndpointResponseValidationResult{
 			ResponseValidationType: qosobservations.CosmosResponseValidationType_COSMOS_RESPONSE_VALIDATION_TYPE_JSONRPC,
 			HttpStatusCode:         int32(r.jsonRPCResponse.GetRecommendedHTTPStatusCode()),
 			ValidationError:        nil, // No validation error for successfully processed responses
-			ParsedResponse: &qosobservations.CosmosEndpointResponseValidationResult_ResponseStatus{
-				ResponseStatus: &qosobservations.CosmosResponseStatus{
+			ParsedResponse: &qosobservations.CosmosEndpointResponseValidationResult_ResponseCometBftStatus{
+				ResponseCometBftStatus: &qosobservations.CosmosResponseCometBFTStatus{
 					ChainId:           r.chainID,
 					CatchingUp:        r.catchingUp,
 					LatestBlockHeight: r.latestBlockHeight,
@@ -154,6 +148,6 @@ func (r *responseStatus) GetObservation() qosobservations.CosmosEndpointObservat
 
 // GetHTTPResponse builds and returns the HTTP response
 // Implements the response interface
-func (r *responseStatus) GetHTTPResponse() gateway.HTTPResponse {
+func (r *responseCometBFTStatus) GetHTTPResponse() gateway.HTTPResponse {
 	return qos.BuildHTTPResponseFromJSONRPCResponse(r.logger, r.jsonRPCResponse)
 }

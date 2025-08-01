@@ -19,6 +19,8 @@ const (
 	// maximum length of the error message stored in request validation failure observations and logs.
 	maxErrMessageLen = 1000
 
+	// defaultJSONRPCRequestTimeoutMillisec is the default timeout when sending a request to a Cosmos blockchain endpoint.
+	// TODO_IMPROVE(@adshmh): Support method level specific timeouts and allow the user to configure them.
 	defaultJSONRPCRequestTimeoutMillisec = 10_000
 )
 
@@ -60,12 +62,14 @@ func (rv *requestValidator) validateJSONRPCRequest(
 	return rv.buildJSONRPCRequestContext(
 		rpcType,
 		jsonrpcReq,
+		qosobservations.RequestOrigin_REQUEST_ORIGIN_ORGANIC,
 	)
 }
 
 func (rv *requestValidator) buildJSONRPCRequestContext(
 	rpcType sharedtypes.RPCType,
 	jsonrpcReq jsonrpc.Request,
+	requestOrigin qosobservations.RequestOrigin,
 ) (gateway.RequestQoSContext, bool) {
 	logger := rv.logger.With(
 		"method", "buildJSONRPCRequestContext",
@@ -81,7 +85,12 @@ func (rv *requestValidator) buildJSONRPCRequestContext(
 
 	// Generate the QoS observation for the request.
 	// requestContext will amend this with endpoint observation(s).
-	requestObservation := rv.buildJSONRPCRequestObservations(rpcType, jsonrpcReq, servicePayload)
+	requestObservation := rv.buildJSONRPCRequestObservations(
+		rpcType,
+		jsonrpcReq,
+		servicePayload,
+		requestOrigin,
+	)
 
 	logger.Debug().
 		Str("id", jsonrpcReq.ID.String()).
@@ -106,22 +115,23 @@ func (rv *requestValidator) buildJSONRPCRequestContext(
 	}, true
 }
 
+// buildJSONRPCServicePayload builds a protocol payload for a JSONRPC request.
 func buildJSONRPCServicePayload(rpcType sharedtypes.RPCType, jsonrpcReq jsonrpc.Request) (protocol.Payload, error) {
 	// DEV_NOTE: marshaling the request, rather than using the original payload, is necessary.
 	// Otherwise, a request missing `id` field could fail.
 	// See the Request struct in `jsonrpc` package for the details.
 	reqBz, err := json.Marshal(jsonrpcReq)
 	if err != nil {
-		return protocol.Payload{}, err
+		return protocol.EmptyErrorPayload(), err
 	}
 
 	return protocol.Payload{
-		Data: string(reqBz),
-		// JSONRPC always uses POST
-		Method:          http.MethodPost,
+		Data:            string(reqBz),
+		Method:          http.MethodPost, // JSONRPC always uses POST
+		Path:            "",              // JSONRPC does not use paths
+		Headers:         map[string]string{},
 		TimeoutMillisec: defaultJSONRPCRequestTimeoutMillisec,
-		// Add the RPCType hint, so protocol sets correct HTTP headers for the endpoint.
-		RPCType: rpcType,
+		RPCType:         rpcType, // Add the RPCType hint the so protocol sets correct HTTP headers for the endpoint.
 	}, nil
 }
 
@@ -151,12 +161,13 @@ func (rv *requestValidator) buildJSONRPCRequestObservations(
 	rpcType sharedtypes.RPCType,
 	jsonrpcReq jsonrpc.Request,
 	servicePayload protocol.Payload,
+	requestOrigin qosobservations.RequestOrigin,
 ) *qosobservations.CosmosRequestObservations {
 
 	return &qosobservations.CosmosRequestObservations{
 		ChainId:       rv.chainID,
 		ServiceId:     string(rv.serviceID),
-		RequestOrigin: qosobservations.RequestOrigin_REQUEST_ORIGIN_ORGANIC,
+		RequestOrigin: requestOrigin,
 		RequestProfile: &qosobservations.CosmosRequestProfile{
 			BackendServiceDetails: &qosobservations.BackendServiceDetails{
 				BackendServiceType: convertToProtoBackendServiceType(rpcType),

@@ -2,7 +2,6 @@ package cosmos
 
 import (
 	"errors"
-	"fmt"
 	"math/rand"
 	"time"
 
@@ -11,11 +10,7 @@ import (
 )
 
 var (
-	errEmptyResponseObs         = errors.New("endpoint is invalid: history of empty responses")
-	errRecentInvalidResponseObs = errors.New("endpoint is invalid: recent invalid response")
-	errEmptyEndpointListObs     = errors.New("received empty list of endpoints to select from")
-
-	// CosmosSDK-specific validation errors
+	errEmptyEndpointListObs               = errors.New("received empty list of endpoints to select from")
 	errOutsideSyncAllowanceBlockNumberObs = errors.New("endpoint block number is outside sync allowance")
 )
 
@@ -121,117 +116,4 @@ func (ss *serviceState) filterValidEndpoints(availableEndpoints protocol.Endpoin
 	}
 
 	return filteredEndpointsAddr, nil
-}
-
-// basicEndpointValidation returns an error if the supplied endpoint is not
-// valid based on the perceived state of the CosmosSDK blockchain.
-//
-// It returns an error if:
-// - The endpoint has returned an empty response in the past.
-// - The endpoint has returned an unmarshaling error within the last 30 minutes.
-// - The endpoint has returned an invalid response within the last 30 minutes.
-// - The endpoint's response to a `/status` request indicates an invalid chain ID.
-// - The endpoint's response to a `/status` request indicates it's catching up.
-// - The endpoint's response to a `/status` request shows block height outside sync allowance.
-// - The endpoint's response to a `/health` request indicates it's unhealthy.
-func (ss *serviceState) basicEndpointValidation(endpoint endpoint) error {
-	ss.serviceStateLock.RLock()
-	defer ss.serviceStateLock.RUnlock()
-
-	// Check if the endpoint has returned an empty response.
-	if endpoint.hasReturnedEmptyResponse {
-		return fmt.Errorf("empty response validation failed: %w", errEmptyResponseObs)
-	}
-
-	// Check if the endpoint has returned an unmarshaling error within the last 30 minutes.
-	if endpoint.hasReturnedUnmarshalingError && endpoint.invalidResponseLastObserved != nil {
-		timeSinceInvalidResponse := time.Since(*endpoint.invalidResponseLastObserved)
-		if timeSinceInvalidResponse < invalidResponseTimeout {
-			return fmt.Errorf("recent unmarshaling error validation failed (%.0f minutes ago): %w",
-				timeSinceInvalidResponse.Minutes(), errRecentInvalidResponseObs)
-		}
-	}
-
-	// Check if the endpoint has returned an invalid response within the invalid response timeout period.
-	if endpoint.hasReturnedInvalidResponse && endpoint.invalidResponseLastObserved != nil {
-		timeSinceInvalidResponse := time.Since(*endpoint.invalidResponseLastObserved)
-		if timeSinceInvalidResponse < invalidResponseTimeout {
-			return fmt.Errorf("recent response validation failed (%.0f minutes ago): %w",
-				timeSinceInvalidResponse.Minutes(), errRecentInvalidResponseObs)
-		}
-	}
-
-	// Check if the endpoint's health status is valid.
-	if err := ss.isHealthValid(endpoint.checkHealth); err != nil {
-		return fmt.Errorf("health validation failed: %w", err)
-	}
-
-	// Check if the endpoint's status information is valid.
-	if err := ss.isStatusValid(endpoint.checkStatus); err != nil {
-		return fmt.Errorf("status validation failed: %w", err)
-	}
-
-	return nil
-}
-
-// isHealthValid returns an error if:
-//   - The endpoint has not had an observation of its response to a `/health` request.
-//   - The endpoint's health check indicates it's unhealthy.
-func (ss *serviceState) isHealthValid(check endpointCheckHealth) error {
-	healthy, err := check.GetHealthy()
-	if err != nil {
-		return fmt.Errorf("%w: %v", errNoHealthObs, err)
-	}
-
-	if !healthy {
-		return fmt.Errorf("%w: endpoint reported unhealthy status", errInvalidHealthObs)
-	}
-
-	return nil
-}
-
-// isStatusValid returns an error if:
-//   - The endpoint has not had an observation of its response to a `/status` request.
-//   - The endpoint's chain ID does not match the expected chain ID.
-//   - The endpoint is catching up to the network.
-//   - The endpoint's block height is outside the sync allowance.
-func (ss *serviceState) isStatusValid(check endpointCheckStatus) error {
-	// Check chain ID
-	chainID, err := check.GetChainID()
-	if err != nil {
-		return fmt.Errorf("%w: %v", errNoStatusObs, err)
-	}
-
-	expectedChainID := ss.serviceQoSConfig.getCosmosSDKChainID()
-	if chainID != expectedChainID {
-		return fmt.Errorf("%w: chain ID %s does not match expected chain ID %s",
-			errInvalidChainIDObs, chainID, expectedChainID)
-	}
-
-	// Check if catching up
-	catchingUp, err := check.GetCatchingUp()
-	if err != nil {
-		return fmt.Errorf("%w: %v", errNoStatusObs, err)
-	}
-
-	if catchingUp {
-		return fmt.Errorf("%w: endpoint is catching up to the network", errCatchingUpObs)
-	}
-
-	// Check block height sync allowance
-	latestBlockHeight, err := check.GetLatestBlockHeight()
-	if err != nil {
-		return fmt.Errorf("%w: %v", errNoStatusObs, err)
-	}
-
-	if ss.perceivedBlockNumber > 0 {
-		syncAllowance := ss.serviceQoSConfig.getSyncAllowance()
-		minAllowedBlockNumber := ss.perceivedBlockNumber - syncAllowance
-		if latestBlockHeight < minAllowedBlockNumber {
-			return fmt.Errorf("%w: block number %d is outside the sync allowance relative to min allowed block number %d and sync allowance %d",
-				errOutsideSyncAllowanceBlockNumberObs, latestBlockHeight, minAllowedBlockNumber, syncAllowance)
-		}
-	}
-
-	return nil
 }

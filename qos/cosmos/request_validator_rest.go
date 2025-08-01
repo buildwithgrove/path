@@ -4,16 +4,18 @@ import (
 	"errors"
 	"net/url"
 
+	"github.com/pokt-network/poktroll/pkg/polylog"
+	sharedtypes "github.com/pokt-network/poktroll/x/shared/types"
+
 	"github.com/buildwithgrove/path/gateway"
 	qosobservations "github.com/buildwithgrove/path/observation/qos"
 	"github.com/buildwithgrove/path/protocol"
 	"github.com/buildwithgrove/path/qos"
 	"github.com/buildwithgrove/path/qos/jsonrpc"
-	"github.com/pokt-network/poktroll/pkg/polylog"
-	sharedtypes "github.com/pokt-network/poktroll/x/shared/types"
 )
 
 // Default timeout for REST requests
+// TODO_IMPROVE(@adshmh): Support method level specific timeouts and allow the user to configure them.
 const defaultRESTRequestTimeoutMillisec = 30000
 
 // validateRESTRequest validates a REST request by:
@@ -55,6 +57,7 @@ func (rv *requestValidator) validateRESTRequest(
 		httpRequestURL,
 		httpRequestMethod,
 		httpRequestBody,
+		qosobservations.RequestOrigin_REQUEST_ORIGIN_ORGANIC,
 	)
 }
 
@@ -64,6 +67,7 @@ func (rv *requestValidator) buildRESTRequestContext(
 	httpRequestURL *url.URL,
 	httpRequestMethod string,
 	httpRequestBody []byte,
+	requestOrigin qosobservations.RequestOrigin,
 ) (gateway.RequestQoSContext, bool) {
 	logger := rv.logger.With(
 		"method", "buildRESTRequestContext",
@@ -85,6 +89,7 @@ func (rv *requestValidator) buildRESTRequestContext(
 		httpRequestMethod,
 		httpRequestBody,
 		servicePayload,
+		requestOrigin,
 	)
 
 	// Hydrate the logger with REST request details.
@@ -124,11 +129,10 @@ func buildRESTServicePayload(
 	return protocol.Payload{
 		Data:            string(httpRequestBody),
 		Method:          httpRequestMethod,
+		Path:            path,
+		Headers:         map[string]string{},
 		TimeoutMillisec: defaultRESTRequestTimeoutMillisec,
-		// Add the RPCType hint, so protocol sets correct HTTP headers for the endpoint.
-		RPCType: rpcType,
-		// Set the request path, including raw query, if used.
-		Path: path,
+		RPCType:         rpcType, // Add the RPCType hint, so protocol sets correct HTTP headers for the endpoint.
 	}
 }
 
@@ -145,6 +149,7 @@ func (rv *requestValidator) buildRESTRequestObservations(
 	httpRequestMethod string,
 	httpRequestBody []byte,
 	servicePayload protocol.Payload,
+	requestOrigin qosobservations.RequestOrigin,
 ) *qosobservations.CosmosRequestObservations {
 
 	// Determine content type from headers if available, otherwise empty
@@ -154,7 +159,7 @@ func (rv *requestValidator) buildRESTRequestObservations(
 	return &qosobservations.CosmosRequestObservations{
 		ChainId:       rv.chainID,
 		ServiceId:     string(rv.serviceID),
-		RequestOrigin: qosobservations.RequestOrigin_REQUEST_ORIGIN_ORGANIC,
+		RequestOrigin: requestOrigin,
 		RequestProfile: &qosobservations.CosmosRequestProfile{
 			BackendServiceDetails: &qosobservations.BackendServiceDetails{
 				BackendServiceType: convertToProtoBackendServiceType(rpcType),

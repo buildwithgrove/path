@@ -191,8 +191,8 @@ func Test_removePrefixMiddleware(t *testing.T) {
 				"Portal-Application-ID": "1a2b3c4d",
 			},
 			expectedPath:                 "/path/segment",
-			expectedPortalAppIDHeader:    "",
-			shouldPortalAppIDHeaderExist: false,
+			expectedPortalAppIDHeader:    "1a2b3c4d",
+			shouldPortalAppIDHeaderExist: true,
 		},
 		{
 			name:      "should remove both API version prefix and endpoint ID with trailing slash",
@@ -201,8 +201,8 @@ func Test_removePrefixMiddleware(t *testing.T) {
 				"Portal-Application-ID": "1a2b3c4d",
 			},
 			expectedPath:                 "/",
-			expectedPortalAppIDHeader:    "",
-			shouldPortalAppIDHeaderExist: false,
+			expectedPortalAppIDHeader:    "1a2b3c4d",
+			shouldPortalAppIDHeaderExist: true,
 		},
 		{
 			name:                         "should not remove endpoint ID when header is missing",
@@ -249,8 +249,8 @@ func Test_removePrefixMiddleware(t *testing.T) {
 				"Portal-Application-ID": "abc123",
 			},
 			expectedPath:                 "/endpoint/test",
-			expectedPortalAppIDHeader:    "",
-			shouldPortalAppIDHeaderExist: false,
+			expectedPortalAppIDHeader:    "abc123",
+			shouldPortalAppIDHeaderExist: true,
 		},
 	}
 
