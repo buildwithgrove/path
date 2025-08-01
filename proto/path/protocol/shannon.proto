@@ -110,6 +110,11 @@ enum ShannonEndpointErrorType {
 
   SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_UNKNOWN = 35;
   SHANNON_ENDPOINT_ERROR_UNKNOWN = 36;
+
+  // The relay request sent to the endpoint via HTTP returned a non 2XX HTTP status code.
+  SHANNON_ENDPOINT_ERROR_HTTP_NON_2XX_STATUS = 37;
+  // The relay request sent to the endpoint via HTTP failed with `context deadline exceeded` error
+  SHANNON_ENDPOINT_ERROR_HTTP_CONTEXT_DEADLINE_EXCEEDED = 38;
 }
 
 // ShannonSanctionType specifies the duration type for endpoint sanctions

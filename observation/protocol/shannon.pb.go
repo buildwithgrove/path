@@ -163,12 +163,18 @@ const (
 	ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_TLS_HANDSHAKE            ShannonEndpointErrorType = 32
 	// RelayRequest was canceled by PATH intentionally.
 	ShannonEndpointErrorType_SHANNON_ENDPOINT_REQUEST_CANCELED_BY_PATH ShannonEndpointErrorType = 33
-	// New error types for better classification (added without renumbering existing ones)
-	// Error was recognized but specific classification failed.
-	// Only general category: HTTP, Raw Payload, General, is known.
+	// ** SHANNON_ENDPOINT_ERROR_HTTP_UNKNOWN **
+	// PATH -> HTTP Request -> Endpoint
+	// HTTP Response is NOT received
+	// We cannot move forward with PATH business logic
+	// There is nothing to go to.
 	ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_HTTP_UNKNOWN        ShannonEndpointErrorType = 34
 	ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_UNKNOWN ShannonEndpointErrorType = 35
 	ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_UNKNOWN             ShannonEndpointErrorType = 36
+	// The relay request sent to the endpoint via HTTP returned a non 2XX HTTP status code.
+	ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_HTTP_NON_2XX_STATUS ShannonEndpointErrorType = 37
+	// The relay request sent to the endpoint via HTTP failed with `context deadline exceeded` error
+	ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_HTTP_CONTEXT_DEADLINE_EXCEEDED ShannonEndpointErrorType = 38
 )
 
 // Enum value maps for ShannonEndpointErrorType.
@@ -210,6 +216,8 @@ var (
 		34: "SHANNON_ENDPOINT_ERROR_HTTP_UNKNOWN",
 		35: "SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_UNKNOWN",
 		36: "SHANNON_ENDPOINT_ERROR_UNKNOWN",
+		37: "SHANNON_ENDPOINT_ERROR_HTTP_NON_2XX_STATUS",
+		38: "SHANNON_ENDPOINT_ERROR_HTTP_CONTEXT_DEADLINE_EXCEEDED",
 	}
 	ShannonEndpointErrorType_value = map[string]int32{
 		"SHANNON_ENDPOINT_ERROR_UNSPECIFIED":                          0,
@@ -248,6 +256,8 @@ var (
 		"SHANNON_ENDPOINT_ERROR_HTTP_UNKNOWN":                         34,
 		"SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_UNKNOWN":                  35,
 		"SHANNON_ENDPOINT_ERROR_UNKNOWN":                              36,
+		"SHANNON_ENDPOINT_ERROR_HTTP_NON_2XX_STATUS":                  37,
+		"SHANNON_ENDPOINT_ERROR_HTTP_CONTEXT_DEADLINE_EXCEEDED":       38,
 	}
 )
 
@@ -797,7 +807,7 @@ const file_path_protocol_shannon_proto_rawDesc = "" +
 	"2SHANNON_REQUEST_ERROR_INTERNAL_DELEGATED_FETCH_APP\x10\b\x12B\n" +
 	">SHANNON_REQUEST_ERROR_INTERNAL_DELEGATED_APP_DOES_NOT_DELEGATE\x10\t\x125\n" +
 	"1SHANNON_REQUEST_ERROR_INTERNAL_SIGNER_SETUP_ERROR\x10\n" +
-	"*\xcd\x0e\n" +
+	"*\xb8\x0f\n" +
 	"\x18ShannonEndpointErrorType\x12&\n" +
 	"\"SHANNON_ENDPOINT_ERROR_UNSPECIFIED\x10\x00\x12'\n" +
 	"\x1fSHANNON_ENDPOINT_ERROR_INTERNAL\x10\x01\x1a\x02\b\x01\x12!\n" +
@@ -835,7 +845,9 @@ const file_path_protocol_shannon_proto_rawDesc = "" +
 	")SHANNON_ENDPOINT_REQUEST_CANCELED_BY_PATH\x10!\x12'\n" +
 	"#SHANNON_ENDPOINT_ERROR_HTTP_UNKNOWN\x10\"\x12.\n" +
 	"*SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_UNKNOWN\x10#\x12\"\n" +
-	"\x1eSHANNON_ENDPOINT_ERROR_UNKNOWN\x10$*\x9b\x01\n" +
+	"\x1eSHANNON_ENDPOINT_ERROR_UNKNOWN\x10$\x12.\n" +
+	"*SHANNON_ENDPOINT_ERROR_HTTP_NON_2XX_STATUS\x10%\x129\n" +
+	"5SHANNON_ENDPOINT_ERROR_HTTP_CONTEXT_DEADLINE_EXCEEDED\x10&*\x9b\x01\n" +
 	"\x13ShannonSanctionType\x12 \n" +
 	"\x1cSHANNON_SANCTION_UNSPECIFIED\x10\x00\x12\x1c\n" +
 	"\x18SHANNON_SANCTION_SESSION\x10\x01\x12\x1e\n" +
