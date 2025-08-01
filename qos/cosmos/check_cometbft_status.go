@@ -9,26 +9,27 @@ import (
 
 /* -------------------- CometBFT Status Check -------------------- */
 
-// ID for the CometBFT status check.
-// This number may be any arbitrary ID and is selected
-// to maintain a convention in the QoS packages of
-// consistent ID for a given check type.
+// CometBFT ID checks begin with 2 for JSON-RPC requests.
 //
-// CometBFT checks begin with 2.
+// This is an arbitrary ID selected by the engineering team at Grove.
+// It is used for compatibility with the JSON-RPC spec.
+// It is a loose convention in the QoS package.
+
+// ID for the CometBFT /status check.
 const idCometBFTStatusCheck = 2002
 
-// methodStatus is the CometBFT JSON-RPC method for getting the node status.
+// methodCometBFTStatus is the CometBFT JSON-RPC method for getting the node status.
 // Reference: https://docs.cometbft.com/v1.0/spec/rpc/#status
 const methodCometBFTStatus = jsonrpc.Method("status")
 
 // TODO_IMPROVE(@commoddity): determine an appropriate interval for checking the status and/or make it configurable.
-const checkStatusInterval = 10 * time.Second
+const checkStatusInterval = 30 * time.Second
 
 var (
 	errNoCometBFTStatusObs       = fmt.Errorf("endpoint has not had an observation of its response to a CometBFT '%q' request", methodCometBFTStatus)
 	errInvalidCometBFTStatusObs  = fmt.Errorf("endpoint returned an invalid response to a CometBFT '%q' request", methodCometBFTStatus)
 	errInvalidCometBFTChainIDObs = fmt.Errorf("endpoint returned an invalid chain ID in its response to a CometBFT '%q' request", methodCometBFTStatus)
-	errCometBFTCatchingUpObs     = fmt.Errorf("endpoint is catching up to the network in its response to a CometBFT '%q' request", methodCometBFTStatus)
+	errCatchingUpCometBFTObs     = fmt.Errorf("endpoint is catching up to the network in its response to a CometBFT '%q' request", methodCometBFTStatus)
 )
 
 // endpointCheckCometBFTStatus is a check that ensures the endpoint's status information is valid.
@@ -56,7 +57,7 @@ type endpointCheckCometBFTStatus struct {
 }
 
 // getRequest returns a JSONRPC request to check the status.
-// eg. '{"jsonrpc":"2.0","id":1003,"method":"status"}'
+// eg. '{"jsonrpc":"2.0","id":2002,"method":"status"}'
 //
 // It is called in `request_validator_checks.go` to generate the endpoint checks.
 func (e *endpointCheckCometBFTStatus) getRequest() jsonrpc.Request {

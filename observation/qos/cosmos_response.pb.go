@@ -131,10 +131,7 @@ func (CosmosResponseValidationType) EnumDescriptor() ([]byte, []int) {
 type CosmosEndpointResponseValidationResult struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The type of response expected.
-	// Examples:
-	//   - JSONRPC
-	//   - JSON
-	//   - An integer
+	// Examples: JSONRPC, JSON, integer, etc.
 	ResponseValidationType CosmosResponseValidationType `protobuf:"varint,1,opt,name=response_validation_type,json=responseValidationType,proto3,enum=path.qos.CosmosResponseValidationType" json:"response_validation_type,omitempty"`
 	// HTTP status code returned to the user.
 	// It is derived from the endpoint response payload and/or HTTP status code.
@@ -143,10 +140,7 @@ type CosmosEndpointResponseValidationResult struct {
 	// Validation error, if any.
 	// This is set if parsing the endpoint response fails.
 	ValidationError *CosmosResponseValidationError `protobuf:"varint,3,opt,name=validation_error,json=validationError,proto3,enum=path.qos.CosmosResponseValidationError,oneof" json:"validation_error,omitempty"`
-	// TODO_IMPROVE(@adshmh, @commoddity): Add other observations (archival, more endpoints, etc)
-	//
-	// The parsed response - JSON, JSONRPC, or any other format, including unstructured.
-	// Tracks details, including the reason for the returned HTTP status code.
+	// The parsed response; JSON, JSONRPC, REST, unstructured, etc..
 	// Only set if validation succeeded.
 	//
 	// Types that are valid to be assigned to ParsedResponse:
@@ -279,6 +273,7 @@ type isCosmosEndpointResponseValidationResult_ParsedResponse interface {
 }
 
 type CosmosEndpointResponseValidationResult_ResponseJsonrpc struct {
+	// JSONRPC response
 	ResponseJsonrpc *JsonRpcResponse `protobuf:"bytes,4,opt,name=response_jsonrpc,json=responseJsonrpc,proto3,oneof"`
 }
 
@@ -330,7 +325,7 @@ func (*CosmosEndpointResponseValidationResult_ResponseCosmosSdkStatus) isCosmosE
 func (*CosmosEndpointResponseValidationResult_ResponseEvmJsonrpcChainId) isCosmosEndpointResponseValidationResult_ParsedResponse() {
 }
 
-// CosmosResponseCometBFTHealth stores the response to a CometBFT `/health` request
+// CosmosResponseCometBFTHealth stores the response to a CometBFT `health` method request
 type CosmosResponseCometBFTHealth struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	HealthStatus  bool                   `protobuf:"varint,1,opt,name=health_status,json=healthStatus,proto3" json:"health_status,omitempty"`
@@ -375,10 +370,10 @@ func (x *CosmosResponseCometBFTHealth) GetHealthStatus() bool {
 	return false
 }
 
-// CosmosResponseCometBFTStatus stores the response to a CometBFT `/status` request
+// CosmosResponseCometBFTStatus stores the response to a CometBFT `status` method request
 type CosmosResponseCometBFTStatus struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
-	CosmosSdkChainId  string                 `protobuf:"bytes,1,opt,name=cosmos_sdk_chain_id,json=cosmosSdkChainId,proto3" json:"cosmos_sdk_chain_id,omitempty"`
+	ChainId           string                 `protobuf:"bytes,1,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`
 	CatchingUp        bool                   `protobuf:"varint,2,opt,name=catching_up,json=catchingUp,proto3" json:"catching_up,omitempty"`
 	LatestBlockHeight string                 `protobuf:"bytes,3,opt,name=latest_block_height,json=latestBlockHeight,proto3" json:"latest_block_height,omitempty"`
 	unknownFields     protoimpl.UnknownFields
@@ -415,9 +410,9 @@ func (*CosmosResponseCometBFTStatus) Descriptor() ([]byte, []int) {
 	return file_path_qos_cosmos_response_proto_rawDescGZIP(), []int{2}
 }
 
-func (x *CosmosResponseCometBFTStatus) GetCosmosSdkChainId() string {
+func (x *CosmosResponseCometBFTStatus) GetChainId() string {
 	if x != nil {
-		return x.CosmosSdkChainId
+		return x.ChainId
 	}
 	return ""
 }
@@ -436,7 +431,7 @@ func (x *CosmosResponseCometBFTStatus) GetLatestBlockHeight() string {
 	return ""
 }
 
-// CosmosResponseCosmosSDKStatus stores the response to a CosmosSDK `/status` request
+// CosmosResponseCosmosSDKStatus stores the response to a CosmosSDK `/cosmos/base/node/v1beta1/status` request
 type CosmosResponseCosmosSDKStatus struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
 	LatestBlockHeight uint64                 `protobuf:"varint,1,opt,name=latest_block_height,json=latestBlockHeight,proto3" json:"latest_block_height,omitempty"`
@@ -602,9 +597,9 @@ const file_path_qos_cosmos_response_proto_rawDesc = "" +
 	"\x0fparsed_responseB\x13\n" +
 	"\x11_validation_errorJ\x04\b\x05\x10\x06J\x04\b\x06\x10\aR\x0fresponse_healthR\x0fresponse_status\"C\n" +
 	"\x1cCosmosResponseCometBFTHealth\x12#\n" +
-	"\rhealth_status\x18\x01 \x01(\bR\fhealthStatus\"\x9e\x01\n" +
-	"\x1cCosmosResponseCometBFTStatus\x12-\n" +
-	"\x13cosmos_sdk_chain_id\x18\x01 \x01(\tR\x10cosmosSdkChainId\x12\x1f\n" +
+	"\rhealth_status\x18\x01 \x01(\bR\fhealthStatus\"\x8a\x01\n" +
+	"\x1cCosmosResponseCometBFTStatus\x12\x19\n" +
+	"\bchain_id\x18\x01 \x01(\tR\achainId\x12\x1f\n" +
 	"\vcatching_up\x18\x02 \x01(\bR\n" +
 	"catchingUp\x12.\n" +
 	"\x13latest_block_height\x18\x03 \x01(\tR\x11latestBlockHeight\"O\n" +

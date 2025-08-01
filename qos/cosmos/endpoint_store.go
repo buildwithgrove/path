@@ -167,7 +167,7 @@ func applyCometBFTHealthObservation(endpoint *endpoint, healthResponse *qosobser
 
 // applyCometBFTStatusObservation updates the status check if a valid observation is provided.
 func applyCometBFTStatusObservation(endpoint *endpoint, statusResponse *qosobservations.CosmosResponseCometBFTStatus) {
-	chainID := statusResponse.CosmosSdkChainId
+	chainID := statusResponse.ChainId
 	catchingUp := statusResponse.CatchingUp
 	blockHeight := parseBlockHeightResponse(statusResponse.LatestBlockHeight)
 

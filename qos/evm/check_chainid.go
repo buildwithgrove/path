@@ -7,12 +7,13 @@ import (
 	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
 
-// ID for the chain ID check.
-// This number may be any arbitrary ID and is selected
-// to maintain a convention in the QoS packages of
-// consistent ID for a given check type.
+// EVM checks begin with 1 for JSON-RPC requests.
 //
-// EVM checks begin with 1.
+// This is an arbitrary ID selected by the engineering team at Grove.
+// It is used for compatibility with the JSON-RPC spec.
+// It is a loose convention in the QoS package.
+
+// ID for the eth_chainId check.
 const idChainIDCheck = 1001
 
 // methodChainID is the JSON-RPC method for getting the chain ID.

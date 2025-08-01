@@ -11,29 +11,35 @@ import "path/qos/request_error.proto";
 
 // CosmosRequestObservations captures all observations made while serving a single Cosmos blockchain service request.
 message CosmosRequestObservations {
-    // cosmos_sdk_chain_id is the Cosmos SDK blockchain identifier for the QoS implementation.
-    string cosmos_sdk_chain_id = 1;
+    // Next free index: 9
 
-    // evm_chain_id is the EVM blockchain identifier for the QoS implementation.
-    string evm_chain_id = 2;
+    // string chain_id = 1;
+    reserved 1;
+    reserved "chain_id";
 
-    // service_id is the identifier for the QoS implementation.
-    string service_id = 3;
+    // cosmos_chain_id is the blockchain identifier in the Cosmos ecosystem.
+    string cosmos_chain_id = 8;
+
+    // evm_chain_id is the EVM blockchain identifier for the Cosmos chain that has native EVM support, e.g. XRPLEVM, evmos, etc...
+    string evm_chain_id = 7;
+
+    // service_id is the Pocket Network service identifier.
+    string service_id = 2;
 
     // The origin of the request
-    RequestOrigin request_origin = 4;
+    RequestOrigin request_origin = 3;
 
     // Profile of the request: backend service selection and format determination
-    CosmosRequestProfile request_profile = 5;
+    CosmosRequestProfile request_profile = 4;
 
     // Request-level error, i.e. failed without any endpoint responses.
-    // Examples: 
+    // Examples:
     //   - Failed to parse request
     //   - No endpoint response received, i.e. any protocol-level error.
-    optional RequestError request_level_error = 6;
+    optional RequestError request_level_error = 5;
 
     // Cosmos-specific observations from endpoint(s) that responded to the service request.
-    repeated CosmosEndpointObservation endpoint_observations = 7;
+    repeated CosmosEndpointObservation endpoint_observations = 6;
 }
 
 // CosmosEndpointObservation stores a single observation from an endpoint
