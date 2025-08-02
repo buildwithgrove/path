@@ -60,7 +60,7 @@ type Gateway struct {
 // Reference: https://en.wikipedia.org/wiki/Template_method_pattern
 //
 // TODO_FUTURE: Refactor when adding other protocols (e.g. gRPC):
-//   - Extract generic processing into common method  
+//   - Extract generic processing into common method
 //   - Keep HTTP-specific details separate
 func (g Gateway) HandleServiceRequest(
 	ctx context.Context,
