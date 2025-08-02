@@ -72,9 +72,9 @@ func (rv *requestValidator) buildWebsocketRequestObservations(
 ) *qosobservations.CosmosRequestObservations {
 
 	return &qosobservations.CosmosRequestObservations{
-		CosmosSdkChainId: rv.cosmosSDKChainID,
-		ServiceId:        string(rv.serviceID),
-		RequestOrigin:    requestOrigin,
+		CosmosChainId: rv.cosmosChainID,
+		ServiceId:     string(rv.serviceID),
+		RequestOrigin: requestOrigin,
 		RequestProfile: &qosobservations.CosmosRequestProfile{
 			BackendServiceDetails: &qosobservations.BackendServiceDetails{
 				BackendServiceType: convertToProtoBackendServiceType(rpcType),
@@ -110,9 +110,9 @@ func (rv *requestValidator) createWebsocketUnsupportedRPCTypeObservation(
 	jsonrpcResponse jsonrpc.Response,
 ) *qosobservations.CosmosRequestObservations {
 	return &qosobservations.CosmosRequestObservations{
-		ServiceId:        string(rv.serviceID),
-		CosmosSdkChainId: rv.cosmosSDKChainID,
-		RequestOrigin:    qosobservations.RequestOrigin_REQUEST_ORIGIN_ORGANIC,
+		ServiceId:     string(rv.serviceID),
+		CosmosChainId: rv.cosmosChainID,
+		RequestOrigin: qosobservations.RequestOrigin_REQUEST_ORIGIN_ORGANIC,
 		RequestProfile: &qosobservations.CosmosRequestProfile{
 			BackendServiceDetails: &qosobservations.BackendServiceDetails{
 				BackendServiceType: convertToProtoBackendServiceType(rpcType),
