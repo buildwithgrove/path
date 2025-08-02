@@ -64,7 +64,12 @@ enum EVMResponseValidationError {
 
 // EVMRequestObservations captures all observations made while serving a single EVM blockchain service request.
 message EVMRequestObservations {
-  // Next ID: 10
+  // Next ID: 11
+
+  // JsonRpcRequest and endpoint_observations are no longer supported.
+  // They are replaced by EVMRequestObservation.
+  reserved 5, 6;
+  reserved "jsonrpc_request", "endpoint_observations";
 
   // chain_id is the blockchain identifier for the evm QoS implementation.
   // This is preset by the processor and not determined by the request.
@@ -99,21 +104,26 @@ message EVMRequestObservations {
     EVMRequestUnmarshalingFailure evm_request_unmarshaling_failure = 4;
   }
 
-  // The EVM blockchain service's JSON-RPC request.
+  // Each request may have multiple observations to support batch requests.
+  repeated EVMRequestObservation request_observations = 10;
+
+  // endpoint_selection_metadata contains metadata about the endpoint selection process.
+  EndpointSelectionMetadata endpoint_selection_metadata = 9;
+}
+
+message EVMRequestObservation {
+   // The EVM blockchain service's JSON-RPC request.
   // This field will be populated only if request validation succeeds.
   // If there is an error reading the HTTP request, there will be no jsonrpc_request.
   // TODO_TECHDEBT: Assumes EVM chains only support JSON-RPC. May need refactoring to support other protocols.
   JsonRpcRequest jsonrpc_request = 5;
 
-  // EVM-specific observations from endpoint(s) that responded to the service request.
+    // EVM-specific observations from endpoint(s) that responded to the service request.
   // Multiple observations may occur when:
   // * Original endpoint fails
   // * Request is sent to additional endpoints for data collection
   // This field will only be populated if request validation succeeds.
   repeated EVMEndpointObservation endpoint_observations = 6;
-
-  // endpoint_selection_metadata contains metadata about the endpoint selection process.
-  EndpointSelectionMetadata endpoint_selection_metadata = 9;
 }
 
 // TODO_MVP(@adshmh): Remove HTTP body read validation once QoS interface is updated

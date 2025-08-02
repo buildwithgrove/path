@@ -33,7 +33,11 @@ func (es *endpointStore) updateEndpointsFromObservations(
 	es.endpointsMu.Lock()
 	defer es.endpointsMu.Unlock()
 
-	endpointObservations := evmObservations.GetEndpointObservations()
+	var endpointObservations []*qosobservations.EVMEndpointObservation
+	requestObservations := evmObservations.GetRequestObservations()
+	for _, requestObservation := range requestObservations {
+		endpointObservations = append(endpointObservations, requestObservation.GetEndpointObservations()...)
+	}
 
 	logger := es.logger.With(
 		"qos_instance", "evm",

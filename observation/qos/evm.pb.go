@@ -188,17 +188,8 @@ type EVMRequestObservations struct {
 	//	*EVMRequestObservations_EvmHttpBodyReadFailure
 	//	*EVMRequestObservations_EvmRequestUnmarshalingFailure
 	RequestValidationFailure isEVMRequestObservations_RequestValidationFailure `protobuf_oneof:"request_validation_failure"`
-	// The EVM blockchain service's JSON-RPC request.
-	// This field will be populated only if request validation succeeds.
-	// If there is an error reading the HTTP request, there will be no jsonrpc_request.
-	// TODO_TECHDEBT: Assumes EVM chains only support JSON-RPC. May need refactoring to support other protocols.
-	JsonrpcRequest *JsonRpcRequest `protobuf:"bytes,5,opt,name=jsonrpc_request,json=jsonrpcRequest,proto3" json:"jsonrpc_request,omitempty"`
-	// EVM-specific observations from endpoint(s) that responded to the service request.
-	// Multiple observations may occur when:
-	// * Original endpoint fails
-	// * Request is sent to additional endpoints for data collection
-	// This field will only be populated if request validation succeeds.
-	EndpointObservations []*EVMEndpointObservation `protobuf:"bytes,6,rep,name=endpoint_observations,json=endpointObservations,proto3" json:"endpoint_observations,omitempty"`
+	// Each request may have multiple observations to support batch requests.
+	RequestObservations []*EVMRequestObservation `protobuf:"bytes,10,rep,name=request_observations,json=requestObservations,proto3" json:"request_observations,omitempty"`
 	// endpoint_selection_metadata contains metadata about the endpoint selection process.
 	EndpointSelectionMetadata *EndpointSelectionMetadata `protobuf:"bytes,9,opt,name=endpoint_selection_metadata,json=endpointSelectionMetadata,proto3" json:"endpoint_selection_metadata,omitempty"`
 	unknownFields             protoimpl.UnknownFields
@@ -288,16 +279,9 @@ func (x *EVMRequestObservations) GetEvmRequestUnmarshalingFailure() *EVMRequestU
 	return nil
 }
 
-func (x *EVMRequestObservations) GetJsonrpcRequest() *JsonRpcRequest {
+func (x *EVMRequestObservations) GetRequestObservations() []*EVMRequestObservation {
 	if x != nil {
-		return x.JsonrpcRequest
-	}
-	return nil
-}
-
-func (x *EVMRequestObservations) GetEndpointObservations() []*EVMEndpointObservation {
-	if x != nil {
-		return x.EndpointObservations
+		return x.RequestObservations
 	}
 	return nil
 }
@@ -329,6 +313,67 @@ func (*EVMRequestObservations_EvmHttpBodyReadFailure) isEVMRequestObservations_R
 func (*EVMRequestObservations_EvmRequestUnmarshalingFailure) isEVMRequestObservations_RequestValidationFailure() {
 }
 
+type EVMRequestObservation struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The EVM blockchain service's JSON-RPC request.
+	// This field will be populated only if request validation succeeds.
+	// If there is an error reading the HTTP request, there will be no jsonrpc_request.
+	// TODO_TECHDEBT: Assumes EVM chains only support JSON-RPC. May need refactoring to support other protocols.
+	JsonrpcRequest *JsonRpcRequest `protobuf:"bytes,5,opt,name=jsonrpc_request,json=jsonrpcRequest,proto3" json:"jsonrpc_request,omitempty"`
+	// EVM-specific observations from endpoint(s) that responded to the service request.
+	// Multiple observations may occur when:
+	// * Original endpoint fails
+	// * Request is sent to additional endpoints for data collection
+	// This field will only be populated if request validation succeeds.
+	EndpointObservations []*EVMEndpointObservation `protobuf:"bytes,6,rep,name=endpoint_observations,json=endpointObservations,proto3" json:"endpoint_observations,omitempty"`
+	unknownFields        protoimpl.UnknownFields
+	sizeCache            protoimpl.SizeCache
+}
+
+func (x *EVMRequestObservation) Reset() {
+	*x = EVMRequestObservation{}
+	mi := &file_path_qos_evm_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *EVMRequestObservation) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*EVMRequestObservation) ProtoMessage() {}
+
+func (x *EVMRequestObservation) ProtoReflect() protoreflect.Message {
+	mi := &file_path_qos_evm_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use EVMRequestObservation.ProtoReflect.Descriptor instead.
+func (*EVMRequestObservation) Descriptor() ([]byte, []int) {
+	return file_path_qos_evm_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *EVMRequestObservation) GetJsonrpcRequest() *JsonRpcRequest {
+	if x != nil {
+		return x.JsonrpcRequest
+	}
+	return nil
+}
+
+func (x *EVMRequestObservation) GetEndpointObservations() []*EVMEndpointObservation {
+	if x != nil {
+		return x.EndpointObservations
+	}
+	return nil
+}
+
 // TODO_MVP(@adshmh): Remove HTTP body read validation once QoS interface is updated
 // to receive request payload directly rather than reading from the HTTP request body.
 //
@@ -348,7 +393,7 @@ type EVMHTTPBodyReadFailure struct {
 
 func (x *EVMHTTPBodyReadFailure) Reset() {
 	*x = EVMHTTPBodyReadFailure{}
-	mi := &file_path_qos_evm_proto_msgTypes[1]
+	mi := &file_path_qos_evm_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -360,7 +405,7 @@ func (x *EVMHTTPBodyReadFailure) String() string {
 func (*EVMHTTPBodyReadFailure) ProtoMessage() {}
 
 func (x *EVMHTTPBodyReadFailure) ProtoReflect() protoreflect.Message {
-	mi := &file_path_qos_evm_proto_msgTypes[1]
+	mi := &file_path_qos_evm_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -373,7 +418,7 @@ func (x *EVMHTTPBodyReadFailure) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EVMHTTPBodyReadFailure.ProtoReflect.Descriptor instead.
 func (*EVMHTTPBodyReadFailure) Descriptor() ([]byte, []int) {
-	return file_path_qos_evm_proto_rawDescGZIP(), []int{1}
+	return file_path_qos_evm_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *EVMHTTPBodyReadFailure) GetHttpStatusCode() int32 {
@@ -413,7 +458,7 @@ type EVMRequestUnmarshalingFailure struct {
 
 func (x *EVMRequestUnmarshalingFailure) Reset() {
 	*x = EVMRequestUnmarshalingFailure{}
-	mi := &file_path_qos_evm_proto_msgTypes[2]
+	mi := &file_path_qos_evm_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -425,7 +470,7 @@ func (x *EVMRequestUnmarshalingFailure) String() string {
 func (*EVMRequestUnmarshalingFailure) ProtoMessage() {}
 
 func (x *EVMRequestUnmarshalingFailure) ProtoReflect() protoreflect.Message {
-	mi := &file_path_qos_evm_proto_msgTypes[2]
+	mi := &file_path_qos_evm_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -438,7 +483,7 @@ func (x *EVMRequestUnmarshalingFailure) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EVMRequestUnmarshalingFailure.ProtoReflect.Descriptor instead.
 func (*EVMRequestUnmarshalingFailure) Descriptor() ([]byte, []int) {
-	return file_path_qos_evm_proto_rawDescGZIP(), []int{2}
+	return file_path_qos_evm_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *EVMRequestUnmarshalingFailure) GetHttpStatusCode() int32 {
@@ -485,7 +530,7 @@ type EVMEndpointObservation struct {
 
 func (x *EVMEndpointObservation) Reset() {
 	*x = EVMEndpointObservation{}
-	mi := &file_path_qos_evm_proto_msgTypes[3]
+	mi := &file_path_qos_evm_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -497,7 +542,7 @@ func (x *EVMEndpointObservation) String() string {
 func (*EVMEndpointObservation) ProtoMessage() {}
 
 func (x *EVMEndpointObservation) ProtoReflect() protoreflect.Message {
-	mi := &file_path_qos_evm_proto_msgTypes[3]
+	mi := &file_path_qos_evm_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -510,7 +555,7 @@ func (x *EVMEndpointObservation) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EVMEndpointObservation.ProtoReflect.Descriptor instead.
 func (*EVMEndpointObservation) Descriptor() ([]byte, []int) {
-	return file_path_qos_evm_proto_rawDescGZIP(), []int{3}
+	return file_path_qos_evm_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *EVMEndpointObservation) GetEndpointAddr() string {
@@ -662,7 +707,7 @@ type EVMChainIDResponse struct {
 
 func (x *EVMChainIDResponse) Reset() {
 	*x = EVMChainIDResponse{}
-	mi := &file_path_qos_evm_proto_msgTypes[4]
+	mi := &file_path_qos_evm_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -674,7 +719,7 @@ func (x *EVMChainIDResponse) String() string {
 func (*EVMChainIDResponse) ProtoMessage() {}
 
 func (x *EVMChainIDResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_path_qos_evm_proto_msgTypes[4]
+	mi := &file_path_qos_evm_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -687,7 +732,7 @@ func (x *EVMChainIDResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EVMChainIDResponse.ProtoReflect.Descriptor instead.
 func (*EVMChainIDResponse) Descriptor() ([]byte, []int) {
-	return file_path_qos_evm_proto_rawDescGZIP(), []int{4}
+	return file_path_qos_evm_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *EVMChainIDResponse) GetHttpStatusCode() int32 {
@@ -728,7 +773,7 @@ type EVMBlockNumberResponse struct {
 
 func (x *EVMBlockNumberResponse) Reset() {
 	*x = EVMBlockNumberResponse{}
-	mi := &file_path_qos_evm_proto_msgTypes[5]
+	mi := &file_path_qos_evm_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -740,7 +785,7 @@ func (x *EVMBlockNumberResponse) String() string {
 func (*EVMBlockNumberResponse) ProtoMessage() {}
 
 func (x *EVMBlockNumberResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_path_qos_evm_proto_msgTypes[5]
+	mi := &file_path_qos_evm_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -753,7 +798,7 @@ func (x *EVMBlockNumberResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EVMBlockNumberResponse.ProtoReflect.Descriptor instead.
 func (*EVMBlockNumberResponse) Descriptor() ([]byte, []int) {
-	return file_path_qos_evm_proto_rawDescGZIP(), []int{5}
+	return file_path_qos_evm_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *EVMBlockNumberResponse) GetHttpStatusCode() int32 {
@@ -798,7 +843,7 @@ type EVMGetBalanceResponse struct {
 
 func (x *EVMGetBalanceResponse) Reset() {
 	*x = EVMGetBalanceResponse{}
-	mi := &file_path_qos_evm_proto_msgTypes[6]
+	mi := &file_path_qos_evm_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -810,7 +855,7 @@ func (x *EVMGetBalanceResponse) String() string {
 func (*EVMGetBalanceResponse) ProtoMessage() {}
 
 func (x *EVMGetBalanceResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_path_qos_evm_proto_msgTypes[6]
+	mi := &file_path_qos_evm_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -823,7 +868,7 @@ func (x *EVMGetBalanceResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EVMGetBalanceResponse.ProtoReflect.Descriptor instead.
 func (*EVMGetBalanceResponse) Descriptor() ([]byte, []int) {
-	return file_path_qos_evm_proto_rawDescGZIP(), []int{6}
+	return file_path_qos_evm_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *EVMGetBalanceResponse) GetHttpStatusCode() int32 {
@@ -879,7 +924,7 @@ type EVMUnrecognizedResponse struct {
 
 func (x *EVMUnrecognizedResponse) Reset() {
 	*x = EVMUnrecognizedResponse{}
-	mi := &file_path_qos_evm_proto_msgTypes[7]
+	mi := &file_path_qos_evm_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -891,7 +936,7 @@ func (x *EVMUnrecognizedResponse) String() string {
 func (*EVMUnrecognizedResponse) ProtoMessage() {}
 
 func (x *EVMUnrecognizedResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_path_qos_evm_proto_msgTypes[7]
+	mi := &file_path_qos_evm_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -904,7 +949,7 @@ func (x *EVMUnrecognizedResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EVMUnrecognizedResponse.ProtoReflect.Descriptor instead.
 func (*EVMUnrecognizedResponse) Descriptor() ([]byte, []int) {
-	return file_path_qos_evm_proto_rawDescGZIP(), []int{7}
+	return file_path_qos_evm_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *EVMUnrecognizedResponse) GetHttpStatusCode() int32 {
@@ -942,7 +987,7 @@ type EVMEmptyResponse struct {
 
 func (x *EVMEmptyResponse) Reset() {
 	*x = EVMEmptyResponse{}
-	mi := &file_path_qos_evm_proto_msgTypes[8]
+	mi := &file_path_qos_evm_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -954,7 +999,7 @@ func (x *EVMEmptyResponse) String() string {
 func (*EVMEmptyResponse) ProtoMessage() {}
 
 func (x *EVMEmptyResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_path_qos_evm_proto_msgTypes[8]
+	mi := &file_path_qos_evm_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -967,7 +1012,7 @@ func (x *EVMEmptyResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EVMEmptyResponse.ProtoReflect.Descriptor instead.
 func (*EVMEmptyResponse) Descriptor() ([]byte, []int) {
-	return file_path_qos_evm_proto_rawDescGZIP(), []int{8}
+	return file_path_qos_evm_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *EVMEmptyResponse) GetHttpStatusCode() int32 {
@@ -998,7 +1043,7 @@ type EVMNoResponse struct {
 
 func (x *EVMNoResponse) Reset() {
 	*x = EVMNoResponse{}
-	mi := &file_path_qos_evm_proto_msgTypes[9]
+	mi := &file_path_qos_evm_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1010,7 +1055,7 @@ func (x *EVMNoResponse) String() string {
 func (*EVMNoResponse) ProtoMessage() {}
 
 func (x *EVMNoResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_path_qos_evm_proto_msgTypes[9]
+	mi := &file_path_qos_evm_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1023,7 +1068,7 @@ func (x *EVMNoResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EVMNoResponse.ProtoReflect.Descriptor instead.
 func (*EVMNoResponse) Descriptor() ([]byte, []int) {
-	return file_path_qos_evm_proto_rawDescGZIP(), []int{9}
+	return file_path_qos_evm_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *EVMNoResponse) GetHttpStatusCode() int32 {
@@ -1044,7 +1089,7 @@ var File_path_qos_evm_proto protoreflect.FileDescriptor
 
 const file_path_qos_evm_proto_rawDesc = "" +
 	"\n" +
-	"\x12path/qos/evm.proto\x12\bpath.qos\x1a\x16path/qos/jsonrpc.proto\x1a\x1dpath/qos/request_origin.proto\x1a*path/qos/endpoint_selection_metadata.proto\x1a\x1cpath/metadata/metadata.proto\"\xb9\x05\n" +
+	"\x12path/qos/evm.proto\x12\bpath.qos\x1a\x16path/qos/jsonrpc.proto\x1a\x1dpath/qos/request_origin.proto\x1a*path/qos/endpoint_selection_metadata.proto\x1a\x1cpath/metadata/metadata.proto\"\xa7\x05\n" +
 	"\x16EVMRequestObservations\x12\x19\n" +
 	"\bchain_id\x18\x01 \x01(\tR\achainId\x12\x1d\n" +
 	"\n" +
@@ -1052,11 +1097,14 @@ const file_path_qos_evm_proto_rawDesc = "" +
 	"\x0erequest_origin\x18\b \x01(\x0e2\x17.path.qos.RequestOriginR\rrequestOrigin\x124\n" +
 	"\x16request_payload_length\x18\x02 \x01(\rR\x14requestPayloadLength\x12^\n" +
 	"\x1aevm_http_body_read_failure\x18\x03 \x01(\v2 .path.qos.EVMHTTPBodyReadFailureH\x00R\x16evmHttpBodyReadFailure\x12r\n" +
-	" evm_request_unmarshaling_failure\x18\x04 \x01(\v2'.path.qos.EVMRequestUnmarshalingFailureH\x00R\x1devmRequestUnmarshalingFailure\x12A\n" +
-	"\x0fjsonrpc_request\x18\x05 \x01(\v2\x18.path.qos.JsonRpcRequestR\x0ejsonrpcRequest\x12U\n" +
-	"\x15endpoint_observations\x18\x06 \x03(\v2 .path.qos.EVMEndpointObservationR\x14endpointObservations\x12c\n" +
+	" evm_request_unmarshaling_failure\x18\x04 \x01(\v2'.path.qos.EVMRequestUnmarshalingFailureH\x00R\x1devmRequestUnmarshalingFailure\x12R\n" +
+	"\x14request_observations\x18\n" +
+	" \x03(\v2\x1f.path.qos.EVMRequestObservationR\x13requestObservations\x12c\n" +
 	"\x1bendpoint_selection_metadata\x18\t \x01(\v2#.path.qos.EndpointSelectionMetadataR\x19endpointSelectionMetadataB\x1c\n" +
-	"\x1arequest_validation_failure\"\xce\x01\n" +
+	"\x1arequest_validation_failureJ\x04\b\x05\x10\x06J\x04\b\x06\x10\aR\x0fjsonrpc_requestR\x15endpoint_observations\"\xb1\x01\n" +
+	"\x15EVMRequestObservation\x12A\n" +
+	"\x0fjsonrpc_request\x18\x05 \x01(\v2\x18.path.qos.JsonRpcRequestR\x0ejsonrpcRequest\x12U\n" +
+	"\x15endpoint_observations\x18\x06 \x03(\v2 .path.qos.EVMEndpointObservationR\x14endpointObservations\"\xce\x01\n" +
 	"\x16EVMHTTPBodyReadFailure\x12(\n" +
 	"\x10http_status_code\x18\x01 \x01(\x05R\x0ehttpStatusCode\x12N\n" +
 	"\x10validation_error\x18\x02 \x01(\x0e2#.path.qos.EVMRequestValidationErrorR\x0fvalidationError\x12(\n" +
@@ -1128,52 +1176,54 @@ func file_path_qos_evm_proto_rawDescGZIP() []byte {
 }
 
 var file_path_qos_evm_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
-var file_path_qos_evm_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
+var file_path_qos_evm_proto_msgTypes = make([]protoimpl.MessageInfo, 11)
 var file_path_qos_evm_proto_goTypes = []any{
 	(EVMRequestValidationError)(0),        // 0: path.qos.EVMRequestValidationError
 	(EVMResponseValidationError)(0),       // 1: path.qos.EVMResponseValidationError
 	(*EVMRequestObservations)(nil),        // 2: path.qos.EVMRequestObservations
-	(*EVMHTTPBodyReadFailure)(nil),        // 3: path.qos.EVMHTTPBodyReadFailure
-	(*EVMRequestUnmarshalingFailure)(nil), // 4: path.qos.EVMRequestUnmarshalingFailure
-	(*EVMEndpointObservation)(nil),        // 5: path.qos.EVMEndpointObservation
-	(*EVMChainIDResponse)(nil),            // 6: path.qos.EVMChainIDResponse
-	(*EVMBlockNumberResponse)(nil),        // 7: path.qos.EVMBlockNumberResponse
-	(*EVMGetBalanceResponse)(nil),         // 8: path.qos.EVMGetBalanceResponse
-	(*EVMUnrecognizedResponse)(nil),       // 9: path.qos.EVMUnrecognizedResponse
-	(*EVMEmptyResponse)(nil),              // 10: path.qos.EVMEmptyResponse
-	(*EVMNoResponse)(nil),                 // 11: path.qos.EVMNoResponse
-	(RequestOrigin)(0),                    // 12: path.qos.RequestOrigin
-	(*JsonRpcRequest)(nil),                // 13: path.qos.JsonRpcRequest
+	(*EVMRequestObservation)(nil),         // 3: path.qos.EVMRequestObservation
+	(*EVMHTTPBodyReadFailure)(nil),        // 4: path.qos.EVMHTTPBodyReadFailure
+	(*EVMRequestUnmarshalingFailure)(nil), // 5: path.qos.EVMRequestUnmarshalingFailure
+	(*EVMEndpointObservation)(nil),        // 6: path.qos.EVMEndpointObservation
+	(*EVMChainIDResponse)(nil),            // 7: path.qos.EVMChainIDResponse
+	(*EVMBlockNumberResponse)(nil),        // 8: path.qos.EVMBlockNumberResponse
+	(*EVMGetBalanceResponse)(nil),         // 9: path.qos.EVMGetBalanceResponse
+	(*EVMUnrecognizedResponse)(nil),       // 10: path.qos.EVMUnrecognizedResponse
+	(*EVMEmptyResponse)(nil),              // 11: path.qos.EVMEmptyResponse
+	(*EVMNoResponse)(nil),                 // 12: path.qos.EVMNoResponse
+	(RequestOrigin)(0),                    // 13: path.qos.RequestOrigin
 	(*EndpointSelectionMetadata)(nil),     // 14: path.qos.EndpointSelectionMetadata
-	(*JsonRpcResponse)(nil),               // 15: path.qos.JsonRpcResponse
+	(*JsonRpcRequest)(nil),                // 15: path.qos.JsonRpcRequest
+	(*JsonRpcResponse)(nil),               // 16: path.qos.JsonRpcResponse
 }
 var file_path_qos_evm_proto_depIdxs = []int32{
-	12, // 0: path.qos.EVMRequestObservations.request_origin:type_name -> path.qos.RequestOrigin
-	3,  // 1: path.qos.EVMRequestObservations.evm_http_body_read_failure:type_name -> path.qos.EVMHTTPBodyReadFailure
-	4,  // 2: path.qos.EVMRequestObservations.evm_request_unmarshaling_failure:type_name -> path.qos.EVMRequestUnmarshalingFailure
-	13, // 3: path.qos.EVMRequestObservations.jsonrpc_request:type_name -> path.qos.JsonRpcRequest
-	5,  // 4: path.qos.EVMRequestObservations.endpoint_observations:type_name -> path.qos.EVMEndpointObservation
-	14, // 5: path.qos.EVMRequestObservations.endpoint_selection_metadata:type_name -> path.qos.EndpointSelectionMetadata
-	0,  // 6: path.qos.EVMHTTPBodyReadFailure.validation_error:type_name -> path.qos.EVMRequestValidationError
-	0,  // 7: path.qos.EVMRequestUnmarshalingFailure.validation_error:type_name -> path.qos.EVMRequestValidationError
-	6,  // 8: path.qos.EVMEndpointObservation.chain_id_response:type_name -> path.qos.EVMChainIDResponse
-	7,  // 9: path.qos.EVMEndpointObservation.block_number_response:type_name -> path.qos.EVMBlockNumberResponse
-	8,  // 10: path.qos.EVMEndpointObservation.get_balance_response:type_name -> path.qos.EVMGetBalanceResponse
-	9,  // 11: path.qos.EVMEndpointObservation.unrecognized_response:type_name -> path.qos.EVMUnrecognizedResponse
-	10, // 12: path.qos.EVMEndpointObservation.empty_response:type_name -> path.qos.EVMEmptyResponse
-	11, // 13: path.qos.EVMEndpointObservation.no_response:type_name -> path.qos.EVMNoResponse
-	1,  // 14: path.qos.EVMChainIDResponse.response_validation_error:type_name -> path.qos.EVMResponseValidationError
-	1,  // 15: path.qos.EVMBlockNumberResponse.response_validation_error:type_name -> path.qos.EVMResponseValidationError
-	1,  // 16: path.qos.EVMGetBalanceResponse.response_validation_error:type_name -> path.qos.EVMResponseValidationError
-	15, // 17: path.qos.EVMUnrecognizedResponse.jsonrpc_response:type_name -> path.qos.JsonRpcResponse
-	1,  // 18: path.qos.EVMUnrecognizedResponse.response_validation_error:type_name -> path.qos.EVMResponseValidationError
-	1,  // 19: path.qos.EVMEmptyResponse.response_validation_error:type_name -> path.qos.EVMResponseValidationError
-	1,  // 20: path.qos.EVMNoResponse.response_validation_error:type_name -> path.qos.EVMResponseValidationError
-	21, // [21:21] is the sub-list for method output_type
-	21, // [21:21] is the sub-list for method input_type
-	21, // [21:21] is the sub-list for extension type_name
-	21, // [21:21] is the sub-list for extension extendee
-	0,  // [0:21] is the sub-list for field type_name
+	13, // 0: path.qos.EVMRequestObservations.request_origin:type_name -> path.qos.RequestOrigin
+	4,  // 1: path.qos.EVMRequestObservations.evm_http_body_read_failure:type_name -> path.qos.EVMHTTPBodyReadFailure
+	5,  // 2: path.qos.EVMRequestObservations.evm_request_unmarshaling_failure:type_name -> path.qos.EVMRequestUnmarshalingFailure
+	3,  // 3: path.qos.EVMRequestObservations.request_observations:type_name -> path.qos.EVMRequestObservation
+	14, // 4: path.qos.EVMRequestObservations.endpoint_selection_metadata:type_name -> path.qos.EndpointSelectionMetadata
+	15, // 5: path.qos.EVMRequestObservation.jsonrpc_request:type_name -> path.qos.JsonRpcRequest
+	6,  // 6: path.qos.EVMRequestObservation.endpoint_observations:type_name -> path.qos.EVMEndpointObservation
+	0,  // 7: path.qos.EVMHTTPBodyReadFailure.validation_error:type_name -> path.qos.EVMRequestValidationError
+	0,  // 8: path.qos.EVMRequestUnmarshalingFailure.validation_error:type_name -> path.qos.EVMRequestValidationError
+	7,  // 9: path.qos.EVMEndpointObservation.chain_id_response:type_name -> path.qos.EVMChainIDResponse
+	8,  // 10: path.qos.EVMEndpointObservation.block_number_response:type_name -> path.qos.EVMBlockNumberResponse
+	9,  // 11: path.qos.EVMEndpointObservation.get_balance_response:type_name -> path.qos.EVMGetBalanceResponse
+	10, // 12: path.qos.EVMEndpointObservation.unrecognized_response:type_name -> path.qos.EVMUnrecognizedResponse
+	11, // 13: path.qos.EVMEndpointObservation.empty_response:type_name -> path.qos.EVMEmptyResponse
+	12, // 14: path.qos.EVMEndpointObservation.no_response:type_name -> path.qos.EVMNoResponse
+	1,  // 15: path.qos.EVMChainIDResponse.response_validation_error:type_name -> path.qos.EVMResponseValidationError
+	1,  // 16: path.qos.EVMBlockNumberResponse.response_validation_error:type_name -> path.qos.EVMResponseValidationError
+	1,  // 17: path.qos.EVMGetBalanceResponse.response_validation_error:type_name -> path.qos.EVMResponseValidationError
+	16, // 18: path.qos.EVMUnrecognizedResponse.jsonrpc_response:type_name -> path.qos.JsonRpcResponse
+	1,  // 19: path.qos.EVMUnrecognizedResponse.response_validation_error:type_name -> path.qos.EVMResponseValidationError
+	1,  // 20: path.qos.EVMEmptyResponse.response_validation_error:type_name -> path.qos.EVMResponseValidationError
+	1,  // 21: path.qos.EVMNoResponse.response_validation_error:type_name -> path.qos.EVMResponseValidationError
+	22, // [22:22] is the sub-list for method output_type
+	22, // [22:22] is the sub-list for method input_type
+	22, // [22:22] is the sub-list for extension type_name
+	22, // [22:22] is the sub-list for extension extendee
+	0,  // [0:22] is the sub-list for field type_name
 }
 
 func init() { file_path_qos_evm_proto_init() }
@@ -1188,9 +1238,9 @@ func file_path_qos_evm_proto_init() {
 		(*EVMRequestObservations_EvmHttpBodyReadFailure)(nil),
 		(*EVMRequestObservations_EvmRequestUnmarshalingFailure)(nil),
 	}
-	file_path_qos_evm_proto_msgTypes[1].OneofWrappers = []any{}
 	file_path_qos_evm_proto_msgTypes[2].OneofWrappers = []any{}
-	file_path_qos_evm_proto_msgTypes[3].OneofWrappers = []any{
+	file_path_qos_evm_proto_msgTypes[3].OneofWrappers = []any{}
+	file_path_qos_evm_proto_msgTypes[4].OneofWrappers = []any{
 		(*EVMEndpointObservation_ChainIdResponse)(nil),
 		(*EVMEndpointObservation_BlockNumberResponse)(nil),
 		(*EVMEndpointObservation_GetBalanceResponse)(nil),
@@ -1198,17 +1248,17 @@ func file_path_qos_evm_proto_init() {
 		(*EVMEndpointObservation_EmptyResponse)(nil),
 		(*EVMEndpointObservation_NoResponse)(nil),
 	}
-	file_path_qos_evm_proto_msgTypes[4].OneofWrappers = []any{}
 	file_path_qos_evm_proto_msgTypes[5].OneofWrappers = []any{}
 	file_path_qos_evm_proto_msgTypes[6].OneofWrappers = []any{}
 	file_path_qos_evm_proto_msgTypes[7].OneofWrappers = []any{}
+	file_path_qos_evm_proto_msgTypes[8].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_path_qos_evm_proto_rawDesc), len(file_path_qos_evm_proto_rawDesc)),
 			NumEnums:      2,
-			NumMessages:   10,
+			NumMessages:   11,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

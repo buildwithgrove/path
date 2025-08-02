@@ -38,7 +38,7 @@ type requestContext struct {
 
 // HandleServiceRequest handles incoming service request.
 // It uses the supplied payload to send a relay request to an endpoint, and verifies and returns the response.
-func (rc *requestContext) HandleServiceRequest(payload protocol.Payload) (protocol.Response, error) {
+func (rc *requestContext) HandleServiceRequest(payloads []protocol.Payload) ([]protocol.Response, error) {
 	// TODO_IMPROVE(@adshmh): use the same pattern for hydrated loggers in any packages with large number of logger fields.
 	hydratedLogger := rc.getHydratedLogger("HandleServiceRequest")
 
@@ -70,7 +70,7 @@ func (rc *requestContext) HandleServiceRequest(payload protocol.Payload) (protoc
 		rc.selectedEndpoint.app.aat,
 		// TODO_FUTURE(@adshmh): support service-specific timeouts, passed from the Qos instance.
 		0, // SDK to use the default timeout.
-		payload,
+		payloads[0],
 	)
 
 	// Handle endpoint error:
@@ -173,7 +173,7 @@ func (rc *requestContext) handleEndpointSuccess(
 	endpointQueryTime time.Time,
 	endpointResponsePayload []byte,
 	endpointResponseHTTPStatusCode int,
-) (protocol.Response, error) {
+) ([]protocol.Response, error) {
 	// Track the endpoint success observation.
 	rc.endpointObservations = append(rc.endpointObservations,
 		buildEndpointSuccessObservation(
@@ -184,11 +184,11 @@ func (rc *requestContext) handleEndpointSuccess(
 	)
 
 	// Build and return the relay response received from the endpoint.
-	return protocol.Response{
+	return []protocol.Response{protocol.Response{
 		EndpointAddr:   rc.selectedEndpoint.Addr(),
 		Bytes:          endpointResponsePayload,
 		HTTPStatusCode: endpointResponseHTTPStatusCode,
-	}, nil
+	}}, nil
 }
 
 // handleEndpointError records an endpoint error observation and returns the response.
@@ -199,7 +199,7 @@ func (rc *requestContext) handleEndpointError(
 	endpointErr error,
 	endpointResponsePayload []byte,
 	endpointResponseHTTPStatusCode int,
-) (protocol.Response, error) {
+) ([]protocol.Response, error) {
 	// Classify the endpoint's error for the observation.
 	// Determine any applicable sanctions.
 	endpointErrorType, recommendedSanctionType := classifyRelayError(rc.logger, endpointErr)
@@ -225,11 +225,11 @@ func (rc *requestContext) handleEndpointError(
 	)
 
 	// Return the endpoint's response as-is, along with the encountered error.
-	return protocol.Response{
+	return []protocol.Response{protocol.Response{
 		EndpointAddr:   rc.selectedEndpoint.Addr(),
 		Bytes:          endpointResponsePayload,
 		HTTPStatusCode: endpointResponseHTTPStatusCode,
-	}, endpointErr
+	}}, endpointErr
 }
 
 // handleInternalError is called if the request processing fails.
@@ -237,7 +237,7 @@ func (rc *requestContext) handleEndpointError(
 // DEV_NOTE: This should NEVER happen and any logged entries by this method should be investigated.
 // - Records an internal error on the request for observations.
 // - Logs an error entry.
-func (rc *requestContext) handleInternalError(internalErr error) (protocol.Response, error) {
+func (rc *requestContext) handleInternalError(internalErr error) ([]protocol.Response, error) {
 	hydratedLogger := rc.getHydratedLogger("handleInternalError")
 
 	// log the internal error.
@@ -246,5 +246,5 @@ func (rc *requestContext) handleInternalError(internalErr error) (protocol.Respo
 	// Sets the request processing error for generating observations.
 	rc.requestErrorObservation = buildInternalRequestProcessingErrorObservation(internalErr)
 
-	return protocol.Response{}, internalErr
+	return []protocol.Response{}, internalErr
 }

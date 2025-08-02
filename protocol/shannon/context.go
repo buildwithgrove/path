@@ -4,8 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"maps"
 	"net/http"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -77,15 +79,128 @@ type requestContext struct {
 
 // HandleServiceRequest:
 // - Satisfies gateway.ProtocolRequestContext interface.
-// - Uses supplied payload to send a relay request to an endpoint.
-// - Verifies and returns the response.
+// - Uses supplied payloads to send relay requests to an endpoint.
+// - Handles both single requests and JSON-RPC batch requests concurrently when beneficial.
+// - Returns responses as an array to match interface, but gateway currently expects single response.
 // - Captures RelayMinerError data when available for reporting purposes.
-func (rc *requestContext) HandleServiceRequest(payload protocol.Payload) (protocol.Response, error) {
+func (rc *requestContext) HandleServiceRequest(payloads []protocol.Payload) ([]protocol.Response, error) {
 	// Internal error: No endpoint selected.
 	if rc.selectedEndpoint == nil {
-		return rc.handleInternalError(fmt.Errorf("HandleServiceRequest: no endpoint has been selected on service %s", rc.serviceID))
+		response, err := rc.handleInternalError(fmt.Errorf("HandleServiceRequest: no endpoint has been selected on service %s", rc.serviceID))
+		return []protocol.Response{response}, err
 	}
 
+	// Handle empty payloads.
+	if len(payloads) == 0 {
+		response, err := rc.handleInternalError(fmt.Errorf("HandleServiceRequest: no payloads provided for service %s", rc.serviceID))
+		return []protocol.Response{response}, err
+	}
+
+	// For single payload, handle directly without additional overhead.
+	if len(payloads) == 1 {
+		response, err := rc.sendSingleRelay(payloads[0])
+		return []protocol.Response{response}, err
+	}
+
+	// For multiple payloads, use parallel processing.
+	return rc.handleParallelRelayRequests(payloads)
+}
+
+// handleParallelRelayRequests orchestrates parallel relay requests to a single endpoint.
+// Uses concurrent processing while maintaining response order and proper error handling.
+func (rc *requestContext) handleParallelRelayRequests(payloads []protocol.Payload) ([]protocol.Response, error) {
+	logger := rc.logger.
+		With("method", "handleParallelRelayRequests").
+		With("num_payloads", len(payloads)).
+		With("service_id", rc.serviceID)
+
+	logger.Debug().Msg("Starting parallel relay processing")
+
+	resultChan := rc.launchParallelRelays(payloads)
+
+	return rc.waitForAllRelayResponses(logger, resultChan, len(payloads))
+}
+
+// parallelRelayResult holds the result of a single relay request for parallel processing.
+type parallelRelayResult struct {
+	index     int
+	response  protocol.Response
+	err       error
+	duration  time.Duration
+	startTime time.Time
+}
+
+// launchParallelRelays starts all parallel relay requests and returns a result channel
+func (rc *requestContext) launchParallelRelays(payloads []protocol.Payload) <-chan parallelRelayResult {
+	resultChan := make(chan parallelRelayResult, len(payloads))
+	var wg sync.WaitGroup
+
+	for i, payload := range payloads {
+		wg.Add(1)
+		go rc.executeRelayRequest(payload, i, resultChan, &wg)
+	}
+
+	// Close channel when all goroutines complete
+	go func() {
+		wg.Wait()
+		close(resultChan)
+	}()
+
+	return resultChan
+}
+
+// executeRelayRequest handles a single relay request in a goroutine
+func (rc *requestContext) executeRelayRequest(
+	payload protocol.Payload,
+	index int,
+	resultChan chan<- parallelRelayResult,
+	wg *sync.WaitGroup,
+) {
+	defer wg.Done()
+
+	startTime := time.Now()
+	response, err := rc.sendSingleRelay(payload)
+	duration := time.Since(startTime)
+
+	result := parallelRelayResult{
+		index:     index,
+		response:  response,
+		err:       err,
+		duration:  duration,
+		startTime: startTime,
+	}
+
+	resultChan <- result
+}
+
+// waitForAllRelayResponses waits for all relay responses and processes them
+func (rc *requestContext) waitForAllRelayResponses(
+	logger polylog.Logger,
+	resultChan <-chan parallelRelayResult,
+	numRequests int,
+) ([]protocol.Response, error) {
+	results := make([]parallelRelayResult, numRequests)
+	var firstErr error
+
+	// Collect all results
+	for result := range resultChan {
+		results[result.index] = result
+
+		if result.err != nil {
+			if firstErr == nil {
+				firstErr = result.err
+			}
+			logger.Warn().Err(result.err).
+				Msgf("Parallel relay request %d failed after %dms", result.index, result.duration.Milliseconds())
+		}
+	}
+
+	return rc.convertResultsToResponses(results, firstErr)
+}
+
+// sendSingleRelay handles a single relay request with full error handling and observation tracking.
+// Extracted from original HandleServiceRequest logic for reuse in parallel processing.
+func (rc *requestContext) sendSingleRelay(payload protocol.Payload) (protocol.Response, error) {
 	// Record endpoint query time.
 	endpointQueryTime := time.Now()
 
@@ -105,7 +220,7 @@ func (rc *requestContext) HandleServiceRequest(payload protocol.Payload) (protoc
 	relayResponse.EndpointAddr = rc.selectedEndpoint.Addr()
 	if err != nil {
 		// Wrap error with detailed message.
-		deserializeErr := fmt.Errorf("error deserializing endpoint into a POKTHTTP response: %w", err)
+		deserializeErr := fmt.Errorf("error deserializing endpoint into a response: %w", err)
 		return rc.handleEndpointError(endpointQueryTime, deserializeErr)
 	}
 
@@ -114,6 +229,30 @@ func (rc *requestContext) HandleServiceRequest(payload protocol.Payload) (protoc
 	// - Return response received from endpoint.
 	err = rc.handleEndpointSuccess(endpointQueryTime, &relayResponse)
 	return relayResponse, err
+}
+
+// convertResultsToResponses converts parallel relay results into an array of protocol responses.
+// Maintains the order of responses to match the order of input payloads.
+func (rc *requestContext) convertResultsToResponses(results []parallelRelayResult, firstErr error) ([]protocol.Response, error) {
+	if len(results) == 0 {
+		response, err := rc.handleInternalError(fmt.Errorf("convertResultsToResponses: no results to convert"))
+		return []protocol.Response{response}, err
+	}
+
+	// Create response array in the same order as input payloads.
+	responses := make([]protocol.Response, len(results))
+
+	// Process results in order.
+	for i, result := range results {
+		responses[i] = result.response
+	}
+
+	rc.logger.Debug().
+		Int("num_responses", len(responses)).
+		Bool("has_errors", firstErr != nil).
+		Msg("Response conversion completed")
+
+	return responses, firstErr
 }
 
 // HandleWebsocketRequest:
@@ -189,9 +328,7 @@ func buildHeaders(payload protocol.Payload) map[string]string {
 	headers := make(map[string]string)
 
 	// Copy existing headers from payload
-	for key, value := range payload.Headers {
-		headers[key] = value
-	}
+	maps.Copy(headers, payload.Headers)
 
 	// Set the RPCType HTTP header, if set on the payload.
 	// Used by endpoint/relay miner to determine correct backend service.
