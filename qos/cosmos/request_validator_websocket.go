@@ -39,6 +39,7 @@ func (rv *requestValidator) validateWebsocketRequest() (gateway.RequestQoSContex
 	)
 }
 
+// buildWebsocketRequestContext builds a request context for WebSocket upgrade requests.
 func (rv *requestValidator) buildWebsocketRequestContext(
 	rpcType sharedtypes.RPCType,
 	requestOrigin qosobservations.RequestOrigin,
@@ -58,6 +59,7 @@ func (rv *requestValidator) buildWebsocketRequestContext(
 	}, true
 }
 
+// buildWebsocketRequestObservations builds a request observation for WebSocket upgrade requests.
 func (rv *requestValidator) buildWebsocketRequestObservations(
 	rpcType sharedtypes.RPCType,
 	requestOrigin qosobservations.RequestOrigin,
@@ -94,6 +96,7 @@ func (rv *requestValidator) createWebsocketUnsupportedRPCTypeContext(rpcType sha
 	}
 }
 
+// createWebsocketUnsupportedRPCTypeObservation creates an observation for unsupported WebSocket requests
 func (rv *requestValidator) createWebsocketUnsupportedRPCTypeObservation(
 	rpcType sharedtypes.RPCType,
 	jsonrpcResponse jsonrpc.Response,
