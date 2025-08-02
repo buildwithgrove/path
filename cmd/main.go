@@ -64,6 +64,7 @@ func main() {
 	// Log the config path
 	logger.Info().Msgf("Starting PATH using config file: %s", configPath)
 
+	// Create Shannon protocol instance (now the only supported protocol)
 	protocol, err := getShannonProtocol(logger, config.GetGatewayConfig())
 	if err != nil {
 		log.Fatalf("failed to create protocol: %v", err)

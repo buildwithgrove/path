@@ -11,9 +11,8 @@ import (
 
 /* ---------------------------------  Gateway Config Struct -------------------------------- */
 
-// GatewayConfig is the top level struct that contains configuration details
-// that which are parsed from a YAML config file. It contains all the various
-// configuration details that are needed to operate a gateway.
+// GatewayConfig contains all configuration details needed to operate a gateway,
+// parsed from a YAML config file.
 type GatewayConfig struct {
 	ShannonConfig      *shannon.ShannonGatewayConfig `yaml:"shannon_config"`
 	Router             RouterConfig                  `yaml:"router_config"`
