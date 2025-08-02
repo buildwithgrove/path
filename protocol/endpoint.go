@@ -16,7 +16,7 @@ type EndpointAddrList []EndpointAddr
 // Endpoint represents an entity which serves relay requests.
 type Endpoint interface {
 	// Addr is used to uniquely identify an endpoint.
-	// Defining this as an interface allows each protocol interface implementation (e.g. Pocket's Morse and Shannon) to
+	// Defining this as an interface allows Shannon to
 	// define its own service endpoint address scheme.
 	// See the comment on EndpointAddr type for more details.
 	Addr() EndpointAddr

@@ -152,7 +152,8 @@ func (rv *requestValidator) buildRESTRequestObservations(
 	// Note: We don't have access to headers here, but this would be where we'd extract it
 
 	return &qosobservations.CosmosRequestObservations{
-		ChainId:       rv.chainID,
+		CosmosChainId: rv.cosmosChainID,
+		EvmChainId:    rv.evmChainID,
 		ServiceId:     string(rv.serviceID),
 		RequestOrigin: requestOrigin,
 		RequestProfile: &qosobservations.CosmosRequestProfile{
@@ -226,8 +227,9 @@ func (rv *requestValidator) createRESTUnsupportedRPCTypeObservation(
 	jsonrpcResponse jsonrpc.Response,
 ) *qosobservations.CosmosRequestObservations {
 	return &qosobservations.CosmosRequestObservations{
+		CosmosChainId: rv.cosmosChainID,
+		EvmChainId:    rv.evmChainID,
 		ServiceId:     string(rv.serviceID),
-		ChainId:       rv.chainID,
 		RequestOrigin: qosobservations.RequestOrigin_REQUEST_ORIGIN_ORGANIC,
 		RequestProfile: &qosobservations.CosmosRequestProfile{
 			BackendServiceDetails: &qosobservations.BackendServiceDetails{

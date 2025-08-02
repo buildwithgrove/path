@@ -22,4 +22,8 @@ type endpoint struct {
 	// *** CosmosSDK-specific checks ***
 	// Checks Cosmos SDK status via REST `/cosmos/base/node/v1beta1/status`
 	checkCosmosStatus endpointCheckCosmosStatus
+
+	// *** EVM-specific checks ***
+	// Checks EVM chain ID via eth_chainId
+	checkEVMChainID endpointCheckEVMChainID
 }

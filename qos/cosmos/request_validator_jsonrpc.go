@@ -160,7 +160,8 @@ func (rv *requestValidator) buildJSONRPCRequestObservations(
 ) *qosobservations.CosmosRequestObservations {
 
 	return &qosobservations.CosmosRequestObservations{
-		ChainId:       rv.chainID,
+		CosmosChainId: rv.cosmosChainID,
+		EvmChainId:    rv.evmChainID,
 		ServiceId:     string(rv.serviceID),
 		RequestOrigin: requestOrigin,
 		RequestProfile: &qosobservations.CosmosRequestProfile{
@@ -221,8 +222,9 @@ func (rv *requestValidator) createJSONRPCParseFailureObservation(
 	jsonrpcResponse jsonrpc.Response,
 ) *qosobservations.CosmosRequestObservations {
 	return &qosobservations.CosmosRequestObservations{
+		CosmosChainId: rv.cosmosChainID,
+		EvmChainId:    rv.evmChainID,
 		ServiceId:     string(rv.serviceID),
-		ChainId:       rv.chainID,
 		RequestOrigin: qosobservations.RequestOrigin_REQUEST_ORIGIN_ORGANIC,
 		RequestLevelError: &qosobservations.RequestError{
 			ErrorKind:      qosobservations.RequestErrorKind_REQUEST_ERROR_USER_ERROR_JSONRPC_PARSE_ERROR,
@@ -259,8 +261,9 @@ func (rv *requestValidator) createJSONRPCUnsupportedRPCTypeObservation(
 	jsonrpcResponse jsonrpc.Response,
 ) *qosobservations.CosmosRequestObservations {
 	return &qosobservations.CosmosRequestObservations{
+		CosmosChainId: rv.cosmosChainID,
+		EvmChainId:    rv.evmChainID,
 		ServiceId:     string(rv.serviceID),
-		ChainId:       rv.chainID,
 		RequestOrigin: qosobservations.RequestOrigin_REQUEST_ORIGIN_ORGANIC,
 		RequestProfile: &qosobservations.CosmosRequestProfile{
 			BackendServiceDetails: &qosobservations.BackendServiceDetails{
@@ -305,8 +308,9 @@ func (rv *requestValidator) createJSONRPCServicePayloadBuildFailureObservation(
 	jsonrpcResponse jsonrpc.Response,
 ) *qosobservations.CosmosRequestObservations {
 	return &qosobservations.CosmosRequestObservations{
+		CosmosChainId: rv.cosmosChainID,
+		EvmChainId:    rv.evmChainID,
 		ServiceId:     string(rv.serviceID),
-		ChainId:       rv.chainID,
 		RequestOrigin: qosobservations.RequestOrigin_REQUEST_ORIGIN_ORGANIC,
 		RequestProfile: &qosobservations.CosmosRequestProfile{
 			ParsedRequest: &qosobservations.CosmosRequestProfile_JsonrpcRequest{

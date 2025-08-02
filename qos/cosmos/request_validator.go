@@ -19,7 +19,8 @@ import (
 // Coordinates between different protocol validators (JSONRPC, REST)
 type requestValidator struct {
 	logger        polylog.Logger
-	chainID       string
+	cosmosChainID string
+	evmChainID    string // EVM chain ID will be empty if the CosmosSDK service does not support EVM.
 	serviceID     protocol.ServiceID
 	supportedAPIs map[sharedtypes.RPCType]struct{}
 	serviceState  *serviceState
@@ -86,7 +87,7 @@ func (rv *requestValidator) createHTTPBodyReadFailureContext(err error) gateway.
 	response := jsonrpc.NewErrResponseInternalErr(jsonrpc.ID{}, err)
 
 	// Create the observations object with the HTTP body read failure observation
-	observations := createHTTPBodyReadFailureObservation(rv.serviceID, rv.chainID, err, response)
+	observations := rv.createHTTPBodyReadFailureObservation(err, response)
 
 	// Build and return the error context
 	return &qos.RequestErrorContext{
@@ -98,16 +99,17 @@ func (rv *requestValidator) createHTTPBodyReadFailureContext(err error) gateway.
 	}
 }
 
-func createHTTPBodyReadFailureObservation(
-	serviceID protocol.ServiceID,
-	chainID string,
+// createHTTPBodyReadFailureObservation creates an observation for cases where
+// reading the HTTP request body for a Cosmos service request has failed.
+func (rv *requestValidator) createHTTPBodyReadFailureObservation(
 	err error,
 	jsonrpcResponse jsonrpc.Response,
 ) *qosobservations.Observations_Cosmos {
 	return &qosobservations.Observations_Cosmos{
 		Cosmos: &qosobservations.CosmosRequestObservations{
-			ServiceId: string(serviceID),
-			ChainId:   chainID,
+			CosmosChainId: rv.cosmosChainID,
+			EvmChainId:    rv.evmChainID,
+			ServiceId:     string(rv.serviceID),
 			RequestLevelError: &qosobservations.RequestError{
 				ErrorKind:      qosobservations.RequestErrorKind_REQUEST_ERROR_INTERNAL_READ_HTTP_ERROR,
 				ErrorDetails:   err.Error(),

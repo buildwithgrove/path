@@ -25,6 +25,7 @@ type ServiceQoSConfig interface {
 type CosmosSDKServiceQoSConfig interface {
 	ServiceQoSConfig // Using locally defined interface to avoid circular dependency
 	getCosmosSDKChainID() string
+	getEVMChainID() string
 	getSyncAllowance() uint64
 	getSupportedAPIs() map[sharedtypes.RPCType]struct{}
 }
@@ -33,11 +34,13 @@ type CosmosSDKServiceQoSConfig interface {
 func NewCosmosSDKServiceQoSConfig(
 	serviceID protocol.ServiceID,
 	cosmosSDKChainID string,
+	evmChainID string,
 	supportedAPIs map[sharedtypes.RPCType]struct{},
 ) CosmosSDKServiceQoSConfig {
 	return cosmosSDKServiceQoSConfig{
 		serviceID:        serviceID,
 		cosmosSDKChainID: cosmosSDKChainID,
+		evmChainID:       evmChainID,
 		supportedAPIs:    supportedAPIs,
 	}
 }
@@ -48,6 +51,7 @@ var _ CosmosSDKServiceQoSConfig = (*cosmosSDKServiceQoSConfig)(nil)
 type cosmosSDKServiceQoSConfig struct {
 	serviceID        protocol.ServiceID
 	cosmosSDKChainID string
+	evmChainID       string
 	syncAllowance    uint64
 	supportedAPIs    map[sharedtypes.RPCType]struct{}
 }
@@ -68,6 +72,13 @@ func (cosmosSDKServiceQoSConfig) GetServiceQoSType() string {
 // Implements the CosmosSDKServiceQoSConfig interface.
 func (c cosmosSDKServiceQoSConfig) getCosmosSDKChainID() string {
 	return c.cosmosSDKChainID
+}
+
+// getEVMChainID returns the EVM chain ID.
+// This is necessary for Cosmos chains that have native EVM support; XRPLEVM, evmos, etc...
+// Implements the CosmosSDKServiceQoSConfig interface.
+func (c cosmosSDKServiceQoSConfig) getEVMChainID() string {
+	return c.evmChainID
 }
 
 // getSyncAllowance returns the amount of blocks behind the perceived

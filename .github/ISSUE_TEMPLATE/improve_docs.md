@@ -13,14 +13,16 @@ Please provide a brief description of the issue with the documentation.
 ## Select the relevant options:
 
 One of:
-- [ ] `Morse`
+
 - [ ] `Shannon`
 
 One of:
+
 - [ ] Developer
 - [ ] Operator
 
 One of:
+
 - [ ] New
 - [ ] Experienced
 

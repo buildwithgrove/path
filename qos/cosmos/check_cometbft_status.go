@@ -16,20 +16,20 @@ import (
 // It is a loose convention in the QoS package.
 
 // ID for the CometBFT /status check.
-const idStatusCheck = 2002
+const idCometBFTStatusCheck = 2002
 
-// methodStatus is the CometBFT JSON-RPC method for getting the node status.
+// methodCometBFTStatus is the CometBFT JSON-RPC method for getting the node status.
 // Reference: https://docs.cometbft.com/v1.0/spec/rpc/#status
-const methodStatusCheck = jsonrpc.Method("status")
+const methodCometBFTStatus = jsonrpc.Method("status")
 
 // TODO_IMPROVE(@commoddity): determine an appropriate interval for checking the status and/or make it configurable.
 const checkStatusInterval = 30 * time.Second
 
 var (
-	errNoStatusObs       = fmt.Errorf("endpoint has not had an observation of its response to a %q request", methodStatusCheck)
-	errInvalidStatusObs  = fmt.Errorf("endpoint returned an invalid response to a %q request", methodStatusCheck)
-	errInvalidChainIDObs = fmt.Errorf("endpoint returned an invalid chain ID in its response to a %q request", methodStatusCheck)
-	errCatchingUpObs     = fmt.Errorf("endpoint is catching up to the network in its response to a %q request", methodStatusCheck)
+	errNoCometBFTStatusObs       = fmt.Errorf("endpoint has not had an observation of its response to a CometBFT '%q' request", methodCometBFTStatus)
+	errInvalidCometBFTStatusObs  = fmt.Errorf("endpoint returned an invalid response to a CometBFT '%q' request", methodCometBFTStatus)
+	errInvalidCometBFTChainIDObs = fmt.Errorf("endpoint returned an invalid chain ID in its response to a CometBFT '%q' request", methodCometBFTStatus)
+	errCatchingUpCometBFTObs     = fmt.Errorf("endpoint is catching up to the network in its response to a CometBFT '%q' request", methodCometBFTStatus)
 )
 
 // endpointCheckCometBFTStatus is a check that ensures the endpoint's status information is valid.
@@ -63,18 +63,18 @@ type endpointCheckCometBFTStatus struct {
 func (e *endpointCheckCometBFTStatus) getRequest() jsonrpc.Request {
 	return jsonrpc.Request{
 		JSONRPC: jsonrpc.Version2,
-		ID:      jsonrpc.IDFromInt(idStatusCheck),
-		Method:  jsonrpc.Method(methodStatusCheck),
+		ID:      jsonrpc.IDFromInt(idCometBFTStatusCheck),
+		Method:  jsonrpc.Method(methodCometBFTStatus),
 	}
 }
 
 // GetChainID returns the parsed chain ID value for the endpoint.
 func (e *endpointCheckCometBFTStatus) GetChainID() (string, error) {
 	if e.chainID == nil {
-		return "", errNoStatusObs
+		return "", errNoCometBFTStatusObs
 	}
 	if *e.chainID == "" {
-		return "", errInvalidChainIDObs
+		return "", errInvalidCometBFTStatusObs
 	}
 	return *e.chainID, nil
 }
@@ -82,7 +82,7 @@ func (e *endpointCheckCometBFTStatus) GetChainID() (string, error) {
 // GetCatchingUp returns whether the endpoint is catching up.
 func (e *endpointCheckCometBFTStatus) GetCatchingUp() (bool, error) {
 	if e.catchingUp == nil {
-		return false, errNoStatusObs
+		return false, errNoCometBFTStatusObs
 	}
 	return *e.catchingUp, nil
 }
@@ -90,10 +90,10 @@ func (e *endpointCheckCometBFTStatus) GetCatchingUp() (bool, error) {
 // GetLatestBlockHeight returns the parsed latest block height value for the endpoint.
 func (e *endpointCheckCometBFTStatus) GetLatestBlockHeight() (uint64, error) {
 	if e.latestBlockHeight == nil {
-		return 0, errNoStatusObs
+		return 0, errNoCometBFTStatusObs
 	}
 	if *e.latestBlockHeight == 0 {
-		return 0, errInvalidStatusObs
+		return 0, errInvalidCometBFTStatusObs
 	}
 	return *e.latestBlockHeight, nil
 }

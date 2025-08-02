@@ -8,7 +8,8 @@
       "summary",
       "div",
       "img",
-      "br"
+      "br",
+      "h1"
     ]
   },
   "MD013": false,

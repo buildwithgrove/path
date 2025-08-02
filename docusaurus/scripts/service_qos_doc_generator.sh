@@ -231,3 +231,5 @@ generate_static_content "$OUTPUT_FILE"
 
 # Process Shannon services
 process_services "shannonServices" "$default_evm_chain_id" "$INPUT_FILE" "$OUTPUT_FILE"
+
+echo "Documentation successfully updated at $OUTPUT_FILE"
