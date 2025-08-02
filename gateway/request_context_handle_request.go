@@ -90,7 +90,7 @@ func (rc *requestContext) handleParallelRelayRequests() error {
 	logger.Debug().Msg("Starting parallel relay race")
 
 	// TODO_TECHDEBT: Make sure timed out parallel requests are also sanctioned.
-	ctx, cancel := context.WithTimeout(rc.context, parallelRequestTimeout)
+	ctx, cancel := context.WithTimeout(rc.context, RelayRequestTimeout)
 	defer cancel()
 
 	resultChan := rc.launchParallelRequests(ctx, logger)
@@ -114,14 +114,14 @@ func (rc *requestContext) launchParallelRequests(ctx context.Context, logger pol
 	resultChan := make(chan parallelRelayResult, len(rc.protocolContexts))
 
 	for protocolCtxIdx, protocolCtx := range rc.protocolContexts {
-		go rc.executeRelayRequest(ctx, logger, protocolCtx, protocolCtxIdx, resultChan)
+		go rc.executeOneOfParallelRequests(ctx, logger, protocolCtx, protocolCtxIdx, resultChan)
 	}
 
 	return resultChan
 }
 
-// executeRelayRequest handles a single relay request in a goroutine
-func (rc *requestContext) executeRelayRequest(
+// executeOneOfParallelRequests handles a single relay request in a goroutine
+func (rc *requestContext) executeOneOfParallelRequests(
 	ctx context.Context,
 	logger polylog.Logger,
 	protocolCtx ProtocolRequestContext,
@@ -129,16 +129,19 @@ func (rc *requestContext) executeRelayRequest(
 	resultChan chan<- parallelRelayResult,
 ) {
 	startTime := time.Now()
-	response, err := protocolCtx.HandleServiceRequest(rc.qosCtx.GetServicePayload())
+	endpointResponse, err := protocolCtx.HandleServiceRequest(rc.qosCtx.GetServicePayload())
 	duration := time.Since(startTime)
 
 	result := parallelRelayResult{
-		response:  response,
+		response:  endpointResponse,
 		err:       err,
 		index:     index,
 		duration:  duration,
 		startTime: startTime,
 	}
+
+	// TODO_IN_THIS_PR(@arash): Need to ensure this is thread safe.
+	// rc.qosCtx.UpdateWithResponse(endpointResponse.EndpointAddr, endpointResponse.Bytes)
 
 	select {
 	case resultChan <- result:

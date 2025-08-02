@@ -32,8 +32,12 @@ const (
 	// - If all endpoints are sanctioned, send parallel requests by default
 	// - Make this configurable at the gateway level yaml config
 	// - Enable parallel requests for gateways that maintain their own backend nodes as a special config
-	maxParallelRequests    = 2
-	parallelRequestTimeout = 30 * time.Second
+	maxParallelRequests = 2
+
+	// RelayRequestTimeout is the timeout for relay requests
+	// TODO_TECHDEBT: Look into whether we can remove this variable altogether and consolidate
+	// it with HTTP level timeouts.
+	RelayRequestTimeout = 60 * time.Second
 )
 
 // requestContext is responsible for performing the steps necessary to complete a service request.
