@@ -39,11 +39,21 @@ type (
 	// ProtocolLevelDataResponse contains data about sanctioned endpoints at the protocol level.
 	// It reports the number of permanently sanctioned endpoints, the number of session sanctioned endpoints, and the total number of sanctioned endpoints.
 	ProtocolLevelDataResponse struct {
-		PermanentlySanctionedEndpoints    map[protocol.EndpointAddr]SanctionedEndpoint `json:"permanently_sanctioned_endpoints"`
-		SessionSanctionedEndpoints        map[protocol.EndpointAddr]SanctionedEndpoint `json:"session_sanctioned_endpoints"`
-		PermamentSanctionedEndpointsCount int                                          `json:"permanent_sanctioned_endpoints_count"`
-		SessionSanctionedEndpointsCount   int                                          `json:"session_sanctioned_endpoints_count"`
-		TotalSanctionedEndpointsCount     int                                          `json:"total_sanctioned_endpoints_count"`
+		// A mapping from endpoint address to an endpoint sanction at the protocol level.
+		PermanentlySanctionedEndpoints map[protocol.EndpointAddr]SanctionedEndpoint `json:"permanently_sanctioned_endpoints"`
+
+		// A mapping from session sanction key to an endpoint sanction at the protocol level.
+		//
+		// DEV_NOTE: The key is a string since it is a composite of the endpoint address and session ID.
+		// Example for the key "pokt1ggdpwj5stslx2e567qcm50wyntlym5c4n0dst8-https://im.oldgreg.org-1234567890":
+		//   - Endpoint address (supplier address + endpoint URL): "pokt1ggdpwj5stslx2e567qcm50wyntlym5c4n0dst8-https://im.oldgreg.org"
+		//   - Session ID: "1234567890"
+		SessionSanctionedEndpoints map[string]SanctionedEndpoint `json:"session_sanctioned_endpoints"`
+
+		// Counters related to sanctioning details
+		PermanentSanctionedEndpointsCount int `json:"permanent_sanctioned_endpoints_count"`
+		SessionSanctionedEndpointsCount   int `json:"session_sanctioned_endpoints_count"`
+		TotalSanctionedEndpointsCount     int `json:"total_sanctioned_endpoints_count"`
 	}
 
 	// QoSLevelDataResponse contains data about disqualified endpoints at the QoS level.
