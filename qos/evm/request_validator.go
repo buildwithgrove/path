@@ -76,7 +76,7 @@ func (erv *evmRequestValidator) validateHTTPRequest(req *http.Request) (gateway.
 // createHTTPBodyReadFailureContext creates an error context for HTTP body read failures.
 func (erv *evmRequestValidator) createHTTPBodyReadFailureContext(err error) gateway.RequestQoSContext {
 	// Create the observations object with the HTTP body read failure observation
-	observations := createHTTPBodyReadFailureObservation(erv.serviceID, erv.chainID, err)
+	observations := erv.createHTTPBodyReadFailureObservation(err)
 
 	// TODO_IMPROVE(@adshmh): Propagate a request ID parameter on internal errors
 	// that occur after successful request parsing.
@@ -160,16 +160,14 @@ func createRequestUnmarshalingFailureObservation(
 //
 // Returns:
 // - qosobservations.Observations: A structured observation containing details about the HTTP read failure
-func createHTTPBodyReadFailureObservation(
-	serviceID protocol.ServiceID,
-	chainID string,
+func (erv *evmRequestValidator) createHTTPBodyReadFailureObservation(
 	err error,
 ) *qosobservations.Observations_Evm {
 	errorDetails := err.Error()
 	return &qosobservations.Observations_Evm{
 		Evm: &qosobservations.EVMRequestObservations{
-			ServiceId: string(serviceID),
-			ChainId:   chainID,
+			ChainId:   erv.chainID,
+			ServiceId: string(erv.serviceID),
 			RequestValidationFailure: &qosobservations.EVMRequestObservations_EvmHttpBodyReadFailure{
 				EvmHttpBodyReadFailure: &qosobservations.EVMHTTPBodyReadFailure{
 					HttpStatusCode:  httpStatusRequestValidationFailureReadHTTPBodyFailure,

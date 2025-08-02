@@ -30,9 +30,7 @@ var _ protocol.EndpointSelector = &serviceState{}
 // available endpoints are filtered based on their validity first.
 // A random endpoint is then returned from the filtered list of valid endpoints.
 func (ss *serviceState) Select(availableEndpoints protocol.EndpointAddrList) (protocol.EndpointAddr, error) {
-	logger := ss.logger.With("method", "Select").
-		With("chain_id", ss.serviceQoSConfig.getCosmosSDKChainID()).
-		With("service_id", ss.serviceQoSConfig.GetServiceID())
+	logger := ss.logger.With("method", "Select")
 
 	logger.Info().Msgf("filtering %d available endpoints.", len(availableEndpoints))
 
@@ -59,7 +57,7 @@ func (ss *serviceState) Select(availableEndpoints protocol.EndpointAddrList) (pr
 // Valid endpoints are determined by filtering the available endpoints based on their
 // validity criteria. If numEndpoints is 0, it defaults to 1.
 func (ss *serviceState) SelectMultiple(allAvailableEndpoints protocol.EndpointAddrList, numEndpoints uint) (protocol.EndpointAddrList, error) {
-	logger := ss.logger.With("method", "SelectMultiple").With("chain_id", ss.serviceQoSConfig.getCosmosSDKChainID()).With("num_endpoints", numEndpoints)
+	logger := ss.logger.With("method", "SelectMultiple").With("num_endpoints", numEndpoints)
 	logger.Info().Msgf("filtering %d available endpoints to select up to %d.", len(allAvailableEndpoints), numEndpoints)
 
 	filteredEndpointsAddr, err := ss.filterValidEndpoints(allAvailableEndpoints)
