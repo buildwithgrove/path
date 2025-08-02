@@ -2,6 +2,8 @@
 ### Makefile Helpers ###
 ########################
 
+# TODO(@olshansk): Remove "Shannon" and just use "Pocket".
+
 .PHONY: list
 list: ## List all make targets
 	@${MAKE} -pRrn : -f $(MAKEFILE_LIST) 2>/dev/null | awk -v RS= -F: '/^# File/,/^# Finished Make data base/ {if ($$1 !~ "^[#.]") {print $$1}}' | egrep -v -e '^[^[:alnum:]]' -e '^$@$$' | sort

@@ -170,14 +170,12 @@ func (rc *requestContext) HandleWebsocketRequest(logger polylog.Logger, req *htt
 // - Implements gateway.ProtocolRequestContext interface.
 func (rc *requestContext) GetObservations() protocolobservations.Observations {
 	return protocolobservations.Observations{
-		Protocol: &protocolobservations.Observations_Shannon{
-			Shannon: &protocolobservations.ShannonObservationsList{
-				Observations: []*protocolobservations.ShannonRequestObservations{
-					{
-						ServiceId:            string(rc.serviceID),
-						RequestError:         rc.requestErrorObservation,
-						EndpointObservations: rc.endpointObservations,
-					},
+		Shannon: &protocolobservations.ShannonObservationsList{
+			Observations: []*protocolobservations.ShannonRequestObservations{
+				{
+					ServiceId:            string(rc.serviceID),
+					RequestError:         rc.requestErrorObservation,
+					EndpointObservations: rc.endpointObservations,
 				},
 			},
 		},
