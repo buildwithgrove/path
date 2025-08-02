@@ -18,12 +18,10 @@ func buildSuccessfulEndpointLookupObservation(
 	serviceID protocol.ServiceID,
 ) protocolobservations.Observations {
 	return protocolobservations.Observations{
-		Protocol: &protocolobservations.Observations_Shannon{
-			Shannon: &protocolobservations.ShannonObservationsList{
-				Observations: []*protocolobservations.ShannonRequestObservations{
-					{
-						ServiceId: string(serviceID),
-					},
+		Shannon: &protocolobservations.ShannonObservationsList{
+			Observations: []*protocolobservations.ShannonRequestObservations{
+				{
+					ServiceId: string(serviceID),
 				},
 			},
 		},
@@ -39,15 +37,13 @@ func buildProtocolContextSetupErrorObservation(
 	err error,
 ) protocolobservations.Observations {
 	return protocolobservations.Observations{
-		Protocol: &protocolobservations.Observations_Shannon{
-			Shannon: &protocolobservations.ShannonObservationsList{
-				Observations: []*protocolobservations.ShannonRequestObservations{
-					{
-						ServiceId: string(serviceID),
-						RequestError: &protocolobservations.ShannonRequestError{
-							ErrorType:    translateContextSetupErrorToRequestErrorType(err),
-							ErrorDetails: err.Error(),
-						},
+		Shannon: &protocolobservations.ShannonObservationsList{
+			Observations: []*protocolobservations.ShannonRequestObservations{
+				{
+					ServiceId: string(serviceID),
+					RequestError: &protocolobservations.ShannonRequestError{
+						ErrorType:    translateContextSetupErrorToRequestErrorType(err),
+						ErrorDetails: err.Error(),
 					},
 				},
 			},

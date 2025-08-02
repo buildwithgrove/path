@@ -86,7 +86,6 @@ type ProtocolRequestContext interface {
 	HandleServiceRequest(protocol.Payload) (protocol.Response, error)
 
 	// HandleWebsocketRequest handles a WebSocket connection request.
-	// Only Shannon protocol supports WebSocket connections; requests to Morse will always return an error.
 	HandleWebsocketRequest(polylog.Logger, *http.Request, http.ResponseWriter) (WebsocketsBridge, error)
 
 	// GetObservations builds and returns the set of protocol-specific observations using the current context.

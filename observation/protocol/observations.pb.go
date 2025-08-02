@@ -26,14 +26,8 @@ type Observations struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Height of the blockchain block when processing the service request through a relay
 	BlockHeight uint64 `protobuf:"varint,1,opt,name=block_height,json=blockHeight,proto3" json:"block_height,omitempty"`
-	// Protocol-specific observations.
-	// Only one protocol can be associated with a single observation.
-	//
-	// Types that are valid to be assigned to Protocol:
-	//
-	//	*Observations_Morse
-	//	*Observations_Shannon
-	Protocol      isObservations_Protocol `protobuf_oneof:"protocol"`
+	// Shannon protocol-specific observations
+	Shannon       *ShannonObservationsList `protobuf:"bytes,3,opt,name=shannon,proto3" json:"shannon,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -75,60 +69,21 @@ func (x *Observations) GetBlockHeight() uint64 {
 	return 0
 }
 
-func (x *Observations) GetProtocol() isObservations_Protocol {
-	if x != nil {
-		return x.Protocol
-	}
-	return nil
-}
-
-func (x *Observations) GetMorse() *MorseObservationsList {
-	if x != nil {
-		if x, ok := x.Protocol.(*Observations_Morse); ok {
-			return x.Morse
-		}
-	}
-	return nil
-}
-
 func (x *Observations) GetShannon() *ShannonObservationsList {
 	if x != nil {
-		if x, ok := x.Protocol.(*Observations_Shannon); ok {
-			return x.Shannon
-		}
+		return x.Shannon
 	}
 	return nil
 }
-
-type isObservations_Protocol interface {
-	isObservations_Protocol()
-}
-
-type Observations_Morse struct {
-	// Morse protocol-specific observations
-	Morse *MorseObservationsList `protobuf:"bytes,2,opt,name=morse,proto3,oneof"`
-}
-
-type Observations_Shannon struct {
-	// Shannon protocol-specific observations
-	Shannon *ShannonObservationsList `protobuf:"bytes,3,opt,name=shannon,proto3,oneof"`
-}
-
-func (*Observations_Morse) isObservations_Protocol() {}
-
-func (*Observations_Shannon) isObservations_Protocol() {}
 
 var File_path_protocol_observations_proto protoreflect.FileDescriptor
 
 const file_path_protocol_observations_proto_rawDesc = "" +
 	"\n" +
-	" path/protocol/observations.proto\x12\rpath.protocol\x1a\x1bpath/protocol/shannon.proto\x1a\x19path/protocol/morse.proto\"\xbf\x01\n" +
+	" path/protocol/observations.proto\x12\rpath.protocol\x1a\x1bpath/protocol/shannon.proto\"\x80\x01\n" +
 	"\fObservations\x12!\n" +
-	"\fblock_height\x18\x01 \x01(\x04R\vblockHeight\x12<\n" +
-	"\x05morse\x18\x02 \x01(\v2$.path.protocol.MorseObservationsListH\x00R\x05morse\x12B\n" +
-	"\ashannon\x18\x03 \x01(\v2&.path.protocol.ShannonObservationsListH\x00R\ashannonB\n" +
-	"\n" +
-	"\bprotocolB5Z3github.com/buildwithgrove/path/observation/protocolb\x06proto3"
+	"\fblock_height\x18\x01 \x01(\x04R\vblockHeight\x12@\n" +
+	"\ashannon\x18\x03 \x01(\v2&.path.protocol.ShannonObservationsListR\ashannonJ\x04\b\x02\x10\x03R\x05morseB5Z3github.com/buildwithgrove/path/observation/protocolb\x06proto3"
 
 var (
 	file_path_protocol_observations_proto_rawDescOnce sync.Once
@@ -145,17 +100,15 @@ func file_path_protocol_observations_proto_rawDescGZIP() []byte {
 var file_path_protocol_observations_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
 var file_path_protocol_observations_proto_goTypes = []any{
 	(*Observations)(nil),            // 0: path.protocol.Observations
-	(*MorseObservationsList)(nil),   // 1: path.protocol.MorseObservationsList
-	(*ShannonObservationsList)(nil), // 2: path.protocol.ShannonObservationsList
+	(*ShannonObservationsList)(nil), // 1: path.protocol.ShannonObservationsList
 }
 var file_path_protocol_observations_proto_depIdxs = []int32{
-	1, // 0: path.protocol.Observations.morse:type_name -> path.protocol.MorseObservationsList
-	2, // 1: path.protocol.Observations.shannon:type_name -> path.protocol.ShannonObservationsList
-	2, // [2:2] is the sub-list for method output_type
-	2, // [2:2] is the sub-list for method input_type
-	2, // [2:2] is the sub-list for extension type_name
-	2, // [2:2] is the sub-list for extension extendee
-	0, // [0:2] is the sub-list for field type_name
+	1, // 0: path.protocol.Observations.shannon:type_name -> path.protocol.ShannonObservationsList
+	1, // [1:1] is the sub-list for method output_type
+	1, // [1:1] is the sub-list for method input_type
+	1, // [1:1] is the sub-list for extension type_name
+	1, // [1:1] is the sub-list for extension extendee
+	0, // [0:1] is the sub-list for field type_name
 }
 
 func init() { file_path_protocol_observations_proto_init() }
@@ -164,11 +117,6 @@ func file_path_protocol_observations_proto_init() {
 		return
 	}
 	file_path_protocol_shannon_proto_init()
-	file_path_protocol_morse_proto_init()
-	file_path_protocol_observations_proto_msgTypes[0].OneofWrappers = []any{
-		(*Observations_Morse)(nil),
-		(*Observations_Shannon)(nil),
-	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
