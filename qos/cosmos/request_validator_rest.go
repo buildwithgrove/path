@@ -14,10 +14,6 @@ import (
 	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
 
-// Default timeout for REST requests
-// TODO_IMPROVE(@adshmh): Support method level specific timeouts and allow the user to configure them.
-const defaultRESTRequestTimeoutMillisec = 30000
-
 // validateRESTRequest validates a REST request by:
 // 1. Validating HTTP method and path
 // 2. Determining the specific RPC type from the path
@@ -127,12 +123,11 @@ func buildRESTServicePayload(
 	}
 
 	return protocol.Payload{
-		Data:            string(httpRequestBody),
-		Method:          httpRequestMethod,
-		Path:            path,
-		Headers:         map[string]string{},
-		TimeoutMillisec: defaultRESTRequestTimeoutMillisec,
-		RPCType:         rpcType, // Add the RPCType hint, so protocol sets correct HTTP headers for the endpoint.
+		Data:    string(httpRequestBody),
+		Method:  httpRequestMethod,
+		Path:    path,
+		Headers: map[string]string{},
+		RPCType: rpcType, // Add the RPCType hint, so protocol sets correct HTTP headers for the endpoint.
 	}
 }
 

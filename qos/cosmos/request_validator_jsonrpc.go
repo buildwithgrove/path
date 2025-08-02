@@ -18,10 +18,6 @@ import (
 const (
 	// maximum length of the error message stored in request validation failure observations and logs.
 	maxErrMessageLen = 1000
-
-	// defaultJSONRPCRequestTimeoutMillisec is the default timeout when sending a request to a Cosmos blockchain endpoint.
-	// TODO_IMPROVE(@adshmh): Support method level specific timeouts and allow the user to configure them.
-	defaultJSONRPCRequestTimeoutMillisec = 10_000
 )
 
 // validateJSONRPCRequest validates a JSONRPC request by:
@@ -126,12 +122,11 @@ func buildJSONRPCServicePayload(rpcType sharedtypes.RPCType, jsonrpcReq jsonrpc.
 	}
 
 	return protocol.Payload{
-		Data:            string(reqBz),
-		Method:          http.MethodPost, // JSONRPC always uses POST
-		Path:            "",              // JSONRPC does not use paths
-		Headers:         map[string]string{},
-		TimeoutMillisec: defaultJSONRPCRequestTimeoutMillisec,
-		RPCType:         rpcType, // Add the RPCType hint the so protocol sets correct HTTP headers for the endpoint.
+		Data:    string(reqBz),
+		Method:  http.MethodPost, // JSONRPC always uses POST
+		Path:    "",              // JSONRPC does not use paths
+		Headers: map[string]string{},
+		RPCType: rpcType, // Add the RPCType hint the so protocol sets correct HTTP headers for the endpoint.
 	}, nil
 }
 

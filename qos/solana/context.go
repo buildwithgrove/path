@@ -15,12 +15,6 @@ import (
 	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
 
-const (
-	// defaultServiceRequestTimeoutMillisec is the default timeout when sending a request to a Solana blockchain endpoint.
-	// TODO_IMPROVE(@adshmh): Support method level specific timeouts and allow the user to configure them.
-	defaultServiceRequestTimeoutMillisec = 15_000
-)
-
 // requestContext provides the support required by the gateway
 // package for handling service requests.
 var _ gateway.RequestQoSContext = &requestContext{}
@@ -86,12 +80,11 @@ func (rc requestContext) GetServicePayload() protocol.Payload {
 	}
 
 	return protocol.Payload{
-		Data:            string(reqBz),
-		Method:          http.MethodPost, // Method is alway POST for Solana.
-		Path:            "",              // Path field is not used for Solana.
-		Headers:         map[string]string{},
-		TimeoutMillisec: defaultServiceRequestTimeoutMillisec,
-		RPCType:         sharedtypes.RPCType_JSON_RPC,
+		Data:    string(reqBz),
+		Method:  http.MethodPost, // Method is alway POST for Solana.
+		Path:    "",              // Path field is not used for Solana.
+		Headers: map[string]string{},
+		RPCType: sharedtypes.RPCType_JSON_RPC,
 	}
 }
 

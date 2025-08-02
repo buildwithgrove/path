@@ -14,10 +14,6 @@ import (
 	"github.com/buildwithgrove/path/protocol"
 )
 
-// TODO_TECHDEBT(@adshmh): support customization of the endpoint response's timeout.
-// defaultEndpointResponseTimeoutMillisec is the default timeout for an endpoint to return a response to a service request.
-const defaultEndpointResponseTimeoutMillisec = 60_000
-
 var _ gateway.QoSService = NoOpQoS{}
 
 type NoOpQoS struct{}
@@ -32,19 +28,16 @@ func (NoOpQoS) ParseHTTPRequest(_ context.Context, httpRequest *http.Request) (g
 	}
 
 	return &requestContext{
-		httpRequestBody:                 bz,
-		httpRequestMethod:               httpRequest.Method,
-		httpRequestPath:                 httpRequest.URL.Path,
-		endpointResponseTimeoutMillisec: defaultEndpointResponseTimeoutMillisec,
+		httpRequestBody:   bz,
+		httpRequestMethod: httpRequest.Method,
+		httpRequestPath:   httpRequest.URL.Path,
 	}, true
 }
 
 // ParseWebsocketRequest builds a request context from the provided WebSocket request.
 // This method implements the gateway.QoSService interface.
 func (q NoOpQoS) ParseWebsocketRequest(_ context.Context) (gateway.RequestQoSContext, bool) {
-	return &requestContext{
-		endpointResponseTimeoutMillisec: defaultEndpointResponseTimeoutMillisec,
-	}, true
+	return &requestContext{}, true
 }
 
 // ApplyObservations on noop QoS only fulfills the interface requirements and does not perform any actions.
