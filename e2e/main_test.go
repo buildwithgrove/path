@@ -96,17 +96,14 @@ func Test_PATH_E2E(t *testing.T) {
 			)
 		}
 
-		// Get methods to test
-		methodsToTest := ts.getTestMethods()
-
 		// Generate targets for this service
-		targets, err := ts.getVegetaTargets(methodsToTest, serviceGatewayURL)
+		targets, err := ts.getVegetaTargets(serviceGatewayURL)
 		if err != nil {
 			t.Fatalf("❌ Failed to get vegeta targets: %v", err)
 		}
 
 		// Create summary for this service
-		serviceSummaries[ts.ServiceID] = newServiceSummary(ts.ServiceID, serviceConfig, methodsToTest)
+		serviceSummaries[ts.ServiceID] = newServiceSummary(ts.ServiceID, serviceConfig, ts.testMethodsMap)
 
 		// Assign all relevant fields to the test service
 		ts.hydrate(serviceConfig, ts.ServiceType, targets, serviceSummaries[ts.ServiceID])
