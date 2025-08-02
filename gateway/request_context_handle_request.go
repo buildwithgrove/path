@@ -89,6 +89,7 @@ func (rc *requestContext) handleParallelRelayRequests() error {
 		With("service_id", rc.serviceID)
 	logger.Debug().Msg("Starting parallel relay race")
 
+	// TODO_TECHDEBT: Make sure timed out parallel requests are also sanctioned.
 	ctx, cancel := context.WithTimeout(rc.context, parallelRequestTimeout)
 	defer cancel()
 

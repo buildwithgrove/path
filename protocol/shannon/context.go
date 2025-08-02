@@ -239,11 +239,10 @@ func (rc *requestContext) sendRelay(payload protocol.Payload) (*servicetypes.Rel
 
 	// Prepare a timeout context for the relay request.
 	timeout := time.Duration(defaultShannonSendRelayTimeoutMillisec) * time.Millisecond
-	// TODO_IN_THIS_PR: Decide which context to use (TODO or rc.context)
-	// Revert to using the request's original context.
-	// We are using `context.TODO` to ensure its not being cancelled upstream.
-	ctxWithTimeout, cancel := context.WithTimeout(context.TODO(), timeout)
-	// ctxWithTimeout, cancel := context.WithTimeout(rc.context, timeout)
+	// TODO_INVESTIGATE: Evaluate the impact of `rc.context` vs `context.TODO`
+	// with respect to handling timeouts.
+	// ctxWithTimeout, cancel := context.WithTimeout(context.TODO(), timeout)
+	ctxWithTimeout, cancel := context.WithTimeout(rc.context, timeout)
 	defer cancel()
 
 	// Build headers including RPCType header

@@ -45,11 +45,11 @@ func Test_LoadGatewayConfigFromYAML(t *testing.T) {
 					},
 				},
 				Router: RouterConfig{
-					Port:                  defaultPort,
-					MaxRequestHeaderBytes: defaultMaxRequestHeaderBytes,
-					ReadTimeout:           defaultHTTPServerReadTimeout,
-					WriteTimeout:          defaultHTTPServerWriteTimeout,
-					IdleTimeout:           defaultHTTPServerIdleTimeout,
+					Port:                            defaultPort,
+					MaxRequestHeaderBytes:           defaultMaxRequestHeaderBytes,
+					ReadTimeout:                     defaultHTTPServerReadTimeout,
+					WriteTimeout:                    defaultHTTPServerWriteTimeout,
+					IdleTimeout:                     defaultHTTPServerIdleTimeout,
 					SystemOverheadAllowanceDuration: defaultSystemOverheadAllowanceDuration,
 				},
 				Logger: LoggerConfig{
@@ -132,11 +132,11 @@ logger_config:
 					},
 				},
 				Router: RouterConfig{
-					Port:                  defaultPort,
-					MaxRequestHeaderBytes: defaultMaxRequestHeaderBytes,
-					ReadTimeout:           defaultHTTPServerReadTimeout,
-					WriteTimeout:          defaultHTTPServerWriteTimeout,
-					IdleTimeout:           defaultHTTPServerIdleTimeout,
+					Port:                            defaultPort,
+					MaxRequestHeaderBytes:           defaultMaxRequestHeaderBytes,
+					ReadTimeout:                     defaultHTTPServerReadTimeout,
+					WriteTimeout:                    defaultHTTPServerWriteTimeout,
+					IdleTimeout:                     defaultHTTPServerIdleTimeout,
 					SystemOverheadAllowanceDuration: defaultSystemOverheadAllowanceDuration,
 				},
 				Logger: LoggerConfig{
