@@ -163,6 +163,24 @@ logger_config:
 			`,
 			wantErr: true,
 		},
+		{
+			name:     "should return error for invalid fallback URL",
+			filePath: "invalid_fallback_url.yaml",
+			yamlData: `
+			shannon_config:
+			  full_node_config:
+			    rpc_url: "https://shannon-testnet-grove-rpc.beta.poktroll.com"
+			    grpc_config:
+			      host_port: "shannon-testnet-grove-grpc.beta.poktroll.com:443"
+			  gateway_config:
+			    gateway_address: "pokt1up7zlytnmvlsuxzpzvlrta95347w322adsxslw"
+			    gateway_private_key_hex: "40af4e7e1b311c76a573610fe115cd2adf1eeade709cd77ca31ad4472509d388"
+			fallback_urls:
+			  eth: "invalid-url-scheme://invalid"
+			  polygon: "not-a-valid-url"
+			`,
+			wantErr: true,
+		},
 	}
 
 	for _, test := range tests {
