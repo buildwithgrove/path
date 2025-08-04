@@ -54,6 +54,9 @@ func Test_LoadGatewayConfigFromYAML(t *testing.T) {
 				Logger: LoggerConfig{
 					Level: defaultLogLevel,
 				},
+				FallbackURLs: FallbackURLs{
+					"eth": "https://eth.rpc.grove.city/v1/1a2b3c4d",
+				},
 			},
 			wantErr: false,
 		},

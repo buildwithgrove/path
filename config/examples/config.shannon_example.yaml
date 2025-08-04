@@ -55,3 +55,8 @@ logger_config:
   # Valid values are: debug, info, warn, error
   # Defaults to info if not specified
   level: "info"
+
+# Optional fallback URL configuration
+fallback_urls:
+  # The fallback URL to use when no protocol endpoints are available for the requested service.
+  eth: "https://eth.rpc.grove.city/v1/1a2b3c4d"
