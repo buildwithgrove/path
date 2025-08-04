@@ -36,14 +36,14 @@ func (rv *requestValidator) validateWebsocketRequest() (gateway.RequestQoSContex
 	return rv.buildWebsocketRequestContext(
 		rpcType,
 		qosobservations.RequestOrigin_REQUEST_ORIGIN_ORGANIC,
-	)
+	), true
 }
 
 // buildWebsocketRequestContext builds a request context for WebSocket upgrade requests.
 func (rv *requestValidator) buildWebsocketRequestContext(
 	rpcType sharedtypes.RPCType,
 	requestOrigin qosobservations.RequestOrigin,
-) (gateway.RequestQoSContext, bool) {
+) gateway.RequestQoSContext {
 	logger := rv.logger.With(
 		"method", "buildWebsocketRequestContext",
 	)
@@ -56,7 +56,7 @@ func (rv *requestValidator) buildWebsocketRequestContext(
 		serviceState:                    rv.serviceState,
 		observations:                    requestObservation,
 		protocolErrorObservationBuilder: buildProtocolErrorObservation,
-	}, true
+	}
 }
 
 // buildWebsocketRequestObservations builds a request observation for WebSocket upgrade requests.
@@ -79,7 +79,9 @@ func (rv *requestValidator) buildWebsocketRequestObservations(
 }
 
 // createWebsocketUnsupportedRPCTypeContext creates error context when WebSocket is not configured
-func (rv *requestValidator) createWebsocketUnsupportedRPCTypeContext(rpcType sharedtypes.RPCType) gateway.RequestQoSContext {
+func (rv *requestValidator) createWebsocketUnsupportedRPCTypeContext(
+	rpcType sharedtypes.RPCType,
+) gateway.RequestQoSContext {
 	err := errors.New("WebSocket not supported for this service")
 	response := jsonrpc.NewErrResponseInvalidRequest(jsonrpc.ID{}, err)
 
