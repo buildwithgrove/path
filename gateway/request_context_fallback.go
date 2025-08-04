@@ -75,12 +75,9 @@ func (rc *requestContext) handleFallbackRequest(payload protocol.Payload) error 
 	// Update the QoS context with the fallback response so that the `GetHTTPResponse` method
 	// returns the response from the fallback URL to the user.
 	//
-	// We use an empty endpoint address because fallback requests bypass the protocol layer:
-	// - Protocol & QoS-level observations are not applicable since no protocol endpoints were used
-	// - The empty endpoint address signals to the QoS that this response came from a fallback
-	//
-	// This allows the QoS to format the response appropriately for the user while maintaining
-	// the distinction between normal protocol responses and fallback responses.
+	// We can use an empty endpoint address because fallback requests do not generate
+	// any QoS-level observations and so no endpoint address is used by the QoS package.
 	rc.qosCtx.UpdateWithResponse(protocol.EndpointAddr(""), body)
+
 	return nil
 }

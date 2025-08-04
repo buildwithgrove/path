@@ -10,17 +10,13 @@ import (
 // FallbackURLs is a map of service IDs to fallback URLs.
 // It is unmarshaled from the YAML field `fallback_urls`.
 //
-// Example:
+// Example YAML:
 //
 //	fallback_urls:
 //	  eth: https://eth.rpc.grove.city/v1/1a2b3c4d
-//
-// The fallback URL is used when no endpoints are available for a service.
-// It is used to return a response to the client.
 type FallbackURLs map[protocol.ServiceID]string
 
 // URLsFromStrings returns a map of service IDs to fallback URLs.
-// It is used to return a response to the client.
 func (f FallbackURLs) URLsFromStrings() map[protocol.ServiceID]*url.URL {
 	fallbackURLs := make(map[protocol.ServiceID]*url.URL, len(f))
 
