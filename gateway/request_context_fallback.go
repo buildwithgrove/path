@@ -10,8 +10,20 @@ import (
 	"github.com/buildwithgrove/path/protocol"
 )
 
+// handleFallbackRequest processes a service request using a pre-configured fallback URL
+// when no protocol-level endpoints are available for the requested service.
+//
+// Observations:
+//   - Gateway-level: Errors are tracked for monitoring fallback reliability
+//   - Protocol-level: Bypassed since fallback doesn't use protocol endpoints
+//   - QoS-level: Response is provided to QoS context to allow `GetHTTPResponse`
+//     method to return the response from the fallback URL to the user. Observations
+//     are not provided to the QoS context since fallback requests bypass the protocol layer.
+//
+// Note: This is a fallback mechanism and should not be the primary request path.
+// High usage of fallback URLs indicates issues with protocol endpoint availability.
 func (rc *requestContext) handleFallbackRequest(payload protocol.Payload) error {
-	// Get the fallback URL and append the path if it exists.
+	// Construct the full fallback URL by appending the request path to the base fallback URL.
 	fallbackURL := rc.fallbackURL.String()
 	if payload.Path != "" {
 		fallbackURL = fmt.Sprintf("%s%s", fallbackURL, payload.Path)
@@ -25,6 +37,8 @@ func (rc *requestContext) handleFallbackRequest(payload protocol.Payload) error 
 
 	logger.Debug().Msg("Sending fallback request")
 
+	// Create an HTTP request using the payload data.
+	// The payload.Data contains the original request body (e.g., JSON-RPC payload, REST data).
 	fallbackReq, err := http.NewRequest(
 		payload.Method,
 		fallbackURL,
@@ -36,11 +50,14 @@ func (rc *requestContext) handleFallbackRequest(payload protocol.Payload) error 
 		return errFallbackRequestCreationFailed
 	}
 
-	// TODO_IN_THIS_PR(@commoddity): add proper http client configuration.
+	// TODO_IN_THIS_PR(@commoddity): add fallback HTTP client with proper configuration
+	// to Gateway in order to reuse HTTP client for fallback requests.
 	httpClient := http.Client{
 		Timeout: time.Duration(payload.TimeoutMillisec) * time.Millisecond,
 	}
 
+	// Send the HTTP request to the fallback URL.
+	// This bypasses the normal protocol layer and directly contacts the fallback endpoint.
 	resp, err := httpClient.Do(fallbackReq)
 	if err != nil {
 		logger.Info().Err(err).Msg("Failed to send fallback request")
@@ -55,12 +72,15 @@ func (rc *requestContext) handleFallbackRequest(payload protocol.Payload) error 
 		return errFallbackResponseReadFailed
 	}
 
-	// An empty endpoint address is used because fallback requests are not handled by the protocol.
+	// Update the QoS context with the fallback response so that the `GetHTTPResponse` method
+	// returns the response from the fallback URL to the user.
 	//
-	// Protocol and QoS-level observations are not applicable to fallback requests, so the
-	// QoS package will not receive any observations from fallback requests, which is the
-	// usual reason for sending the endpoint address to the `UpdateWithResponse` method.
+	// We use an empty endpoint address because fallback requests bypass the protocol layer:
+	// - Protocol & QoS-level observations are not applicable since no protocol endpoints were used
+	// - The empty endpoint address signals to the QoS that this response came from a fallback
+	//
+	// This allows the QoS to format the response appropriately for the user while maintaining
+	// the distinction between normal protocol responses and fallback responses.
 	rc.qosCtx.UpdateWithResponse(protocol.EndpointAddr(""), body)
-
 	return nil
 }

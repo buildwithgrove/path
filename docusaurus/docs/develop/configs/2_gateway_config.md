@@ -15,6 +15,8 @@ _tl;dr Configurations for Gateway operation & services support._
 - [`logger_config` (optional)](#logger_config-optional)
 - [`data_reporter_config` (optional)](#data_reporter_config-optional)
 
+<!-- TODO_IN_THIS_PR(@commoddity): Add a section on how to configure the fallback URL. -->
+
 ## Example Configuration
 
 All configuration for the `PATH` gateway are defined in a single YAML file named `.config.yaml`.
