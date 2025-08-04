@@ -494,8 +494,8 @@ func (rc *requestContext) updateGatewayObservations(err error) {
 	case errors.Is(err, errFallbackRequestCreationFailed):
 		rc.logger.Error().Err(err).Msg("Failed to create HTTP request for fallback URL. Request will fail.")
 		rc.gatewayObservations.RequestError = &observation.GatewayRequestError{
-			// Set the error kind as unspecified since there's no specific fallback error kind in proto
-			ErrorKind: observation.GatewayRequestErrorKind_GATEWAY_REQUEST_ERROR_KIND_UNSPECIFIED,
+			// Set the error kind
+			ErrorKind: observation.GatewayRequestErrorKind_GATEWAY_REQUEST_ERROR_KIND_FALLBACK_URL_REQUEST_FAILED,
 			// Use the error message as error details.
 			Details: err.Error(),
 		}
@@ -504,8 +504,8 @@ func (rc *requestContext) updateGatewayObservations(err error) {
 	case errors.Is(err, errFallbackRequestSendFailed):
 		rc.logger.Error().Err(err).Msg("Failed to send fallback request. Request will fail.")
 		rc.gatewayObservations.RequestError = &observation.GatewayRequestError{
-			// Set the error kind as unspecified since there's no specific fallback error kind in proto
-			ErrorKind: observation.GatewayRequestErrorKind_GATEWAY_REQUEST_ERROR_KIND_UNSPECIFIED,
+			// Set the error kind
+			ErrorKind: observation.GatewayRequestErrorKind_GATEWAY_REQUEST_ERROR_KIND_FALLBACK_URL_REQUEST_FAILED,
 			// Use the error message as error details.
 			Details: err.Error(),
 		}
@@ -514,8 +514,8 @@ func (rc *requestContext) updateGatewayObservations(err error) {
 	case errors.Is(err, errFallbackResponseReadFailed):
 		rc.logger.Error().Err(err).Msg("Failed to read fallback response body. Request will fail.")
 		rc.gatewayObservations.RequestError = &observation.GatewayRequestError{
-			// Set the error kind as unspecified since there's no specific fallback error kind in proto
-			ErrorKind: observation.GatewayRequestErrorKind_GATEWAY_REQUEST_ERROR_KIND_UNSPECIFIED,
+			// Set the error kind
+			ErrorKind: observation.GatewayRequestErrorKind_GATEWAY_REQUEST_ERROR_KIND_FALLBACK_URL_REQUEST_FAILED,
 			// Use the error message as error details.
 			Details: err.Error(),
 		}

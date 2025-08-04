@@ -11,25 +11,27 @@ import (
 )
 
 func (rc *requestContext) handleFallbackRequest(payload protocol.Payload) error {
+	// Get the fallback URL and append the path if it exists.
+	fallbackURL := rc.fallbackURL.String()
+	if payload.Path != "" {
+		fallbackURL = fmt.Sprintf("%s%s", fallbackURL, payload.Path)
+	}
+
 	logger := rc.logger.With(
 		"method", "handleFallbackRequest",
 		"fallback_url", rc.fallbackURL.String(),
+		"url_path", payload.Path,
 	)
 
 	logger.Debug().Msg("Sending fallback request")
 
-	url := rc.fallbackURL.String()
-	if payload.Path != "" {
-		url = fmt.Sprintf("%s%s", url, payload.Path)
-	}
-
 	fallbackReq, err := http.NewRequest(
 		payload.Method,
-		url,
+		fallbackURL,
 		io.NopCloser(bytes.NewReader([]byte(payload.Data))),
 	)
 	if err != nil {
-		logger.Info().Err(err).Str("url", url).Msg("Failed to create HTTP request for fallback URL")
+		logger.Info().Err(err).Msg("Failed to create HTTP request for fallback URL")
 		rc.updateGatewayObservations(errFallbackRequestCreationFailed)
 		return errFallbackRequestCreationFailed
 	}
