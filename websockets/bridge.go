@@ -216,11 +216,11 @@ func getBridgeRequestHeaders(session *sessiontypes.Session) http.Header {
 	return headers
 }
 
-// Run starts the bridge and establishes a bidirectional communication
+// StartAsync starts the bridge and establishes a bidirectional communication
 // through PATH between the Client and the selected websocket endpoint.
 //
 // Full data flow: Client <---clientConn---> PATH Bridge <---endpointConn---> Relay Miner Bridge <------> Endpoint
-func (b *Bridge) Run(
+func (b *Bridge) StartAsync(
 	gatewayObservations *observation.GatewayObservations,
 	dataReporter gateway.RequestResponseReporter,
 ) {
@@ -336,6 +336,10 @@ func (b *Bridge) handleEndpointMessage(msg message) {
 	messageObservations := b.initializeMessageObservations()
 
 	// Publish the observations to the data pipeline after the message is handled.
+	//
+	// If the data reporter is not configured using the `data_reporter_config` field
+	// in the config YAML, then the data reporter will be nil so we need to check for that.
+	// For example, when running the Gateway in a local environment, the data reporter may be nil.
 	if b.dataReporter != nil {
 		defer b.dataReporter.Publish(messageObservations)
 	}

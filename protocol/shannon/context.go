@@ -140,8 +140,8 @@ func (rc *requestContext) HandleWebsocketRequest(logger polylog.Logger, req *htt
 	// One bridge represents a single persistent connection to a single endpoint.
 	//
 	// Note that this Bridge is returned by the Shannon protocol method and
-	// initialized in the Gateway package in order to pass gateway-level observations
-	// and data reporters without leaking Gateway-level data to the protocol package.
+	// started in the Gateway package in order to pass gateway-level observations
+	// and data reporters without leaking Gateway-level logic to the protocol package.
 	bridge, err := websockets.NewBridge(
 		wsLogger,
 		clientConn,
@@ -152,7 +152,7 @@ func (rc *requestContext) HandleWebsocketRequest(logger polylog.Logger, req *htt
 		buildWebsocketBridgeEndpointObservation(rc.logger, rc.serviceID, *rc.selectedEndpoint),
 	)
 	if err != nil {
-		// TODO_TECHDEBT(@commoddity): introduce error classification for websocket bridge creation errors.
+		// TODO_IN_THIS_PR(@commoddity): introduce error classification for websocket bridge creation errors.
 		// Should these errors be protocol-level? For example, if the endpoint is selected for a websocket request,
 		// but does not have a websocket URL listed onchain, it should likely be a protocol-level error.
 		wsLogger.Error().Err(err).Msg("Error creating websocket bridge")

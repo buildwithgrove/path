@@ -8,7 +8,6 @@ import (
 
 	"github.com/buildwithgrove/path/health"
 	"github.com/buildwithgrove/path/metrics/devtools"
-	"github.com/buildwithgrove/path/observation"
 	protocolobservations "github.com/buildwithgrove/path/observation/protocol"
 	"github.com/buildwithgrove/path/protocol"
 )
@@ -86,6 +85,11 @@ type ProtocolRequestContext interface {
 	HandleServiceRequest(protocol.Payload) (protocol.Response, error)
 
 	// HandleWebsocketRequest handles a WebSocket connection request.
+	//
+	// It returns a WebsocketsBridge that is used to handle the WebSocket connection.
+	// The Bridge is returned from this method to:
+	//   - Adhere to the convention of the `gateway` package handling non-protocol specific request logic.
+	//   - Allow passing gateway level observations to the WebsocketsBridge.
 	HandleWebsocketRequest(polylog.Logger, *http.Request, http.ResponseWriter) (WebsocketsBridge, error)
 
 	// GetObservations builds and returns the set of protocol-specific observations using the current context.
@@ -100,17 +104,4 @@ type ProtocolRequestContext interface {
 	// Then the observation can be:
 	//  - `maxed-out endpoint` on `endpoint_101`.
 	GetObservations() protocolobservations.Observations
-}
-
-// WebsocketsBridge routes data between an Endpoint and a Client.
-// One bridge represents a single WebSocket connection
-// between a Client and a WebSocket Endpoint.
-//
-// Full data flow: Client <---clientConn---> PATH Bridge <---endpointConn---> Relay Miner Bridge <------> Endpoint
-type WebsocketsBridge interface {
-	// Run starts the bridge and handles the data flow between the Client and the Endpoint.
-	// It is called by the Gateway when a new WebSocket connection is established.
-	//
-	// IMPORTANT: Run should always be run in a goroutine to avoid blocking the main thread.
-	Run(*observation.GatewayObservations, RequestResponseReporter)
 }

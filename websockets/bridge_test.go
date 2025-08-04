@@ -120,7 +120,7 @@ func Test_Bridge_Run(t *testing.T) {
 			c.NoError(err)
 
 			// Start the bridge in a goroutine
-			go bridge.Run(nil, nil)
+			go bridge.StartAsync(nil, nil)
 
 			// Wait for a short duration for test requests and events to get sent
 			<-time.After(2 * time.Second)

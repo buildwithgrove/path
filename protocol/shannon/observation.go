@@ -156,7 +156,7 @@ func buildEndpointErrorObservation(
 	return endpointObs
 }
 
-// builds a Shannon endpoint observation to include:
+// BuildEndpointObservation builds a Shannon endpoint observation to include:
 // endpoint: supplier, URL
 // session: app, service ID, session ID, session start and end heights (using `buildEndpointObservationFromSession`).
 func buildEndpointObservation(
