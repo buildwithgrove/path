@@ -195,14 +195,12 @@ func buildWebsocketBridgeEndpointObservation(
 	endpoint endpoint,
 ) *protocolobservations.Observations {
 	return &protocolobservations.Observations{
-		Protocol: &protocolobservations.Observations_Shannon{
-			Shannon: &protocolobservations.ShannonObservationsList{
-				Observations: []*protocolobservations.ShannonRequestObservations{
-					{
-						ServiceId: string(serviceID),
-						EndpointObservations: []*protocolobservations.ShannonEndpointObservation{
-							buildEndpointObservation(logger, endpoint, nil),
-						},
+		Shannon: &protocolobservations.ShannonObservationsList{
+			Observations: []*protocolobservations.ShannonRequestObservations{
+				{
+					ServiceId: string(serviceID),
+					EndpointObservations: []*protocolobservations.ShannonEndpointObservation{
+						buildEndpointObservation(logger, endpoint, nil),
 					},
 				},
 			},
