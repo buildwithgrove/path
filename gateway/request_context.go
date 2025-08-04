@@ -208,8 +208,6 @@ func (rc *requestContext) BuildProtocolContextsFromHTTPRequest(httpReq *http.Req
 		return fmt.Errorf("%w: no available endpoints could be found for the request: %w", errBuildProtocolContextsFromHTTPRequest, err)
 	}
 
-	availableEndpoints = protocol.EndpointAddrList{} // TODO_IN_THIS_PR - REMOVE THIS LINE! Only here to enforce fallback URL usage.
-
 	// If a fallback URL is provided, return early before building any protocol contexts.
 	// Instead, we will use the fallback URL to send the request to the user.
 	if len(availableEndpoints) == 0 && rc.fallbackURL != nil {
