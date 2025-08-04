@@ -166,6 +166,14 @@ properties:
         items:
           type: string
 
+  # Fallback URLs Configuration (optional)
+  fallback_urls:
+    description: "Map of service IDs to fallback URLs to use in case no endpoints are available for the requested service."
+    type: object
+    additionalProperties:
+      type: string
+      pattern: "^(http|https)://.*$"
+
   # Data Reporter Configuration (optional)
   data_reporter_config:
     description: "Configuration for the HTTP data reporter that accepts JSON via POST and feeds into pipelines writing to services like BigQuery (e.g., Fluentd with HTTP input and BigQuery output plugins)."

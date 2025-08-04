@@ -14,4 +14,9 @@ var (
 
 	// Error building protocol contexts from HTTP request.
 	errBuildProtocolContextsFromHTTPRequest = errors.New("error building protocol contexts from HTTP request")
+
+	// Fallback request errors
+	errFallbackRequestCreationFailed = errors.New("failed to create HTTP request for fallback URL")
+	errFallbackRequestSendFailed     = errors.New("failed to send fallback request")
+	errFallbackResponseReadFailed    = errors.New("failed to read fallback response body")
 )

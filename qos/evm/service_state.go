@@ -141,6 +141,13 @@ func (ss *serviceState) updateFromEndpoints(updatedEndpoints map[protocol.Endpoi
 	defer ss.serviceStateLock.Unlock()
 
 	for endpointAddr, endpoint := range updatedEndpoints {
+		// If an endpoint address is empty, it indicates that the endpoint was a fallback URL.
+		// Fallback endpoints have skipped the protocol endpoint list entirely so we do not want to include them in QoS results.
+		if endpointAddr == "" {
+			ss.logger.Error().Msgf("🥸🥸🥸🥸🥸🥸🥸Skipping endpoint because it was a fallback URL: %s", endpointAddr)
+			continue
+		}
+
 		logger := ss.logger.With(
 			"endpoint_addr", endpointAddr,
 			"perceived_block_number", ss.perceivedBlockNumber,

@@ -3,6 +3,7 @@ package gateway
 import (
 	"context"
 	"net/http"
+	"net/url"
 
 	"github.com/buildwithgrove/path/protocol"
 )
@@ -12,6 +13,11 @@ import (
 type HTTPRequestParser interface {
 	// GetQoSService returns the qos for the service matching an HTTP request.
 	GetQoSService(context.Context, *http.Request) (protocol.ServiceID, QoSService, error)
+
+	// GetFallbackURL returns the fallback URL to use in case
+	// no endpoints are available for the requested service.
+	// Returns the fallback URL and a boolean indicating whether a fallback URL is configured.
+	GetFallbackURL(context.Context, *http.Request) (*url.URL, bool)
 
 	// GetHTTPErrorResponse returns an HTTP response using the supplied error.
 	// It will only be called if the GetQoSService method above returns an error.

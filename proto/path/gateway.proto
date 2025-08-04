@@ -59,6 +59,12 @@ message GatewayObservations {
 
   // parallel_request_observations tracks the outcome of parallel requests within a batch.
   optional GatewayParallelRequestObservations gateway_parallel_request_observations = 8;
+
+  // fallback_used indicates whether a fallback URL was used for the request.
+  bool fallback_used = 9;
+
+  // fallback_url is the URL that was used for the request.
+  string fallback_url = 10;
 }
 
 // Tracks any errors encountered at the gateway level.

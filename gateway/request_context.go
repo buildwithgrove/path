@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 	"time"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
@@ -77,6 +78,10 @@ type requestContext struct {
 	serviceQoS QoSService
 	qosCtx     RequestQoSContext
 
+	// fallbackURL is used to return a preconstructed error response to the user.
+	fallbackURL *url.URL
+	useFallback bool
+
 	// Protocol related request context
 	protocol Protocol
 	// Multiplicity of protocol contexts to support parallel requests
@@ -121,6 +126,12 @@ func (rc *requestContext) InitFromHTTPRequest(httpReq *http.Request) error {
 		// log the error
 		rc.logger.Error().Err(err).Msg(errHTTPRequestRejectedByParser.Error())
 		return errHTTPRequestRejectedByParser
+	}
+
+	// If a fallback URL is configured for the service, assign it to the request context.
+	// This will be used to handle the request in case no protocol-level endpoints are available for the requested service.
+	if fallbackURL, fallbackConfigured := rc.httpRequestParser.GetFallbackURL(rc.context, httpReq); fallbackConfigured {
+		rc.fallbackURL = fallbackURL
 	}
 
 	rc.serviceQoS = serviceQoS
@@ -195,6 +206,16 @@ func (rc *requestContext) BuildProtocolContextsFromHTTPRequest(httpReq *http.Req
 		// log and return the error
 		logger.ProbabilisticDebugInfo(polylog.ProbabilisticDebugInfoProb).Err(err).Msg("no available endpoints could be found for the request")
 		return fmt.Errorf("%w: no available endpoints could be found for the request: %w", errBuildProtocolContextsFromHTTPRequest, err)
+	}
+
+	availableEndpoints = protocol.EndpointAddrList{} // TODO_IN_THIS_PR - REMOVE THIS LINE! Only here to enforce fallback URL usage.
+
+	// If a fallback URL is provided, return early before building any protocol contexts.
+	// Instead, we will use the fallback URL to send the request to the user.
+	if len(availableEndpoints) == 0 && rc.fallbackURL != nil {
+		logger.Info().Msg("No endpoints could be selected for the request, using fallback URL")
+		rc.useFallback = true
+		return nil
 	}
 
 	// Select multiple endpoints for parallel relay attempts
@@ -323,24 +344,30 @@ func (rc *requestContext) BroadcastAllObservations() {
 	go func() {
 		// update gateway-level observations: no request error encountered.
 		rc.updateGatewayObservations(nil)
-		// update protocol-level observations: no errors encountered setting up the protocol context.
-		rc.updateProtocolObservations(nil)
-		if rc.protocolObservations != nil {
-			err := rc.protocol.ApplyObservations(rc.protocolObservations)
-			if err != nil {
-				rc.logger.Warn().Err(err).Msg("error applying protocol observations.")
-			}
-		}
 
-		// The service request context contains all the details the QoS needs to update its internal metrics about endpoint(s), which it should use to build
-		// the qosobservations.Observations struct.
-		// This ensures that separate PATH instances can communicate and share their QoS observations.
-		// The QoS context will be nil if the target service ID is not specified correctly by the request.
 		var qosObservations qosobservations.Observations
-		if rc.qosCtx != nil {
-			qosObservations = rc.qosCtx.GetObservations()
-			if err := rc.serviceQoS.ApplyObservations(&qosObservations); err != nil {
-				rc.logger.Warn().Err(err).Msg("error applying QoS observations.")
+
+		// If fallback URL was used, do not update protocol or QoS observations.
+		// This is because the fallback URL skips both the protocol and QoS request contexts.
+		if !rc.useFallback {
+			// update protocol-level observations: no errors encountered setting up the protocol context.
+			rc.updateProtocolObservations(nil)
+			if rc.protocolObservations != nil {
+				err := rc.protocol.ApplyObservations(rc.protocolObservations)
+				if err != nil {
+					rc.logger.Warn().Err(err).Msg("error applying protocol observations.")
+				}
+			}
+
+			// The service request context contains all the details the QoS needs to update its internal metrics about endpoint(s), which it should use to build
+			// the qosobservations.Observations struct.
+			// This ensures that separate PATH instances can communicate and share their QoS observations.
+			// The QoS context will be nil if the target service ID is not specified correctly by the request.
+			if rc.qosCtx != nil {
+				qosObservations = rc.qosCtx.GetObservations()
+				if err := rc.serviceQoS.ApplyObservations(&qosObservations); err != nil {
+					rc.logger.Warn().Err(err).Msg("error applying QoS observations.")
+				}
 			}
 		}
 
@@ -351,6 +378,7 @@ func (rc *requestContext) BroadcastAllObservations() {
 			Protocol:    rc.protocolObservations,
 			Qos:         &qosObservations,
 		}
+
 		if rc.metricsReporter != nil {
 			rc.metricsReporter.Publish(observations)
 		}
@@ -424,6 +452,12 @@ func (rc *requestContext) updateGatewayObservations(err error) {
 	// Update the request completion time on the gateway observation
 	rc.gatewayObservations.CompletedTime = timestamppb.Now()
 
+	// Update the fallback URL on the gateway observation
+	if rc.useFallback {
+		rc.gatewayObservations.FallbackUsed = true
+		rc.gatewayObservations.FallbackUrl = rc.fallbackURL.String()
+	}
+
 	// No errors: skip.
 	if err == nil {
 		return
@@ -452,6 +486,36 @@ func (rc *requestContext) updateGatewayObservations(err error) {
 		rc.gatewayObservations.RequestError = &observation.GatewayRequestError{
 			// Set the error kind
 			ErrorKind: observation.GatewayRequestErrorKind_GATEWAY_REQUEST_ERROR_KIND_REJECTED_BY_QOS,
+			// Use the error message as error details.
+			Details: err.Error(),
+		}
+
+	// Fallback request creation failed
+	case errors.Is(err, errFallbackRequestCreationFailed):
+		rc.logger.Error().Err(err).Msg("Failed to create HTTP request for fallback URL. Request will fail.")
+		rc.gatewayObservations.RequestError = &observation.GatewayRequestError{
+			// Set the error kind as unspecified since there's no specific fallback error kind in proto
+			ErrorKind: observation.GatewayRequestErrorKind_GATEWAY_REQUEST_ERROR_KIND_UNSPECIFIED,
+			// Use the error message as error details.
+			Details: err.Error(),
+		}
+
+	// Fallback request send failed
+	case errors.Is(err, errFallbackRequestSendFailed):
+		rc.logger.Error().Err(err).Msg("Failed to send fallback request. Request will fail.")
+		rc.gatewayObservations.RequestError = &observation.GatewayRequestError{
+			// Set the error kind as unspecified since there's no specific fallback error kind in proto
+			ErrorKind: observation.GatewayRequestErrorKind_GATEWAY_REQUEST_ERROR_KIND_UNSPECIFIED,
+			// Use the error message as error details.
+			Details: err.Error(),
+		}
+
+	// Fallback response read failed
+	case errors.Is(err, errFallbackResponseReadFailed):
+		rc.logger.Error().Err(err).Msg("Failed to read fallback response body. Request will fail.")
+		rc.gatewayObservations.RequestError = &observation.GatewayRequestError{
+			// Set the error kind as unspecified since there's no specific fallback error kind in proto
+			ErrorKind: observation.GatewayRequestErrorKind_GATEWAY_REQUEST_ERROR_KIND_UNSPECIFIED,
 			// Use the error message as error details.
 			Details: err.Error(),
 		}
