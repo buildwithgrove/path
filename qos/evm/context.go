@@ -13,10 +13,6 @@ import (
 	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
 
-// defaultServiceRequestTimeoutMillisec is the default timeout when sending a request to an EVM blockchain endpoint.
-// TODO_IMPROVE(@adshmh): Support method level specific timeouts and allow the user to configure them.
-const defaultServiceRequestTimeoutMillisec = 10_500
-
 // requestContext provides the support required by the gateway
 // package for handling service requests.
 var _ gateway.RequestQoSContext = &requestContext{}
@@ -111,11 +107,10 @@ func (rc requestContext) GetServicePayloads() []protocol.Payload {
 		}
 
 		payloads = append(payloads, protocol.Payload{
-			Data:            string(reqBz),
-			Method:          http.MethodPost, // Method is always POST for EVM-based blockchains.
-			Headers:         map[string]string{},
-			TimeoutMillisec: defaultServiceRequestTimeoutMillisec,
-			RPCType:         sharedtypes.RPCType_JSON_RPC,
+			Data:    string(reqBz),
+			Method:  http.MethodPost, // Method is always POST for EVM-based blockchains.
+			Headers: map[string]string{},
+			RPCType: sharedtypes.RPCType_JSON_RPC,
 		})
 	}
 

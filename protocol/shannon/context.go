@@ -309,14 +309,12 @@ func (rc *requestContext) HandleWebsocketRequest(logger polylog.Logger, req *htt
 // - Implements gateway.ProtocolRequestContext interface.
 func (rc *requestContext) GetObservations() protocolobservations.Observations {
 	return protocolobservations.Observations{
-		Protocol: &protocolobservations.Observations_Shannon{
-			Shannon: &protocolobservations.ShannonObservationsList{
-				Observations: []*protocolobservations.ShannonRequestObservations{
-					{
-						ServiceId:            string(rc.serviceID),
-						RequestError:         rc.requestErrorObservation,
-						EndpointObservations: rc.endpointObservations,
-					},
+		Shannon: &protocolobservations.ShannonObservationsList{
+			Observations: []*protocolobservations.ShannonRequestObservations{
+				{
+					ServiceId:            string(rc.serviceID),
+					RequestError:         rc.requestErrorObservation,
+					EndpointObservations: rc.endpointObservations,
 				},
 			},
 		},
@@ -375,10 +373,11 @@ func (rc *requestContext) sendRelay(payload protocol.Payload) (*servicetypes.Rel
 		return nil, fmt.Errorf("sendRelay: error signing the relay request for app %s: %w", app.Address, err)
 	}
 
-	// Prepare a timeout context for the relay request.
-	timeout := time.Duration(payload.TimeoutMillisec) * time.Millisecond
-	ctxWithTimeout, cancelFn := context.WithTimeout(rc.context, timeout)
-	defer cancelFn()
+	// TODO_INVESTIGATE: Evaluate the impact of `rc.context` vs `context.TODO`
+	// with respect to handling timeouts.
+	// ctxWithTimeout, cancel := context.WithTimeout(context.TODO(), timeout)
+	ctxWithTimeout, cancel := context.WithTimeout(rc.context, gateway.RelayRequestTimeout)
+	defer cancel()
 
 	// Build headers including RPCType header
 	headers := buildHeaders(payload)

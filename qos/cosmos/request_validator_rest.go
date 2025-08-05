@@ -14,10 +14,6 @@ import (
 	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
 
-// Default timeout for REST requests
-// TODO_IMPROVE(@adshmh): Support method level specific timeouts and allow the user to configure them.
-const defaultRESTRequestTimeoutMillisec = 30000
-
 // validateRESTRequest validates a REST request by:
 // 1. Validating HTTP method and path
 // 2. Determining the specific RPC type from the path
@@ -36,7 +32,7 @@ func (rv *requestValidator) validateRESTRequest(
 	rpcType := determineRESTRPCType(httpRequestPath)
 
 	logger = logger.With(
-		"detected_rpc_type", rpcType.String(),
+		"rpc_type", rpcType.String(),
 		"request_path", httpRequestPath,
 	)
 
@@ -127,12 +123,11 @@ func buildRESTServicePayload(
 	}
 
 	return protocol.Payload{
-		Data:            string(httpRequestBody),
-		Method:          httpRequestMethod,
-		Path:            path,
-		Headers:         map[string]string{},
-		TimeoutMillisec: defaultRESTRequestTimeoutMillisec,
-		RPCType:         rpcType, // Add the RPCType hint, so protocol sets correct HTTP headers for the endpoint.
+		Data:    string(httpRequestBody),
+		Method:  httpRequestMethod,
+		Path:    path,
+		Headers: map[string]string{},
+		RPCType: rpcType, // Add the RPCType hint, so protocol sets correct HTTP headers for the endpoint.
 	}
 }
 
@@ -157,7 +152,8 @@ func (rv *requestValidator) buildRESTRequestObservations(
 	// Note: We don't have access to headers here, but this would be where we'd extract it
 
 	return &qosobservations.CosmosRequestObservations{
-		ChainId:       rv.chainID,
+		CosmosChainId: rv.cosmosChainID,
+		EvmChainId:    rv.evmChainID,
 		ServiceId:     string(rv.serviceID),
 		RequestOrigin: requestOrigin,
 		RequestProfile: &qosobservations.CosmosRequestProfile{
@@ -231,8 +227,9 @@ func (rv *requestValidator) createRESTUnsupportedRPCTypeObservation(
 	jsonrpcResponse jsonrpc.Response,
 ) *qosobservations.CosmosRequestObservations {
 	return &qosobservations.CosmosRequestObservations{
+		CosmosChainId: rv.cosmosChainID,
+		EvmChainId:    rv.evmChainID,
 		ServiceId:     string(rv.serviceID),
-		ChainId:       rv.chainID,
 		RequestOrigin: qosobservations.RequestOrigin_REQUEST_ORIGIN_ORGANIC,
 		RequestProfile: &qosobservations.CosmosRequestProfile{
 			BackendServiceDetails: &qosobservations.BackendServiceDetails{

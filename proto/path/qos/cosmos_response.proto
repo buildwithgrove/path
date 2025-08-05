@@ -24,7 +24,7 @@ enum CosmosResponseValidationType {
 
 // CosmosEndpointResponseValidationResult contains the outcome of contacting an endpoint
 message CosmosEndpointResponseValidationResult {
-	// Next free field number: 11
+	// Next free field number: 12
 
 	// CosmosResponseHealth response_health = 5;
 	// CosmosResponseStatus response_status = 6;
@@ -63,16 +63,21 @@ message CosmosEndpointResponseValidationResult {
 		CosmosResponseCometBFTStatus response_comet_bft_status = 9;
 
 		// Response to CosmosSDK request against API path `/cosmos/base/node/v1beta1/status`
+		// Reference: https://docs.cosmos.network/api#tag/Service/operation/Status
 		CosmosResponseCosmosSDKStatus response_cosmos_sdk_status = 10;
+
+		// Response to Ethereum JSONRPC request using method `eth_chainId`
+		// Reference: https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_chainid
+		CosmosResponseEVMJSONRPCChainID response_evm_jsonrpc_chain_id = 11;
 	}
 }
 
-// CosmosResponseCometBFTHealth stores the response to a CometBFT `/health` request
+// CosmosResponseCometBFTHealth stores the response to a CometBFT `health` method request
 message CosmosResponseCometBFTHealth {
     bool health_status = 1;
 }
 
-// CosmosResponseCometBFTStatus stores the response to a CometBFT `/status` request
+// CosmosResponseCometBFTStatus stores the response to a CometBFT `status` method request
 message CosmosResponseCometBFTStatus {
     string chain_id = 1;
     bool catching_up = 2;
@@ -82,6 +87,16 @@ message CosmosResponseCometBFTStatus {
 // CosmosResponseCosmosSDKStatus stores the response to a CosmosSDK `/cosmos/base/node/v1beta1/status` request
 message CosmosResponseCosmosSDKStatus {
     uint64 latest_block_height = 1;
+}
+
+// CosmosResponseEVMJSONRPCChainID stores the response to an `eth_chainId` request
+// https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_chainid
+message CosmosResponseEVMJSONRPCChainID {
+	// The HTTP status code received from the endpoint
+	int32 http_status_code = 1;
+
+	// The chain ID value returned in the response
+	string evm_chain_id = 2;
 }
 
 // UnrecognizedResponse handles responses that are not validated before being returned to the user.

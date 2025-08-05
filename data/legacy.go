@@ -58,11 +58,6 @@ func buildLegacyDataRecords(
 	//
 	// Extract protocol observations
 	protocolObservations := observations.GetProtocol()
-	// Update the data record from Morse protocol data
-	morseObservations := protocolObservations.GetMorse()
-	if morseObservations != nil {
-		baseLegacyRecord = setLegacyFieldsFromMorseProtocolObservations(logger, baseLegacyRecord, morseObservations)
-	}
 
 	// Update the data record from Shannon protocol data
 	if shannonObservations := protocolObservations.GetShannon(); shannonObservations != nil {

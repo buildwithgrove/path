@@ -11,7 +11,6 @@
 
 ### Protocol-specific metrics
 - `metrics/protocol/shannon/metrics.go` - Shannon protocol metrics
-- `metrics/protocol/morse/metrics.go` - Morse protocol metrics
 
 ### QoS-specific metrics
 - `metrics/qos/evm/metrics.go` - EVM QoS metrics
