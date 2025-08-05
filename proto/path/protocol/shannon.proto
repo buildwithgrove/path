@@ -115,6 +115,9 @@ enum ShannonEndpointErrorType {
   SHANNON_ENDPOINT_ERROR_HTTP_NON_2XX_STATUS = 37;
   // The relay request sent to the endpoint via HTTP failed with `context deadline exceeded` error
   SHANNON_ENDPOINT_ERROR_HTTP_CONTEXT_DEADLINE_EXCEEDED = 38;
+
+  // The relay request sent to the endpoint via WebSocket failed to establish a connection.
+  SHANNON_ENDPOINT_ERROR_WEBSOCKET_CONNECTION_FAILED = 39;
 }
 
 // ShannonSanctionType specifies the duration type for endpoint sanctions

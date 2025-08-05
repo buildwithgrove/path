@@ -3,6 +3,7 @@ package shannon
 import (
 	"context"
 	"fmt"
+	"maps"
 	"net/http"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
@@ -341,9 +342,7 @@ func (p *Protocol) getSessionsUniqueEndpoints(
 		// Log the number of endpoints before and after filtering
 		logger.Info().Msgf("Filtered session endpoints for app %s from %d to %d.", app.Address, len(sessionEndpoints), len(qualifiedEndpoints))
 
-		for endpointAddr, endpoint := range qualifiedEndpoints {
-			endpoints[endpointAddr] = endpoint
-		}
+		maps.Copy(endpoints, qualifiedEndpoints)
 
 		logger.Info().Msgf(
 			"Successfully fetched %d endpoints for session %s for application %s for service %s.",

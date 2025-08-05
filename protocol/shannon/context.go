@@ -124,10 +124,14 @@ func (rc *requestContext) HandleWebsocketRequest(logger polylog.Logger, req *htt
 	}
 
 	wsLogger := logger.With(
+		"method_name", "HandleWebsocketRequest",
 		"endpoint_url", rc.selectedEndpoint.PublicURL(),
 		"endpoint_addr", rc.selectedEndpoint.Addr(),
 		"service_id", rc.serviceID,
 	)
+
+	// Record endpoint query time.
+	endpointQueryTime := time.Now()
 
 	// Upgrade HTTP request from client to websocket connection.
 	// - Connection is passed to websocket bridge for Client <-> Gateway communication.
@@ -152,11 +156,9 @@ func (rc *requestContext) HandleWebsocketRequest(logger polylog.Logger, req *htt
 		buildWebsocketBridgeEndpointObservation(rc.logger, rc.serviceID, *rc.selectedEndpoint),
 	)
 	if err != nil {
-		// TODO_IN_THIS_PR(@commoddity): introduce error classification for websocket bridge creation errors.
-		// Should these errors be protocol-level? For example, if the endpoint is selected for a websocket request,
-		// but does not have a websocket URL listed onchain, it should likely be a protocol-level error.
-		wsLogger.Error().Err(err).Msg("Error creating websocket bridge")
-		return nil, err
+		wrappedErr := fmt.Errorf("%w: %v", errCreatingWebSocketConnection, err)
+		wsLogger.Error().Err(wrappedErr).Msg("Error creating websocket bridge")
+		return nil, rc.handleEndpointWebsocketError(endpointQueryTime, wrappedErr)
 	}
 
 	return bridge, nil
@@ -465,6 +467,50 @@ func (rc *requestContext) handleEndpointError(
 		fmt.Errorf("relay: error sending relay for service %s endpoint %s: %w",
 			rc.serviceID, selectedEndpointAddr, endpointErr,
 		)
+}
+
+// handleEndpointWebsocketError:
+// - Records endpoint error observation with enhanced classification and returns the response.
+// - Tracks endpoint error in observations with detailed categorization for metrics.
+// - Includes any RelayMinerError data that was captured via trackRelayMinerError.
+func (rc *requestContext) handleEndpointWebsocketError(
+	endpointQueryTime time.Time,
+	endpointErr error,
+) error {
+	hydratedLogger := rc.getHydratedLogger("handleEndpointError")
+	selectedEndpointAddr := rc.selectedEndpoint.Addr()
+
+	// Error classification based on trusted error sources only
+	endpointErrorType, _ := classifyRelayError(hydratedLogger, endpointErr)
+
+	// Enhanced logging with error type and error source classification
+	hydratedLogger.Error().
+		Err(endpointErr).
+		Str("error_type", endpointErrorType.String()).
+		Msg("relay error occurred. Service request will fail.")
+
+	// Build enhanced observation with RelayMinerError data from request context
+	endpointObs := buildEndpointErrorObservation(
+		rc.logger,
+		*rc.selectedEndpoint,
+		endpointQueryTime,
+		time.Now(), // Timestamp: endpoint query completed.
+		endpointErrorType,
+		fmt.Sprintf("websocket error: %v", endpointErr),
+		// TODO_IMPROVE(@commoddity): introduce proper sanctioning for websocket errors to exclude
+		// them from selection for websocket connection requests only. This is to avoid a failed
+		// websocket connection request from excluding the endpoint from selection for HTTP requests.
+		protocolobservations.ShannonSanctionType_SHANNON_SANCTION_UNSPECIFIED,
+		rc.currentRelayMinerError, // Use RelayMinerError data from request context
+	)
+
+	// Track endpoint error observation for metrics and sanctioning
+	rc.endpointObservations = append(rc.endpointObservations, endpointObs)
+
+	// Return error.
+	return fmt.Errorf("relay: error creating websocket connection for service %s endpoint %s: %w",
+		rc.serviceID, selectedEndpointAddr, endpointErr,
+	)
 }
 
 // handleEndpointSuccess:
