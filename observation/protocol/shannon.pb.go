@@ -553,8 +553,10 @@ type ShannonEndpointObservation struct {
 	EndpointBackendServiceHttpResponseStatusCode *int32 `protobuf:"varint,14,opt,name=endpoint_backend_service_http_response_status_code,json=endpointBackendServiceHttpResponseStatusCode,proto3,oneof" json:"endpoint_backend_service_http_response_status_code,omitempty"`
 	// HTTP Response payload size
 	EndpointBackendServiceHttpResponsePayloadSize *int64 `protobuf:"varint,15,opt,name=endpoint_backend_service_http_response_payload_size,json=endpointBackendServiceHttpResponsePayloadSize,proto3,oneof" json:"endpoint_backend_service_http_response_payload_size,omitempty"`
-	unknownFields                                 protoimpl.UnknownFields
-	sizeCache                                     protoimpl.SizeCache
+	// Whether the endpoint is a fallback endpoint
+	IsFallbackEndpoint bool `protobuf:"varint,16,opt,name=is_fallback_endpoint,json=isFallbackEndpoint,proto3" json:"is_fallback_endpoint,omitempty"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
 }
 
 func (x *ShannonEndpointObservation) Reset() {
@@ -692,6 +694,13 @@ func (x *ShannonEndpointObservation) GetEndpointBackendServiceHttpResponsePayloa
 	return 0
 }
 
+func (x *ShannonEndpointObservation) GetIsFallbackEndpoint() bool {
+	if x != nil {
+		return x.IsFallbackEndpoint
+	}
+	return false
+}
+
 // ShannonObservationsList provides a container for multiple ShannonRequestObservations,
 // allowing them to be embedded in other protocol buffers.
 type ShannonObservationsList struct {
@@ -756,7 +765,8 @@ const file_path_protocol_shannon_proto_rawDesc = "" +
 	"service_id\x18\x01 \x01(\tR\tserviceId\x12L\n" +
 	"\rrequest_error\x18\x02 \x01(\v2\".path.protocol.ShannonRequestErrorH\x00R\frequestError\x88\x01\x01\x12^\n" +
 	"\x15endpoint_observations\x18\x03 \x03(\v2).path.protocol.ShannonEndpointObservationR\x14endpointObservationsB\x10\n" +
-	"\x0e_request_error\"\xdb\t\n" +
+	"\x0e_request_error\"\x8d\n" +
+	"\n" +
 	"\x1aShannonEndpointObservation\x12\x1a\n" +
 	"\bsupplier\x18\x01 \x01(\tR\bsupplier\x12!\n" +
 	"\fendpoint_url\x18\x02 \x01(\tR\vendpointUrl\x120\n" +
@@ -775,7 +785,8 @@ const file_path_protocol_shannon_proto_rawDesc = "" +
 	"\x14recommended_sanction\x18\f \x01(\x0e2\".path.protocol.ShannonSanctionTypeH\x03R\x13recommendedSanction\x88\x01\x01\x12V\n" +
 	"\x11relay_miner_error\x18\r \x01(\v2%.path.protocol.ShannonRelayMinerErrorH\x04R\x0frelayMinerError\x88\x01\x01\x12m\n" +
 	"2endpoint_backend_service_http_response_status_code\x18\x0e \x01(\x05H\x05R,endpointBackendServiceHttpResponseStatusCode\x88\x01\x01\x12o\n" +
-	"3endpoint_backend_service_http_response_payload_size\x18\x0f \x01(\x03H\x06R-endpointBackendServiceHttpResponsePayloadSize\x88\x01\x01B\x1e\n" +
+	"3endpoint_backend_service_http_response_payload_size\x18\x0f \x01(\x03H\x06R-endpointBackendServiceHttpResponsePayloadSize\x88\x01\x01\x120\n" +
+	"\x14is_fallback_endpoint\x18\x10 \x01(\bR\x12isFallbackEndpointB\x1e\n" +
 	"\x1c_endpoint_response_timestampB\r\n" +
 	"\v_error_typeB\x10\n" +
 	"\x0e_error_detailsB\x17\n" +

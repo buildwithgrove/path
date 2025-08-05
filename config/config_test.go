@@ -42,6 +42,12 @@ func Test_LoadGatewayConfigFromYAML(t *testing.T) {
 						OwnedAppsPrivateKeysHex: []string{
 							"40af4e7e1b311c76a573610fe115cd2adf1eeade709cd77ca31ad4472509d388",
 						},
+						ServiceFallbackEndpointURLs: map[protocol.ServiceID][]string{
+							"eth": {
+								"https://eth.rpc.grove.city/v1/1a2b3c4d",
+								"https://eth.rpc.grove.city/v1/5e6f7a8b",
+							},
+						},
 					},
 				},
 				Router: RouterConfig{
@@ -53,9 +59,6 @@ func Test_LoadGatewayConfigFromYAML(t *testing.T) {
 				},
 				Logger: LoggerConfig{
 					Level: defaultLogLevel,
-				},
-				FallbackURLs: FallbackURLs{
-					"eth": "https://eth.rpc.grove.city/v1/1a2b3c4d",
 				},
 			},
 			wantErr: false,
@@ -164,7 +167,7 @@ logger_config:
 			wantErr: true,
 		},
 		{
-			name:     "should return error for invalid fallback URL",
+			name:     "should return error for invalid fallback endpoint URL",
 			filePath: "invalid_fallback_url.yaml",
 			yamlData: `
 			shannon_config:
@@ -173,11 +176,15 @@ logger_config:
 			    grpc_config:
 			      host_port: "shannon-testnet-grove-grpc.beta.poktroll.com:443"
 			  gateway_config:
+			    gateway_mode: "centralized"
 			    gateway_address: "pokt1up7zlytnmvlsuxzpzvlrta95347w322adsxslw"
 			    gateway_private_key_hex: "40af4e7e1b311c76a573610fe115cd2adf1eeade709cd77ca31ad4472509d388"
-			fallback_urls:
-			  eth: "invalid-url-scheme://invalid"
-			  polygon: "not-a-valid-url"
+			    owned_apps_private_keys_hex:
+			      - "40af4e7e1b311c76a573610fe115cd2adf1eeade709cd77ca31ad4472509d388"
+			    service_fallback_endpoint_urls:
+			      eth:
+			        - "invalid-url-format"
+			        - "ftp://invalid.protocol.com"
 			`,
 			wantErr: true,
 		},

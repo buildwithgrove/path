@@ -30,6 +30,7 @@ var (
 	ErrShannonUnsupportedGatewayMode                  = errors.New("invalid shannon gateway mode")
 	ErrShannonCentralizedGatewayModeRequiresOwnedApps = errors.New("shannon Centralized gateway mode requires at-least 1 owned app")
 	ErrShannonCacheConfigSetForLazyMode               = errors.New("cache config cannot be set for lazy mode")
+	ErrShannonInvalidFallbackEndpointURL              = errors.New("invalid fallback endpoint URL")
 )
 
 type (
@@ -61,10 +62,11 @@ type (
 	}
 
 	GatewayConfig struct {
-		GatewayMode             protocol.GatewayMode `yaml:"gateway_mode"`
-		GatewayAddress          string               `yaml:"gateway_address"`
-		GatewayPrivateKeyHex    string               `yaml:"gateway_private_key_hex"`
-		OwnedAppsPrivateKeysHex []string             `yaml:"owned_apps_private_keys_hex"`
+		GatewayMode                 protocol.GatewayMode            `yaml:"gateway_mode"`
+		GatewayAddress              string                          `yaml:"gateway_address"`
+		GatewayPrivateKeyHex        string                          `yaml:"gateway_private_key_hex"`
+		OwnedAppsPrivateKeysHex     []string                        `yaml:"owned_apps_private_keys_hex"`
+		ServiceFallbackEndpointURLs map[protocol.ServiceID][]string `yaml:"service_fallback_endpoint_urls"`
 	}
 )
 
@@ -93,6 +95,15 @@ func (gc GatewayConfig) Validate() error {
 		}
 	}
 
+	for serviceID, fallbackEndpointURLs := range gc.ServiceFallbackEndpointURLs {
+		for _, fallbackEndpointURL := range fallbackEndpointURLs {
+			if !isValidURL(fallbackEndpointURL) {
+				return fmt.Errorf("%w: invalid fallback endpoint URL '%s' for service '%s'",
+					ErrShannonInvalidFallbackEndpointURL, fallbackEndpointURL, serviceID)
+			}
+		}
+	}
+
 	return nil
 }
 
@@ -107,6 +118,23 @@ func (c FullNodeConfig) Validate() error {
 		return err
 	}
 	return nil
+}
+
+// getFallbackEndpointURLs returns the list of fallback endpoints for a given
+// service ID from the YAML config. One service ID can have multiple URLs.
+func (gc GatewayConfig) getFallbackEndpointURLs() map[protocol.ServiceID][]endpoint {
+	endpoints := make(map[protocol.ServiceID][]endpoint, len(gc.ServiceFallbackEndpointURLs))
+
+	for serviceID, fallbackEndpointURLs := range gc.ServiceFallbackEndpointURLs {
+		for _, fallbackEndpointURL := range fallbackEndpointURLs {
+			endpoints[serviceID] = append(endpoints[serviceID], endpoint{
+				supplier: fallbackSupplier,
+				url:      fallbackEndpointURL,
+			})
+		}
+	}
+
+	return endpoints
 }
 
 // TODO_TECHDEBT(@adshmh): add a new `grpc` package to handle all GRPC related functionality and configuration.

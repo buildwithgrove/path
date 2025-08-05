@@ -47,12 +47,6 @@ func (rc *requestContext) HandleRelayRequest() error {
 		With("method", "HandleRelayRequest").
 		With("num_protocol_contexts", len(rc.protocolContexts))
 
-	// If there are no protocol contexts and a fallback URL is configured, handle the fallback request.
-	if rc.useFallback {
-		logger.Debug().Msg("No available endpoints, using fallback URL")
-		return rc.handleFallbackRequest(rc.qosCtx.GetServicePayload())
-	}
-
 	// Track whether this is a parallel or single request
 	isParallel := len(rc.protocolContexts) > 1
 

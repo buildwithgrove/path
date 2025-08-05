@@ -28,8 +28,6 @@ enum GatewayRequestErrorKind {
   // QoS rejected the request.
   // e.g. malformed payload could not be unmarshaled into JSONRPC
   GATEWAY_REQUEST_ERROR_KIND_REJECTED_BY_QOS = 2;
-  // Fallback URL request failed.
-  GATEWAY_REQUEST_ERROR_KIND_FALLBACK_URL_REQUEST_FAILED = 3;
 }
 
 // GatewayObservations is the set of observations on a service request, made from the perspective of a gateway.
@@ -61,12 +59,6 @@ message GatewayObservations {
 
   // parallel_request_observations tracks the outcome of parallel requests within a batch.
   optional GatewayParallelRequestObservations gateway_parallel_request_observations = 8;
-
-  // fallback_used indicates whether a fallback URL was used for the request.
-  bool fallback_used = 9;
-
-  // fallback_url is the URL that was used for the request.
-  string fallback_url = 10;
 }
 
 // Tracks any errors encountered at the gateway level.

@@ -110,6 +110,15 @@ properties:
             items:
               type: string
               pattern: "^[0-9a-fA-F]{64}$"
+          service_fallback_endpoint_urls:
+            description: "Fallback endpoints for the Shannon gateway. A map of service ID to a list of fallback endpoint URLs."
+            type: object
+            patternProperties:
+              "^[a-zA-Z0-9_-]+$":
+                type: array
+                items:
+                  type: string
+                  pattern: "^(http|https)://.*$"
 
   # Logger Configuration (optional)
   logger_config:
@@ -165,14 +174,6 @@ properties:
         type: array
         items:
           type: string
-
-  # Fallback URLs Configuration (optional)
-  fallback_urls:
-    description: "Map of service IDs to fallback URLs to use in case no endpoints are available for the requested service."
-    type: object
-    additionalProperties:
-      type: string
-      pattern: "^(http|https)://.*$"
 
   # Data Reporter Configuration (optional)
   data_reporter_config:

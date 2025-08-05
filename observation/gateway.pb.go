@@ -89,8 +89,6 @@ const (
 	// QoS rejected the request.
 	// e.g. malformed payload could not be unmarshaled into JSONRPC
 	GatewayRequestErrorKind_GATEWAY_REQUEST_ERROR_KIND_REJECTED_BY_QOS GatewayRequestErrorKind = 2
-	// Fallback URL request failed.
-	GatewayRequestErrorKind_GATEWAY_REQUEST_ERROR_KIND_FALLBACK_URL_REQUEST_FAILED GatewayRequestErrorKind = 3
 )
 
 // Enum value maps for GatewayRequestErrorKind.
@@ -99,13 +97,11 @@ var (
 		0: "GATEWAY_REQUEST_ERROR_KIND_UNSPECIFIED",
 		1: "GATEWAY_REQUEST_ERROR_KIND_MISSING_SERVICE_ID",
 		2: "GATEWAY_REQUEST_ERROR_KIND_REJECTED_BY_QOS",
-		3: "GATEWAY_REQUEST_ERROR_KIND_FALLBACK_URL_REQUEST_FAILED",
 	}
 	GatewayRequestErrorKind_value = map[string]int32{
-		"GATEWAY_REQUEST_ERROR_KIND_UNSPECIFIED":                 0,
-		"GATEWAY_REQUEST_ERROR_KIND_MISSING_SERVICE_ID":          1,
-		"GATEWAY_REQUEST_ERROR_KIND_REJECTED_BY_QOS":             2,
-		"GATEWAY_REQUEST_ERROR_KIND_FALLBACK_URL_REQUEST_FAILED": 3,
+		"GATEWAY_REQUEST_ERROR_KIND_UNSPECIFIED":        0,
+		"GATEWAY_REQUEST_ERROR_KIND_MISSING_SERVICE_ID": 1,
+		"GATEWAY_REQUEST_ERROR_KIND_REJECTED_BY_QOS":    2,
 	}
 )
 
@@ -159,12 +155,8 @@ type GatewayObservations struct {
 	RequestError *GatewayRequestError `protobuf:"bytes,7,opt,name=request_error,json=requestError,proto3,oneof" json:"request_error,omitempty"`
 	// parallel_request_observations tracks the outcome of parallel requests within a batch.
 	GatewayParallelRequestObservations *GatewayParallelRequestObservations `protobuf:"bytes,8,opt,name=gateway_parallel_request_observations,json=gatewayParallelRequestObservations,proto3,oneof" json:"gateway_parallel_request_observations,omitempty"`
-	// fallback_used indicates whether a fallback URL was used for the request.
-	FallbackUsed bool `protobuf:"varint,9,opt,name=fallback_used,json=fallbackUsed,proto3" json:"fallback_used,omitempty"`
-	// fallback_url is the URL that was used for the request.
-	FallbackUrl   string `protobuf:"bytes,10,opt,name=fallback_url,json=fallbackUrl,proto3" json:"fallback_url,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	unknownFields                      protoimpl.UnknownFields
+	sizeCache                          protoimpl.SizeCache
 }
 
 func (x *GatewayObservations) Reset() {
@@ -251,20 +243,6 @@ func (x *GatewayObservations) GetGatewayParallelRequestObservations() *GatewayPa
 		return x.GatewayParallelRequestObservations
 	}
 	return nil
-}
-
-func (x *GatewayObservations) GetFallbackUsed() bool {
-	if x != nil {
-		return x.FallbackUsed
-	}
-	return false
-}
-
-func (x *GatewayObservations) GetFallbackUrl() string {
-	if x != nil {
-		return x.FallbackUrl
-	}
-	return ""
 }
 
 // Tracks any errors encountered at the gateway level.
@@ -400,7 +378,7 @@ var File_path_gateway_proto protoreflect.FileDescriptor
 
 const file_path_gateway_proto_rawDesc = "" +
 	"\n" +
-	"\x12path/gateway.proto\x12\x04path\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x0fpath/auth.proto\"\x95\x05\n" +
+	"\x12path/gateway.proto\x12\x04path\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x0fpath/auth.proto\"\xcd\x04\n" +
 	"\x13GatewayObservations\x124\n" +
 	"\frequest_auth\x18\x01 \x01(\v2\x11.path.RequestAuthR\vrequestAuth\x124\n" +
 	"\frequest_type\x18\x02 \x01(\x0e2\x11.path.RequestTypeR\vrequestType\x12\x1d\n" +
@@ -410,10 +388,7 @@ const file_path_gateway_proto_rawDesc = "" +
 	"\x0ecompleted_time\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\rcompletedTime\x12#\n" +
 	"\rresponse_size\x18\x06 \x01(\x04R\fresponseSize\x12C\n" +
 	"\rrequest_error\x18\a \x01(\v2\x19.path.GatewayRequestErrorH\x00R\frequestError\x88\x01\x01\x12\x80\x01\n" +
-	"%gateway_parallel_request_observations\x18\b \x01(\v2(.path.GatewayParallelRequestObservationsH\x01R\"gatewayParallelRequestObservations\x88\x01\x01\x12#\n" +
-	"\rfallback_used\x18\t \x01(\bR\ffallbackUsed\x12!\n" +
-	"\ffallback_url\x18\n" +
-	" \x01(\tR\vfallbackUrlB\x10\n" +
+	"%gateway_parallel_request_observations\x18\b \x01(\v2(.path.GatewayParallelRequestObservationsH\x01R\"gatewayParallelRequestObservations\x88\x01\x01B\x10\n" +
 	"\x0e_request_errorB(\n" +
 	"&_gateway_parallel_request_observations\"m\n" +
 	"\x13GatewayRequestError\x12<\n" +
@@ -429,12 +404,11 @@ const file_path_gateway_proto_rawDesc = "" +
 	"\vRequestType\x12\x1c\n" +
 	"\x18REQUEST_TYPE_UNSPECIFIED\x10\x00\x12\x18\n" +
 	"\x14REQUEST_TYPE_ORGANIC\x10\x01\x12\x1a\n" +
-	"\x16REQUEST_TYPE_SYNTHETIC\x10\x02*\xe4\x01\n" +
+	"\x16REQUEST_TYPE_SYNTHETIC\x10\x02*\xa8\x01\n" +
 	"\x17GatewayRequestErrorKind\x12*\n" +
 	"&GATEWAY_REQUEST_ERROR_KIND_UNSPECIFIED\x10\x00\x121\n" +
 	"-GATEWAY_REQUEST_ERROR_KIND_MISSING_SERVICE_ID\x10\x01\x12.\n" +
-	"*GATEWAY_REQUEST_ERROR_KIND_REJECTED_BY_QOS\x10\x02\x12:\n" +
-	"6GATEWAY_REQUEST_ERROR_KIND_FALLBACK_URL_REQUEST_FAILED\x10\x03B,Z*github.com/buildwithgrove/path/observationb\x06proto3"
+	"*GATEWAY_REQUEST_ERROR_KIND_REJECTED_BY_QOS\x10\x02B,Z*github.com/buildwithgrove/path/observationb\x06proto3"
 
 var (
 	file_path_gateway_proto_rawDescOnce sync.Once

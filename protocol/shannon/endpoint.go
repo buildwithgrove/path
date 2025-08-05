@@ -31,6 +31,16 @@ type endpoint struct {
 	session sessiontypes.Session
 }
 
+// fallbackSupplier is a const value used to identify fallback endpoints.
+// Fallback endpoints do not existing on the Shannon protocol and so do not have a supplier address.
+// Instead, they are identified by the fallbackSupplier const value.
+const fallbackSupplier = "fallback"
+
+// isFallback returns true if the endpoint is a fallback endpoint.
+func (e endpoint) isFallback() bool {
+	return e.supplier == fallbackSupplier
+}
+
 // TODO_MVP(@adshmh): replace EndpointAddr with a URL; a single URL should be treated the same regardless of the app to which it is attached.
 // For protocol-level concerns: the (app/session, URL) should be taken into account; e.g. a healthy endpoint may have been maxed out for a particular app.
 // For QoS-level concerns: only the URL of the endpoint matters; e.g. an unhealthy endpoint should be skipped regardless of the app/session to which it is attached.

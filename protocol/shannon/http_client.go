@@ -15,7 +15,6 @@ import (
 	"time"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
-	servicetypes "github.com/pokt-network/poktroll/x/service/types"
 )
 
 // Maximum length of an HTTP response's body.
@@ -119,7 +118,7 @@ func (h *httpClientWithDebugMetrics) SendHTTPRelay(
 	ctx context.Context,
 	logger polylog.Logger,
 	endpointURL string,
-	relayRequest *servicetypes.RelayRequest,
+	relayRequestBz []byte,
 	headers map[string]string,
 ) ([]byte, error) {
 	// Set up debugging context and logging function
@@ -134,13 +133,6 @@ func (h *httpClientWithDebugMetrics) SendHTTPRelay(
 	_, err := url.Parse(endpointURL)
 	if err != nil {
 		requestErr = fmt.Errorf("SHOULD NEVER HAPPEN: invalid URL: %w", err)
-		return nil, requestErr
-	}
-
-	// Marshal relay request to bytes
-	relayRequestBz, err := relayRequest.Marshal()
-	if err != nil {
-		requestErr = fmt.Errorf("SHOULD NEVER HAPPEN: failed to marshal relay request: %w", err)
 		return nil, requestErr
 	}
 

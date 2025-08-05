@@ -20,7 +20,6 @@ type GatewayConfig struct {
 	HydratorConfig     EndpointHydratorConfig        `yaml:"hydrator_config"`
 	MessagingConfig    MessagingConfig               `yaml:"messaging_config"`
 	DataReporterConfig HTTPDataReporterConfig        `yaml:"data_reporter_config"`
-	FallbackURLs       FallbackURLs                  `yaml:"fallback_urls"`
 }
 
 // LoadGatewayConfigFromYAML reads a YAML configuration file from the specified path
@@ -66,9 +65,6 @@ func (c GatewayConfig) validate() error {
 		return err
 	}
 	if err := c.Logger.Validate(); err != nil {
-		return err
-	}
-	if err := c.FallbackURLs.validate(); err != nil {
 		return err
 	}
 	return nil

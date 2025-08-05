@@ -49,14 +49,16 @@ shannon_config:
     owned_apps_private_keys_hex:
       # README: the application private key MUST BE replaced with the correct application private key secret
       - 40af4e7e1b311c76a573610fe115cd2adf1eeade709cd77ca31ad4472509d388
+    
+    # service_fallback_endpoint_urls is a map of service ID to a list of fallback endpoint URLs.
+    # One service may have multiple fallback endpoint URLs.
+    service_fallback_endpoint_urls:
+      eth:
+        - https://eth.rpc.grove.city/v1/1a2b3c4d
+        - https://eth.rpc.grove.city/v1/5e6f7a8b
 
 # Optional logger configuration
 logger_config:
   # Valid values are: debug, info, warn, error
   # Defaults to info if not specified
   level: "info"
-
-# Optional fallback URL configuration
-fallback_urls:
-  # The fallback URL to use when no protocol endpoints are available for the requested service.
-  eth: "https://eth.rpc.grove.city/v1/1a2b3c4d"

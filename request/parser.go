@@ -10,7 +10,6 @@ import (
 	"context"
 	"errors"
 	"net/http"
-	"net/url"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
@@ -40,9 +39,6 @@ type Parser struct {
 
 	// QoSServices is the set of QoS services to which the request parser should map requests based on the extracted service ID.
 	QoSServices map[protocol.ServiceID]gateway.QoSService
-
-	// FallbackURLs is the set of fallback URLs to use in case no endpoints are available for the requested service.
-	FallbackURLs map[protocol.ServiceID]*url.URL
 }
 
 /* --------------------------------- HTTP Request Parsing -------------------------------- */
@@ -78,22 +74,6 @@ func (p *Parser) getServiceID(req *http.Request) (protocol.ServiceID, error) {
 		return protocol.ServiceID(serviceID), nil
 	}
 	return "", errNoServiceIDProvided
-}
-
-/* --------------------------------- Fallback URL -------------------------------- */
-
-// GetFallbackURL returns the fallback URL to use in case no endpoints are available for the requested service.
-func (p *Parser) GetFallbackURL(ctx context.Context, req *http.Request) (*url.URL, bool) {
-	serviceID, err := p.getServiceID(req)
-	if err != nil {
-		return nil, false
-	}
-
-	fallbackURL, ok := p.FallbackURLs[serviceID]
-
-	hasFallbackURL := (ok && fallbackURL != nil)
-
-	return fallbackURL, hasFallbackURL
 }
 
 /* --------------------------------- HTTP Error Response -------------------------------- */

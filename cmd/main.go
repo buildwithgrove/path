@@ -108,9 +108,8 @@ func main() {
 
 	// Setup the request parser which maps requests to the correct QoS instance.
 	requestParser := &request.Parser{
-		Logger:       logger,
-		QoSServices:  qosInstances,
-		FallbackURLs: config.FallbackURLs.URLsFromStrings(),
+		Logger:      logger,
+		QoSServices: qosInstances,
 	}
 
 	// NOTE: the gateway uses the requestParser to get the correct QoS instance for any incoming request.

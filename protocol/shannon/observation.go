@@ -172,6 +172,9 @@ func buildEndpointObservation(
 	observation.Supplier = endpoint.supplier
 	observation.EndpointUrl = endpoint.url
 
+	// Add fallback endpoint flag
+	observation.IsFallbackEndpoint = endpoint.isFallback()
+
 	// Add endpoint response details if not nil (i.e. success)
 	if endpointResponse != nil {
 		statusCode := int32(endpointResponse.HTTPStatusCode)
