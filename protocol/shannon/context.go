@@ -236,10 +236,11 @@ func (rc *requestContext) sendRelay(payload protocol.Payload) (*servicetypes.Rel
 		return nil, fmt.Errorf("sendRelay: error signing the relay request for app %s: %w", app.Address, err)
 	}
 
-	// Prepare a timeout context for the relay request.
-	timeout := time.Duration(payload.TimeoutMillisec) * time.Millisecond
-	ctxWithTimeout, cancelFn := context.WithTimeout(rc.context, timeout)
-	defer cancelFn()
+	// TODO_INVESTIGATE: Evaluate the impact of `rc.context` vs `context.TODO`
+	// with respect to handling timeouts.
+	// ctxWithTimeout, cancel := context.WithTimeout(context.TODO(), timeout)
+	ctxWithTimeout, cancel := context.WithTimeout(rc.context, gateway.RelayRequestTimeout)
+	defer cancel()
 
 	// Build headers including RPCType header
 	headers := buildHeaders(payload)
