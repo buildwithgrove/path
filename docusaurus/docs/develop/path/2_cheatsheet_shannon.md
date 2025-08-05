@@ -47,6 +47,7 @@ Skip to [2.1 Generate Shannon Config](#21-generate-shannon-config).
   - [3.2 Check configured services](#32-check-configured-services)
 - [4. Test Relays](#4-test-relays)
   - [Test Relay with `curl`](#test-relay-with-curl)
+  - [Test WebSockets with `wscat`](#test-websockets-with-wscat)
   - [Load Testing with `relay-util`](#load-testing-with-relay-util)
 - [5. Stop PATH](#5-stop-path)
 
@@ -266,6 +267,31 @@ Expected response:
 
 ```json
 { "id": 1, "jsonrpc": "2.0", "result": "0x2f01a" }
+```
+
+### Test WebSockets with `wscat`
+
+```bash
+wscat -c ws://localhost:3070/v1 \
+ -H "Authorization: test_api_key" \
+ -H "Target-Service-Id: eth"
+```
+
+Expected terminal prompt:
+
+```bash
+Connected (press CTRL+C to quit)
+>
+```
+
+Sample WebSocket request/response:
+
+```bash
+> {"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }
+< {"id":1,"jsonrpc":"2.0","result":"0x17cbc3"}
+
+> {"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }
+< {"id":1,"jsonrpc":"2.0","result":"0x17cbc4"}
 ```
 
 ### Load Testing with `relay-util`
