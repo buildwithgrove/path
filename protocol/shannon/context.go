@@ -32,10 +32,10 @@ const maxEndpointPayloadLenForLogging = 100
 var _ gateway.ProtocolRequestContext = &requestContext{}
 
 // RelayRequestSigner:
-// - Used by requestContext to sign relay requests
-// - Takes an unsigned relay request and an application
-// - Returns a relay request signed by the gateway (with delegation from the app)
-// - In future Permissionless Gateway Mode, may use the app's own private key for signing
+//   - Used by requestContext to sign relay requests
+//   - Takes an unsigned relay request and an application
+//   - Returns a relay request signed by the gateway (with delegation from the app)
+//   - In future Permissionless Gateway Mode, may use the app's own private key for signing
 type RelayRequestSigner interface {
 	SignRelayRequest(req *servicetypes.RelayRequest, app apptypes.Application) (*servicetypes.RelayRequest, error)
 }
@@ -54,22 +54,22 @@ type requestContext struct {
 	relayRequestSigner RelayRequestSigner
 
 	// selectedEndpoint:
-	// - Endpoint selected for sending a relay.
-	// - Must be set via SelectEndpoint before sending a relay (otherwise sending fails).
+	// 	 - Endpoint selected for sending a relay.
+	// 	 - Must be set via SelectEndpoint before sending a relay (otherwise sending fails).
 	selectedEndpoint *endpoint
 
 	// requestErrorObservation:
-	// - Tracks any errors encountered during request processing.
+	//   - Tracks any errors encountered during request processing.
 	requestErrorObservation *protocolobservations.ShannonRequestError
 
 	// endpointObservations:
-	// - Captures observations about endpoints used during request handling.
-	// - Includes enhanced error classification for raw payload analysis.
+	//   - Captures observations about endpoints used during request handling.
+	//   - Includes enhanced error classification for raw payload analysis.
 	endpointObservations []*protocolobservations.ShannonEndpointObservation
 
 	// currentRelayMinerError:
-	// - Tracks RelayMinerError data from the current relay response for reporting.
-	// - Set by trackRelayMinerError method and used when building observations.
+	//   - Tracks RelayMinerError data from the current relay response for reporting.
+	//   - Set by trackRelayMinerError method and used when building observations.
 	currentRelayMinerError *protocolobservations.ShannonRelayMinerError
 
 	// HTTP client used for sending relay requests to endpoints while also capturing various debug metrics
@@ -77,10 +77,10 @@ type requestContext struct {
 }
 
 // HandleServiceRequest:
-// - Satisfies gateway.ProtocolRequestContext interface.
-// - Uses supplied payload to send a relay request to an endpoint.
-// - Verifies and returns the response.
-// - Captures RelayMinerError data when available for reporting purposes.
+//   - Satisfies gateway.ProtocolRequestContext interface.
+//   - Uses supplied payload to send a relay request to an endpoint.
+//   - Verifies and returns the response.
+//   - Captures RelayMinerError data when available for reporting purposes.
 func (rc *requestContext) HandleServiceRequest(payload protocol.Payload) (protocol.Response, error) {
 	// Internal error: No endpoint selected.
 	if rc.selectedEndpoint == nil {
@@ -91,9 +91,10 @@ func (rc *requestContext) HandleServiceRequest(payload protocol.Payload) (protoc
 	endpointQueryTime := time.Now()
 
 	// Initialize relay response and error.
-	var relayResponse protocol.Response
-	var err error
-
+	var (
+		relayResponse protocol.Response
+		err           error
+	)
 	if rc.selectedEndpoint.isFallback() {
 		// If the selected endpoint is a fallback endpoint, send the relay request to the fallback endpoint.
 		// This will bypass protocol-level request processing and validation, meaning the request is not sent to a RelayMiner.
@@ -102,6 +103,10 @@ func (rc *requestContext) HandleServiceRequest(payload protocol.Payload) (protoc
 		// If the selected endpoint is not a fallback endpoint, send the relay request to the selected protocolendpoint.
 		relayResponse, err = rc.sendProtocolRelay(payload)
 	}
+
+	// Ensure the endpoint address is set on the response in all cases, error or success.
+	relayResponse.EndpointAddr = rc.selectedEndpoint.Addr()
+
 	// Handle endpoint error and capture RelayMinerError data if available.
 	if err != nil {
 		// Pass the response (which may contain RelayMinerError data) to error handler.
@@ -109,15 +114,15 @@ func (rc *requestContext) HandleServiceRequest(payload protocol.Payload) (protoc
 	}
 
 	// Success:
-	// - Record observation
-	// - Return response received from endpoint.
+	// 	 - Record observation
+	// 	 - Return response received from endpoint.
 	err = rc.handleEndpointSuccess(endpointQueryTime, &relayResponse)
 	return relayResponse, err
 }
 
 // HandleWebsocketRequest:
-// - Opens a persistent websocket connection to the selected endpoint.
-// - Satisfies gateway.ProtocolRequestContext interface.
+//   - Opens a persistent websocket connection to the selected endpoint.
+//   - Satisfies gateway.ProtocolRequestContext interface.
 func (rc *requestContext) HandleWebsocketRequest(logger polylog.Logger, req *http.Request, w http.ResponseWriter) error {
 	if rc.selectedEndpoint == nil {
 		return fmt.Errorf("handleWebsocketRequest: no endpoint has been selected on service %s", rc.serviceID)
@@ -322,15 +327,14 @@ func (rc *requestContext) validateAndProcessResponse(
 // deserializeRelayResponse deserializes the relay response payload into a protocol.Response
 func (rc *requestContext) deserializeRelayResponse(response *servicetypes.RelayResponse) (protocol.Response, error) {
 	// The Payload field of the response from the endpoint (relay miner):
-	// - Is a serialized http.Response struct.
-	// - Needs to be deserialized to access the service's response body, status code, etc.
+	//   - Is a serialized http.Response struct.
+	//   - Needs to be deserialized to access the service's response body, status code, etc.
 	deserializedResponse, err := deserializeRelayResponse(response.Payload)
 	if err != nil {
 		// Wrap error with detailed message
 		return protocol.Response{}, fmt.Errorf("error deserializing endpoint into a POKTHTTP response: %w", err)
 	}
 
-	deserializedResponse.EndpointAddr = rc.selectedEndpoint.Addr()
 	return deserializedResponse, nil
 }
 
@@ -353,8 +357,8 @@ func (rc *requestContext) signRelayRequest(unsignedRelayReq *servicetypes.RelayR
 }
 
 // buildUnsignedRelayRequest:
-// - Builds a ready-to-sign RelayRequest using the supplied endpoint, session, and payload.
-// - Returned RelayRequest is meant to be signed and sent to the endpoint to receive its response.
+//   - Builds a ready-to-sign RelayRequest using the supplied endpoint, session, and payload.
+//   - Returned RelayRequest is meant to be signed and sent to the endpoint to receive its response.
 func buildUnsignedRelayRequest(
 	endpoint endpoint,
 	session sessiontypes.Session,
@@ -411,10 +415,10 @@ func (rc *requestContext) sendFallbackRelay(
 }
 
 // trackRelayMinerError:
-// - Tracks RelayMinerError data from the RelayResponse for reporting purposes.
-// - Updates the requestContext with RelayMinerError data.
-// - Will be included in observations.
-// - Logs RelayMinerError details for visibility.
+//   - Tracks RelayMinerError data from the RelayResponse for reporting purposes.
+//   - Updates the requestContext with RelayMinerError data.
+//   - Will be included in observations.
+//   - Logs RelayMinerError details for visibility.
 func (rc *requestContext) trackRelayMinerError(relayResponse *servicetypes.RelayResponse) {
 	// Check if RelayResponse contains RelayMinerError data
 	if relayResponse == nil || relayResponse.RelayMinerError == nil {
@@ -441,10 +445,10 @@ func (rc *requestContext) trackRelayMinerError(relayResponse *servicetypes.Relay
 }
 
 // handleInternalError:
-// - Called if request processing fails (before sending to any endpoints).
-// - DEV_NOTE: Should NEVER happen; investigate any logged entries from this method.
-// - Records internal error on request for observations.
-// - Logs error entry.
+//   - Called if request processing fails (before sending to any endpoints).
+//   - DEV_NOTE: Should NEVER happen; investigate any logged entries from this method.
+//   - Records internal error on request for observations.
+//   - Logs error entry.
 func (rc *requestContext) handleInternalError(internalErr error) (protocol.Response, error) {
 	hydratedLogger := rc.getHydratedLogger("handleInternalError")
 
@@ -458,9 +462,9 @@ func (rc *requestContext) handleInternalError(internalErr error) (protocol.Respo
 }
 
 // handleEndpointError:
-// - Records endpoint error observation with enhanced classification and returns the response.
-// - Tracks endpoint error in observations with detailed categorization for metrics.
-// - Includes any RelayMinerError data that was captured via trackRelayMinerError.
+//   - Records endpoint error observation with enhanced classification and returns the response.
+//   - Tracks endpoint error in observations with detailed categorization for metrics.
+//   - Includes any RelayMinerError data that was captured via trackRelayMinerError.
 func (rc *requestContext) handleEndpointError(
 	endpointQueryTime time.Time,
 	endpointErr error,
@@ -503,10 +507,10 @@ func (rc *requestContext) handleEndpointError(
 }
 
 // handleEndpointSuccess:
-// - Records successful endpoint observation and returns the response.
-// - Tracks endpoint success in observations with timing data for performance metrics.
-// - Includes any RelayMinerError data that was captured via trackRelayMinerError.
-// - Builds and returns protocol response from endpoint's returned data.
+//   - Records successful endpoint observation and returns the response.
+//   - Tracks endpoint success in observations with timing data for performance metrics.
+//   - Includes any RelayMinerError data that was captured via trackRelayMinerError.
+//   - Builds and returns protocol response from endpoint's returned data.
 func (rc *requestContext) handleEndpointSuccess(
 	endpointQueryTime time.Time,
 	endpointResponse *protocol.Response,
