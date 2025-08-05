@@ -65,7 +65,7 @@ var (
 			Name:      requestsTotalMetric,
 			Help:      "Total number of requests processed by EVM QoS instance(s)",
 		},
-		[]string{"chain_id", "service_id", "request_origin", "request_method", "success", "error_type", "http_status_code", "random_endpoint_fallback"},
+		[]string{"chain_id", "service_id", "request_origin", "request_method", "is_batch_request", "success", "error_type", "http_status_code", "random_endpoint_fallback"},
 	)
 
 	// availableEndpoints tracks the number of available endpoints per service.
@@ -171,8 +171,12 @@ func PublishMetrics(logger polylog.Logger, observations *qos.EVMRequestObservati
 	// Extract service ID
 	serviceID := extractServiceID(logger, interpreter)
 
-	// Extract request method
-	method := extractRequestMethod(logger, interpreter)
+	// Extract request methods
+	// May be multiple methods for batch requests.
+	methods := extractRequestMethods(logger, interpreter)
+
+	// Record if this is a batch request.
+	isBatchRequest := len(methods) > 1
 
 	// Extract endpoint selection metadata
 	endpointSelectionMetadata := extractEndpointSelectionMetadata(interpreter)
@@ -193,19 +197,24 @@ func PublishMetrics(logger polylog.Logger, observations *qos.EVMRequestObservati
 		errorType = requestError.String()
 	}
 
-	// Increment request counters with all corresponding labels
-	requestsTotal.With(
-		prometheus.Labels{
-			"chain_id":                 chainID,
-			"service_id":               serviceID,
-			"request_origin":           interpreter.GetRequestOrigin(),
-			"request_method":           method,
-			"success":                  fmt.Sprintf("%t", requestError == nil),
-			"error_type":               errorType,
-			"http_status_code":         fmt.Sprintf("%d", statusCode),
-			"random_endpoint_fallback": fmt.Sprintf("%t", endpointSelectionMetadata.RandomEndpointFallback),
-		},
-	).Inc()
+	// Count each method as a separate request.
+	// This is required for batch requests.
+	for _, method := range methods {
+		// Increment request counters with all corresponding labels
+		requestsTotal.With(
+			prometheus.Labels{
+				"chain_id":                 chainID,
+				"service_id":               serviceID,
+				"request_origin":           interpreter.GetRequestOrigin(),
+				"request_method":           method,
+				"is_batch_request":         fmt.Sprintf("%t", isBatchRequest),
+				"success":                  fmt.Sprintf("%t", requestError == nil),
+				"error_type":               errorType,
+				"http_status_code":         fmt.Sprintf("%d", statusCode),
+				"random_endpoint_fallback": fmt.Sprintf("%t", endpointSelectionMetadata.RandomEndpointFallback),
+			},
+		).Inc()
+	}
 
 	// Update endpoint count gauges (calculated from validation results)
 	availableCount := calculateAvailableEndpointsCount(endpointSelectionMetadata)
@@ -338,17 +347,17 @@ func extractServiceID(logger polylog.Logger, interpreter *qos.EVMObservationInte
 	return serviceID
 }
 
-// extractRequestMethod extracts the request method from the interpreter.
+// extractRequestMethods extracts the request methods from the interpreter.
 // Returns empty string if method cannot be determined.
-func extractRequestMethod(logger polylog.Logger, interpreter *qos.EVMObservationInterpreter) string {
-	method, methodFound := interpreter.GetRequestMethod()
-	if !methodFound {
+func extractRequestMethods(logger polylog.Logger, interpreter *qos.EVMObservationInterpreter) []string {
+	methods, methodsFound := interpreter.GetRequestMethods()
+	if !methodsFound {
 		// For clarity in metrics, use empty string as the default value when method can't be determined
-		method = ""
+		methods = []string{}
 		// This can happen for invalid requests, but we should still log it
 		logger.Debug().Msgf("Should happen very rarely: Unable to determine request method for EVM metrics: %+v", interpreter)
 	}
-	return method
+	return methods
 }
 
 // extractEndpointSelectionMetadata extracts endpoint selection metadata from observations.

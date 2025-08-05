@@ -78,3 +78,20 @@ func newErrResponseNoEndpointResponse(requestID jsonrpc.ID) jsonrpc.Response {
 		},
 	)
 }
+
+// newErrResponseBatchMarshalFailure creates a JSON-RPC error response for batch response marshaling failures.
+// This occurs when individual responses are valid but combining them into a JSON array fails.
+// Uses null ID per JSON-RPC spec for batch-level errors that cannot be correlated to specific requests.
+func newErrResponseBatchMarshalFailure(err error) jsonrpc.Response {
+	return jsonrpc.GetErrorResponse(
+		jsonrpc.ID{}, // Use null ID for batch-level failures per JSON-RPC spec
+		-32000,       // JSON-RPC standard server error code; https://www.jsonrpc.org/historical/json-rpc-2-0.html
+		fmt.Sprintf("Failed to marshal batch response: %s", err.Error()), // Error Message
+		map[string]string{
+			"error": err.Error(),
+			// Custom extension - not part of the official JSON-RPC spec
+			// Marks the error as retryable since this is an internal processing issue
+			"retryable": "true",
+		},
+	)
+}

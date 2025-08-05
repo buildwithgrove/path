@@ -17,8 +17,8 @@ var _ response = responseNone{}
 // responseNone represents the absence of any endpoint response.
 // This can occur due to protocol-level failures or when no endpoint was selected.
 type responseNone struct {
-	logger     polylog.Logger
-	jsonrpcReq jsonrpc.Request
+	logger      polylog.Logger
+	jsonrpcReqs map[string]jsonrpc.Request
 }
 
 // GetObservation returns an observation indicating no endpoint provided a response.
@@ -49,7 +49,7 @@ func (r responseNone) GetHTTPResponse() httpResponse {
 // getResponsePayload constructs a JSONRPC error response indicating no endpoint response was received.
 // Uses request ID in response per JSONRPC spec: https://www.jsonrpc.org/specification#response_object
 func (r responseNone) getResponsePayload() []byte {
-	userResponse := newErrResponseNoEndpointResponse(r.jsonrpcReq.ID)
+	userResponse := newErrResponseNoEndpointResponse(getJsonRpcIDForErrorResponse(r.jsonrpcReqs))
 	bz, err := json.Marshal(userResponse)
 	if err != nil {
 		// This should never happen: log an entry but return the response anyway.
@@ -62,4 +62,10 @@ func (r responseNone) getResponsePayload() []byte {
 // Always a 500 Internal Server Error for the responseNone struct.
 func (r responseNone) getHTTPStatusCode() int {
 	return httpStatusResponseValidationFailureNoResponse
+}
+
+// GetJSONRPCID returns the JSONRPC ID of the response.
+// Implements the response interface.
+func (r responseNone) GetJSONRPCID() jsonrpc.ID {
+	return getJsonRpcIDForErrorResponse(r.jsonrpcReqs)
 }

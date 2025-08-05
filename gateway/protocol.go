@@ -82,7 +82,7 @@ type Protocol interface {
 type ProtocolRequestContext interface {
 	// HandleServiceRequest sends the supplied payload to the endpoint selected using the above SelectEndpoint method,
 	// and receives and verifies the response.
-	HandleServiceRequest(protocol.Payload) (protocol.Response, error)
+	HandleServiceRequest([]protocol.Payload) ([]protocol.Response, error)
 
 	// HandleWebsocketRequest handles a WebSocket connection request.
 	HandleWebsocketRequest(polylog.Logger, *http.Request, http.ResponseWriter) error
