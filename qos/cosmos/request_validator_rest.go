@@ -32,7 +32,7 @@ func (rv *requestValidator) validateRESTRequest(
 	rpcType := determineRESTRPCType(httpRequestPath)
 
 	logger = logger.With(
-		"detected_rpc_type", rpcType.String(),
+		"rpc_type", rpcType.String(),
 		"request_path", httpRequestPath,
 	)
 

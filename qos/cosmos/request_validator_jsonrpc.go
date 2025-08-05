@@ -3,6 +3,7 @@ package cosmos
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
@@ -44,7 +45,7 @@ func (rv *requestValidator) validateJSONRPCRequest(
 
 	// Hydrate the logger with data extracted from the request.
 	logger = logger.With(
-		"detected_rpc_type", rpcType.String(),
+		"rpc_type", rpcType.String(),
 		"jsonrpc_method", method,
 	)
 
@@ -276,7 +277,7 @@ func (rv *requestValidator) createJSONRPCUnsupportedRPCTypeObservation(
 		},
 		RequestLevelError: &qosobservations.RequestError{
 			ErrorKind:      qosobservations.RequestErrorKind_REQUEST_ERROR_USER_ERROR_JSONRPC_UNSUPPORTED_RPC_TYPE,
-			ErrorDetails:   "Unsupported RPC type: " + rpcType.String(),
+			ErrorDetails:   fmt.Sprintf("Unsupported RPC type %s for service %s", rpcType.String(), string(rv.serviceID)),
 			HttpStatusCode: int32(jsonrpcResponse.GetRecommendedHTTPStatusCode()),
 		},
 	}
