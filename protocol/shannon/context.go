@@ -544,7 +544,10 @@ func (rc *requestContext) sendHTTPRequest(
 	requestData []byte,
 ) ([]byte, int, error) {
 	// Prepare a timeout context for the request
-	timeout := time.Duration(payload.TimeoutMillisec) * time.Millisecond
+	timeout := time.Duration(gateway.RelayRequestTimeout) * time.Millisecond
+
+	// TODO_INVESTIGATE: Evaluate the impact of `rc.context` vs `context.TODO`
+	// with respect to handling timeouts.
 	ctxWithTimeout, cancelFn := context.WithTimeout(rc.context, timeout)
 	defer cancelFn()
 
