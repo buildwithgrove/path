@@ -393,14 +393,11 @@ func (p *Protocol) getSessionsUniqueEndpoints(
 }
 
 // getFallbackEndpointsForService returns the fallback endpoints for a given service ID.
-// If no fallback endpoints are configured for the service ID, returns false.
+// If no fallback endpoints are configured for the service ID, returns an empty map.
 func (p *Protocol) getFallbackEndpointsForService(serviceID protocol.ServiceID) map[protocol.EndpointAddr]endpoint {
-	fallbackEndpoints, ok := p.fallbackEndpoints[serviceID]
-	if !ok {
-		return nil
-	}
+	fallbackEndpointsMap := make(map[protocol.EndpointAddr]endpoint)
 
-	fallbackEndpointsMap := make(map[protocol.EndpointAddr]endpoint, len(fallbackEndpoints))
+	fallbackEndpoints := p.fallbackEndpoints[serviceID]
 	for _, endpoint := range fallbackEndpoints {
 		fallbackEndpointsMap[endpoint.Addr()] = endpoint
 	}
