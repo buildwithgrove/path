@@ -394,18 +394,18 @@ func (p *Protocol) getSessionsUniqueEndpoints(
 
 // getFallbackEndpointsForService returns the fallback endpoints for a given service ID.
 // If no fallback endpoints are configured for the service ID, returns false.
-func (p *Protocol) getFallbackEndpointsForService(serviceID protocol.ServiceID) (map[protocol.EndpointAddr]endpoint, bool) {
+func (p *Protocol) getFallbackEndpointsForService(serviceID protocol.ServiceID) map[protocol.EndpointAddr]endpoint {
 	fallbackEndpoints, ok := p.fallbackEndpoints[serviceID]
-	if !ok || len(fallbackEndpoints) == 0 {
-		return nil, false
+	if !ok {
+		return nil
 	}
 
-	fallbackEndpointsMap := make(map[protocol.EndpointAddr]endpoint)
+	fallbackEndpointsMap := make(map[protocol.EndpointAddr]endpoint, len(fallbackEndpoints))
 	for _, endpoint := range fallbackEndpoints {
 		fallbackEndpointsMap[endpoint.Addr()] = endpoint
 	}
 
-	return fallbackEndpointsMap, true
+	return fallbackEndpointsMap
 }
 
 // GetTotalProtocolEndpointsCount returns the count of all unique endpoints for a service ID
