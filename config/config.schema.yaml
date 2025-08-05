@@ -124,16 +124,16 @@ properties:
                 service_id:
                   description: "The service ID for this fallback configuration. Must be unique within the service_fallback array."
                   type: string
-                send_all_traffic:
-                  description: "Whether to send all traffic to fallback endpoints for this service, regardless of protocol endpoint health."
-                  type: boolean
-                  default: false
                 fallback_urls:
                   description: "List of fallback endpoint URLs for this service."
                   type: array
                   items:
                     type: string
                     pattern: "^(http|https)://.*$"
+                send_all_traffic:
+                  description: "Whether to send all traffic to fallback endpoints for this service, regardless of protocol endpoint health."
+                  type: boolean
+                  default: false
 
   # Logger Configuration (optional)
   logger_config:

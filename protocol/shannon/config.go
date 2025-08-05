@@ -111,6 +111,8 @@ func (gc GatewayConfig) Validate() error {
 	return nil
 }
 
+// validateServiceFallback validates the service fallback configuration.
+// It checks for duplicate service IDs, at-least one fallback URL, and valid fallback URLs.
 func (gc GatewayConfig) validateServiceFallback() error {
 	seenServiceIDs := make(map[protocol.ServiceID]struct{})
 
