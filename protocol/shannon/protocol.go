@@ -370,26 +370,26 @@ func (p *Protocol) getSessionsUniqueEndpoints(
 		)
 	}
 
+	// One or more endpoints are available: return the endpoint list.
+	if len(endpoints) > 0 {
+		logger.Info().Msgf("Successfully fetched %d endpoints for active sessions.", len(endpoints))
+		return endpoints, nil
+	}
+
 	// Handle the case where no endpoints are available for the requested service.
 	//   - If fallback endpoints are available for the service ID, use them to populate the list of endpoints.
 	//   - If no fallback endpoints are available for the service ID, return an error.
-	if len(endpoints) == 0 {
-		// If fallback endpoints are available for the service ID, use them to populate the list of endpoints.
-		if fallbackEndpoints, hasFallbackEndpoints := p.getFallbackEndpointsForService(serviceID); hasFallbackEndpoints {
-			logger.Info().Msgf("No endpoints available after filtering sanctioned endpoints: using fallback endpoints.")
-			return fallbackEndpoints, nil
-		} else {
-			// If no fallback endpoints are available for the service ID, return an error.
-			// Wrap the context setup error. Used for generating observations.
-			err := fmt.Errorf("%w: service %s", errProtocolContextSetupNoEndpoints, serviceID)
-			logger.Warn().Err(err).Msg("No endpoints available after filtering sanctioned endpoints: relay request will fail.")
-			return nil, err
-		}
+	fallbackEndpoints := p.getFallbackEndpointsForService(serviceID)
+	if len(fallbackEndpoints) > 0 {
+		logger.Info().Msgf("No endpoints available after filtering sanctioned endpoints: using fallback endpoints.")
+		return fallbackEndpoints, nil
 	}
 
-	logger.Info().Msgf("Successfully fetched %d endpoints for active sessions.", len(endpoints))
-
-	return endpoints, nil
+	// If no fallback endpoints are available for the service ID, return an error.
+	// Wrap the context setup error. Used for generating observations.
+	err := fmt.Errorf("%w: service %s", errProtocolContextSetupNoEndpoints, serviceID)
+	logger.Warn().Err(err).Msg("No endpoints or fallback available after filtering sanctioned endpoints: relay request will fail.")
+	return nil, err
 }
 
 // getFallbackEndpointsForService returns the fallback endpoints for a given service ID.
