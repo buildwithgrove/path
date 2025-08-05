@@ -62,7 +62,14 @@ type Protocol struct {
 	// the requested service. For example, if all protocol endpoints are sanctioned,
 	// the fallback endpoints will be used to populate the list of endpoints.
 	// Each service can have a SendAllTraffic flag to control traffic routing behavior.
-	fallbackEndpoints map[protocol.ServiceID]ServiceFallbackConfig
+	fallbackEndpoints map[protocol.ServiceID]serviceFallbackConfig
+}
+
+// serviceFallbackConfig holds the fallback configuration for a service,
+// including the endpoints and whether to send all traffic to fallback.
+type serviceFallbackConfig struct {
+	SendAllTraffic bool
+	Endpoints      map[protocol.EndpointAddr]endpoint
 }
 
 // NewProtocol instantiates an instance of the Shannon protocol integration.
@@ -318,17 +325,18 @@ func (p *Protocol) getSessionsUniqueEndpoints(
 		serviceID, len(activeSessions),
 	)
 
+	// Get fallback configuration for the service ID.
+	fallbackEndpoints, sendAllTrafficToFallback := p.getServiceFallbackConfig(serviceID)
+
 	// If the service is configured to send all traffic to fallback endpoints,
 	// return only the fallback endpoints and skip the rest of the logic.
-	if p.getSendAllTrafficToFallback(serviceID) {
-		fallbackEndpoints := p.getFallbackEndpointsForService(serviceID)
-		if len(fallbackEndpoints) > 0 {
-			logger.Info().Msgf("🔀 Sending all traffic to fallback endpoints for service %s.", serviceID)
-			return fallbackEndpoints, nil
-		}
+	if sendAllTrafficToFallback && len(fallbackEndpoints) > 0 {
+		logger.Info().Msgf("🔀 Sending all traffic to fallback endpoints for service %s.", serviceID)
+		return fallbackEndpoints, nil
 	}
 
 	endpoints := make(map[protocol.EndpointAddr]endpoint)
+
 	// Iterate over all active sessions for the service ID.
 	for _, session := range activeSessions {
 		app := session.Application
@@ -390,7 +398,6 @@ func (p *Protocol) getSessionsUniqueEndpoints(
 	// Handle the case where no endpoints are available for the requested service.
 	//   - If fallback endpoints are available for the service ID, use them to populate the list of endpoints.
 	//   - If no fallback endpoints are available for the service ID, return an error.
-	fallbackEndpoints := p.getFallbackEndpointsForService(serviceID)
 	if len(fallbackEndpoints) > 0 {
 		logger.Info().Msgf("No endpoints available after filtering sanctioned endpoints: using fallback endpoints.")
 		return fallbackEndpoints, nil
@@ -405,31 +412,15 @@ func (p *Protocol) getSessionsUniqueEndpoints(
 
 // ** Fallback Endpoint Handling **
 
-// getFallbackEndpointsForService returns the fallback endpoints for a given service ID.
-// If no fallback endpoints are configured for the service ID, returns an empty map.
-func (p *Protocol) getFallbackEndpointsForService(serviceID protocol.ServiceID) map[protocol.EndpointAddr]endpoint {
-	fallbackEndpointsMap := make(map[protocol.EndpointAddr]endpoint)
-
+// getServiceFallbackConfig returns the fallback endpoints and SendAllTraffic flag for a given service ID.
+// Returns (endpoints, sendAllTraffic) where endpoints is empty if no fallback is configured.
+func (p *Protocol) getServiceFallbackConfig(serviceID protocol.ServiceID) (map[protocol.EndpointAddr]endpoint, bool) {
 	fallbackConfig, exists := p.fallbackEndpoints[serviceID]
 	if !exists {
-		return fallbackEndpointsMap
+		return make(map[protocol.EndpointAddr]endpoint), false
 	}
 
-	for _, endpoint := range fallbackConfig.Endpoints {
-		fallbackEndpointsMap[endpoint.Addr()] = endpoint
-	}
-
-	return fallbackEndpointsMap
-}
-
-// getSendAllTrafficToFallback returns whether the given service ID is configured
-// to send all traffic to fallback endpoints.
-func (p *Protocol) getSendAllTrafficToFallback(serviceID protocol.ServiceID) bool {
-	fallbackConfig, exists := p.fallbackEndpoints[serviceID]
-	if !exists {
-		return false
-	}
-	return fallbackConfig.SendAllTraffic
+	return fallbackConfig.Endpoints, fallbackConfig.SendAllTraffic
 }
 
 // ** Disqualified Endpoint Reporting **
