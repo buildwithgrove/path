@@ -119,6 +119,8 @@ func newDefaultHTTPClientWithDebugMetrics() *httpClientWithDebugMetrics {
 // SendHTTPRelay sends an HTTP POST request with the relay data to the specified URL.
 // Uses the provided context for timeout and cancellation control.
 // Logs detailed metrics and debugging information on failure for debugging.
+//
+// Returns: response body, HTTP status code, error
 func (h *httpClientWithDebugMetrics) SendHTTPRelay(
 	ctx context.Context,
 	logger polylog.Logger,
