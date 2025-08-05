@@ -582,6 +582,13 @@ func prepareURLFromPayload(endpointURL string, payload protocol.Payload) string 
 	return url
 }
 
+// getHydratedLogger:
+// - Enhances the base logger with information from the request context.
+// - Includes:
+//   - Method name
+//   - Service ID
+//   - Selected endpoint supplier
+//   - Selected endpoint URL
 func (rc *requestContext) getHydratedLogger(methodName string) polylog.Logger {
 	logger := rc.logger.With(
 		"method_name", methodName,
