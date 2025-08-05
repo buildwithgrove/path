@@ -32,7 +32,7 @@ type endpoint struct {
 }
 
 // fallbackSupplier is a const value used to identify fallback endpoints.
-// Fallback endpoints do not existing on the Shannon protocol and so do not have a supplier address.
+// Fallback endpoints do not exist on the Shannon protocol and so do not have a supplier address.
 // Instead, they are identified by the fallbackSupplier const value.
 const fallbackSupplier = "fallback"
 

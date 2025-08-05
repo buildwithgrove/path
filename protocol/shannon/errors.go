@@ -60,8 +60,6 @@ var (
 	// - Bug in endpoint selection logic.
 	// - Endpoint sanctioned due to an observation while selection logic was running.
 	errRequestContextSetupInvalidEndpointSelected = errors.New("selected endpoint is not available: relay request will fail")
-	// No fallback endpoint available for the service.
-	errRequestContextSetupNoFallbackEndpoint = errors.New("no fallback endpoint found for service: relay request will fail")
 	// Error initializing a signer for the current gateway mode.
 	errRequestContextSetupErrSignerSetup = errors.New("error getting the permitted signer: relay request will fail")
 
