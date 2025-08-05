@@ -274,7 +274,7 @@ Expected response:
 ```bash
 wscat -c ws://localhost:3070/v1 \
  -H "Authorization: test_api_key" \
- -H "Target-Service-Id: eth"
+ -H "Target-Service-Id: xrplevm"
 ```
 
 Expected terminal prompt:
