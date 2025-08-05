@@ -326,6 +326,9 @@ func (p *Protocol) getSessionsUniqueEndpoints(
 	)
 
 	// Get fallback configuration for the service ID.
+	// Fallback configuration will be used in the following scenarios:
+	// 	 1. The service is configured to send all traffic to fallback endpoints.
+	// 	 2. All service endpoints are sanctioned and the service is configured with at least one fallback endpoint.
 	fallbackEndpoints, sendAllTrafficToFallback := p.getServiceFallbackConfig(serviceID)
 
 	// If the service is configured to send all traffic to fallback endpoints,
