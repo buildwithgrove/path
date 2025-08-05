@@ -415,7 +415,8 @@ func (rc *requestContext) sendFallbackHTTPRequest(
 // buildFallbackResponse constructs the protocol.Response for fallback requests
 func (rc *requestContext) buildFallbackResponse(httpResponseBz []byte) protocol.Response {
 	return protocol.Response{
-		Bytes:          httpResponseBz,
+		Bytes: httpResponseBz,
+		// TODO_IN_THIS_PR(@commoddity): Get HTTP status code from the response.
 		HTTPStatusCode: 200,
 		EndpointAddr:   rc.selectedEndpoint.Addr(),
 	}
