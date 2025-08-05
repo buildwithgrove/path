@@ -219,7 +219,14 @@ func (rc *requestContext) sendProtocolRelay(payload protocol.Payload) (protocol.
 	}
 
 	// Send the HTTP relay request
-	httpRelayResponseBz, err := rc.sendHTTPRelayRequest(hydratedLogger, payload, signedRelayReq)
+	// Marshal relay request to bytes
+	relayRequestBz, err := signedRelayReq.Marshal()
+	if err != nil {
+		return protocol.Response{}, fmt.Errorf("SHOULD NEVER HAPPEN: failed to marshal relay request: %w", err)
+	}
+
+	// Send the HTTP request using shared logic
+	httpRelayResponseBz, _, err := rc.sendHTTPRequest(hydratedLogger, payload, rc.selectedEndpoint.url, relayRequestBz)
 	if err != nil {
 		return protocol.Response{}, err
 	}
@@ -278,58 +285,6 @@ func (rc *requestContext) buildAndSignRelayRequest(
 	return signedRelayReq, nil
 }
 
-// sendHTTPRelayRequest sends the HTTP relay request to the endpoint
-func (rc *requestContext) sendHTTPRelayRequest(
-	hydratedLogger polylog.Logger,
-	payload protocol.Payload,
-	signedRelayReq *servicetypes.RelayRequest,
-) ([]byte, error) {
-	// Marshal relay request to bytes
-	relayRequestBz, err := signedRelayReq.Marshal()
-	if err != nil {
-		return nil, fmt.Errorf("SHOULD NEVER HAPPEN: failed to marshal relay request: %w", err)
-	}
-
-	// Send the HTTP request using shared logic
-	return rc.sendHTTPRequest(hydratedLogger, payload, rc.selectedEndpoint.url, relayRequestBz)
-}
-
-// sendHTTPRequest is a shared method for sending HTTP requests with common logic
-func (rc *requestContext) sendHTTPRequest(
-	hydratedLogger polylog.Logger,
-	payload protocol.Payload,
-	url string,
-	requestData []byte,
-) ([]byte, error) {
-	// Prepare a timeout context for the request
-	timeout := time.Duration(payload.TimeoutMillisec) * time.Millisecond
-	ctxWithTimeout, cancelFn := context.WithTimeout(rc.context, timeout)
-	defer cancelFn()
-
-	// Build headers including RPCType header
-	headers := buildHeaders(payload)
-
-	// Send the HTTP request
-	httpResponseBz, err := rc.httpClient.SendHTTPRelay(
-		ctxWithTimeout,
-		hydratedLogger,
-		url,
-		requestData,
-		headers,
-	)
-
-	if err != nil {
-		// Endpoint failed to respond before the timeout expires
-		// Wrap the net/http error with our classification error
-		wrappedErr := fmt.Errorf("%w: %v", errSendHTTPRelay, err)
-
-		hydratedLogger.Error().Err(wrappedErr).Msgf("❌ Failed to receive a response from the selected endpoint: '%s'. Relay request will FAIL 😢", rc.selectedEndpoint.Addr())
-		return nil, fmt.Errorf("error sending request to endpoint %s: %w", rc.selectedEndpoint.Addr(), wrappedErr)
-	}
-
-	return httpResponseBz, nil
-}
-
 // validateAndProcessResponse validates the relay response and tracks relay miner errors
 func (rc *requestContext) validateAndProcessResponse(
 	hydratedLogger polylog.Logger,
@@ -377,49 +332,6 @@ func (rc *requestContext) deserializeRelayResponse(response *servicetypes.RelayR
 
 	deserializedResponse.EndpointAddr = rc.selectedEndpoint.Addr()
 	return deserializedResponse, nil
-}
-
-// sendFallbackRelay:
-//   - Sends the supplied payload as a relay request to the fallback endpoint.
-//   - This will bypass protocol-level request processing and validation,
-//     meaning the request is not sent to a RelayMiner.
-//   - Used when all endpoints are sanctioned for a service ID.
-//   - Returns the response received from the fallback endpoint.
-func (rc *requestContext) sendFallbackRelay(
-	hydratedLogger polylog.Logger,
-	payload protocol.Payload,
-) (protocol.Response, error) {
-	// Prepare the fallback URL with optional path
-	url := prepareURLFromPayload(rc.selectedEndpoint.url, payload)
-
-	// Send the HTTP request using shared logic
-	httpResponseBz, err := rc.sendFallbackHTTPRequest(hydratedLogger, payload, url)
-	if err != nil {
-		return protocol.Response{}, err
-	}
-
-	// Build and return the fallback response
-	return rc.buildFallbackResponse(httpResponseBz), nil
-}
-
-// sendFallbackHTTPRequest sends the HTTP request for fallback relay using shared logic
-func (rc *requestContext) sendFallbackHTTPRequest(
-	hydratedLogger polylog.Logger,
-	payload protocol.Payload,
-	url string,
-) ([]byte, error) {
-	// Send the HTTP request using shared logic with raw payload data
-	return rc.sendHTTPRequest(hydratedLogger, payload, url, []byte(payload.Data))
-}
-
-// buildFallbackResponse constructs the protocol.Response for fallback requests
-func (rc *requestContext) buildFallbackResponse(httpResponseBz []byte) protocol.Response {
-	return protocol.Response{
-		Bytes: httpResponseBz,
-		// TODO_IN_THIS_PR(@commoddity): Get HTTP status code from the response.
-		HTTPStatusCode: 200,
-		EndpointAddr:   rc.selectedEndpoint.Addr(),
-	}
 }
 
 func (rc *requestContext) signRelayRequest(unsignedRelayReq *servicetypes.RelayRequest, app apptypes.Application) (*servicetypes.RelayRequest, error) {
@@ -471,33 +383,31 @@ func buildUnsignedRelayRequest(
 	return relayRequest, nil
 }
 
-func (rc *requestContext) getHydratedLogger(methodName string) polylog.Logger {
-	logger := rc.logger.With(
-		"method_name", methodName,
-		"service_id", rc.serviceID,
-	)
+// sendFallbackRelay:
+//   - Sends the supplied payload as a relay request to the fallback endpoint.
+//   - This will bypass protocol-level request processing and validation,
+//     meaning the request is not sent to a RelayMiner.
+//   - Used when all endpoints are sanctioned for a service ID.
+//   - Returns the response received from the fallback endpoint.
+func (rc *requestContext) sendFallbackRelay(
+	hydratedLogger polylog.Logger,
+	payload protocol.Payload,
+) (protocol.Response, error) {
+	// Prepare the fallback URL with optional path
+	url := prepareURLFromPayload(rc.selectedEndpoint.url, payload)
 
-	// No endpoint specified on request context.
-	// - This should never happen.
-	if rc.selectedEndpoint == nil {
-		return logger
+	// Send the HTTP request using shared logic
+	httpResponseBz, httpStatusCode, err := rc.sendHTTPRequest(hydratedLogger, payload, url, []byte(payload.Data))
+	if err != nil {
+		return protocol.Response{}, err
 	}
 
-	logger = logger.With(
-		"selected_endpoint_supplier", rc.selectedEndpoint.supplier,
-		"selected_endpoint_url", rc.selectedEndpoint.url,
-	)
-
-	sessionHeader := rc.selectedEndpoint.session.GetHeader()
-	if sessionHeader == nil {
-		return logger
-	}
-
-	logger = logger.With(
-		"selected_endpoint_app", sessionHeader.ApplicationAddress,
-	)
-
-	return logger
+	// Build and return the fallback response
+	return protocol.Response{
+		Bytes:          httpResponseBz,
+		HTTPStatusCode: httpStatusCode,
+		EndpointAddr:   rc.selectedEndpoint.Addr(),
+	}, nil
 }
 
 // trackRelayMinerError:
@@ -622,6 +532,42 @@ func (rc *requestContext) handleEndpointSuccess(
 	return nil
 }
 
+// sendHTTPRequest is a shared method for sending HTTP requests with common logic
+func (rc *requestContext) sendHTTPRequest(
+	hydratedLogger polylog.Logger,
+	payload protocol.Payload,
+	url string,
+	requestData []byte,
+) ([]byte, int, error) {
+	// Prepare a timeout context for the request
+	timeout := time.Duration(payload.TimeoutMillisec) * time.Millisecond
+	ctxWithTimeout, cancelFn := context.WithTimeout(rc.context, timeout)
+	defer cancelFn()
+
+	// Build headers including RPCType header
+	headers := buildHeaders(payload)
+
+	// Send the HTTP request
+	httpResponseBz, httpStatusCode, err := rc.httpClient.SendHTTPRelay(
+		ctxWithTimeout,
+		hydratedLogger,
+		url,
+		requestData,
+		headers,
+	)
+
+	if err != nil {
+		// Endpoint failed to respond before the timeout expires
+		// Wrap the net/http error with our classification error
+		wrappedErr := fmt.Errorf("%w: %v", errSendHTTPRelay, err)
+
+		hydratedLogger.Error().Err(wrappedErr).Msgf("❌ Failed to receive a response from the selected endpoint: '%s'. Relay request will FAIL 😢", rc.selectedEndpoint.Addr())
+		return nil, 0, fmt.Errorf("error sending request to endpoint %s: %w", rc.selectedEndpoint.Addr(), wrappedErr)
+	}
+
+	return httpResponseBz, httpStatusCode, nil
+}
+
 // prepareURLFromPayload constructs the URL for requests, including optional path.
 // Adding the path ensures that REST requests' path is forwarded to the endpoint.
 func prepareURLFromPayload(endpointURL string, payload protocol.Payload) string {
@@ -630,4 +576,33 @@ func prepareURLFromPayload(endpointURL string, payload protocol.Payload) string 
 		url = fmt.Sprintf("%s%s", url, payload.Path)
 	}
 	return url
+}
+
+func (rc *requestContext) getHydratedLogger(methodName string) polylog.Logger {
+	logger := rc.logger.With(
+		"method_name", methodName,
+		"service_id", rc.serviceID,
+	)
+
+	// No endpoint specified on request context.
+	// - This should never happen.
+	if rc.selectedEndpoint == nil {
+		return logger
+	}
+
+	logger = logger.With(
+		"selected_endpoint_supplier", rc.selectedEndpoint.supplier,
+		"selected_endpoint_url", rc.selectedEndpoint.url,
+	)
+
+	sessionHeader := rc.selectedEndpoint.session.GetHeader()
+	if sessionHeader == nil {
+		return logger
+	}
+
+	logger = logger.With(
+		"selected_endpoint_app", sessionHeader.ApplicationAddress,
+	)
+
+	return logger
 }

@@ -120,7 +120,7 @@ func (h *httpClientWithDebugMetrics) SendHTTPRelay(
 	endpointURL string,
 	relayRequestBz []byte,
 	headers map[string]string,
-) ([]byte, error) {
+) ([]byte, int, error) {
 	// Set up debugging context and logging function
 	debugCtx, requestRecorder := h.setupRequestDebugging(ctx, logger, endpointURL)
 
@@ -133,7 +133,7 @@ func (h *httpClientWithDebugMetrics) SendHTTPRelay(
 	_, err := url.Parse(endpointURL)
 	if err != nil {
 		requestErr = fmt.Errorf("SHOULD NEVER HAPPEN: invalid URL: %w", err)
-		return nil, requestErr
+		return nil, 0, requestErr
 	}
 
 	req, err := http.NewRequestWithContext(
@@ -144,7 +144,7 @@ func (h *httpClientWithDebugMetrics) SendHTTPRelay(
 	)
 	if err != nil {
 		requestErr = fmt.Errorf("failed to create HTTP request: %w", err)
-		return nil, requestErr
+		return nil, 0, requestErr
 	}
 
 	// TODO_TECHDEBT(@adshmh): Content-Type HTTP header should be set by the QoS.
@@ -159,7 +159,7 @@ func (h *httpClientWithDebugMetrics) SendHTTPRelay(
 	resp, err := h.httpClient.Do(req)
 	if err != nil {
 		requestErr = h.categorizeError(debugCtx, err)
-		return nil, requestErr
+		return nil, 0, requestErr
 	}
 	defer resp.Body.Close()
 
@@ -167,10 +167,10 @@ func (h *httpClientWithDebugMetrics) SendHTTPRelay(
 	responseBody, err := h.readAndValidateResponse(resp)
 	if err != nil {
 		requestErr = err
-		return nil, requestErr
+		return nil, 0, requestErr
 	}
 
-	return responseBody, nil
+	return responseBody, resp.StatusCode, nil
 }
 
 // setupRequestDebugging initializes request metrics, HTTP debugging context, and atomic counters.
