@@ -271,6 +271,12 @@ Expected response:
 
 ### Test WebSockets with `wscat`
 
+:::tip
+
+For `wscat` installation instructions, see [here](https://github.com/ArtiomL/wscat?tab=readme-ov-file#installation).
+
+:::
+
 ```bash
 wscat -c ws://localhost:3070/v1 \
  -H "Authorization: test_api_key" \
@@ -293,6 +299,16 @@ Sample WebSocket request/response:
 > {"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }
 < {"id":1,"jsonrpc":"2.0","result":"0x17cbc4"}
 ```
+
+:::info
+
+This is a simpel terminal-based WebSocket example and does not contain reconnection logic.
+
+Connections will drop on session rollover, which is expected behavior.
+
+In production environments, you should implement reconnection logic and handle errors gracefully.
+
+:::
 
 ### Load Testing with `relay-util`
 
