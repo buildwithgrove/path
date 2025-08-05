@@ -167,7 +167,7 @@ func (h *httpClientWithDebugMetrics) SendHTTPRelay(
 	responseBody, err := h.readAndValidateResponse(resp)
 	if err != nil {
 		requestErr = err
-		return nil, 0, requestErr
+		return nil, resp.StatusCode, requestErr
 	}
 
 	return responseBody, resp.StatusCode, nil
