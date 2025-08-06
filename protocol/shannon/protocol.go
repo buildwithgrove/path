@@ -302,6 +302,10 @@ func (p *Protocol) IsAlive() bool {
 	return p.IsHealthy()
 }
 
+// TODO_TECHDEBT(@adshmh): Refactor to split the fallback logic from Shannon endpoints handling.
+// Example:
+// - Make a `fallback` component to handle all aspects of fallback: when to use a fallback, distribution among multiple fallback URLs, etc.
+//
 // TODO_FUTURE(@adshmh): If multiple apps (across different sessions) are delegating
 // to this gateway, optimize how the endpoints are managed/organized/cached.
 //

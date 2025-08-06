@@ -164,6 +164,11 @@ service_fallback:
       - "https://poly.rpc.grove.city/v1/9x8y7z6w"
 ```
 
+<!--
+TODO_DOCUMENT(@adshmh): Update this section to clarify the request distribution when multiple fallback URLs are specified.
+- This requires the distribution to be explicitly defined/implemented first.
+-->
+
 | Field              | Type     | Required | Default | Description                                                                                                                                                                   |
 | ------------------ | -------- | -------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `service_id`       | string   | Yes      | -       | The service ID for this fallback configuration. **Must be a valid onchain Shannon service ID.** Each service_id must be unique within the service_fallback array.             |

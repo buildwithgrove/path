@@ -31,6 +31,12 @@ type endpoint struct {
 	session sessiontypes.Session
 }
 
+// TODO_TECHDEBT(@adshmh): Refactor to cleanly separate the "fallback" logic from the endpoint.
+// Example:
+// Make endpoint an interface, implemented by:
+// - A Shannon endpoint
+// - A "fallback" URL with configurable fields: e.g. the Supplier set as "Grove"
+//
 // fallbackSupplier is a const value used to identify fallback endpoints.
 // Fallback endpoints do not exist on the Shannon protocol and so do not have a supplier address.
 // Instead, they are identified by the fallbackSupplier const value.

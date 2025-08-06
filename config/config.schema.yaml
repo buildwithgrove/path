@@ -110,6 +110,9 @@ properties:
             items:
               type: string
               pattern: "^[0-9a-fA-F]{64}$"
+          # TODO_CONSIDERATION(@adshmh): Consider renaming this to gateway_owned_endpoints to enable other use-cases.
+          # E.g. A gateway that uses Shannon as a fallback rather than its own URLs as a fallback.
+          # Note that this would require renaming all instances of fallback in the codebase.
           service_fallback:
             description: "Fallback endpoints for the Shannon gateway. An array of service fallback configurations. Each service_id must be unique within the array."
             type: array
@@ -134,7 +137,6 @@ properties:
                   description: "Whether to send all traffic to fallback endpoints for this service, regardless of protocol endpoint health."
                   type: boolean
                   default: false
-
   # Logger Configuration (optional)
   logger_config:
     description: "Optional configuration for the logger. If not specified, info level will be used."

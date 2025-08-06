@@ -55,6 +55,8 @@ func init() {
 }
 
 var (
+	// TODO_UPNEXT(@adshmh): Add a `used_fallback` label to track distribution of requests to fallback endpoints.
+	//
 	// relaysTotal tracks the total Shannon relay requests processed.
 	// Labels:
 	//   - service_id: Target service identifier (i.e. chain id in Shannon)
