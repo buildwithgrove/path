@@ -77,11 +77,12 @@ func setLegacyFieldsFromShannonProtocolObservations(
 	// track time spent waiting for the endpoint: required for calculating the `PortalTripTime` legacy field.
 	legacyRecord.endpointTripTime = endpointObservation.EndpointResponseTimestamp.AsTime().Sub(endpointObservation.EndpointQueryTimestamp.AsTime()).Seconds()
 
-	// Set endpoint address
-	legacyRecord.NodeAddress = endpointObservation.GetEndpointUrl()
+	// Set endpoint address to the supplier address.
+	// Will be "fallback" in the case of a request sent to a fallback endpoint.
+	legacyRecord.NodeAddress = endpointObservation.GetSupplier()
 
 	// Extract the endpoint's domain from its URL.
-	endpointDomain, err := shannonmetrics.ExtractDomainOrHost(endpointObservation.EndpointUrl)
+	endpointDomain, err := shannonmetrics.ExtractDomainOrHost(endpointObservation.GetEndpointUrl())
 	if err != nil {
 		logger.With("endpoint_url", endpointObservation.EndpointUrl).Warn().Err(err).Msg("Could not extract domain from Shannon endpoint URL")
 		return legacyRecord
