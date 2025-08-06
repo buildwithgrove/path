@@ -200,6 +200,11 @@ message ShannonEndpointObservation {
 
   // HTTP Response payload size
   optional int64 endpoint_backend_service_http_response_payload_size = 15;
+
+  // TODO_CONSIDERATION(@adshmh): Consider renaming to is_gateway_owned OR is_off_protocol.
+  //
+  // Tracks whether the endpoint is a fallback endpoint.
+  bool is_fallback_endpoint = 16;
 }
 
 // ShannonObservationsList provides a container for multiple ShannonRequestObservations,
