@@ -7,13 +7,12 @@
 package protocol
 
 import (
-	reflect "reflect"
-	sync "sync"
-	unsafe "unsafe"
-
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
+	reflect "reflect"
+	sync "sync"
+	unsafe "unsafe"
 )
 
 const (
@@ -165,9 +164,10 @@ const (
 	// RelayRequest was canceled by PATH intentionally.
 	ShannonEndpointErrorType_SHANNON_ENDPOINT_REQUEST_CANCELED_BY_PATH ShannonEndpointErrorType = 33
 	// ** SHANNON_ENDPOINT_ERROR_HTTP_UNKNOWN **
-	// Code flow: PATH -> HTTP Request -> Endpoint
-	// - HTTP Response is NOT received
-	// - PATH business logic is not invoked
+	// PATH -> HTTP Request -> Endpoint
+	// HTTP Response is NOT received
+	// We cannot move forward with PATH business logic
+	// There is nothing to go to.
 	ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_HTTP_UNKNOWN        ShannonEndpointErrorType = 34
 	ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_UNKNOWN ShannonEndpointErrorType = 35
 	ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_UNKNOWN             ShannonEndpointErrorType = 36
@@ -563,7 +563,9 @@ type ShannonEndpointObservation struct {
 	EndpointBackendServiceHttpResponseStatusCode *int32 `protobuf:"varint,14,opt,name=endpoint_backend_service_http_response_status_code,json=endpointBackendServiceHttpResponseStatusCode,proto3,oneof" json:"endpoint_backend_service_http_response_status_code,omitempty"`
 	// HTTP Response payload size
 	EndpointBackendServiceHttpResponsePayloadSize *int64 `protobuf:"varint,15,opt,name=endpoint_backend_service_http_response_payload_size,json=endpointBackendServiceHttpResponsePayloadSize,proto3,oneof" json:"endpoint_backend_service_http_response_payload_size,omitempty"`
-	// Whether the endpoint is a fallback endpoint
+	// TODO_CONSIDERATION(@adshmh): Consider renaming to is_gateway_owned OR is_off_protocol.
+	//
+	// Tracks whether the endpoint is a fallback endpoint.
 	IsFallbackEndpoint bool `protobuf:"varint,16,opt,name=is_fallback_endpoint,json=isFallbackEndpoint,proto3" json:"is_fallback_endpoint,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
