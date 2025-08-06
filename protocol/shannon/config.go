@@ -73,15 +73,11 @@ type (
 	// - Criteria to decide whether the "fallback" URL should be used at all.
 	// - Criteria to decide the order in which a Shannon endpoint vs. a fallback URL should be used.
 	// - Support "weighted" distribution to Shannon endpoints vs. "fallback" URLs.
-	// - Remove the `serviceFallbackConfig` struct: update and use `ServiceFallback` as the canonical struct everywhere.
 	//
 	// ServiceFallback is a configuration struct for specifying fallback endpoints for a service.
 	ServiceFallback struct {
 		ServiceID    protocol.ServiceID `yaml:"service_id"`
 		FallbackURLs []string           `yaml:"fallback_urls"`
-
-		// TODO_TECHDEBT(@adshmh): Explicitly define and implement what happens if this is false.
-		//
 		// If true, all traffic will be sent to the fallback endpoints for the service,
 		// regardless of the health of the protocol endpoints.
 		SendAllTraffic bool `yaml:"send_all_traffic"`
