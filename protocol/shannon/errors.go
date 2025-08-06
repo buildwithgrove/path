@@ -1,6 +1,7 @@
 package shannon
 
 import (
+	"context"
 	"errors"
 	"strings"
 
@@ -88,7 +89,7 @@ func extractErrFromRelayError(err error) error {
 	}
 
 	// http endpoint timeout
-	if strings.Contains(err.Error(), "context deadline exceeded") {
+	if strings.Contains(err.Error(), context.DeadlineExceeded.Error()) { // "context deadline exceeded"
 		return errRelayEndpointTimeout
 	}
 

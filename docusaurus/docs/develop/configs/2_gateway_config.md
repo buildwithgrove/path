@@ -40,6 +40,12 @@ shannon_config:
     gateway_private_key_hex: 40af4e7e1b311c76a573610fe115cd2adf1eeade709cd77ca31ad4472509d388
     owned_apps_private_keys_hex:
       - 40af4e7e1b311c76a573610fe115cd2adf1eeade709cd77ca31ad4472509d388
+    service_fallback:
+      - service_id: eth
+        send_all_traffic: false
+        fallback_urls:
+          - "https://eth.rpc.grove.city/v1/1a2b3c4d"
+          - "https://eth.rpc.grove.city/v1/5e6f7a8b"
 
 # (Optional) Logger Configuration
 logger_config:
@@ -99,6 +105,16 @@ shannon_config:
     owned_apps_private_keys_hex: # Required for centralized mode only
       - "<64-char-hex>" # Application private key
       - "<64-char-hex>" # Additional application private keys...
+    service_fallback: # Optional: Fallback endpoints
+      - service_id: eth
+        send_all_traffic: false
+        fallback_urls:
+          - "https://eth.rpc.grove.city/v1/1a2b3c4d"
+          - "https://eth.rpc.grove.city/v1/5e6f7a8b"
+      - service_id: polygon
+        send_all_traffic: false
+        fallback_urls:
+          - "https://polygon.rpc.grove.city/v1/9x8y7z6w"
 ```
 
 **`full_node_config`**
@@ -129,6 +145,41 @@ shannon_config:
 | `gateway_address`             | string   | Yes                      | -       | Bech32-formatted gateway address (starts with `pokt1`)                |
 | `gateway_private_key_hex`     | string   | Yes                      | -       | 64-character hex-encoded `secp256k1` gateway private key              |
 | `owned_apps_private_keys_hex` | string[] | Only in centralized mode | -       | List of 64-character hex-encoded `secp256k1` application private keys |
+| `service_fallback`            | array    | No                       | -       | Array of service fallback configurations (see below for details)      |
+
+**`service_fallback` (optional)**
+
+Configures fallback endpoints that the gateway will use when all protocol endpoints for a service become unavailable (e.g., sanctioned or offline). This provides resilience by allowing the gateway to continue serving requests even when protocol endpoints are temporarily unavailable.
+
+```yaml
+service_fallback:
+  - service_id: eth
+    send_all_traffic: false
+    fallback_urls:
+      - "https://eth.rpc.grove.city/v1/1a2b3c4d"
+      - "https://eth.rpc.grove.city/v1/5e6f7a8b"
+  - service_id: poly
+    send_all_traffic: false
+    fallback_urls:
+      - "https://poly.rpc.grove.city/v1/9x8y7z6w"
+```
+
+<!--
+TODO_DOCUMENT(@adshmh): Update this section to clarify the request distribution when multiple fallback URLs are specified.
+- This requires the distribution to be explicitly defined/implemented first.
+-->
+
+| Field              | Type     | Required | Default | Description                                                                                                                                                                   |
+| ------------------ | -------- | -------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `service_id`       | string   | Yes      | -       | The service ID for this fallback configuration. **Must be a valid onchain Shannon service ID.** Each service_id must be unique within the service_fallback array.             |
+| `fallback_urls`    | string[] | Yes      | -       | Array of fallback endpoint URLs for the specified service ID. Each URL must be a valid HTTP/HTTPS endpoint.                                                                   |
+| `send_all_traffic` | boolean  | No       | false   | Whether to send all traffic to fallback endpoints for this service, regardless of protocol endpoint health. When true, bypasses protocol endpoints entirely for this service. |
+
+**Key Features:**
+- **Automatic failover**: Gateway automatically switches to fallback endpoints when protocol endpoints are unavailable
+- **Send All
+- **Protocol bypass**: Fallback endpoints bypass protocol-level validation and are sent directly to the configured URLs
+- **Service-specific**: Each service ID can have its own set of fallback endpoints
 
 ---
 

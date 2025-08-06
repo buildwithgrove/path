@@ -30,6 +30,7 @@ var (
 	ErrShannonUnsupportedGatewayMode                  = errors.New("invalid shannon gateway mode")
 	ErrShannonCentralizedGatewayModeRequiresOwnedApps = errors.New("shannon Centralized gateway mode requires at-least 1 owned app")
 	ErrShannonCacheConfigSetForLazyMode               = errors.New("cache config cannot be set for lazy mode")
+	ErrShannonInvalidServiceFallback                  = errors.New("invalid service fallback configuration")
 )
 
 type (
@@ -65,6 +66,21 @@ type (
 		GatewayAddress          string               `yaml:"gateway_address"`
 		GatewayPrivateKeyHex    string               `yaml:"gateway_private_key_hex"`
 		OwnedAppsPrivateKeysHex []string             `yaml:"owned_apps_private_keys_hex"`
+		ServiceFallback         []ServiceFallback    `yaml:"service_fallback"`
+	}
+
+	// TODO_TECHDEBT(@adshmh): Make configuration and implementation explicit:
+	// - Criteria to decide whether the "fallback" URL should be used at all.
+	// - Criteria to decide the order in which a Shannon endpoint vs. a fallback URL should be used.
+	// - Support "weighted" distribution to Shannon endpoints vs. "fallback" URLs.
+	//
+	// ServiceFallback is a configuration struct for specifying fallback endpoints for a service.
+	ServiceFallback struct {
+		ServiceID    protocol.ServiceID `yaml:"service_id"`
+		FallbackURLs []string           `yaml:"fallback_urls"`
+		// If true, all traffic will be sent to the fallback endpoints for the service,
+		// regardless of the health of the protocol endpoints.
+		SendAllTraffic bool `yaml:"send_all_traffic"`
 	}
 )
 
@@ -93,6 +109,40 @@ func (gc GatewayConfig) Validate() error {
 		}
 	}
 
+	if err := gc.validateServiceFallback(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// validateServiceFallback validates the service fallback configuration.
+// It checks for duplicate service IDs, at-least one fallback URL, and valid fallback URLs.
+func (gc GatewayConfig) validateServiceFallback() error {
+	seenServiceIDs := make(map[protocol.ServiceID]struct{})
+
+	for _, serviceFallback := range gc.ServiceFallback {
+		if serviceFallback.ServiceID == "" {
+			return fmt.Errorf("%w: service ID is required", ErrShannonInvalidServiceFallback)
+		}
+
+		// Check for duplicate service IDs
+		if _, exists := seenServiceIDs[serviceFallback.ServiceID]; exists {
+			return fmt.Errorf("%w: duplicate service ID '%s' found in service_fallback configuration",
+				ErrShannonInvalidServiceFallback, serviceFallback.ServiceID)
+		}
+		seenServiceIDs[serviceFallback.ServiceID] = struct{}{}
+
+		if len(serviceFallback.FallbackURLs) == 0 {
+			return fmt.Errorf("%w: at-least one fallback URL is required for service '%s'", ErrShannonInvalidServiceFallback, serviceFallback.ServiceID)
+		}
+		for _, fallbackURL := range serviceFallback.FallbackURLs {
+			if !isValidURL(fallbackURL) {
+				return fmt.Errorf("%w: invalid fallback endpoint URL '%s' for service '%s'",
+					ErrShannonInvalidServiceFallback, fallbackURL, serviceFallback.ServiceID)
+			}
+		}
+	}
 	return nil
 }
 
@@ -107,6 +157,34 @@ func (c FullNodeConfig) Validate() error {
 		return err
 	}
 	return nil
+}
+
+// getServiceFallbacks returns the fallback endpoint information for each
+// service ID from the YAML config, including the SendAllTraffic setting.
+func (gc GatewayConfig) getServiceFallbacks() map[protocol.ServiceID]serviceFallback {
+	configs := make(map[protocol.ServiceID]serviceFallback, len(gc.ServiceFallback))
+
+	for _, serviceFallbackConfig := range gc.ServiceFallback {
+		endpoints := make(map[protocol.EndpointAddr]endpoint, len(serviceFallbackConfig.FallbackURLs))
+
+		for _, fallbackURL := range serviceFallbackConfig.FallbackURLs {
+			endpoint := endpoint{
+				// All fallback endpoints use the const `FallbackSupplierString` to identify them.
+				// This is because fallback endpoints are not protocol endpoints, and so do
+				// not have an onchain supplier, so a constant is used to identify them.
+				supplier: FallbackSupplierString,
+				url:      fallbackURL,
+			}
+			endpoints[protocol.EndpointAddr(fallbackURL)] = endpoint
+		}
+
+		configs[serviceFallbackConfig.ServiceID] = serviceFallback{
+			SendAllTraffic: serviceFallbackConfig.SendAllTraffic,
+			Endpoints:      endpoints,
+		}
+	}
+
+	return configs
 }
 
 // TODO_TECHDEBT(@adshmh): add a new `grpc` package to handle all GRPC related functionality and configuration.

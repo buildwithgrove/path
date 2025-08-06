@@ -15,7 +15,6 @@ import (
 	"time"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
-	servicetypes "github.com/pokt-network/poktroll/x/service/types"
 )
 
 // Maximum length of an HTTP response's body.
@@ -81,30 +80,35 @@ func newDefaultHTTPClientWithDebugMetrics() *httpClientWithDebugMetrics {
 	// Configure transport with optimized settings for high-concurrency usage
 	transport := &http.Transport{
 		DialContext: (&net.Dialer{
-			Timeout:   10 * time.Second, // Connection establishment timeout
-			KeepAlive: 30 * time.Second, // Keep-alive probe interval
+			Timeout:   5 * time.Second,  // Quick connection establishment to fail fast on unreachable hosts
+			KeepAlive: 30 * time.Second, // Keep-alive probe interval to maintain connection health
 		}).DialContext,
 
-		// Connection pool settings
-		MaxIdleConns:        100,              // Total idle connections across all hosts
-		MaxIdleConnsPerHost: 10,               // Idle connections per host
-		MaxConnsPerHost:     50,               // Max concurrent connections per host
-		IdleConnTimeout:     90 * time.Second, // How long idle connections stay open
+		// Connection pool settings optimized for high concurrency
+		MaxIdleConns:        2000,              // Large total pool to support many concurrent hosts
+		MaxIdleConnsPerHost: 500,               // High per-host idle connections for connection reuse
+		MaxConnsPerHost:     0,                 // No limit to eliminate connection queueing bottlenecks
+		IdleConnTimeout:     300 * time.Second, // Long idle timeout to maximize connection reuse
 
-		// Timeout settings
-		TLSHandshakeTimeout:   10 * time.Second, // TLS handshake timeout
-		ResponseHeaderTimeout: 30 * time.Second, // Time to wait for response headers
+		// Timeout settings optimized for quick failure detection
+		TLSHandshakeTimeout:   5 * time.Second,  // Fast TLS timeout since handshakes typically complete in ~100ms
+		ResponseHeaderTimeout: 70 * time.Second, // Conservative header timeout to allow for server processing time
 
-		// Performance settings
-		DisableKeepAlives:  false, // Enable connection reuse
-		DisableCompression: false, // Enable gzip compression
+		// Performance optimizations
+		DisableKeepAlives:  false, // Enable connection reuse to reduce connection overhead
+		DisableCompression: false, // Enable gzip compression to reduce bandwidth
+		ForceAttemptHTTP2:  true,  // Prefer HTTP/2 for connection multiplexing benefits
+
+		// Buffer sizes optimized for throughput
+		WriteBufferSize: 32 * 1024, // 32KB write buffer to reduce syscalls for large requests
+		ReadBufferSize:  32 * 1024, // 32KB read buffer to reduce syscalls for large responses
 	}
 
 	// Create HTTP client with large timeout as fallback
 	// Individual requests will use context deadlines for actual timeout control
 	httpClient := &http.Client{
 		Transport: transport,
-		Timeout:   60 * time.Second, // Large fallback timeout (1 minute)
+		Timeout:   80 * time.Second, // Large fallback timeout (80 seconds)
 	}
 
 	return &httpClientWithDebugMetrics{
@@ -115,13 +119,15 @@ func newDefaultHTTPClientWithDebugMetrics() *httpClientWithDebugMetrics {
 // SendHTTPRelay sends an HTTP POST request with the relay data to the specified URL.
 // Uses the provided context for timeout and cancellation control.
 // Logs detailed metrics and debugging information on failure for debugging.
+//
+// Returns: response body, HTTP status code, error
 func (h *httpClientWithDebugMetrics) SendHTTPRelay(
 	ctx context.Context,
 	logger polylog.Logger,
 	endpointURL string,
-	relayRequest *servicetypes.RelayRequest,
+	relayRequestBz []byte,
 	headers map[string]string,
-) ([]byte, error) {
+) ([]byte, int, error) {
 	// Set up debugging context and logging function
 	debugCtx, requestRecorder := h.setupRequestDebugging(ctx, logger, endpointURL)
 
@@ -134,14 +140,7 @@ func (h *httpClientWithDebugMetrics) SendHTTPRelay(
 	_, err := url.Parse(endpointURL)
 	if err != nil {
 		requestErr = fmt.Errorf("SHOULD NEVER HAPPEN: invalid URL: %w", err)
-		return nil, requestErr
-	}
-
-	// Marshal relay request to bytes
-	relayRequestBz, err := relayRequest.Marshal()
-	if err != nil {
-		requestErr = fmt.Errorf("SHOULD NEVER HAPPEN: failed to marshal relay request: %w", err)
-		return nil, requestErr
+		return nil, 0, requestErr
 	}
 
 	req, err := http.NewRequestWithContext(
@@ -152,7 +151,7 @@ func (h *httpClientWithDebugMetrics) SendHTTPRelay(
 	)
 	if err != nil {
 		requestErr = fmt.Errorf("failed to create HTTP request: %w", err)
-		return nil, requestErr
+		return nil, 0, requestErr
 	}
 
 	// TODO_TECHDEBT(@adshmh): Content-Type HTTP header should be set by the QoS.
@@ -167,7 +166,7 @@ func (h *httpClientWithDebugMetrics) SendHTTPRelay(
 	resp, err := h.httpClient.Do(req)
 	if err != nil {
 		requestErr = h.categorizeError(debugCtx, err)
-		return nil, requestErr
+		return nil, 0, requestErr
 	}
 	defer resp.Body.Close()
 
@@ -175,10 +174,10 @@ func (h *httpClientWithDebugMetrics) SendHTTPRelay(
 	responseBody, err := h.readAndValidateResponse(resp)
 	if err != nil {
 		requestErr = err
-		return nil, requestErr
+		return nil, resp.StatusCode, requestErr
 	}
 
-	return responseBody, nil
+	return responseBody, resp.StatusCode, nil
 }
 
 // setupRequestDebugging initializes request metrics, HTTP debugging context, and atomic counters.
@@ -257,7 +256,8 @@ func (h *httpClientWithDebugMetrics) readAndValidateResponse(resp *http.Response
 func createDetailedHTTPTrace(metrics *httpRequestMetrics) *httptrace.ClientTrace {
 	var (
 		dnsStart, connectStart, tlsStart time.Time
-		getConnStart, wroteRequestStart  time.Time
+		getConnStart, gotConnTime        time.Time
+		wroteRequestStart                time.Time
 		waitingForResponseStart          time.Time
 	)
 
@@ -299,8 +299,9 @@ func createDetailedHTTPTrace(metrics *httpRequestMetrics) *httptrace.ClientTrace
 			getConnStart = time.Now()
 		},
 		GotConn: func(info httptrace.GotConnInfo) {
+			gotConnTime = time.Now() // Record when we actually got the connection
 			if !getConnStart.IsZero() {
-				metrics.getConnTime = time.Since(getConnStart)
+				metrics.getConnTime = time.Since(getConnStart) // This is pure connection acquisition time
 			}
 			metrics.connectionReused = info.Reused
 			if info.Conn != nil {
@@ -311,9 +312,9 @@ func createDetailedHTTPTrace(metrics *httpRequestMetrics) *httptrace.ClientTrace
 		// Request Writing Phase
 		// Tracks potential write delays.
 		WroteHeaders: func() {
-			// Headers written successfully, time from connection acquisition to headers completion
-			if !getConnStart.IsZero() {
-				metrics.wroteHeadersTime = time.Since(getConnStart)
+			// Time from getting connection to headers completion (not from connection start)
+			if !gotConnTime.IsZero() {
+				metrics.wroteHeadersTime = time.Since(gotConnTime)
 			}
 			// Start timing request body writing
 			wroteRequestStart = time.Now()

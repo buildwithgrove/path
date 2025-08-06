@@ -26,6 +26,3 @@ PATH (Path API & Toolkit Harness) is an open-source Go framework for enabling ac
 - Comprehensive metrics and observability
 - Load balancing and endpoint management
 - Rate limiting and authentication
-
-## Note on Morse
-While the codebase contains references to Morse protocol for backward compatibility, it is no longer actively used. Shannon is the primary protocol for all operations.

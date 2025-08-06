@@ -3,6 +3,7 @@ package cosmos
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
@@ -18,10 +19,6 @@ import (
 const (
 	// maximum length of the error message stored in request validation failure observations and logs.
 	maxErrMessageLen = 1000
-
-	// defaultJSONRPCRequestTimeoutMillisec is the default timeout when sending a request to a Cosmos blockchain endpoint.
-	// TODO_IMPROVE(@adshmh): Support method level specific timeouts and allow the user to configure them.
-	defaultJSONRPCRequestTimeoutMillisec = 10_000
 )
 
 // validateJSONRPCRequest validates a JSONRPC request by:
@@ -48,7 +45,7 @@ func (rv *requestValidator) validateJSONRPCRequest(
 
 	// Hydrate the logger with data extracted from the request.
 	logger = logger.With(
-		"detected_rpc_type", rpcType.String(),
+		"rpc_type", rpcType.String(),
 		"jsonrpc_method", method,
 	)
 
@@ -126,12 +123,11 @@ func buildJSONRPCServicePayload(rpcType sharedtypes.RPCType, jsonrpcReq jsonrpc.
 	}
 
 	return protocol.Payload{
-		Data:            string(reqBz),
-		Method:          http.MethodPost, // JSONRPC always uses POST
-		Path:            "",              // JSONRPC does not use paths
-		Headers:         map[string]string{},
-		TimeoutMillisec: defaultJSONRPCRequestTimeoutMillisec,
-		RPCType:         rpcType, // Add the RPCType hint the so protocol sets correct HTTP headers for the endpoint.
+		Data:    string(reqBz),
+		Method:  http.MethodPost, // JSONRPC always uses POST
+		Path:    "",              // JSONRPC does not use paths
+		Headers: map[string]string{},
+		RPCType: rpcType, // Add the RPCType hint the so protocol sets correct HTTP headers for the endpoint.
 	}, nil
 }
 
@@ -281,7 +277,7 @@ func (rv *requestValidator) createJSONRPCUnsupportedRPCTypeObservation(
 		},
 		RequestLevelError: &qosobservations.RequestError{
 			ErrorKind:      qosobservations.RequestErrorKind_REQUEST_ERROR_USER_ERROR_JSONRPC_UNSUPPORTED_RPC_TYPE,
-			ErrorDetails:   "Unsupported RPC type: " + rpcType.String(),
+			ErrorDetails:   fmt.Sprintf("Unsupported RPC type %s for service %s", rpcType.String(), string(rv.serviceID)),
 			HttpStatusCode: int32(jsonrpcResponse.GetRecommendedHTTPStatusCode()),
 		},
 	}

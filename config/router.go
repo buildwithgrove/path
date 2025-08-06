@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"time"
 )
 
@@ -14,13 +15,17 @@ const (
 	// defaultMaxRequestHeaderBytes is the default maximum size of the HTTP request header.
 	defaultMaxRequestHeaderBytes = 2 * 1e6 // 2 MB
 
-	// HTTP server's default timeout values.
-	defaultHTTPServerReadTimeout = 10 * time.Second
-	defaultHTTPServerIdleTimeout = 120 * time.Second
+	// Reserve time for system overhead, i.e. time spent on non-business logic operations.
+	// Examples:
+	// - Read HTTP Request body
+	// - Write HTTP Response
+	defaultSystemOverheadAllowanceDuration = 10 * time.Second
 
-	// HTTP request handler's WriteTimeout.
 	// https://pkg.go.dev/net/http#Server
-	defaultHTTPServerWriteTimeout = 20 * time.Second
+	// HTTP server's default timeout values.
+	defaultHTTPServerReadTimeout  = 60 * time.Second
+	defaultHTTPServerWriteTimeout = 120 * time.Second
+	defaultHTTPServerIdleTimeout  = 180 * time.Second
 )
 
 /* --------------------------------- Router Config Struct -------------------------------- */
@@ -28,11 +33,12 @@ const (
 // RouterConfig contains server configuration settings.
 // See default values above.
 type RouterConfig struct {
-	Port                  int           `yaml:"port"`
-	MaxRequestHeaderBytes int           `yaml:"max_request_header_bytes"`
-	ReadTimeout           time.Duration `yaml:"read_timeout"`
-	WriteTimeout          time.Duration `yaml:"write_timeout"`
-	IdleTimeout           time.Duration `yaml:"idle_timeout"`
+	Port                            int           `yaml:"port"`
+	MaxRequestHeaderBytes           int           `yaml:"max_request_header_bytes"`
+	ReadTimeout                     time.Duration `yaml:"read_timeout"`
+	WriteTimeout                    time.Duration `yaml:"write_timeout"`
+	IdleTimeout                     time.Duration `yaml:"idle_timeout"`
+	SystemOverheadAllowanceDuration time.Duration `yaml:"system_overhead_allowance_duration"`
 }
 
 /* --------------------------------- Router Config Private Helpers -------------------------------- */
@@ -53,5 +59,11 @@ func (c *RouterConfig) hydrateRouterDefaults() {
 	}
 	if c.IdleTimeout == 0 {
 		c.IdleTimeout = defaultHTTPServerIdleTimeout
+	}
+	if c.SystemOverheadAllowanceDuration == 0 {
+		c.SystemOverheadAllowanceDuration = defaultSystemOverheadAllowanceDuration
+	}
+	if c.SystemOverheadAllowanceDuration >= c.ReadTimeout || c.SystemOverheadAllowanceDuration >= c.WriteTimeout {
+		panic(fmt.Sprintf("system overhead allowance duration %v must be less than read timeout %v and write timeout %v", c.SystemOverheadAllowanceDuration, c.ReadTimeout, c.WriteTimeout))
 	}
 }
