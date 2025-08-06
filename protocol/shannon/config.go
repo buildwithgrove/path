@@ -154,15 +154,15 @@ func (c FullNodeConfig) Validate() error {
 	return nil
 }
 
-// getFallbackEndpointConfigs returns the fallback endpoint configurations for each
+// getServiceFallbacks returns the fallback endpoint information for each
 // service ID from the YAML config, including the SendAllTraffic setting.
-func (gc GatewayConfig) getFallbackEndpointConfigs() map[protocol.ServiceID]serviceFallbackConfig {
-	configs := make(map[protocol.ServiceID]serviceFallbackConfig, len(gc.ServiceFallback))
+func (gc GatewayConfig) getServiceFallbacks() map[protocol.ServiceID]serviceFallback {
+	configs := make(map[protocol.ServiceID]serviceFallback, len(gc.ServiceFallback))
 
-	for _, serviceFallback := range gc.ServiceFallback {
-		endpoints := make(map[protocol.EndpointAddr]endpoint, len(serviceFallback.FallbackURLs))
+	for _, serviceFallbackConfig := range gc.ServiceFallback {
+		endpoints := make(map[protocol.EndpointAddr]endpoint, len(serviceFallbackConfig.FallbackURLs))
 
-		for _, fallbackURL := range serviceFallback.FallbackURLs {
+		for _, fallbackURL := range serviceFallbackConfig.FallbackURLs {
 			endpoint := endpoint{
 				// All fallback endpoints use the const `fallbackSupplier` to identify them.
 				// This is because fallback endpoints are not protocol endpoints, and so do
@@ -173,8 +173,8 @@ func (gc GatewayConfig) getFallbackEndpointConfigs() map[protocol.ServiceID]serv
 			endpoints[protocol.EndpointAddr(fallbackURL)] = endpoint
 		}
 
-		configs[serviceFallback.ServiceID] = serviceFallbackConfig{
-			SendAllTraffic: serviceFallback.SendAllTraffic,
+		configs[serviceFallbackConfig.ServiceID] = serviceFallback{
+			SendAllTraffic: serviceFallbackConfig.SendAllTraffic,
 			Endpoints:      endpoints,
 		}
 	}

@@ -57,21 +57,22 @@ type Protocol struct {
 	// HTTP client used for sending relay requests to endpoints while also capturing & publishing various debug metrics.
 	httpClient *httpClientWithDebugMetrics
 
-	// fallbackEndpoints contains the fallback endpoint configurations for the protocol.
+	// serviceFallbacks contains the fallback endpoint information for the protocol.
 	//
-	// The fallback endpoints are used when no endpoints are available for the requested service
-	// from the onchain protocol.
-	// For example, if all protocol endpoints are sanctioned,  the fallback endpoints will be used to
-	// populate the list of endpoints.
+	// The fallback endpoints are used when no endpoints are available for the
+	// requested service from the onchain protocol.
 	//
-	// Each service can have a SendAllTraffic flag to send all traffic to fallback endpoints,
-	// regardless of the health of the protocol endpoints.
-	fallbackEndpoints map[protocol.ServiceID]serviceFallbackConfig
+	// For example, if all protocol endpoints are sanctioned, the fallback
+	// endpoints will be used to populate the list of endpoints.
+	//
+	// Each service can have a SendAllTraffic flag to send all traffic to
+	// fallback endpoints, regardless of the health of the protocol endpoints.
+	serviceFallbacks map[protocol.ServiceID]serviceFallback
 }
 
-// serviceFallbackConfig holds the fallback configuration for a service,
+// serviceFallback holds the fallback information for a service,
 // including the endpoints and whether to send all traffic to fallback.
-type serviceFallbackConfig struct {
+type serviceFallback struct {
 	SendAllTraffic bool
 	Endpoints      map[protocol.EndpointAddr]endpoint
 }
@@ -110,8 +111,8 @@ func NewProtocol(
 		// HTTP client with embedded tracking of debug metrics.
 		httpClient: newDefaultHTTPClientWithDebugMetrics(),
 
-		// fallbackEndpoints contains the fallback endpoint configurations for the protocol.
-		fallbackEndpoints: config.getFallbackEndpointConfigs(),
+		// serviceFallbacks contains the fallback information for each service.
+		serviceFallbacks: config.getServiceFallbacks(),
 	}
 
 	return protocolInstance, nil
@@ -322,13 +323,13 @@ func (p *Protocol) getUniqueEndpoints(
 	)
 
 	// Get fallback configuration for the service ID.
-	fallbackEndpoints, sendAllTrafficToFallback := p.getServiceFallbackConfig(serviceID)
+	serviceFallbacks, sendAllTrafficToFallback := p.getServiceFallback(serviceID)
 
 	// If the service is configured to send all traffic to fallback endpoints,
 	// return only the fallback endpoints and skip session endpoint logic.
-	if sendAllTrafficToFallback && len(fallbackEndpoints) > 0 {
+	if sendAllTrafficToFallback && len(serviceFallbacks) > 0 {
 		logger.Info().Msgf("🔀 Sending all traffic to fallback endpoints for service %s.", serviceID)
-		return fallbackEndpoints, nil
+		return serviceFallbacks, nil
 	}
 
 	// Try to get session endpoints first.
@@ -345,9 +346,9 @@ func (p *Protocol) getUniqueEndpoints(
 
 	// Handle the case where no session endpoints are available.
 	// If fallback endpoints are available for the service ID, use them.
-	if len(fallbackEndpoints) > 0 {
+	if len(serviceFallbacks) > 0 {
 		logger.Info().Msgf("No session endpoints available: using fallback endpoints for service %s.", serviceID)
-		return fallbackEndpoints, nil
+		return serviceFallbacks, nil
 	}
 
 	// If no unsanctioned session endpoints are available and no fallback
@@ -447,10 +448,10 @@ func (p *Protocol) getSessionsUniqueEndpoints(
 
 // ** Fallback Endpoint Handling **
 
-// getServiceFallbackConfig returns the fallback endpoints and SendAllTraffic flag for a given service ID.
+// getServiceFallback returns the fallback endpoints and SendAllTraffic flag for a given service ID.
 // Returns (endpoints, sendAllTraffic) where endpoints is empty if no fallback is configured.
-func (p *Protocol) getServiceFallbackConfig(serviceID protocol.ServiceID) (map[protocol.EndpointAddr]endpoint, bool) {
-	fallbackConfig, exists := p.fallbackEndpoints[serviceID]
+func (p *Protocol) getServiceFallback(serviceID protocol.ServiceID) (map[protocol.EndpointAddr]endpoint, bool) {
+	fallbackConfig, exists := p.serviceFallbacks[serviceID]
 	if !exists {
 		return make(map[protocol.EndpointAddr]endpoint), false
 	}
