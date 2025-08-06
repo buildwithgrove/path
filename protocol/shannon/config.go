@@ -164,10 +164,10 @@ func (gc GatewayConfig) getServiceFallbacks() map[protocol.ServiceID]serviceFall
 
 		for _, fallbackURL := range serviceFallbackConfig.FallbackURLs {
 			endpoint := endpoint{
-				// All fallback endpoints use the const `fallbackSupplier` to identify them.
+				// All fallback endpoints use the const `FallbackSupplierString` to identify them.
 				// This is because fallback endpoints are not protocol endpoints, and so do
 				// not have an onchain supplier, so a constant is used to identify them.
-				supplier: fallbackSupplier,
+				supplier: FallbackSupplierString,
 				url:      fallbackURL,
 			}
 			endpoints[protocol.EndpointAddr(fallbackURL)] = endpoint

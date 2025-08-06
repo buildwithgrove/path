@@ -200,9 +200,6 @@ message ShannonEndpointObservation {
 
   // HTTP Response payload size
   optional int64 endpoint_backend_service_http_response_payload_size = 15;
-
-  // Whether the endpoint is a fallback endpoint
-  bool is_fallback_endpoint = 16;
 }
 
 // ShannonObservationsList provides a container for multiple ShannonRequestObservations,

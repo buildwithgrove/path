@@ -7,13 +7,12 @@
 package protocol
 
 import (
-	reflect "reflect"
-	sync "sync"
-	unsafe "unsafe"
-
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
+	reflect "reflect"
+	sync "sync"
+	unsafe "unsafe"
 )
 
 const (
@@ -165,9 +164,10 @@ const (
 	// RelayRequest was canceled by PATH intentionally.
 	ShannonEndpointErrorType_SHANNON_ENDPOINT_REQUEST_CANCELED_BY_PATH ShannonEndpointErrorType = 33
 	// ** SHANNON_ENDPOINT_ERROR_HTTP_UNKNOWN **
-	// Code flow: PATH -> HTTP Request -> Endpoint
-	// - HTTP Response is NOT received
-	// - PATH business logic is not invoked
+	// PATH -> HTTP Request -> Endpoint
+	// HTTP Response is NOT received
+	// We cannot move forward with PATH business logic
+	// There is nothing to go to.
 	ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_HTTP_UNKNOWN        ShannonEndpointErrorType = 34
 	ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_UNKNOWN ShannonEndpointErrorType = 35
 	ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_UNKNOWN             ShannonEndpointErrorType = 36
@@ -563,10 +563,8 @@ type ShannonEndpointObservation struct {
 	EndpointBackendServiceHttpResponseStatusCode *int32 `protobuf:"varint,14,opt,name=endpoint_backend_service_http_response_status_code,json=endpointBackendServiceHttpResponseStatusCode,proto3,oneof" json:"endpoint_backend_service_http_response_status_code,omitempty"`
 	// HTTP Response payload size
 	EndpointBackendServiceHttpResponsePayloadSize *int64 `protobuf:"varint,15,opt,name=endpoint_backend_service_http_response_payload_size,json=endpointBackendServiceHttpResponsePayloadSize,proto3,oneof" json:"endpoint_backend_service_http_response_payload_size,omitempty"`
-	// Whether the endpoint is a fallback endpoint
-	IsFallbackEndpoint bool `protobuf:"varint,16,opt,name=is_fallback_endpoint,json=isFallbackEndpoint,proto3" json:"is_fallback_endpoint,omitempty"`
-	unknownFields      protoimpl.UnknownFields
-	sizeCache          protoimpl.SizeCache
+	unknownFields                                 protoimpl.UnknownFields
+	sizeCache                                     protoimpl.SizeCache
 }
 
 func (x *ShannonEndpointObservation) Reset() {
@@ -704,13 +702,6 @@ func (x *ShannonEndpointObservation) GetEndpointBackendServiceHttpResponsePayloa
 	return 0
 }
 
-func (x *ShannonEndpointObservation) GetIsFallbackEndpoint() bool {
-	if x != nil {
-		return x.IsFallbackEndpoint
-	}
-	return false
-}
-
 // ShannonObservationsList provides a container for multiple ShannonRequestObservations,
 // allowing them to be embedded in other protocol buffers.
 type ShannonObservationsList struct {
@@ -775,8 +766,7 @@ const file_path_protocol_shannon_proto_rawDesc = "" +
 	"service_id\x18\x01 \x01(\tR\tserviceId\x12L\n" +
 	"\rrequest_error\x18\x02 \x01(\v2\".path.protocol.ShannonRequestErrorH\x00R\frequestError\x88\x01\x01\x12^\n" +
 	"\x15endpoint_observations\x18\x03 \x03(\v2).path.protocol.ShannonEndpointObservationR\x14endpointObservationsB\x10\n" +
-	"\x0e_request_error\"\x8d\n" +
-	"\n" +
+	"\x0e_request_error\"\xdb\t\n" +
 	"\x1aShannonEndpointObservation\x12\x1a\n" +
 	"\bsupplier\x18\x01 \x01(\tR\bsupplier\x12!\n" +
 	"\fendpoint_url\x18\x02 \x01(\tR\vendpointUrl\x120\n" +
@@ -795,8 +785,7 @@ const file_path_protocol_shannon_proto_rawDesc = "" +
 	"\x14recommended_sanction\x18\f \x01(\x0e2\".path.protocol.ShannonSanctionTypeH\x03R\x13recommendedSanction\x88\x01\x01\x12V\n" +
 	"\x11relay_miner_error\x18\r \x01(\v2%.path.protocol.ShannonRelayMinerErrorH\x04R\x0frelayMinerError\x88\x01\x01\x12m\n" +
 	"2endpoint_backend_service_http_response_status_code\x18\x0e \x01(\x05H\x05R,endpointBackendServiceHttpResponseStatusCode\x88\x01\x01\x12o\n" +
-	"3endpoint_backend_service_http_response_payload_size\x18\x0f \x01(\x03H\x06R-endpointBackendServiceHttpResponsePayloadSize\x88\x01\x01\x120\n" +
-	"\x14is_fallback_endpoint\x18\x10 \x01(\bR\x12isFallbackEndpointB\x1e\n" +
+	"3endpoint_backend_service_http_response_payload_size\x18\x0f \x01(\x03H\x06R-endpointBackendServiceHttpResponsePayloadSize\x88\x01\x01B\x1e\n" +
 	"\x1c_endpoint_response_timestampB\r\n" +
 	"\v_error_typeB\x10\n" +
 	"\x0e_error_detailsB\x17\n" +
