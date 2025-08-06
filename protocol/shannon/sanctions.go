@@ -111,10 +111,19 @@ func classifyRelayError(logger polylog.Logger, err error) (protocolobservations.
 	}
 }
 
-// classifyHttpError classifies HTTP-related errors and returns the appropriate endpoint error type and sanction
+// classifyHttpError classifies HTTP-related errors.
+// It returns the appropriate endpoint error type and sanction to be applied to the endpoint.
 // Analyzes the raw error from sendHttpRelay and maps it to defined error types
 func classifyHttpError(logger polylog.Logger, err error) (protocolobservations.ShannonEndpointErrorType, protocolobservations.ShannonSanctionType) {
 	logger = logger.With("error_message", err.Error())
+
+	// Endpoint returned non 2xx HTTP Status code
+	if errors.Is(err, errRelayEndpointHTTPError) {
+		// TODO_IMPROVE: Make this a sanction that just lasts a few blocks
+		return protocolobservations.ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_HTTP_NON_2XX_STATUS,
+			protocolobservations.ShannonSanctionType_SHANNON_SANCTION_UNSPECIFIED
+	}
+
 	errStr := err.Error()
 
 	// Connection establishment failures
@@ -140,6 +149,9 @@ func classifyHttpError(logger polylog.Logger, err error) (protocolobservations.S
 			protocolobservations.ShannonSanctionType_SHANNON_SANCTION_SESSION
 	case strings.Contains(errStr, "i/o timeout"):
 		return protocolobservations.ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_HTTP_IO_TIMEOUT,
+			protocolobservations.ShannonSanctionType_SHANNON_SANCTION_SESSION
+	case strings.Contains(errStr, "context deadline exceeded"):
+		return protocolobservations.ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_HTTP_CONTEXT_DEADLINE_EXCEEDED,
 			protocolobservations.ShannonSanctionType_SHANNON_SANCTION_SESSION
 	}
 
@@ -170,6 +182,7 @@ func classifyHttpError(logger polylog.Logger, err error) (protocolobservations.S
 		"err_preview", errStr[:min(100, len(errStr))],
 	).Warn().Msg("Unable to classify HTTP error - defaulting to internal error")
 
+	// SHANNON_ENDPOINT_ERROR_HTTP_UNKNOWN is the default if we have no details
 	return protocolobservations.ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_HTTP_UNKNOWN,
 		protocolobservations.ShannonSanctionType_SHANNON_SANCTION_SESSION
 }

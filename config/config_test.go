@@ -42,14 +42,25 @@ func Test_LoadGatewayConfigFromYAML(t *testing.T) {
 						OwnedAppsPrivateKeysHex: []string{
 							"40af4e7e1b311c76a573610fe115cd2adf1eeade709cd77ca31ad4472509d388",
 						},
+						ServiceFallback: []shannonprotocol.ServiceFallback{
+							{
+								ServiceID:      "eth",
+								SendAllTraffic: false,
+								FallbackURLs: []string{
+									"https://eth.rpc.grove.city/v1/1a2b3c4d",
+									"https://eth.rpc.grove.city/v1/5e6f7a8b",
+								},
+							},
+						},
 					},
 				},
 				Router: RouterConfig{
-					Port:                  defaultPort,
-					MaxRequestHeaderBytes: defaultMaxRequestHeaderBytes,
-					ReadTimeout:           defaultHTTPServerReadTimeout,
-					WriteTimeout:          defaultHTTPServerWriteTimeout,
-					IdleTimeout:           defaultHTTPServerIdleTimeout,
+					Port:                            defaultPort,
+					MaxRequestHeaderBytes:           defaultMaxRequestHeaderBytes,
+					ReadTimeout:                     defaultHTTPServerReadTimeout,
+					WriteTimeout:                    defaultHTTPServerWriteTimeout,
+					IdleTimeout:                     defaultHTTPServerIdleTimeout,
+					SystemOverheadAllowanceDuration: defaultSystemOverheadAllowanceDuration,
 				},
 				Logger: LoggerConfig{
 					Level: defaultLogLevel,
@@ -131,11 +142,12 @@ logger_config:
 					},
 				},
 				Router: RouterConfig{
-					Port:                  defaultPort,
-					MaxRequestHeaderBytes: defaultMaxRequestHeaderBytes,
-					ReadTimeout:           defaultHTTPServerReadTimeout,
-					WriteTimeout:          defaultHTTPServerWriteTimeout,
-					IdleTimeout:           defaultHTTPServerIdleTimeout,
+					Port:                            defaultPort,
+					MaxRequestHeaderBytes:           defaultMaxRequestHeaderBytes,
+					ReadTimeout:                     defaultHTTPServerReadTimeout,
+					WriteTimeout:                    defaultHTTPServerWriteTimeout,
+					IdleTimeout:                     defaultHTTPServerIdleTimeout,
+					SystemOverheadAllowanceDuration: defaultSystemOverheadAllowanceDuration,
 				},
 				Logger: LoggerConfig{
 					Level: "debug",
@@ -157,6 +169,102 @@ logger_config:
 			    gateway_private_key_hex: "40af4e7e1b311c76a573610fe115cd2adf1eeade709cd77ca31ad4472509d388"
 			logger_config:
 			  level: "invalid_level"
+			`,
+			wantErr: true,
+		},
+		{
+			name:     "should return error for empty service ID in service_fallback",
+			filePath: "empty_service_id.yaml",
+			yamlData: `
+			shannon_config:
+			  full_node_config:
+			    rpc_url: "https://shannon-testnet-grove-rpc.beta.poktroll.com"
+			    grpc_config:
+			      host_port: "shannon-testnet-grove-grpc.beta.poktroll.com:443"
+			  gateway_config:
+			    gateway_mode: "centralized"
+			    gateway_address: "pokt1up7zlytnmvlsuxzpzvlrta95347w322adsxslw"
+			    gateway_private_key_hex: "40af4e7e1b311c76a573610fe115cd2adf1eeade709cd77ca31ad4472509d388"
+			    owned_apps_private_keys_hex:
+			      - "40af4e7e1b311c76a573610fe115cd2adf1eeade709cd77ca31ad4472509d388"
+			    service_fallback:
+			      - service_id: ""
+			        send_all_traffic: false
+			        fallback_urls:
+			          - "https://eth.rpc.grove.city/v1/1a2b3c4d"
+			`,
+			wantErr: true,
+		},
+		{
+			name:     "should return error for missing fallback_urls in service_fallback",
+			filePath: "missing_fallback_urls.yaml",
+			yamlData: `
+			shannon_config:
+			  full_node_config:
+			    rpc_url: "https://shannon-testnet-grove-rpc.beta.poktroll.com"
+			    grpc_config:
+			      host_port: "shannon-testnet-grove-grpc.beta.poktroll.com:443"
+			  gateway_config:
+			    gateway_mode: "centralized"
+			    gateway_address: "pokt1up7zlytnmvlsuxzpzvlrta95347w322adsxslw"
+			    gateway_private_key_hex: "40af4e7e1b311c76a573610fe115cd2adf1eeade709cd77ca31ad4472509d388"
+			    owned_apps_private_keys_hex:
+			      - "40af4e7e1b311c76a573610fe115cd2adf1eeade709cd77ca31ad4472509d388"
+			    service_fallback:
+			      - service_id: eth
+			        send_all_traffic: false
+			        fallback_urls: []
+			`,
+			wantErr: true,
+		},
+		{
+			name:     "should return error for invalid fallback endpoint URL",
+			filePath: "invalid_fallback_url.yaml",
+			yamlData: `
+			shannon_config:
+			  full_node_config:
+			    rpc_url: "https://shannon-testnet-grove-rpc.beta.poktroll.com"
+			    grpc_config:
+			      host_port: "shannon-testnet-grove-grpc.beta.poktroll.com:443"
+			  gateway_config:
+			    gateway_mode: "centralized"
+			    gateway_address: "pokt1up7zlytnmvlsuxzpzvlrta95347w322adsxslw"
+			    gateway_private_key_hex: "40af4e7e1b311c76a573610fe115cd2adf1eeade709cd77ca31ad4472509d388"
+			    owned_apps_private_keys_hex:
+			      - "40af4e7e1b311c76a573610fe115cd2adf1eeade709cd77ca31ad4472509d388"
+			    service_fallback:
+			      - service_id: eth
+			        send_all_traffic: false
+			        fallback_urls:
+			          - "invalid-url-format"
+			          - "ftp://invalid.protocol.com"
+			`,
+			wantErr: true,
+		},
+		{
+			name:     "should return error for duplicate service IDs in service_fallback",
+			filePath: "duplicate_service_ids.yaml",
+			yamlData: `
+			shannon_config:
+			  full_node_config:
+			    rpc_url: "https://shannon-testnet-grove-rpc.beta.poktroll.com"
+			    grpc_config:
+			      host_port: "shannon-testnet-grove-grpc.beta.poktroll.com:443"
+			  gateway_config:
+			    gateway_mode: "centralized"
+			    gateway_address: "pokt1up7zlytnmvlsuxzpzvlrta95347w322adsxslw"
+			    gateway_private_key_hex: "40af4e7e1b311c76a573610fe115cd2adf1eeade709cd77ca31ad4472509d388"
+			    owned_apps_private_keys_hex:
+			      - "40af4e7e1b311c76a573610fe115cd2adf1eeade709cd77ca31ad4472509d388"
+			    service_fallback:
+			      - service_id: eth
+			        send_all_traffic: false
+			        fallback_urls:
+			          - "https://eth.rpc.grove.city/v1/1a2b3c4d"
+			      - service_id: eth
+			        send_all_traffic: true
+			        fallback_urls:
+			          - "https://eth.rpc.grove.city/v1/5e6f7a8b"
 			`,
 			wantErr: true,
 		},

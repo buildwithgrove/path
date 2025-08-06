@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
@@ -89,7 +90,8 @@ func (rc *requestContext) handleParallelRelayRequests() error {
 		With("service_id", rc.serviceID)
 	logger.Debug().Msg("Starting parallel relay race")
 
-	ctx, cancel := context.WithTimeout(rc.context, parallelRequestTimeout)
+	// TODO_TECHDEBT: Make sure timed out parallel requests are also sanctioned.
+	ctx, cancel := context.WithTimeout(rc.context, RelayRequestTimeout)
 	defer cancel()
 
 	resultChan := rc.launchParallelRequests(ctx, logger)
@@ -112,31 +114,44 @@ func (rc *requestContext) updateParallelRequestMetrics(metrics *parallelRequestM
 func (rc *requestContext) launchParallelRequests(ctx context.Context, logger polylog.Logger) <-chan parallelRelayResult {
 	resultChan := make(chan parallelRelayResult, len(rc.protocolContexts))
 
+	// Ensures thread-safety of QoS context operations.
+	qosContextMutex := sync.Mutex{}
+
 	for protocolCtxIdx, protocolCtx := range rc.protocolContexts {
-		go rc.executeRelayRequest(ctx, logger, protocolCtx, protocolCtxIdx, resultChan)
+		go rc.executeOneOfParallelRequests(ctx, logger, protocolCtx, protocolCtxIdx, resultChan, &qosContextMutex)
 	}
 
 	return resultChan
 }
 
-// executeRelayRequest handles a single relay request in a goroutine
-func (rc *requestContext) executeRelayRequest(
+// executeOneOfParallelRequests handles a single relay request in a goroutine
+func (rc *requestContext) executeOneOfParallelRequests(
 	ctx context.Context,
 	logger polylog.Logger,
 	protocolCtx ProtocolRequestContext,
 	index int,
 	resultChan chan<- parallelRelayResult,
+	qosContextMutex *sync.Mutex,
 ) {
 	startTime := time.Now()
-	response, err := protocolCtx.HandleServiceRequest(rc.qosCtx.GetServicePayload())
+	endpointResponse, err := protocolCtx.HandleServiceRequest(rc.qosCtx.GetServicePayload())
 	duration := time.Since(startTime)
 
 	result := parallelRelayResult{
-		response:  response,
+		response:  endpointResponse,
 		err:       err,
 		index:     index,
 		duration:  duration,
 		startTime: startTime,
+	}
+
+	if err != nil {
+		// TODO_TECHDEBT(@adshmh): refactor the parallel requests feature:
+		// 1. Ensure parallel requests are handled correctly by the QoS layer: e.g. cannot use the most recent response as best anymore.
+		// 2. Simplify the parallel requests feature: it may be best to fully encapsulate it in the protocol/shannon package.
+		qosContextMutex.Lock()
+		rc.qosCtx.UpdateWithResponse(endpointResponse.EndpointAddr, endpointResponse.Bytes)
+		qosContextMutex.Unlock()
 	}
 
 	select {

@@ -163,12 +163,18 @@ const (
 	ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_TLS_HANDSHAKE            ShannonEndpointErrorType = 32
 	// RelayRequest was canceled by PATH intentionally.
 	ShannonEndpointErrorType_SHANNON_ENDPOINT_REQUEST_CANCELED_BY_PATH ShannonEndpointErrorType = 33
-	// New error types for better classification (added without renumbering existing ones)
-	// Error was recognized but specific classification failed.
-	// Only general category: HTTP, Raw Payload, General, is known.
+	// ** SHANNON_ENDPOINT_ERROR_HTTP_UNKNOWN **
+	// PATH -> HTTP Request -> Endpoint
+	// HTTP Response is NOT received
+	// We cannot move forward with PATH business logic
+	// There is nothing to go to.
 	ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_HTTP_UNKNOWN        ShannonEndpointErrorType = 34
 	ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_UNKNOWN ShannonEndpointErrorType = 35
 	ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_UNKNOWN             ShannonEndpointErrorType = 36
+	// The relay request sent to the endpoint via HTTP returned a non 2XX HTTP status code.
+	ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_HTTP_NON_2XX_STATUS ShannonEndpointErrorType = 37
+	// The relay request sent to the endpoint via HTTP failed with `context deadline exceeded` error
+	ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_HTTP_CONTEXT_DEADLINE_EXCEEDED ShannonEndpointErrorType = 38
 )
 
 // Enum value maps for ShannonEndpointErrorType.
@@ -210,6 +216,8 @@ var (
 		34: "SHANNON_ENDPOINT_ERROR_HTTP_UNKNOWN",
 		35: "SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_UNKNOWN",
 		36: "SHANNON_ENDPOINT_ERROR_UNKNOWN",
+		37: "SHANNON_ENDPOINT_ERROR_HTTP_NON_2XX_STATUS",
+		38: "SHANNON_ENDPOINT_ERROR_HTTP_CONTEXT_DEADLINE_EXCEEDED",
 	}
 	ShannonEndpointErrorType_value = map[string]int32{
 		"SHANNON_ENDPOINT_ERROR_UNSPECIFIED":                          0,
@@ -248,6 +256,8 @@ var (
 		"SHANNON_ENDPOINT_ERROR_HTTP_UNKNOWN":                         34,
 		"SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_UNKNOWN":                  35,
 		"SHANNON_ENDPOINT_ERROR_UNKNOWN":                              36,
+		"SHANNON_ENDPOINT_ERROR_HTTP_NON_2XX_STATUS":                  37,
+		"SHANNON_ENDPOINT_ERROR_HTTP_CONTEXT_DEADLINE_EXCEEDED":       38,
 	}
 )
 
@@ -553,8 +563,12 @@ type ShannonEndpointObservation struct {
 	EndpointBackendServiceHttpResponseStatusCode *int32 `protobuf:"varint,14,opt,name=endpoint_backend_service_http_response_status_code,json=endpointBackendServiceHttpResponseStatusCode,proto3,oneof" json:"endpoint_backend_service_http_response_status_code,omitempty"`
 	// HTTP Response payload size
 	EndpointBackendServiceHttpResponsePayloadSize *int64 `protobuf:"varint,15,opt,name=endpoint_backend_service_http_response_payload_size,json=endpointBackendServiceHttpResponsePayloadSize,proto3,oneof" json:"endpoint_backend_service_http_response_payload_size,omitempty"`
-	unknownFields                                 protoimpl.UnknownFields
-	sizeCache                                     protoimpl.SizeCache
+	// TODO_CONSIDERATION(@adshmh): Consider renaming to is_gateway_owned OR is_off_protocol.
+	//
+	// Tracks whether the endpoint is a fallback endpoint.
+	IsFallbackEndpoint bool `protobuf:"varint,16,opt,name=is_fallback_endpoint,json=isFallbackEndpoint,proto3" json:"is_fallback_endpoint,omitempty"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
 }
 
 func (x *ShannonEndpointObservation) Reset() {
@@ -692,6 +706,13 @@ func (x *ShannonEndpointObservation) GetEndpointBackendServiceHttpResponsePayloa
 	return 0
 }
 
+func (x *ShannonEndpointObservation) GetIsFallbackEndpoint() bool {
+	if x != nil {
+		return x.IsFallbackEndpoint
+	}
+	return false
+}
+
 // ShannonObservationsList provides a container for multiple ShannonRequestObservations,
 // allowing them to be embedded in other protocol buffers.
 type ShannonObservationsList struct {
@@ -756,7 +777,8 @@ const file_path_protocol_shannon_proto_rawDesc = "" +
 	"service_id\x18\x01 \x01(\tR\tserviceId\x12L\n" +
 	"\rrequest_error\x18\x02 \x01(\v2\".path.protocol.ShannonRequestErrorH\x00R\frequestError\x88\x01\x01\x12^\n" +
 	"\x15endpoint_observations\x18\x03 \x03(\v2).path.protocol.ShannonEndpointObservationR\x14endpointObservationsB\x10\n" +
-	"\x0e_request_error\"\xdb\t\n" +
+	"\x0e_request_error\"\x8d\n" +
+	"\n" +
 	"\x1aShannonEndpointObservation\x12\x1a\n" +
 	"\bsupplier\x18\x01 \x01(\tR\bsupplier\x12!\n" +
 	"\fendpoint_url\x18\x02 \x01(\tR\vendpointUrl\x120\n" +
@@ -775,7 +797,8 @@ const file_path_protocol_shannon_proto_rawDesc = "" +
 	"\x14recommended_sanction\x18\f \x01(\x0e2\".path.protocol.ShannonSanctionTypeH\x03R\x13recommendedSanction\x88\x01\x01\x12V\n" +
 	"\x11relay_miner_error\x18\r \x01(\v2%.path.protocol.ShannonRelayMinerErrorH\x04R\x0frelayMinerError\x88\x01\x01\x12m\n" +
 	"2endpoint_backend_service_http_response_status_code\x18\x0e \x01(\x05H\x05R,endpointBackendServiceHttpResponseStatusCode\x88\x01\x01\x12o\n" +
-	"3endpoint_backend_service_http_response_payload_size\x18\x0f \x01(\x03H\x06R-endpointBackendServiceHttpResponsePayloadSize\x88\x01\x01B\x1e\n" +
+	"3endpoint_backend_service_http_response_payload_size\x18\x0f \x01(\x03H\x06R-endpointBackendServiceHttpResponsePayloadSize\x88\x01\x01\x120\n" +
+	"\x14is_fallback_endpoint\x18\x10 \x01(\bR\x12isFallbackEndpointB\x1e\n" +
 	"\x1c_endpoint_response_timestampB\r\n" +
 	"\v_error_typeB\x10\n" +
 	"\x0e_error_detailsB\x17\n" +
@@ -797,7 +820,7 @@ const file_path_protocol_shannon_proto_rawDesc = "" +
 	"2SHANNON_REQUEST_ERROR_INTERNAL_DELEGATED_FETCH_APP\x10\b\x12B\n" +
 	">SHANNON_REQUEST_ERROR_INTERNAL_DELEGATED_APP_DOES_NOT_DELEGATE\x10\t\x125\n" +
 	"1SHANNON_REQUEST_ERROR_INTERNAL_SIGNER_SETUP_ERROR\x10\n" +
-	"*\xcd\x0e\n" +
+	"*\xb8\x0f\n" +
 	"\x18ShannonEndpointErrorType\x12&\n" +
 	"\"SHANNON_ENDPOINT_ERROR_UNSPECIFIED\x10\x00\x12'\n" +
 	"\x1fSHANNON_ENDPOINT_ERROR_INTERNAL\x10\x01\x1a\x02\b\x01\x12!\n" +
@@ -835,7 +858,9 @@ const file_path_protocol_shannon_proto_rawDesc = "" +
 	")SHANNON_ENDPOINT_REQUEST_CANCELED_BY_PATH\x10!\x12'\n" +
 	"#SHANNON_ENDPOINT_ERROR_HTTP_UNKNOWN\x10\"\x12.\n" +
 	"*SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_UNKNOWN\x10#\x12\"\n" +
-	"\x1eSHANNON_ENDPOINT_ERROR_UNKNOWN\x10$*\x9b\x01\n" +
+	"\x1eSHANNON_ENDPOINT_ERROR_UNKNOWN\x10$\x12.\n" +
+	"*SHANNON_ENDPOINT_ERROR_HTTP_NON_2XX_STATUS\x10%\x129\n" +
+	"5SHANNON_ENDPOINT_ERROR_HTTP_CONTEXT_DEADLINE_EXCEEDED\x10&*\x9b\x01\n" +
 	"\x13ShannonSanctionType\x12 \n" +
 	"\x1cSHANNON_SANCTION_UNSPECIFIED\x10\x00\x12\x1c\n" +
 	"\x18SHANNON_SANCTION_SESSION\x10\x01\x12\x1e\n" +
