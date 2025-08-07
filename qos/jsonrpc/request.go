@@ -172,3 +172,9 @@ func BuildParamsFromUint64AndObject(uint64Param uint64, objectParam map[string]a
 	}
 	return Params{rawMessage: jsonParams}, nil
 }
+
+// BuildParamsFromEmptyObject builds a Params object from an empty object.
+// Results in params: {}
+func BuildParamsFromEmptyObject() Params {
+	return Params{rawMessage: []byte("{}")}
+}
