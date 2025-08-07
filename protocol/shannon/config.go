@@ -207,10 +207,10 @@ func (gc GatewayConfig) getServiceFallbacks() map[protocol.ServiceID]serviceFall
 
 		// Create fallback endpoints from the configuration
 		for _, endpointMap := range serviceFallbackConfig.FallbackEndpoints {
-			// Convert string keys to RPC types
-			rpcTypeURLs := make(map[sharedtypes.RPCType]string)
+			rpcTypeURLs := make(map[sharedtypes.RPCType]string, len(endpointMap))
 
 			for rpcTypeStr, url := range endpointMap {
+				// Convert string keys to RPC types
 				rpcType, err := sharedtypes.GetRPCTypeFromConfig(rpcTypeStr)
 				if err != nil {
 					// This should not happen if validation passed, but skip invalid RPC types
@@ -219,7 +219,7 @@ func (gc GatewayConfig) getServiceFallbacks() map[protocol.ServiceID]serviceFall
 				rpcTypeURLs[rpcType] = url
 			}
 
-			// Create fallback endpoint from the configuration and add
+			// Create fallback endpoint struct from the configuration and add
 			// it to the map of endpoints for the service by its EndpointAddr.
 			fallbackEndpoint := fallbackEndpoint{
 				defaultURL:  endpointMap[defaultURLKey],
