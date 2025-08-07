@@ -168,9 +168,10 @@ func buildEndpointObservation(
 	// app, serviceID, session ID, session start and end heights
 	observation := buildEndpointObservationFromSession(logger, endpoint.session)
 
-	// Add endpoint-level details: supplier, URL.
+	// Add endpoint-level details: supplier, URL, isFallback.
 	observation.Supplier = endpoint.supplier
 	observation.EndpointUrl = endpoint.url
+	observation.IsFallbackEndpoint = endpoint.isFallback()
 
 	// Add endpoint response details if not nil (i.e. success)
 	if endpointResponse != nil {
