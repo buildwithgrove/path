@@ -258,7 +258,7 @@ func (b *bridge) signClientMessage(msg message) ([]byte, error) {
 		Payload: msg.data,
 	}
 
-	app := b.selectedEndpoint.Session().Application
+	app := b.selectedEndpoint.Session().GetApplication()
 	signedRelayRequest, err := b.relayRequestSigner.SignRelayRequest(unsignedRelayRequest, *app)
 	if err != nil {
 		return nil, fmt.Errorf("error signing client message: %s", err.Error())
