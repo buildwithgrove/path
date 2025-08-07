@@ -252,7 +252,7 @@ func (b *bridge) handleClientMessage(msg message) {
 func (b *bridge) signClientMessage(msg message) ([]byte, error) {
 	unsignedRelayRequest := &servicetypes.RelayRequest{
 		Meta: servicetypes.RelayRequestMetadata{
-			SessionHeader:           b.selectedEndpoint.Session().Header,
+			SessionHeader:           b.selectedEndpoint.Session().GetHeader(),
 			SupplierOperatorAddress: b.selectedEndpoint.Supplier(),
 		},
 		Payload: msg.data,
