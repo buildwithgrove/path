@@ -133,6 +133,8 @@ properties:
                   items:
                     type: object
                     additionalProperties: false
+                    required:
+                      - default_url
                     patternProperties:
                       "^(default_url|json_rpc|rest|comet_bft|websocket)$":
                         type: string
