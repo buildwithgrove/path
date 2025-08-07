@@ -166,7 +166,7 @@ func buildEndpointObservation(
 ) *protocolobservations.ShannonEndpointObservation {
 	// Add session fields to the observation:
 	// app, serviceID, session ID, session start and end heights
-	observation := buildEndpointObservationFromSession(logger, endpoint.Session())
+	observation := buildEndpointObservationFromSession(logger, *endpoint.Session())
 
 	// Add endpoint-level details: supplier, URL, isFallback.
 	observation.Supplier = endpoint.Supplier()

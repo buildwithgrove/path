@@ -18,7 +18,7 @@ import (
 // protocol/shannon package.
 type endpoint interface {
 	protocol.Endpoint
-	Session() sessiontypes.Session
+	Session() *sessiontypes.Session
 	Supplier() string
 	FallbackURL(sharedtypes.RPCType) string
 	IsFallback() bool
@@ -89,8 +89,8 @@ func (e fallbackEndpoint) WebsocketURL() (string, error) {
 }
 
 // Session is a no-op for fallback endpoints.
-func (e fallbackEndpoint) Session() sessiontypes.Session {
-	return sessiontypes.Session{}
+func (e fallbackEndpoint) Session() *sessiontypes.Session {
+	return &sessiontypes.Session{}
 }
 
 // Supplier returns `fallbackSupplierString` as the supplier address.
@@ -150,8 +150,8 @@ func (e protocolEndpoint) WebsocketURL() (string, error) {
 }
 
 // Session returns a pointer to the session associated with the endpoint.
-func (e protocolEndpoint) Session() sessiontypes.Session {
-	return e.session
+func (e protocolEndpoint) Session() *sessiontypes.Session {
+	return &e.session
 }
 
 // Supplier returns the supplier address of the endpoint.

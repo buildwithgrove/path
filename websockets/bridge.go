@@ -40,7 +40,7 @@ type SelectedEndpoint interface {
 	PublicURL() string
 	WebsocketURL() (string, error)
 	Supplier() string
-	Session() sessiontypes.Session
+	Session() *sessiontypes.Session
 }
 
 // bridge routes data between an Endpoint and a Client.
@@ -162,7 +162,7 @@ func connectWebsocketEndpoint(logger polylog.Logger, selectedEndpoint SelectedEn
 //   - `Target-Service-Id`: The service ID of the target service.
 //   - `App-Address:` The address of the session's application.
 //   - `Rpc-Type`: The type of RPC request. Always "websocket" for websocket connection requests.
-func getBridgeRequestHeaders(session sessiontypes.Session) http.Header {
+func getBridgeRequestHeaders(session *sessiontypes.Session) http.Header {
 	headers := http.Header{}
 	headers.Add(request.HTTPHeaderTargetServiceID, session.Header.ServiceId)
 	headers.Add(request.HTTPHeaderAppAddress, session.Header.ApplicationAddress)

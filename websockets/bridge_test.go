@@ -309,8 +309,8 @@ func (e *selectedEndpoint) Supplier() string {
 	return e.supplier
 }
 
-func (e *selectedEndpoint) Session() sessiontypes.Session {
-	return e.session
+func (e *selectedEndpoint) Session() *sessiontypes.Session {
+	return &e.session
 }
 
 type relayRequestSigner struct{}

@@ -41,7 +41,7 @@ func hydrateLoggerWithEndpoint(
 //   - An enhanced logger with all relevant session fields attached
 func hydrateLoggerWithSession(
 	logger polylog.Logger,
-	session types.Session,
+	session *types.Session,
 ) polylog.Logger {
 	// Start with basic session fields
 	hydratedLogger := logger.With(
