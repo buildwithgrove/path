@@ -205,7 +205,7 @@ logger_config:
 			      - service_id: ""
 			        send_all_traffic: false
 			        fallback_endpoints:
-			          - json_rpc: "https://eth.rpc.grove.city/v1/1a2b3c4d"
+			          - json_rpc: "https://eth.rpc.backup.io""
 			`,
 			wantErr: true,
 		},
@@ -274,11 +274,11 @@ logger_config:
 			      - service_id: eth
 			        send_all_traffic: false
 			        fallback_endpoints:
-			          - json_rpc: "https://eth.rpc.grove.city/v1/1a2b3c4d"
+			          - json_rpc: "https://eth.rpc.backup.io""
 			      - service_id: eth
 			        send_all_traffic: true
 			        fallback_endpoints:
-			          - json_rpc: "https://eth.rpc.grove.city/v1/5e6f7a8b"
+			          - json_rpc: "https://eth.rpc.backup.io""
 			`,
 			wantErr: true,
 		},
