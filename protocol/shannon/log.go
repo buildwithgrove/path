@@ -43,6 +43,11 @@ func hydrateLoggerWithSession(
 	logger polylog.Logger,
 	session *types.Session,
 ) polylog.Logger {
+	// Handle nil session
+	if session == nil {
+		return logger
+	}
+
 	// Start with basic session fields
 	hydratedLogger := logger.With(
 		"session_id", session.SessionId,
