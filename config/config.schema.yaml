@@ -122,17 +122,23 @@ properties:
               additionalProperties: false
               required:
                 - service_id
-                - fallback_urls
+                - fallback_endpoints
               properties:
                 service_id:
                   description: "The service ID for this fallback configuration. Must be unique within the service_fallback array."
                   type: string
-                fallback_urls:
-                  description: "List of fallback endpoint URLs for this service."
+                fallback_endpoints:
+                  description: "Array of fallback endpoint configurations for this service. Each endpoint can define URLs for different RPC types."
                   type: array
                   items:
-                    type: string
-                    pattern: "^(http|https)://.*$"
+                    type: object
+                    additionalProperties: false
+                    patternProperties:
+                      "^(default_url|json_rpc|rest|comet_bft|websocket)$":
+                        type: string
+                        anyOf:
+                          - pattern: "^(http|https)://.*$"
+                          - pattern: "^(http|https|ws|wss)://.*$"
                 send_all_traffic:
                   description: "Whether to send all traffic to fallback endpoints for this service, regardless of protocol endpoint health."
                   type: boolean

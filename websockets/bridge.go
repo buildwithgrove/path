@@ -40,7 +40,7 @@ type SelectedEndpoint interface {
 	PublicURL() string
 	WebsocketURL() (string, error)
 	Supplier() string
-	Session() *sessiontypes.Session
+	Session() sessiontypes.Session
 }
 
 // bridge routes data between an Endpoint and a Client.
@@ -128,17 +128,17 @@ func NewBridge(
 
 // connectWebsocketEndpoint makes a websocket connection to the websocket Endpoint.
 func connectWebsocketEndpoint(logger polylog.Logger, selectedEndpoint SelectedEndpoint) (*websocket.Conn, error) {
-	logger.Info().Msgf("🔗 Connecting to endpoint: %s", selectedEndpoint.PublicURL())
-
 	websocketURL, err := selectedEndpoint.WebsocketURL()
 	if err != nil {
 		logger.Error().Err(err).Msgf("❌ Selected endpoint does not support websocket RPC type: %s", selectedEndpoint.Addr())
 		return nil, err
 	}
 
+	logger.Info().Msgf("🔗 Connecting to websocket endpoint: %s", websocketURL)
+
 	u, err := url.Parse(websocketURL)
 	if err != nil {
-		logger.Error().Err(err).Msgf("❌ Error parsing endpoint URL: %s", selectedEndpoint.PublicURL())
+		logger.Error().Err(err).Msgf("❌ Error parsing endpoint URL: %s", websocketURL)
 		return nil, err
 	}
 
@@ -162,7 +162,7 @@ func connectWebsocketEndpoint(logger polylog.Logger, selectedEndpoint SelectedEn
 //   - `Target-Service-Id`: The service ID of the target service.
 //   - `App-Address:` The address of the session's application.
 //   - `Rpc-Type`: The type of RPC request. Always "websocket" for websocket connection requests.
-func getBridgeRequestHeaders(session *sessiontypes.Session) http.Header {
+func getBridgeRequestHeaders(session sessiontypes.Session) http.Header {
 	headers := http.Header{}
 	headers.Add(request.HTTPHeaderTargetServiceID, session.Header.ServiceId)
 	headers.Add(request.HTTPHeaderAppAddress, session.Header.ApplicationAddress)
@@ -252,13 +252,13 @@ func (b *bridge) handleClientMessage(msg message) {
 func (b *bridge) signClientMessage(msg message) ([]byte, error) {
 	unsignedRelayRequest := &servicetypes.RelayRequest{
 		Meta: servicetypes.RelayRequestMetadata{
-			SessionHeader:           b.selectedEndpoint.Session().GetHeader(),
+			SessionHeader:           b.selectedEndpoint.Session().Header,
 			SupplierOperatorAddress: b.selectedEndpoint.Supplier(),
 		},
 		Payload: msg.data,
 	}
 
-	app := b.selectedEndpoint.Session().GetApplication()
+	app := b.selectedEndpoint.Session().Application
 	signedRelayRequest, err := b.relayRequestSigner.SignRelayRequest(unsignedRelayRequest, *app)
 	if err != nil {
 		return nil, fmt.Errorf("error signing client message: %s", err.Error())

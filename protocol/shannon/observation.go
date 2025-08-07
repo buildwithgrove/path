@@ -166,12 +166,12 @@ func buildEndpointObservation(
 ) *protocolobservations.ShannonEndpointObservation {
 	// Add session fields to the observation:
 	// app, serviceID, session ID, session start and end heights
-	observation := buildEndpointObservationFromSession(logger, endpoint.session)
+	observation := buildEndpointObservationFromSession(logger, endpoint.Session())
 
 	// Add endpoint-level details: supplier, URL, isFallback.
-	observation.Supplier = endpoint.supplier
-	observation.EndpointUrl = endpoint.url
-	observation.IsFallbackEndpoint = endpoint.isFallback()
+	observation.Supplier = endpoint.Supplier()
+	observation.EndpointUrl = endpoint.PublicURL()
+	observation.IsFallbackEndpoint = endpoint.IsFallback()
 
 	// Add endpoint response details if not nil (i.e. success)
 	if endpointResponse != nil {
@@ -220,9 +220,9 @@ func buildEndpointObservationFromSession(
 // Used to identify an endpoint for applying sanctions.
 func buildEndpointFromObservation(
 	observation *protocolobservations.ShannonEndpointObservation,
-) *endpoint {
+) *protocolEndpoint {
 	session := buildSessionFromObservation(observation)
-	return &endpoint{
+	return &protocolEndpoint{
 		session:  session,
 		supplier: observation.GetSupplier(),
 		url:      observation.GetEndpointUrl(),

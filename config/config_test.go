@@ -44,11 +44,25 @@ func Test_LoadGatewayConfigFromYAML(t *testing.T) {
 						},
 						ServiceFallback: []shannonprotocol.ServiceFallback{
 							{
-								ServiceID:      "eth",
+								ServiceID:      "xrplevm",
 								SendAllTraffic: false,
-								FallbackURLs: []string{
-									"https://eth.rpc.grove.city/v1/1a2b3c4d",
-									"https://eth.rpc.grove.city/v1/5e6f7a8b",
+								FallbackEndpoints: []map[string]string{
+									{
+										"default_url": "http://12.34.56.78",
+										"json_rpc":    "http://12.34.56.78:8545",
+										"rest":        "http://12.34.56.78:1317",
+										"comet_bft":   "http://12.34.56.78:26657",
+										"websocket":   "http://12.34.56.78:8546",
+									},
+								},
+							},
+							{
+								ServiceID:      "eth",
+								SendAllTraffic: true,
+								FallbackEndpoints: []map[string]string{
+									{
+										"default_url": "https://eth.rpc.backup.io",
+									},
 								},
 							},
 						},
@@ -190,13 +204,13 @@ logger_config:
 			    service_fallback:
 			      - service_id: ""
 			        send_all_traffic: false
-			        fallback_urls:
-			          - "https://eth.rpc.grove.city/v1/1a2b3c4d"
+			        fallback_endpoints:
+			          - json_rpc: "https://eth.rpc.grove.city/v1/1a2b3c4d"
 			`,
 			wantErr: true,
 		},
 		{
-			name:     "should return error for missing fallback_urls in service_fallback",
+			name:     "should return error for missing fallback_endpoints in service_fallback",
 			filePath: "missing_fallback_urls.yaml",
 			yamlData: `
 			shannon_config:
@@ -213,7 +227,7 @@ logger_config:
 			    service_fallback:
 			      - service_id: eth
 			        send_all_traffic: false
-			        fallback_urls: []
+			        fallback_endpoints: []
 			`,
 			wantErr: true,
 		},
@@ -235,9 +249,9 @@ logger_config:
 			    service_fallback:
 			      - service_id: eth
 			        send_all_traffic: false
-			        fallback_urls:
-			          - "invalid-url-format"
-			          - "ftp://invalid.protocol.com"
+			        fallback_endpoints:
+			          - json_rpc: "invalid-url-format"
+			          - json_rpc: "ftp://invalid.protocol.com"
 			`,
 			wantErr: true,
 		},
@@ -259,12 +273,12 @@ logger_config:
 			    service_fallback:
 			      - service_id: eth
 			        send_all_traffic: false
-			        fallback_urls:
-			          - "https://eth.rpc.grove.city/v1/1a2b3c4d"
+			        fallback_endpoints:
+			          - json_rpc: "https://eth.rpc.grove.city/v1/1a2b3c4d"
 			      - service_id: eth
 			        send_all_traffic: true
-			        fallback_urls:
-			          - "https://eth.rpc.grove.city/v1/5e6f7a8b"
+			        fallback_endpoints:
+			          - json_rpc: "https://eth.rpc.grove.city/v1/5e6f7a8b"
 			`,
 			wantErr: true,
 		},

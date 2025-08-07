@@ -19,7 +19,7 @@ import (
 //   - An enhanced logger with all relevant endpoint fields attached
 func hydrateLoggerWithEndpoint(
 	logger polylog.Logger,
-	endpoint *endpoint,
+	endpoint endpoint,
 ) polylog.Logger {
 	hydratedLogger := logger.With(
 		"endpoint_supplier", endpoint.Supplier(),
@@ -27,7 +27,7 @@ func hydrateLoggerWithEndpoint(
 	)
 
 	// Use hydrateLoggerWithSession for consistency
-	return hydrateLoggerWithSession(hydratedLogger, &endpoint.session)
+	return hydrateLoggerWithSession(hydratedLogger, endpoint.Session())
 }
 
 // hydrateLoggerWithSession enhances a logger with full session details.
@@ -41,13 +41,8 @@ func hydrateLoggerWithEndpoint(
 //   - An enhanced logger with all relevant session fields attached
 func hydrateLoggerWithSession(
 	logger polylog.Logger,
-	session *types.Session,
+	session types.Session,
 ) polylog.Logger {
-	// Handle nil session
-	if session == nil {
-		return logger
-	}
-
 	// Start with basic session fields
 	hydratedLogger := logger.With(
 		"session_id", session.SessionId,

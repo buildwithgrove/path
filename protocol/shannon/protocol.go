@@ -250,7 +250,7 @@ func (p *Protocol) BuildRequestContextForEndpoint(
 		logger:             p.logger,
 		context:            ctx,
 		fullNode:           p.FullNode,
-		selectedEndpoint:   &selectedEndpoint,
+		selectedEndpoint:   selectedEndpoint,
 		serviceID:          serviceID,
 		relayRequestSigner: permittedSigner,
 		httpClient:         p.httpClient,
@@ -394,7 +394,7 @@ func (p *Protocol) getSessionsUniqueEndpoints(
 		// Avoids adding all apps in the loop to the logger's fields.
 		// Hydrate the logger with session details.
 		logger := logger.With("valid_app_address", app.Address).With("method", "getSessionsUniqueEndpoints")
-		logger = hydrateLoggerWithSession(logger, &session)
+		logger = hydrateLoggerWithSession(logger, session)
 		logger.ProbabilisticDebugInfo(polylog.ProbabilisticDebugInfoProb).Msgf("Finding unique endpoints for session %s for app %s for service %s.", session.SessionId, app.Address, serviceID)
 
 		// Retrieve all endpoints for the session.
