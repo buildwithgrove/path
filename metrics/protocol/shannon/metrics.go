@@ -55,13 +55,12 @@ func init() {
 }
 
 var (
-	// TODO_UPNEXT(@adshmh): Add a `used_fallback` label to track distribution of requests to fallback endpoints.
-	//
 	// relaysTotal tracks the total Shannon relay requests processed.
 	// Labels:
 	//   - service_id: Target service identifier (i.e. chain id in Shannon)
 	//   - success: Whether the relay was successful (true if at least one endpoint had no error)
 	//   - error_type: type of error encountered processing the request
+	//   - used_fallback: Whether the request was served using a fallback endpoint.
 	//
 	// Exemplars:
 	//   - endpoint_url: URL of the endpoint (from the last entry in observations list)
@@ -74,13 +73,14 @@ var (
 	//   - Request volume by service
 	//   - Success rates by service
 	//   - Detailed endpoint and app data available via exemplars when needed
+	//   - Distribution of traffic between protocol and fallback endpoints.
 	relaysTotal = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Subsystem: pathProcess,
 			Name:      relaysTotalMetric,
 			Help:      "Total number of relays processed by Shannon protocol instance(s)",
 		},
-		[]string{"service_id", "success", "error_type"},
+		[]string{"service_id", "success", "error_type", "used_fallback"},
 	)
 
 	// relaysErrorsTotal tracks relay errors from Shannon protocol
@@ -281,12 +281,16 @@ func recordRelayTotal(
 	// Determine if any of the observations were successful.
 	success := isAnyObservationSuccessful(endpointObservations)
 
+	// Determine if any of the endpoints was a fallback
+	usedFallbackEndpoint := isFallbackEndpointUsed(endpointObservations)
+
 	// Increment the relay total counter with exemplars
 	relaysTotal.With(
 		prometheus.Labels{
-			"service_id": serviceID,
-			"success":    fmt.Sprintf("%t", success),
-			"error_type": "",
+			"service_id":    serviceID,
+			"success":       fmt.Sprintf("%t", success),
+			"error_type":    "",
+			"used_fallback": fmt.Sprintf("%t", usedFallbackEndpoint),
 		},
 	// This dynamic type cast is safe:
 	// https://pkg.go.dev/github.com/prometheus/client_golang@v1.22.0/prometheus#NewCounter
@@ -311,6 +315,16 @@ func extractRequestError(observations *protocolobservations.ShannonRequestObserv
 func isAnyObservationSuccessful(observations []*protocolobservations.ShannonEndpointObservation) bool {
 	for _, obs := range observations {
 		if obs.GetErrorType() == protocolobservations.ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_UNSPECIFIED {
+			return true
+		}
+	}
+	return false
+}
+
+// isFallbackEndpointUsed returns true if any endpoint was a fallback endpoint.
+func isFallbackEndpointUsed(observations []*protocolobservations.ShannonEndpointObservation) bool {
+	for _, obs := range observations {
+		if obs.GetIsFallbackEndpoint() {
 			return true
 		}
 	}
