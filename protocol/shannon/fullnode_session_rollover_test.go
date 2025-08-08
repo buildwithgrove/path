@@ -76,6 +76,7 @@ func Test_updateSessionStartHeight(t *testing.T) {
 			session: sessiontypes.Session{
 				Header: &sessiontypes.SessionHeader{
 					SessionStartBlockHeight: 100,
+					SessionEndBlockHeight:   160,
 				},
 			},
 			initialSessionStartHeight:  0,
@@ -140,6 +141,74 @@ func Test_updateSessionStartHeight(t *testing.T) {
 
 			if !tt.shouldReturn && lfn.rolloverState.isInSessionRollover != tt.expectedInRollover {
 				t.Errorf("isInSessionRollover = %v, want %v", lfn.rolloverState.isInSessionRollover, tt.expectedInRollover)
+			}
+		})
+	}
+}
+
+func Test_calculateRolloverStatus(t *testing.T) {
+	tests := []struct {
+		name                      string
+		currentBlockHeight        int64
+		currentSessionStartHeight int64
+		currentSessionEndHeight   int64
+		expected                  bool
+	}{
+		{
+			name:                      "no block height returns false",
+			currentBlockHeight:        0,
+			currentSessionStartHeight: 100,
+			currentSessionEndHeight:   160,
+			expected:                  false,
+		},
+		{
+			name:                      "use session start height when available",
+			currentBlockHeight:        105,
+			currentSessionStartHeight: 100,
+			currentSessionEndHeight:   160,
+			expected:                  true, // 105 is in rollover window [99, 110] of session start 100
+		},
+		{
+			name:                      "fallback to session end height when start height unavailable",
+			currentBlockHeight:        161, // next session starts at 161 (160 + 1)
+			currentSessionStartHeight: 0,
+			currentSessionEndHeight:   160,
+			expected:                  true, // 161 is in rollover window [160, 171] of next session start 161
+		},
+		{
+			name:                      "fallback: block height outside next session rollover window",
+			currentBlockHeight:        180,
+			currentSessionStartHeight: 0,
+			currentSessionEndHeight:   160,
+			expected:                  false, // 180 is outside rollover window [160, 171] of next session start 161
+		},
+		{
+			name:                      "no session data available",
+			currentBlockHeight:        100,
+			currentSessionStartHeight: 0,
+			currentSessionEndHeight:   0,
+			expected:                  false,
+		},
+		{
+			name:                      "prefer session start height over end height",
+			currentBlockHeight:        105,
+			currentSessionStartHeight: 100, // this should be used
+			currentSessionEndHeight:   50,   // this should be ignored
+			expected:                  true, // 105 is in rollover window [99, 110] of session start 100
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			lfn := newMockLazyFullNode()
+			lfn.rolloverState.currentBlockHeight = tt.currentBlockHeight
+			lfn.rolloverState.currentSessionStartHeight = tt.currentSessionStartHeight
+			lfn.rolloverState.currentSessionEndHeight = tt.currentSessionEndHeight
+
+			result := lfn.calculateRolloverStatus()
+
+			if result != tt.expected {
+				t.Errorf("calculateRolloverStatus() = %v, want %v", result, tt.expected)
 			}
 		})
 	}

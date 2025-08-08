@@ -24,11 +24,17 @@ const (
 // early warning and extended monitoring of potentially problematic periods
 // around session boundaries.
 //
+// To handle delays in fetching new sessions, we track both start and end heights:
+// - currentSessionStartHeight: Start of the current session
+// - currentSessionEndHeight: End of the current session (next session starts at end + 1)
+// This allows rollover detection even when new session data is delayed.
+//
 // All access to this state is protected by rolloverStateMu for thread safety,
 // allowing safe concurrent access from multiple goroutines.
 type sessionRolloverState struct {
 	currentBlockHeight        int64 // Latest block height from the blockchain
 	currentSessionStartHeight int64 // Start height of the current session
+	currentSessionEndHeight   int64 // End height of the current session
 	isInSessionRollover       bool  // Cached rollover status (true = in rollover period)
 
 	rolloverStateMu sync.RWMutex // Protects all fields above
@@ -63,11 +69,11 @@ func (lfn *LazyFullNode) monitorLoop() {
 	}
 }
 
-// updateSessionStartHeight updates session start height when we fetch a new session.
+// updateSessionStartHeight updates session start and end heights when we fetch a new session.
 // Called from GetSession() to keep rollover monitoring current.
 func (lfn *LazyFullNode) updateSessionStartHeight(session sessiontypes.Session) {
 	if session.Header == nil {
-		lfn.logger.Warn().Msg("Session header is nil, cannot update session start height")
+		lfn.logger.Warn().Msg("Session header is nil, cannot update session heights")
 		return
 	}
 
@@ -75,22 +81,22 @@ func (lfn *LazyFullNode) updateSessionStartHeight(session sessiontypes.Session) 
 	defer lfn.rolloverState.rolloverStateMu.Unlock()
 
 	newSessionStartHeight := session.Header.SessionStartBlockHeight
+	newSessionEndHeight := session.Header.SessionEndBlockHeight
 	oldSessionStartHeight := lfn.rolloverState.currentSessionStartHeight
 
-	// Update session start height and recalculate rollover status
+	// Update session heights and recalculate rollover status
 	lfn.rolloverState.currentSessionStartHeight = newSessionStartHeight
-	lfn.rolloverState.isInSessionRollover = lfn.isInRolloverWindow(
-		lfn.rolloverState.currentBlockHeight,
-		newSessionStartHeight,
-	)
+	lfn.rolloverState.currentSessionEndHeight = newSessionEndHeight
+	lfn.rolloverState.isInSessionRollover = lfn.calculateRolloverStatus()
 
 	// Log session changes
 	if oldSessionStartHeight != newSessionStartHeight {
 		lfn.logger.Debug().
 			Int64("session_start_height", newSessionStartHeight).
+			Int64("session_end_height", newSessionEndHeight).
 			Int64("current_block_height", lfn.rolloverState.currentBlockHeight).
 			Bool("in_rollover", lfn.rolloverState.isInSessionRollover).
-			Msg("Session start height updated")
+			Msg("Session heights updated")
 	}
 }
 
@@ -110,25 +116,44 @@ func (lfn *LazyFullNode) updateBlockHeight() {
 
 	previousHeight := lfn.rolloverState.currentBlockHeight
 	lfn.rolloverState.currentBlockHeight = newHeight
-
-	// Recalculate rollover status based on current session start height
-	if lfn.rolloverState.currentSessionStartHeight == 0 {
-		lfn.rolloverState.isInSessionRollover = false
-	} else {
-		lfn.rolloverState.isInSessionRollover = lfn.isInRolloverWindow(
-			newHeight,
-			lfn.rolloverState.currentSessionStartHeight,
-		)
-	}
+	lfn.rolloverState.isInSessionRollover = lfn.calculateRolloverStatus()
 
 	// Log block height changes
 	if previousHeight != newHeight {
 		lfn.logger.Debug().
 			Int64("current_height", newHeight).
 			Int64("session_start_height", lfn.rolloverState.currentSessionStartHeight).
+			Int64("session_end_height", lfn.rolloverState.currentSessionEndHeight).
 			Bool("in_rollover", lfn.rolloverState.isInSessionRollover).
 			Msg("Block height updated")
 	}
+}
+
+// calculateRolloverStatus determines if we're in a session rollover period using both
+// session start and end heights for robust detection even when session data is delayed.
+func (lfn *LazyFullNode) calculateRolloverStatus() bool {
+	blockHeight := lfn.rolloverState.currentBlockHeight
+	sessionStartHeight := lfn.rolloverState.currentSessionStartHeight
+	sessionEndHeight := lfn.rolloverState.currentSessionEndHeight
+
+	if blockHeight == 0 {
+		return false
+	}
+
+	// If we have session start height, use it for rollover detection
+	if sessionStartHeight != 0 {
+		return lfn.isInRolloverWindow(blockHeight, sessionStartHeight)
+	}
+
+	// Fallback: If we only have session end height, use it to detect next session rollover
+	// Next session starts at sessionEndHeight + 1
+	if sessionEndHeight != 0 {
+		nextSessionStartHeight := sessionEndHeight + 1
+		return lfn.isInRolloverWindow(blockHeight, nextSessionStartHeight)
+	}
+
+	// No session data available
+	return false
 }
 
 // isInRolloverWindow checks if blockHeight falls within the rollover window around sessionStartHeight.
