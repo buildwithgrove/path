@@ -128,17 +128,17 @@ func NewBridge(
 
 // connectWebsocketEndpoint makes a websocket connection to the websocket Endpoint.
 func connectWebsocketEndpoint(logger polylog.Logger, selectedEndpoint SelectedEndpoint) (*websocket.Conn, error) {
-	logger.Info().Msgf("🔗 Connecting to endpoint: %s", selectedEndpoint.PublicURL())
-
 	websocketURL, err := selectedEndpoint.WebsocketURL()
 	if err != nil {
 		logger.Error().Err(err).Msgf("❌ Selected endpoint does not support websocket RPC type: %s", selectedEndpoint.Addr())
 		return nil, err
 	}
 
+	logger.Info().Msgf("🔗 Connecting to websocket endpoint: %s", websocketURL)
+
 	u, err := url.Parse(websocketURL)
 	if err != nil {
-		logger.Error().Err(err).Msgf("❌ Error parsing endpoint URL: %s", selectedEndpoint.PublicURL())
+		logger.Error().Err(err).Msgf("❌ Error parsing endpoint URL: %s", websocketURL)
 		return nil, err
 	}
 

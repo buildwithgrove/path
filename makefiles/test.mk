@@ -35,6 +35,17 @@ e2e_test: shannon_e2e_config_warning ## Run an E2E Shannon relay test with speci
 	fi
 	(cd e2e && TEST_MODE=e2e TEST_PROTOCOL=shannon TEST_SERVICE_IDS=$(filter-out $@,$(MAKECMDGOALS)) go test -v -tags=e2e -count=1 -run Test_PATH_E2E)
 
+.PHONY: e2e_test_eth_fallback
+e2e_test_eth_fallback: shannon_e2e_config_warning ## Run an E2E Shannon relay test with ETH fallback enabled (requires FALLBACK_URL)
+	@if [ "$(filter-out $@,$(MAKECMDGOALS))" = "" ]; then \
+		echo "❌ Error: ETH fallback URL is required"; \
+		echo "  👀 Example: make e2e_test_eth_fallback https://eth.rpc.backup.io"; \
+		echo "  💡 Usage: make e2e_test_eth_fallback <FALLBACK_URL>"; \
+		echo "  📝 The fallback URL should be a valid HTTP/HTTPS endpoint for ETH service"; \
+		exit 1; \
+	fi
+	./e2e/scripts/run_eth_fallback_test.sh $(filter-out $@,$(MAKECMDGOALS))
+
 ##################
 ### Load Tests ###
 ##################
@@ -52,6 +63,13 @@ load_test: ## Run a Shannon load test with specified service IDs (e.g. make load
 		exit 1; \
 	fi
 	@(cd e2e && TEST_MODE=load TEST_PROTOCOL=shannon TEST_SERVICE_IDS=$(filter-out $@,$(MAKECMDGOALS)) go test -v -tags=e2e -count=1 -run Test_PATH_E2E)
+
+.PHONY: config_enable_grove_fallback
+config_enable_grove_fallback: ## Enable fallback endpoints for all services in PATH config
+	@echo "🔧 Enabling fallback endpoints for all services..."
+	@echo "📝 Updating local/path/.config.yaml to send all traffic to fallback endpoints"
+	@yq eval '.shannon_config.gateway_config.service_fallback[].send_all_traffic = true' -i local/path/.config.yaml
+	@echo "✅ Fallback endpoints enabled for all services"
 
 # In order to allow passing the service IDs to the load test targets, this target is needed to avoid printing an error.
 %:

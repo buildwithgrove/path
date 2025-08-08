@@ -51,13 +51,25 @@ shannon_config:
       - 40af4e7e1b311c76a573610fe115cd2adf1eeade709cd77ca31ad4472509d388
     
     # service_fallback is an array of service fallback configurations.
-    # One service may have multiple fallback endpoint URLs.
+    # One service may have multiple fallback endpoint URLs for each RPC type.
     service_fallback:
+      - service_id: xrplevm
+        send_all_traffic: false
+        fallback_endpoints:
+        # In the case of services that supports multiple RPC types,
+        # all RPC type URLs must be specified, including the default URL.
+        # However, only RPC-type specific URLs are used for requests.
+        - default_url: "http://12.34.56.78"
+          json_rpc: "http://12.34.56.78:8545"
+          rest: "http://12.34.56.78:1317"
+          comet_bft: "http://12.34.56.78:26657"
+          websocket: "http://12.34.56.78:8546"
       - service_id: eth
         send_all_traffic: false
-        fallback_urls:
-        - https://eth.rpc.grove.city/v1/1a2b3c4d
-        - https://eth.rpc.grove.city/v1/5e6f7a8b
+        fallback_endpoints:
+        # In the case of services that support only one RPC type,
+        # only `default_url` is specified and the other RPC type URLs are omitted.
+        - default_url: "https://eth.rpc.backup.io"
 
 # Optional logger configuration
 logger_config:

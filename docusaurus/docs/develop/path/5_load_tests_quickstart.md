@@ -14,6 +14,7 @@ _tl;dr Fully featured Load Tests to verify PATH works correctly._
 
 - [Load Testing using Local PATH](#load-testing-using-local-path)
 - [Load Testing using Grove Portal](#load-testing-using-grove-portal)
+- [Load Testing Grove Fallback Endpoints](#load-testing-grove-fallback-endpoints)
 
 ## Load Testing using Local PATH
 
@@ -71,4 +72,34 @@ make load_test eth,xrplevm
 
 # Shannon load tests with all service IDs
 make load_test_all
+```
+
+## Load Testing Grove Fallback Endpoints
+
+:::info 🌿 **Grove Employees Only**
+
+This section is exclusively for Grove employees who need to test PATH's fallback endpoint functionality.
+
+You can obtain the required PATH config from the [Grove Portal App Credentials for PATH Load Testing on 1Password](https://start.1password.com/open/i?a=4PU7ZENUCRCRTNSQWQ7PWCV2RM&v=kudw25ob4zcynmzmv2gv4qpkuq&i=iznzvqegxbl4y73d5lppm4y6r4&h=buildwithgrove.1password.com).
+
+:::
+
+**First, download the PATH config from 1Password** (see the existing Grove Portal section above for credentials access).
+
+**Next, enable fallback endpoints for all services**:
+
+```bash
+make config_enable_grove_fallback
+```
+
+**Then, restart PATH to apply the config updates**:
+
+```bash
+make path_down; make path_up
+```
+
+**Finally, run load tests**:
+
+```bash
+make load_test eth,xrplevm
 ```

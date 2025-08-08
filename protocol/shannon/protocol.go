@@ -250,7 +250,7 @@ func (p *Protocol) BuildRequestContextForEndpoint(
 		logger:             p.logger,
 		context:            ctx,
 		fullNode:           p.FullNode,
-		selectedEndpoint:   &selectedEndpoint,
+		selectedEndpoint:   selectedEndpoint,
 		serviceID:          serviceID,
 		relayRequestSigner: permittedSigner,
 		httpClient:         p.httpClient,
