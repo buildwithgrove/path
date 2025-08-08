@@ -87,10 +87,10 @@ jobs:
           SHANNON_GATEWAY_PRIVATE_KEY: ${{ secrets.SHANNON_GATEWAY_PRIVATE_KEY }}
           SHANNON_OWNED_APPS_PRIVATE_KEYS: ${{ secrets.SHANNON_OWNED_APPS_PRIVATE_KEYS}}
           SHANNON_ETH_FALLBACK_URL: ${{ secrets.SHANNON_ETH_FALLBACK_URL }}
-        run: ./e2e/scripts/update_shannon_config_from_secrets.sh
+        run: ./e2e/scripts/ci/update_shannon_config_from_secrets.sh
 
       - name: Set Docker container to log to stdout in CI environment
-        run: ./e2e/scripts/set_docker_log_ci.sh
+        run: ./e2e/scripts/ci/set_docker_log.sh
 
       - name: Run E2E test - Service ID ${{ matrix.service_id }}
         # eg. make test_e2e_evm_shannon eth
@@ -129,10 +129,10 @@ jobs:
           SHANNON_GATEWAY_PRIVATE_KEY: ${{ secrets.SHANNON_GATEWAY_PRIVATE_KEY }}
           SHANNON_OWNED_APPS_PRIVATE_KEYS: ${{ secrets.SHANNON_OWNED_APPS_PRIVATE_KEYS}}
           SHANNON_ETH_FALLBACK_URL: ${{ secrets.SHANNON_ETH_FALLBACK_URL }}
-        run: ./e2e/scripts/update_shannon_config_from_secrets.sh
+        run: ./e2e/scripts/ci/update_shannon_config_from_secrets.sh
 
       - name: Set Docker container to log to stdout in CI environment
-        run: ./e2e/scripts/set_docker_log_ci.sh
+        run: ./e2e/scripts/ci/set_docker_log.sh
 
       - name: Run E2E test - ETH Fallback
         env:

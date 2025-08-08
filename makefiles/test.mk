@@ -42,7 +42,7 @@ e2e_test_eth_fallback_ci: shannon_e2e_config_warning ## Run an E2E Shannon relay
 	@echo "📝 Make sure SHANNON_ETH_FALLBACK_URL environment variable is set"
 	@echo "🔄 Updating .shannon.config.yaml with fallback settings..."
 	@echo ""
-	./e2e/scripts/update_shannon_config_fallback_eth.sh
+	./e2e/scripts/ci/update_shannon_config_fallback_eth.sh
 	@$(MAKE) e2e_test eth
 
 ##################
