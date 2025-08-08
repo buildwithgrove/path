@@ -19,10 +19,10 @@ set_docker_log_ci() {
         return 1
     fi
 
-    # Update the config to enable Docker logging for CI
-    yq -i '.e2e_load_test_config.e2e_config.docker_config.log_to_file = true' $CONFIG_FILE
+    # Update the config to enable Docker logging to stdout for CI
+    yq -i '.e2e_load_test_config.e2e_config.docker_config.docker_log = true' $CONFIG_FILE
     
-    echo "Successfully set docker log_to_file to true in $CONFIG_FILE"
+    echo "Successfully set docker_log to true in $CONFIG_FILE"
 }
 
 set_docker_log_ci "$@"
