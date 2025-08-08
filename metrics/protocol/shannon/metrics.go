@@ -240,6 +240,7 @@ func recordRelayTotal(
 	hydratedLogger := logger.With("method", "recordRelaysTotal")
 
 	serviceID := observations.GetServiceId()
+
 	// Relay request failed before reaching out to any endpoints.
 	// e.g. there were no available endpoints.
 	// Skip processing endpoint observations.
@@ -249,6 +250,9 @@ func recordRelayTotal(
 				"service_id": serviceID,
 				"success":    "false",
 				"error_type": requestErrorType,
+				// Relay request failed before reaching out to any endpoints so no fallback was used.
+				// Must be set to avoid inconsistent label cardinality error
+				"used_fallback": "false",
 			},
 		).Inc()
 
