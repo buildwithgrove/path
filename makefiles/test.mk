@@ -63,6 +63,13 @@ load_test: ## Run a Shannon load test with specified service IDs (e.g. make load
 	fi
 	@(cd e2e && TEST_MODE=load TEST_PROTOCOL=shannon TEST_SERVICE_IDS=$(filter-out $@,$(MAKECMDGOALS)) go test -v -tags=e2e -count=1 -run Test_PATH_E2E)
 
+.PHONY: config_enable_grove_fallback
+config_enable_grove_fallback: ## Enable fallback endpoints for all services in PATH config
+	@echo "🔧 Enabling fallback endpoints for all services..."
+	@echo "📝 Updating local/path/.config.yaml to send all traffic to fallback endpoints"
+	@yq eval '.shannon_config.gateway_config.service_fallback[].send_all_traffic = true' -i local/path/.config.yaml
+	@echo "✅ Fallback endpoints enabled for all services"
+
 # In order to allow passing the service IDs to the load test targets, this target is needed to avoid printing an error.
 %:
 	@:
