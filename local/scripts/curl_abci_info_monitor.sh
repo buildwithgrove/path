@@ -1,28 +1,63 @@
 #!/bin/bash
 
-# Script to monitor Cosmos RPC abci_info endpoint every 0.5 seconds
-# Usage: ./curl_abci_info_monitor.sh [--block]
-#   --block: Monitor block height from abci_info response
+# Monitor Cosmos RPC abci_info endpoint at regular intervals
+
+show_help() {
+    cat << EOF
+Usage: $(basename "$0") [OPTIONS]
+
+Monitor Cosmos RPC abci_info endpoint and display results with timing information.
+
+OPTIONS:
+    --block          Track only block height changes from abci_info response
+    --node <URL>     Override default RPC endpoint (default: https://shannon-grove-rpc.mainnet.poktroll.com)
+    --help           Show this help message and exit
+
+EXAMPLES:
+    $(basename "$0")
+        Monitor full abci_info response using default endpoint
+
+    $(basename "$0") --block
+        Monitor only block height changes
+
+    $(basename "$0") --node http://localhost:26657
+        Use custom RPC endpoint
+
+    $(basename "$0") --block --node http://localhost:26657
+        Monitor block height using custom endpoint
+
+EOF
+    exit 0
+}
 
 # Parse command line arguments
 MONITOR_BLOCK=false
-for arg in "$@"; do
-    case $arg in
+RPC_ENDPOINT="https://shannon-grove-rpc.mainnet.poktroll.com"
+
+while [[ $# -gt 0 ]]; do
+    case $1 in
         --block)
             MONITOR_BLOCK=true
             shift
             ;;
+        --node)
+            if [ -z "$2" ] || [[ "$2" == --* ]]; then
+                echo "Error: --node requires a URL argument"
+                exit 1
+            fi
+            RPC_ENDPOINT="$2"
+            shift 2
+            ;;
+        --help)
+            show_help
+            ;;
         *)
-            echo "Unknown option: $arg"
-            echo "Usage: $0 [--block]"
+            echo "Unknown option: $1"
+            echo "Use --help for usage information"
             exit 1
             ;;
     esac
 done
-
-# Configuration from your environment
-export RPC_ENDPOINT=https://shannon-grove-rpc.mainnet.poktroll.com
-export NETWORK=main
 
 # Print configuration mode at the beginning
 if [ "$MONITOR_BLOCK" = true ]; then
@@ -103,7 +138,7 @@ while true; do
                     last_block_height="$block_height"
                 fi
             else
-                # Just show that abci_info is responding with basic info
+                # Display full abci_info response details
                 app_name=$(echo "$response" | jq -r '.result.response.data // "N/A"' 2>/dev/null)
                 version=$(echo "$response" | jq -r '.result.response.version // "N/A"' 2>/dev/null)
                 block_height=$(echo "$response" | jq -r '.result.response.last_block_height // "N/A"' 2>/dev/null)
