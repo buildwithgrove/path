@@ -19,17 +19,6 @@ const (
 
 // sessionRolloverState tracks session rollover status for the LazyFullNode.
 //
-// Session rollovers are critical periods that occur around session transitions
-// where relay operations may experience higher failure rates due to:
-// - Session synchronization issues between gateways and suppliers
-// - Temporary endpoint unavailability during session changes
-// - Inconsistent session state across the network
-//
-// This state is maintained automatically by background monitoring that:
-// 1. Periodically fetches the current block height
-// 2. Updates when new sessions are retrieved via GetSession()
-// 3. Calculates rollover status based on the rollover window
-//
 // The rollover window spans from 1 block before session end through
 // sessionRolloverGracePeriodBlocks after session end. This provides
 // early warning and extended monitoring of potentially problematic periods.
