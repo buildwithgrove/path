@@ -86,7 +86,6 @@ jobs:
           SHANNON_GATEWAY_ADDRESS: ${{ secrets.SHANNON_GATEWAY_ADDRESS }}
           SHANNON_GATEWAY_PRIVATE_KEY: ${{ secrets.SHANNON_GATEWAY_PRIVATE_KEY }}
           SHANNON_OWNED_APPS_PRIVATE_KEYS: ${{ secrets.SHANNON_OWNED_APPS_PRIVATE_KEYS}}
-          SHANNON_ETH_FALLBACK_URL: ${{ secrets.SHANNON_ETH_FALLBACK_URL }}
         run: ./e2e/scripts/ci/update_shannon_config_from_secrets.sh
 
       - name: Set Docker container to log to stdout in CI environment
