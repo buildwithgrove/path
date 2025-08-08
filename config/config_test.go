@@ -58,7 +58,7 @@ func Test_LoadGatewayConfigFromYAML(t *testing.T) {
 							},
 							{
 								ServiceID:      "eth",
-								SendAllTraffic: true,
+								SendAllTraffic: false,
 								FallbackEndpoints: []map[string]string{
 									{
 										"default_url": "https://eth.rpc.backup.io",

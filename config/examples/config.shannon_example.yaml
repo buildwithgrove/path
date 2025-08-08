@@ -65,7 +65,7 @@ shannon_config:
           comet_bft: "http://12.34.56.78:26657"
           websocket: "http://12.34.56.78:8546"
       - service_id: eth
-        send_all_traffic: true
+        send_all_traffic: false
         fallback_endpoints:
         # In the case of services that support only one RPC type,
         # only `default_url` is specified and the other RPC type URLs are omitted.
