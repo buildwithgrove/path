@@ -35,15 +35,16 @@ e2e_test: shannon_e2e_config_warning ## Run an E2E Shannon relay test with speci
 	fi
 	(cd e2e && TEST_MODE=e2e TEST_PROTOCOL=shannon TEST_SERVICE_IDS=$(filter-out $@,$(MAKECMDGOALS)) go test -v -tags=e2e -count=1 -run Test_PATH_E2E)
 
-.PHONY: e2e_test_eth_fallback_ci
-e2e_test_eth_fallback_ci: shannon_e2e_config_warning ## Run an E2E Shannon relay test with ETH fallback enabled
-	@echo "⚠️  WARNING: This target modifies .shannon.config.yaml and should primarily be used in CI environments! 🤖"
-	@echo "🔧 This will configure ETH fallback endpoints for testing against external providers"
-	@echo "📝 Make sure SHANNON_ETH_FALLBACK_URL environment variable is set"
-	@echo "🔄 Updating .shannon.config.yaml with fallback settings..."
-	@echo ""
-	./e2e/scripts/ci/update_shannon_config_fallback_eth.sh
-	@$(MAKE) e2e_test eth
+.PHONY: e2e_test_eth_fallback
+e2e_test_eth_fallback: shannon_e2e_config_warning ## Run an E2E Shannon relay test with ETH fallback enabled (requires FALLBACK_URL)
+	@if [ "$(filter-out $@,$(MAKECMDGOALS))" = "" ]; then \
+		echo "❌ Error: ETH fallback URL is required"; \
+		echo "  👀 Example: make e2e_test_eth_fallback https://eth.rpc.backup.io"; \
+		echo "  💡 Usage: make e2e_test_eth_fallback <FALLBACK_URL>"; \
+		echo "  📝 The fallback URL should be a valid HTTP/HTTPS endpoint for ETH service"; \
+		exit 1; \
+	fi
+	./e2e/scripts/run_eth_fallback_test.sh $(filter-out $@,$(MAKECMDGOALS))
 
 ##################
 ### Load Tests ###
