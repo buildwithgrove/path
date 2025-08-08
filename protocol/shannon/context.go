@@ -249,7 +249,7 @@ func (rc *requestContext) sendRelayWithFallback(payload protocol.Payload) (proto
 func (rc *requestContext) sendRelayToARandomFallbackEndpoint(payload protocol.Payload) (protocol.Response, error) {
 	if len(rc.fallbackEndpoints) == 0 {
 		rc.logger.Warn().Msg("SHOULD HAPPEN RARELY: no fallback endpoints available for the service")
-		return protocol.Response{}, fmt.Errorf("No fallback endpoints available")
+		return protocol.Response{}, fmt.Errorf("no fallback endpoints available")
 	}
 
 	logger := rc.logger.With("method", "sendRelayToARandomFallbackEndpoint")
