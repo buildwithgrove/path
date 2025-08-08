@@ -50,109 +50,92 @@ func Test_getSessionRolloverState(t *testing.T) {
 	}
 }
 
-func Test_updateSessionEndHeight(t *testing.T) {
+func Test_updateSessionStartHeight(t *testing.T) {
 	tests := []struct {
-		name                    string
-		session                 sessiontypes.Session
-		initialCurrentSession   int64
-		initialPreviousSession  int64
-		initialBlockHeight      int64
-		expectedCurrentSession  int64
-		expectedPreviousSession int64
-		expectedInRollover      bool
-		shouldReturn            bool // whether function should return early
+		name                       string
+		session                    sessiontypes.Session
+		initialSessionStartHeight  int64
+		initialBlockHeight         int64
+		expectedSessionStartHeight int64
+		expectedInRollover         bool
+		shouldReturn               bool // whether function should return early
 	}{
 		{
 			name: "nil session header returns early",
 			session: sessiontypes.Session{
 				Header: nil,
 			},
-			initialCurrentSession:   100,
-			initialPreviousSession:  90,
-			initialBlockHeight:      105,
-			expectedCurrentSession:  100, // unchanged
-			expectedPreviousSession: 90,  // unchanged
-			expectedInRollover:      false,
-			shouldReturn:            true,
+			initialSessionStartHeight:  100,
+			initialBlockHeight:         105,
+			expectedSessionStartHeight: 100, // unchanged
+			expectedInRollover:         false,
+			shouldReturn:               true,
 		},
 		{
-			name: "first session - no previous session",
+			name: "new session start height - block height in rollover window",
 			session: sessiontypes.Session{
 				Header: &sessiontypes.SessionHeader{
-					SessionEndBlockHeight: 100,
+					SessionStartBlockHeight: 100,
 				},
 			},
-			initialCurrentSession:   0,
-			initialPreviousSession:  0,
-			initialBlockHeight:      95,
-			expectedCurrentSession:  100,
-			expectedPreviousSession: 0,
-			expectedInRollover:      false, // 95 is NOT in rollover window [99, 110] of session 100
+			initialSessionStartHeight:  0,
+			initialBlockHeight:         105, // 105 is in rollover window [99, 110] of session start 100
+			expectedSessionStartHeight: 100,
+			expectedInRollover:         true,
 		},
 		{
-			name: "new session - previous session tracked",
+			name: "new session start height - block height outside rollover window",
 			session: sessiontypes.Session{
 				Header: &sessiontypes.SessionHeader{
-					SessionEndBlockHeight: 200,
+					SessionStartBlockHeight: 100,
 				},
 			},
-			initialCurrentSession:   100,
-			initialPreviousSession:  0,
-			initialBlockHeight:      105,
-			expectedCurrentSession:  200,
-			expectedPreviousSession: 100,
-			expectedInRollover:      true, // 105 is in rollover window [99, 110] of previous session 100
+			initialSessionStartHeight:  0,
+			initialBlockHeight:         120, // 120 is outside rollover window [99, 110] of session start 100
+			expectedSessionStartHeight: 100,
+			expectedInRollover:         false,
 		},
 		{
-			name: "same session - no change",
+			name: "same session start height - no change",
 			session: sessiontypes.Session{
 				Header: &sessiontypes.SessionHeader{
-					SessionEndBlockHeight: 100,
+					SessionStartBlockHeight: 100,
 				},
 			},
-			initialCurrentSession:   100,
-			initialPreviousSession:  90,
-			initialBlockHeight:      105,
-			expectedCurrentSession:  100,
-			expectedPreviousSession: 90,    // unchanged
-			expectedInRollover:      false, // 105 is NOT in rollover window [89, 100] of previous session 90
+			initialSessionStartHeight:  100,
+			initialBlockHeight:         105,
+			expectedSessionStartHeight: 100,
+			expectedInRollover:         true, // 105 is in rollover window [99, 110] of session start 100
 		},
 		{
-			name: "block height outside rollover window",
+			name: "zero session start height - no rollover",
 			session: sessiontypes.Session{
 				Header: &sessiontypes.SessionHeader{
-					SessionEndBlockHeight: 200,
+					SessionStartBlockHeight: 0,
 				},
 			},
-			initialCurrentSession:   100,
-			initialPreviousSession:  0,
-			initialBlockHeight:      150, // outside rollover window [99, 110] of session 100
-			expectedCurrentSession:  200,
-			expectedPreviousSession: 100,
-			expectedInRollover:      false,
+			initialSessionStartHeight:  100,
+			initialBlockHeight:         105,
+			expectedSessionStartHeight: 0,
+			expectedInRollover:         false, // zero session start height means no rollover
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			lfn := newMockLazyFullNode()
-			lfn.rolloverState.currentSessionEndHeight = tt.initialCurrentSession
-			lfn.rolloverState.previousSessionEndHeight = tt.initialPreviousSession
+			lfn.rolloverState.currentSessionStartHeight = tt.initialSessionStartHeight
 			lfn.rolloverState.currentBlockHeight = tt.initialBlockHeight
 
-			lfn.updateSessionEndHeight(tt.session)
+			lfn.updateSessionStartHeight(tt.session)
 
-			if tt.shouldReturn && lfn.rolloverState.currentSessionEndHeight != tt.expectedCurrentSession {
-				t.Errorf("updateSessionEndHeight() should have returned early, but state changed")
+			if tt.shouldReturn && lfn.rolloverState.currentSessionStartHeight != tt.expectedSessionStartHeight {
+				t.Errorf("updateSessionStartHeight() should have returned early, but state changed")
 				return
 			}
 
-			if lfn.rolloverState.currentSessionEndHeight != tt.expectedCurrentSession {
-				t.Errorf("currentSessionEndHeight = %v, want %v", lfn.rolloverState.currentSessionEndHeight, tt.expectedCurrentSession)
-			}
-
-			if lfn.rolloverState.previousSessionEndHeight != tt.expectedPreviousSession {
-				t.Errorf("previousSessionEndHeight = %v, want %v", lfn.rolloverState.previousSessionEndHeight, tt.expectedPreviousSession)
+			if lfn.rolloverState.currentSessionStartHeight != tt.expectedSessionStartHeight {
+				t.Errorf("currentSessionStartHeight = %v, want %v", lfn.rolloverState.currentSessionStartHeight, tt.expectedSessionStartHeight)
 			}
 
 			if !tt.shouldReturn && lfn.rolloverState.isInSessionRollover != tt.expectedInRollover {
@@ -164,82 +147,82 @@ func Test_updateSessionEndHeight(t *testing.T) {
 
 func Test_isInRolloverWindow(t *testing.T) {
 	tests := []struct {
-		name             string
-		blockHeight      int64
-		sessionEndHeight int64
-		expected         bool
+		name               string
+		blockHeight        int64
+		sessionStartHeight int64
+		expected           bool
 	}{
 		{
-			name:             "zero session end height returns false",
-			blockHeight:      100,
-			sessionEndHeight: 0,
-			expected:         false,
+			name:               "zero session start height returns false",
+			blockHeight:        100,
+			sessionStartHeight: 0,
+			expected:           false,
 		},
 		{
-			name:             "zero block height returns false",
-			blockHeight:      0,
-			sessionEndHeight: 100,
-			expected:         false,
+			name:               "zero block height returns false",
+			blockHeight:        0,
+			sessionStartHeight: 100,
+			expected:           false,
 		},
 		{
-			name:             "both zero returns false",
-			blockHeight:      0,
-			sessionEndHeight: 0,
-			expected:         false,
+			name:               "both zero returns false",
+			blockHeight:        0,
+			sessionStartHeight: 0,
+			expected:           false,
 		},
 		{
-			name:             "block height before rollover window",
-			blockHeight:      98,
-			sessionEndHeight: 100,
-			expected:         false, // 98 < 99 (rollover start)
+			name:               "block height before rollover window",
+			blockHeight:        98,
+			sessionStartHeight: 100,
+			expected:           false, // 98 < 99 (rollover start)
 		},
 		{
-			name:             "block height at rollover window start",
-			blockHeight:      99,
-			sessionEndHeight: 100,
-			expected:         true, // 99 == 99 (rollover start)
+			name:               "block height at rollover window start",
+			blockHeight:        99,
+			sessionStartHeight: 100,
+			expected:           true, // 99 == 99 (rollover start)
 		},
 		{
-			name:             "block height at session end",
-			blockHeight:      100,
-			sessionEndHeight: 100,
-			expected:         true, // 100 is within [99, 110]
+			name:               "block height at session start",
+			blockHeight:        100,
+			sessionStartHeight: 100,
+			expected:           true, // 100 is within [99, 110]
 		},
 		{
-			name:             "block height in grace period",
-			blockHeight:      105,
-			sessionEndHeight: 100,
-			expected:         true, // 105 is within [99, 110]
+			name:               "block height in grace period",
+			blockHeight:        105,
+			sessionStartHeight: 100,
+			expected:           true, // 105 is within [99, 110]
 		},
 		{
-			name:             "block height at rollover window end",
-			blockHeight:      110,
-			sessionEndHeight: 100,
-			expected:         true, // 110 == 110 (rollover end)
+			name:               "block height at rollover window end",
+			blockHeight:        110,
+			sessionStartHeight: 100,
+			expected:           true, // 110 == 110 (rollover end)
 		},
 		{
-			name:             "block height after rollover window",
-			blockHeight:      111,
-			sessionEndHeight: 100,
-			expected:         false, // 111 > 110 (rollover end)
+			name:               "block height after rollover window",
+			blockHeight:        111,
+			sessionStartHeight: 100,
+			expected:           false, // 111 > 110 (rollover end)
 		},
 		{
-			name:             "large session end height",
-			blockHeight:      1000005,
-			sessionEndHeight: 1000000,
-			expected:         true, // 1000005 is within [999999, 1000010]
+			name:               "large session start height",
+			blockHeight:        1000005,
+			sessionStartHeight: 1000000,
+			expected:           true, // 1000005 is within [999999, 1000010]
 		},
 		{
-			name:             "edge case - session end height 1",
-			blockHeight:      1,
-			sessionEndHeight: 1,
-			expected:         true, // 1 is within [0, 11]
+			name:               "edge case - session start height 1",
+			blockHeight:        1,
+			sessionStartHeight: 1,
+			expected:           true, // 1 is within [0, 11]
 		},
 		{
-			name:             "edge case - block height 0 with session end height 1",
-			blockHeight:      0,
-			sessionEndHeight: 1,
-			expected:         false, // block height 0 returns false regardless
+			name:               "edge case - block height 0 with session start height 1",
+			blockHeight:        0,
+			sessionStartHeight: 1,
+			expected:           false, // block height 0 returns false regardless
 		},
 	}
 
@@ -247,11 +230,11 @@ func Test_isInRolloverWindow(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			lfn := newMockLazyFullNode()
 
-			result := lfn.isInRolloverWindow(tt.blockHeight, tt.sessionEndHeight)
+			result := lfn.isInRolloverWindow(tt.blockHeight, tt.sessionStartHeight)
 
 			if result != tt.expected {
 				t.Errorf("isInRolloverWindow(%v, %v) = %v, want %v",
-					tt.blockHeight, tt.sessionEndHeight, result, tt.expected)
+					tt.blockHeight, tt.sessionStartHeight, result, tt.expected)
 			}
 		})
 	}
@@ -282,8 +265,8 @@ func Test_getSessionRolloverState_ThreadSafety(t *testing.T) {
 	}
 }
 
-// Test thread safety of updateSessionEndHeight
-func Test_updateSessionEndHeight_ThreadSafety(t *testing.T) {
+// Test thread safety of updateSessionStartHeight
+func Test_updateSessionStartHeight_ThreadSafety(t *testing.T) {
 	lfn := newMockLazyFullNode()
 
 	// Launch multiple goroutines to update state concurrently
@@ -292,23 +275,23 @@ func Test_updateSessionEndHeight_ThreadSafety(t *testing.T) {
 
 	for i := 0; i < numGoroutines; i++ {
 		wg.Add(1)
-		go func(sessionEndHeight int64) {
+		go func(sessionStartHeight int64) {
 			defer wg.Done()
 			testSession := sessiontypes.Session{
 				Header: &sessiontypes.SessionHeader{
-					SessionEndBlockHeight: sessionEndHeight,
+					SessionStartBlockHeight: sessionStartHeight,
 				},
 			}
-			lfn.updateSessionEndHeight(testSession)
+			lfn.updateSessionStartHeight(testSession)
 		}(int64(100 + i))
 	}
 
 	wg.Wait()
 
 	// Verify final state is consistent (no race conditions caused panics)
-	finalHeight := lfn.rolloverState.currentSessionEndHeight
+	finalHeight := lfn.rolloverState.currentSessionStartHeight
 	if finalHeight < 100 || finalHeight >= 150 {
-		t.Errorf("final currentSessionEndHeight = %v, expected between 100 and 149", finalHeight)
+		t.Errorf("final currentSessionStartHeight = %v, expected between 100 and 149", finalHeight)
 	}
 }
 

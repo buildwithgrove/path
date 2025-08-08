@@ -238,15 +238,7 @@ func (cfn *cachingFullNode) GetSession(
 		sessionKey,
 		func(fetchCtx context.Context) (sessiontypes.Session, error) {
 			logger.Debug().Str("session_key", sessionKey).Msgf("Fetching session from full node")
-			session, err := cfn.lazyFullNode.GetSession(ctx, serviceID, appAddr)
-			if err != nil {
-				logger.Error().Err(err).Msgf("Failed to get session from full node")
-			}
-
-			// Update session end height for rollover monitoring
-			cfn.lazyFullNode.updateSessionEndHeight(session)
-
-			return session, err
+			return cfn.lazyFullNode.GetSession(ctx, serviceID, appAddr)
 		},
 	)
 
@@ -342,10 +334,6 @@ func (cfn *cachingFullNode) GetSessionWithExtendedValidity(
 			if fetchErr != nil {
 				cfn.logger.Error().Err(fetchErr).Msg("Failed to fetch previous session from full node")
 			}
-
-			// Update session end height for rollover monitoring
-			cfn.lazyFullNode.updateSessionEndHeight(session)
-
 			return session, fetchErr
 		},
 	)

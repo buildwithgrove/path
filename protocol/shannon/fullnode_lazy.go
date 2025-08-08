@@ -132,6 +132,9 @@ func (lfn *LazyFullNode) GetSession(
 			)
 	}
 
+	// Update session end height for rollover monitoring
+	lfn.updateSessionStartHeight(*session)
+
 	return *session, nil
 }
 
@@ -243,6 +246,9 @@ func (lfn *LazyFullNode) GetSessionWithExtendedValidity(
 		logger.Warn().Err(err).Msg("Failed to get previous session, falling back to current session")
 		return currentSession, nil
 	}
+
+	// Update session end height for rollover monitoring
+	lfn.updateSessionStartHeight(currentSession)
 
 	// Return the previous session
 	return *prevSession, nil
