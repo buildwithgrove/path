@@ -2,13 +2,12 @@
 set -e
 set -o nounset
 
-# IMPORTANT: This script is only used for CI environments.
-# It modifies the `e2e_load_test.config.tmpl.yaml` file
-# and should never be run locally.
-
-# This script sets the Docker log configuration for CI environments.
-# It updates the E2E load test config to enable Docker logging to 
-# stdout so we can capture Docker logs in the CI environment for debugging.
+# CI-ONLY: Modifies e2e_load_test.config.tmpl.yaml for CI environments
+# KEY FUNCTIONS:
+# • Sets Docker log configuration for CI
+# • Enables Docker logging to stdout  
+# • Captures Docker logs for CI debugging
+# WARNING: Never run locally
 
 # Set the current working directory to e2e/config directory.
 cd "$(dirname "$0")/../config" || exit 1

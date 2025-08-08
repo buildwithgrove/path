@@ -2,18 +2,15 @@
 set -e
 set -o nounset
 
-# IMPORTANT: This script will modify the `./e2e/config/.shannon.config.yaml` file,
-# which is used in GitHub actions to enable fallback endpoints for ETH service
-# when testing with external fallback providers.
-#
-# It used in GitHub actions to run E2E tests against external fallback providers.
-# If run locally:
-# 1. The `SHANNON_ETH_FALLBACK_URL` environment variable must be set to an eth fallback URL.
-# 2. The `./e2e/config/.shannon.config.yaml` file will be modified to send all traffic to the `SHANNON_ETH_FALLBACK_URL`
-
-# This script configures ETH fallback settings in the Shannon E2E config file.
-# It is used in GitHub actions to enable fallback endpoints for ETH service
-# when testing with external fallback providers.
+# Modifies ./e2e/config/.shannon.config.yaml for ETH fallback testing
+# PRIMARY USE: GitHub Actions E2E tests with external fallback providers
+# KEY FUNCTIONS:
+# • Configures ETH fallback settings in Shannon config
+# • Enables fallback endpoints for ETH service
+# • Routes traffic to external fallback providers
+# LOCAL USAGE REQUIREMENTS:
+# • Set SHANNON_ETH_FALLBACK_URL environment variable
+# • Config file will redirect all traffic to fallback URL
 
 # Set the current working directory to e2e/config directory.
 cd "$(dirname "$0")/../config" || exit 1
