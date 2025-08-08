@@ -192,9 +192,23 @@ func Test_calculateRolloverStatus(t *testing.T) {
 		{
 			name:                      "prefer session start height over end height",
 			currentBlockHeight:        105,
-			currentSessionStartHeight: 100, // this should be used
-			currentSessionEndHeight:   50,   // this should be ignored
+			currentSessionStartHeight: 100,  // this should be used
+			currentSessionEndHeight:   160,  // this should be ignored since start is available
 			expected:                  true, // 105 is in rollover window [99, 110] of session start 100
+		},
+		{
+			name:                      "detect stale session data - use fallback",
+			currentBlockHeight:        165,  // past the session end
+			currentSessionStartHeight: 100,  // stale data from previous session
+			currentSessionEndHeight:   160,  // stale data from previous session
+			expected:                  true, // 165 is in rollover window [160, 171] of next session start 161
+		},
+		{
+			name:                      "stale session data outside rollover window",
+			currentBlockHeight:        180,   // far past session end
+			currentSessionStartHeight: 100,   // stale data from previous session
+			currentSessionEndHeight:   160,   // stale data from previous session
+			expected:                  false, // 180 is outside rollover window [160, 171] of next session start 161
 		},
 	}
 

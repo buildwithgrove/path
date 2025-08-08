@@ -140,13 +140,17 @@ func (lfn *LazyFullNode) calculateRolloverStatus() bool {
 		return false
 	}
 
-	// If we have session start height, use it for rollover detection
-	if sessionStartHeight != 0 {
+	// Check if session data is stale (from previous session)
+	// If current block is past session end, then both start and end heights are stale
+	sessionDataIsStale := sessionEndHeight != 0 && blockHeight > sessionEndHeight
+
+	// If we have fresh session start height, use it for rollover detection
+	if sessionStartHeight != 0 && !sessionDataIsStale {
 		return lfn.isInRolloverWindow(blockHeight, sessionStartHeight)
 	}
 
-	// Fallback: If we only have session end height, use it to detect next session rollover
-	// Next session starts at sessionEndHeight + 1
+	// Fallback: If session start is stale or unavailable, use session end height
+	// to detect next session rollover. Next session starts at sessionEndHeight + 1
 	if sessionEndHeight != 0 {
 		nextSessionStartHeight := sessionEndHeight + 1
 		return lfn.isInRolloverWindow(blockHeight, nextSessionStartHeight)
