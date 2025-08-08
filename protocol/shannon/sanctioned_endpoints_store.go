@@ -74,8 +74,7 @@ func (ses *sanctionedEndpointsStore) ApplyObservations(shannonObservations []*pr
 		// For each endpoint observation in the set:
 		for _, endpointObservation := range observationSet.GetEndpointObservations() {
 			// Build endpoint from observation
-			protocolEndpoint := buildEndpointFromObservation(endpointObservation)
-			endpoint := endpoint(protocolEndpoint)
+			endpoint := buildEndpointFromObservation(endpointObservation)
 
 			// Hydrate logger with endpoint context
 			logger := hydrateLoggerWithEndpoint(logger, endpoint).With("method", "ApplyObservations")

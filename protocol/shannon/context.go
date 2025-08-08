@@ -128,6 +128,7 @@ func (rc *requestContext) HandleWebsocketRequest(logger polylog.Logger, req *htt
 	}
 
 	wsLogger := logger.With(
+		"endpoint_url", rc.selectedEndpoint.PublicURL(),
 		"endpoint_addr", rc.selectedEndpoint.Addr(),
 		"service_id", rc.serviceID,
 	)
@@ -357,7 +358,10 @@ func (rc *requestContext) signRelayRequest(unsignedRelayReq *servicetypes.RelayR
 // buildUnsignedRelayRequest:
 //   - Builds a ready-to-sign RelayRequest using the supplied endpoint, session, and payload.
 //   - Returned RelayRequest is meant to be signed and sent to the endpoint to receive its response.
-func buildUnsignedRelayRequest(endpoint endpoint, payload protocol.Payload) (*servicetypes.RelayRequest, error) {
+func buildUnsignedRelayRequest(
+	endpoint endpoint,
+	payload protocol.Payload,
+) (*servicetypes.RelayRequest, error) {
 	// If path is not empty (e.g. for REST service request), append to endpoint URL.
 	url := prepareURLFromPayload(endpoint.PublicURL(), payload)
 

@@ -10,6 +10,16 @@ import (
 	"github.com/buildwithgrove/path/protocol"
 )
 
+// TODO_TECHDEBT(@adshmh,@commoddity): Review the implementation of the endpoint interface.
+// Original note: Refactor to cleanly separate the "fallback" logic from the endpoint.
+//
+// Example:
+// Make endpoint an interface, implemented by:
+// - A Shannon endpoint
+// - A "fallback" URL with configurable fields: e.g. the Supplier set as "fallback"
+//
+// PR Review Reference: https://github.com/buildwithgrove/path/pull/395#discussion_r2261426190
+
 // endpoint defines the interface for Shannon endpoints, allowing for
 // different implementations (e.g., protocol vs fallback endpoints).
 //

@@ -220,7 +220,7 @@ func buildEndpointObservationFromSession(
 // Used to identify an endpoint for applying sanctions.
 func buildEndpointFromObservation(
 	observation *protocolobservations.ShannonEndpointObservation,
-) *protocolEndpoint {
+) endpoint {
 	session := buildSessionFromObservation(observation)
 	return &protocolEndpoint{
 		session:  session,
