@@ -10,7 +10,7 @@ set -o nounset
 # WARNING: Never run locally
 
 # Set the current working directory to e2e/config directory.
-cd "$(dirname "$0")/../config" || exit 1
+cd "$(dirname "$0")/../../config" || exit 1
 
 set_docker_log_ci() {
     local CONFIG_FILE="./e2e_load_test.config.tmpl.yaml"

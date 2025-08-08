@@ -13,7 +13,7 @@ set -o nounset
 # • Config file will redirect all traffic to fallback URL
 
 # Set the current working directory to e2e/config directory.
-cd "$(dirname "$0")/../config" || exit 1
+cd "$(dirname "$0")/../../config" || exit 1
 
 update_shannon_eth_fallback_config() {
     check_env_vars "SHANNON_ETH_FALLBACK_URL"

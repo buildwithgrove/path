@@ -13,7 +13,7 @@ set -o nounset
 # are populated from repo's secrets.
 
 # Set the current working directory to e2e/config directory.
-cd "$(dirname "$0")/../config" || exit 1
+cd "$(dirname "$0")/../../config" || exit 1
 
 update_shannon_config_from_env() {
     check_env_vars "SHANNON_GATEWAY_ADDRESS" "SHANNON_GATEWAY_PRIVATE_KEY" "SHANNON_OWNED_APPS_PRIVATE_KEYS"
