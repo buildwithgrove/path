@@ -37,7 +37,7 @@ var (
 const defaultConfigPath = "config/.config.yaml"
 
 func main() {
-	log.Printf("🌿 PATH gateway starting...")
+	log.Printf(`{"level":"info","message":"PATH 🌿 gateway starting..."}`)
 
 	// Initialize version metrics for Prometheus monitoring
 	metrics.SetVersionInfo(Version, Commit, BuildDate)
@@ -45,17 +45,17 @@ func main() {
 	// Get the config path
 	configPath, err := getConfigPath(defaultConfigPath)
 	if err != nil {
-		log.Fatalf("failed to get config path: %v", err)
+		log.Fatalf(`{"level":"fatal","error":"%v","message":"failed to get config path"}`, err)
 	}
 
 	// Load the config
 	config, err := configpkg.LoadGatewayConfigFromYAML(configPath)
 	if err != nil {
-		log.Fatalf("failed to load config: %v", err)
+		log.Fatalf(`{"level":"fatal","error":"%v","message":"failed to load config"}`, err)
 	}
 
 	// Initialize the logger
-	log.Printf("Initializing PATH logger with level: %s", config.Logger.Level)
+	log.Printf(`{"level":"info","message":"Initializing PATH logger with level: %s"}`, config.Logger.Level)
 	loggerOpts := []polylog.LoggerOption{
 		polyzero.WithLevel(polyzero.ParseLevel(config.Logger.Level)),
 	}
@@ -67,19 +67,19 @@ func main() {
 	// Create Shannon protocol instance (now the only supported protocol)
 	protocol, err := getShannonProtocol(logger, config.GetGatewayConfig())
 	if err != nil {
-		log.Fatalf("failed to create protocol: %v", err)
+		log.Fatalf(`{"level":"fatal","error":"%v","message":"failed to create protocol"}`, err)
 	}
 
 	// Prepare the QoS instances
 	qosInstances, err := getServiceQoSInstances(logger, config, protocol)
 	if err != nil {
-		log.Fatalf("failed to setup QoS instances: %v", err)
+		log.Fatalf(`{"level":"fatal","error":"%v","message":"failed to setup QoS instances"}`, err)
 	}
 
 	// Setup metrics reporter, to be used by Gateway and Hydrator
 	metricsReporter, err := setupMetricsServer(logger, prometheusMetricsServerAddr)
 	if err != nil {
-		log.Fatalf("failed to start metrics server: %v", err)
+		log.Fatalf(`{"level":"fatal","error":"%v","message":"failed to start metrics server"}`, err)
 	}
 
 	// Setup the pprof server
@@ -88,7 +88,7 @@ func main() {
 	// Setup the data reporter
 	dataReporter, err := setupHTTPDataReporter(logger, config.DataReporterConfig)
 	if err != nil {
-		log.Fatalf("failed to start the configured HTTP data reporter: %v", err)
+		log.Fatalf(`{"level":"fatal","error":"%v","message":"failed to start the configured HTTP data reporter"}`, err)
 	}
 
 	// TODO_IMPROVE: consider using a separate protocol instance for the hydrator,
@@ -103,7 +103,7 @@ func main() {
 		config.HydratorConfig,
 	)
 	if err != nil {
-		log.Fatalf("failed to setup endpoint hydrator: %v", err)
+		log.Fatalf(`{"level":"fatal","error":"%v","message":"failed to setup endpoint hydrator"}`, err)
 	}
 
 	// Setup the request parser which maps requests to the correct QoS instance.

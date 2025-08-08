@@ -42,10 +42,15 @@ type LazyFullNode struct {
 	blockClient   *sdk.BlockClient
 	accountClient *sdk.AccountClient
 	sharedClient  *sdk.SharedClient
+
+	// Session rollover monitoring state
+	rolloverState *sessionRolloverState
 }
 
 // NewLazyFullNode builds and returns a LazyFullNode using the provided configuration.
 func NewLazyFullNode(logger polylog.Logger, config FullNodeConfig) (*LazyFullNode, error) {
+	logger = logger.With("component", "fullnode_lazy")
+
 	// Hydrate defaults for all config sections
 	config.hydrateDefaults()
 
@@ -81,7 +86,11 @@ func NewLazyFullNode(logger polylog.Logger, config FullNodeConfig) (*LazyFullNod
 		blockClient:   blockClient,
 		accountClient: accountClient,
 		sharedClient:  sharedClient,
+		rolloverState: &sessionRolloverState{},
 	}
+
+	// Start session rollover monitoring in background
+	fullNode.startSessionRolloverMonitoring()
 
 	return fullNode, nil
 }
@@ -122,6 +131,9 @@ func (lfn *LazyFullNode) GetSession(
 				serviceID, appAddr, err,
 			)
 	}
+
+	// Update session end height for rollover monitoring
+	lfn.updateSessionEndHeight(*session)
 
 	return *session, nil
 }
@@ -237,6 +249,13 @@ func (lfn *LazyFullNode) GetSessionWithExtendedValidity(
 
 	// Return the previous session
 	return *prevSession, nil
+}
+
+// IsInSessionRollover returns true if we're currently in a session rollover period.
+// A session rollover period is problematic for relay operations and typically lasts
+// about 5 minutes (10 blocks) after a session ends.
+func (lfn *LazyFullNode) IsInSessionRollover() bool {
+	return lfn.getSessionRolloverState()
 }
 
 // serviceRequestPayload:
