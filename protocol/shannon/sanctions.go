@@ -69,6 +69,11 @@ func classifyRelayError(logger polylog.Logger, err error) (protocolobservations.
 	case errors.Is(err, sdk.ErrRelayResponseValidationSignatureError):
 		return protocolobservations.ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_RESPONSE_SIGNATURE_VALIDATION_ERR,
 			protocolobservations.ShannonSanctionType_SHANNON_SANCTION_SESSION
+
+	// WebSocket connection failed.
+	case errors.Is(err, errCreatingWebSocketConnection):
+		return protocolobservations.ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_WEBSOCKET_CONNECTION_FAILED,
+			protocolobservations.ShannonSanctionType_SHANNON_SANCTION_UNSPECIFIED
 	}
 
 	// Fallback to error matching using the error string.

@@ -67,6 +67,9 @@ var (
 	// The endpoint returned a malformed payload.
 	// Helps track more fine-grained metrics on endpoint errors.
 	errMalformedEndpointPayload = errors.New("endpoint returned malformed payload")
+
+	// ** WebSocket errors **
+	errCreatingWebSocketConnection = errors.New("error creating WebSocket connection")
 )
 
 // extractErrFromRelayError:

@@ -85,7 +85,12 @@ type ProtocolRequestContext interface {
 	HandleServiceRequest(protocol.Payload) (protocol.Response, error)
 
 	// HandleWebsocketRequest handles a WebSocket connection request.
-	HandleWebsocketRequest(polylog.Logger, *http.Request, http.ResponseWriter) error
+	//
+	// It returns a WebsocketsBridge that is used to handle the WebSocket connection.
+	// The Bridge is returned from this method to:
+	//   - Adhere to the convention of the `gateway` package handling non-protocol specific request logic.
+	//   - Allow passing gateway level observations to the WebsocketsBridge.
+	HandleWebsocketRequest(polylog.Logger, *http.Request, http.ResponseWriter) (WebsocketsBridge, error)
 
 	// GetObservations builds and returns the set of protocol-specific observations using the current context.
 	//

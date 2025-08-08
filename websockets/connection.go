@@ -3,6 +3,7 @@ package websockets
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -60,6 +61,35 @@ type websocketConnection struct {
 
 	source  messageSource
 	msgChan chan<- message
+}
+
+// UpgradeWebsocketConnection upgrades an HTTP connection to WebSocket.
+// Used to upgrade a Client's HTTP request to a WebSocket connection.
+//
+// Note: This function uses a permissive CheckOrigin policy (always returns true),
+// eliminating origin-based rejections as a potential cause of upgrade failures.
+//
+// See: https://pkg.go.dev/github.com/gorilla/websocket#hdr-Overview
+func UpgradeClientWebsocketConnection(
+	wsLogger polylog.Logger,
+	req *http.Request,
+	w http.ResponseWriter,
+) (*websocket.Conn, error) {
+	upgrader := websocket.Upgrader{
+		// Allow all origins.
+		CheckOrigin: func(r *http.Request) bool { return true },
+	}
+
+	clientConn, err := upgrader.Upgrade(w, req, nil)
+	if err != nil {
+		// Upgrade errors are often client-side protocol violations, but can also
+		// indicate server resource issues or network problems. The specific error
+		// message will help distinguish between client and server-side causes.
+		wsLogger.Error().Err(err).Msg("Error upgrading websocket connection request")
+		return nil, err
+	}
+
+	return clientConn, nil
 }
 
 // connectClient initiates a websocket connection to the client.

@@ -9,7 +9,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/gorilla/websocket"
 	"github.com/pokt-network/poktroll/pkg/polylog"
 	"github.com/pokt-network/poktroll/pkg/relayer/proxy"
 	apptypes "github.com/pokt-network/poktroll/x/application/types"
@@ -120,46 +119,52 @@ func (rc *requestContext) HandleServiceRequest(payload protocol.Payload) (protoc
 }
 
 // HandleWebsocketRequest:
-//   - Opens a persistent websocket connection to the selected endpoint.
-//   - Satisfies gateway.ProtocolRequestContext interface.
-func (rc *requestContext) HandleWebsocketRequest(logger polylog.Logger, req *http.Request, w http.ResponseWriter) error {
+// - Opens a persistent websocket connection to the selected endpoint.
+// - Satisfies gateway.ProtocolRequestContext interface.
+func (rc *requestContext) HandleWebsocketRequest(logger polylog.Logger, req *http.Request, w http.ResponseWriter) (gateway.WebsocketsBridge, error) {
 	if rc.selectedEndpoint == nil {
-		return fmt.Errorf("handleWebsocketRequest: no endpoint has been selected on service %s", rc.serviceID)
+		return nil, fmt.Errorf("handleWebsocketRequest: no endpoint has been selected on service %s", rc.serviceID)
 	}
 
 	wsLogger := logger.With(
+		"method_name", "HandleWebsocketRequest",
 		"endpoint_url", rc.selectedEndpoint.PublicURL(),
 		"endpoint_addr", rc.selectedEndpoint.Addr(),
 		"service_id", rc.serviceID,
 	)
 
+	// Record endpoint query time.
+	endpointQueryTime := time.Now()
+
 	// Upgrade HTTP request from client to websocket connection.
 	// - Connection is passed to websocket bridge for Client <-> Gateway communication.
-	upgrader := websocket.Upgrader{CheckOrigin: func(r *http.Request) bool { return true }}
-	clientConn, err := upgrader.Upgrade(w, req, nil)
+	clientConn, err := websockets.UpgradeClientWebsocketConnection(wsLogger, req, w)
 	if err != nil {
-		wsLogger.Error().Err(err).Msg("Error upgrading websocket connection request")
-		return err
+		return nil, err
 	}
 
+	// Create a websocket bridge for the selected endpoint.
+	// One bridge represents a single persistent connection to a single endpoint.
+	//
+	// Note that this Bridge is returned by the Shannon protocol method and
+	// started in the Gateway package in order to pass gateway-level observations
+	// and data reporters without leaking Gateway-level logic to the protocol package.
 	bridge, err := websockets.NewBridge(
 		wsLogger,
 		clientConn,
 		rc.selectedEndpoint,
 		rc.relayRequestSigner,
 		rc.fullNode,
+		rc.serviceID,
+		buildWebsocketBridgeEndpointObservation(rc.logger, rc.serviceID, *rc.selectedEndpoint),
 	)
 	if err != nil {
-		wsLogger.Error().Err(err).Msg("Error creating websocket bridge")
-		return err
+		wrappedErr := fmt.Errorf("%w: %v", errCreatingWebSocketConnection, err)
+		wsLogger.Error().Err(wrappedErr).Msg("Error creating websocket bridge")
+		return nil, rc.handleEndpointWebsocketError(endpointQueryTime, wrappedErr)
 	}
 
-	// Run bridge in goroutine to avoid blocking main thread.
-	go bridge.Run()
-
-	wsLogger.Info().Msg("websocket connection established")
-
-	return nil
+	return bridge, nil
 }
 
 // GetObservations:
@@ -512,6 +517,50 @@ func (rc *requestContext) handleEndpointError(
 		fmt.Errorf("relay: error sending relay for service %s endpoint %s: %w",
 			rc.serviceID, selectedEndpointAddr, endpointErr,
 		)
+}
+
+// handleEndpointWebsocketError:
+// - Records endpoint error observation with enhanced classification and returns the response.
+// - Tracks endpoint error in observations with detailed categorization for metrics.
+// - Includes any RelayMinerError data that was captured via trackRelayMinerError.
+func (rc *requestContext) handleEndpointWebsocketError(
+	endpointQueryTime time.Time,
+	endpointErr error,
+) error {
+	hydratedLogger := rc.getHydratedLogger("handleEndpointError")
+	selectedEndpointAddr := rc.selectedEndpoint.Addr()
+
+	// Error classification based on trusted error sources only
+	endpointErrorType, _ := classifyRelayError(hydratedLogger, endpointErr)
+
+	// Enhanced logging with error type and error source classification
+	hydratedLogger.Error().
+		Err(endpointErr).
+		Str("error_type", endpointErrorType.String()).
+		Msg("relay error occurred. Service request will fail.")
+
+	// Build enhanced observation with RelayMinerError data from request context
+	endpointObs := buildEndpointErrorObservation(
+		rc.logger,
+		*rc.selectedEndpoint,
+		endpointQueryTime,
+		time.Now(), // Timestamp: endpoint query completed.
+		endpointErrorType,
+		fmt.Sprintf("websocket error: %v", endpointErr),
+		// TODO_IMPROVE(@commoddity): introduce proper sanctioning for websocket errors to exclude
+		// them from selection for websocket connection requests only. This is to avoid a failed
+		// websocket connection request from excluding the endpoint from selection for HTTP requests.
+		protocolobservations.ShannonSanctionType_SHANNON_SANCTION_UNSPECIFIED,
+		rc.currentRelayMinerError, // Use RelayMinerError data from request context
+	)
+
+	// Track endpoint error observation for metrics and sanctioning
+	rc.endpointObservations = append(rc.endpointObservations, endpointObs)
+
+	// Return error.
+	return fmt.Errorf("relay: error creating websocket connection for service %s endpoint %s: %w",
+		rc.serviceID, selectedEndpointAddr, endpointErr,
+	)
 }
 
 // handleEndpointSuccess:
