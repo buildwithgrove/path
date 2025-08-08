@@ -3,6 +3,8 @@ package noop
 import (
 	"net/http"
 
+	sharedtypes "github.com/pokt-network/poktroll/x/shared/types"
+
 	"github.com/buildwithgrove/path/gateway"
 	qosobservations "github.com/buildwithgrove/path/observation/qos"
 	"github.com/buildwithgrove/path/protocol"
@@ -36,10 +38,6 @@ type requestContext struct {
 	// requestContext was constructed.
 	httpRequestPath string
 
-	// endpointResponseTimeoutMillisec specifies the timeout for receiving a response from an endpoint serving
-	// the request represented by this requestContext instance.
-	endpointResponseTimeoutMillisec int
-
 	// receivedResponses maintains response(s) received from one or more endpoints, for the
 	// request represented by this instance of requestContext.
 	receivedResponses []endpointResponse
@@ -53,9 +51,11 @@ type requestContext struct {
 // Implements the gateway.RequestQoSContext interface.
 func (rc *requestContext) GetServicePayload() protocol.Payload {
 	payload := protocol.Payload{
-		Data:            string(rc.httpRequestBody),
-		Method:          rc.httpRequestMethod,
-		TimeoutMillisec: rc.endpointResponseTimeoutMillisec,
+		Data:    string(rc.httpRequestBody),
+		Method:  rc.httpRequestMethod,
+		Path:    "", // set below
+		Headers: map[string]string{},
+		RPCType: sharedtypes.RPCType_UNKNOWN_RPC,
 	}
 	if rc.httpRequestPath != "" {
 		payload.Path = rc.httpRequestPath

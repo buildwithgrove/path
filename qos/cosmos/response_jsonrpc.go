@@ -30,14 +30,23 @@ const (
 type jsonrpcResponseValidator func(polylog.Logger, jsonrpc.Response) response
 
 var (
-	// All response types must implement the response interface.
-	_ jsonrpcResponseValidator = responseValidatorHealth
-	_ jsonrpcResponseValidator = responseValidatorStatus
+	// All response types must implement the response validator interface.
+	_ jsonrpcResponseValidator = responseValidatorCometBFTHealth
+	_ jsonrpcResponseValidator = responseValidatorCometBFTStatus
 
 	// Maps JSONRPC requests to their corresponding response validators, based on the JSONRPC method.
 	jsonrpcRequestEndpointResponseValidators = map[string]jsonrpcResponseValidator{
-		"health": responseValidatorHealth,
-		"status": responseValidatorStatus,
+		// CometBFT `health` method observation
+		// Reference: https://docs.cometbft.com/v1.0/spec/rpc/#health
+		string(methodCometBFTHealth): responseValidatorCometBFTHealth,
+
+		// CometBFT `status` method observation
+		// Reference: https://docs.cometbft.com/v1.0/spec/rpc/#status
+		string(methodCometBFTStatus): responseValidatorCometBFTStatus,
+
+		// EVM `eth_chainId` method observation
+		// Reference: https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_chainid
+		string(methodEVMChainID): responseValidatorEVMChainID,
 	}
 )
 

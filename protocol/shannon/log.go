@@ -4,6 +4,7 @@ import (
 	"github.com/pokt-network/poktroll/pkg/polylog"
 	"github.com/pokt-network/poktroll/x/session/types"
 
+	"github.com/buildwithgrove/path/log"
 	"github.com/buildwithgrove/path/protocol"
 )
 
@@ -91,6 +92,6 @@ func hydrateLoggerWithPayload(
 		"payload_data_length", len(payload.Data),
 		"payload_method", payload.Method,
 		"payload_path", payload.Path,
-		"payload_timeout_millisec", payload.TimeoutMillisec,
+		"payload_data_preview", log.Preview(payload.Data),
 	)
 }

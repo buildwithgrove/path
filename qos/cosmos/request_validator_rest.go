@@ -4,17 +4,15 @@ import (
 	"errors"
 	"net/url"
 
+	"github.com/pokt-network/poktroll/pkg/polylog"
+	sharedtypes "github.com/pokt-network/poktroll/x/shared/types"
+
 	"github.com/buildwithgrove/path/gateway"
 	qosobservations "github.com/buildwithgrove/path/observation/qos"
 	"github.com/buildwithgrove/path/protocol"
 	"github.com/buildwithgrove/path/qos"
 	"github.com/buildwithgrove/path/qos/jsonrpc"
-	"github.com/pokt-network/poktroll/pkg/polylog"
-	sharedtypes "github.com/pokt-network/poktroll/x/shared/types"
 )
-
-// Default timeout for REST requests
-const defaultRESTRequestTimeoutMillisec = 30000
 
 // validateRESTRequest validates a REST request by:
 // 1. Validating HTTP method and path
@@ -34,7 +32,7 @@ func (rv *requestValidator) validateRESTRequest(
 	rpcType := determineRESTRPCType(httpRequestPath)
 
 	logger = logger.With(
-		"detected_rpc_type", rpcType.String(),
+		"rpc_type", rpcType.String(),
 		"request_path", httpRequestPath,
 	)
 
@@ -55,6 +53,7 @@ func (rv *requestValidator) validateRESTRequest(
 		httpRequestURL,
 		httpRequestMethod,
 		httpRequestBody,
+		qosobservations.RequestOrigin_REQUEST_ORIGIN_ORGANIC,
 	)
 }
 
@@ -64,6 +63,7 @@ func (rv *requestValidator) buildRESTRequestContext(
 	httpRequestURL *url.URL,
 	httpRequestMethod string,
 	httpRequestBody []byte,
+	requestOrigin qosobservations.RequestOrigin,
 ) (gateway.RequestQoSContext, bool) {
 	logger := rv.logger.With(
 		"method", "buildRESTRequestContext",
@@ -85,12 +85,18 @@ func (rv *requestValidator) buildRESTRequestContext(
 		httpRequestMethod,
 		httpRequestBody,
 		servicePayload,
+		requestOrigin,
 	)
 
-	logger.With(
+	// Hydrate the logger with REST request details.
+	logger = logger.With(
+		"rest_backend_service", rpcType,
 		"payload_length", len(servicePayload.Data),
-		"request_path", servicePayload.Path,
-	).Debug().Msg("REST request validation successful.")
+		"rest_request_path", servicePayload.Path,
+		"rest_request_method", servicePayload.Method,
+	)
+
+	logger.Debug().Msg("REST request validation successful.")
 
 	// Create specialized REST context
 	return &requestContext{
@@ -117,13 +123,11 @@ func buildRESTServicePayload(
 	}
 
 	return protocol.Payload{
-		Data:            string(httpRequestBody),
-		Method:          httpRequestMethod,
-		TimeoutMillisec: defaultRESTRequestTimeoutMillisec,
-		// Add the RPCType hint, so protocol sets correct HTTP headers for the endpoint.
-		RPCType: rpcType,
-		// Set the request path, including raw query, if used.
-		Path: path,
+		Data:    string(httpRequestBody),
+		Method:  httpRequestMethod,
+		Path:    path,
+		Headers: map[string]string{},
+		RPCType: rpcType, // Add the RPCType hint, so protocol sets correct HTTP headers for the endpoint.
 	}
 }
 
@@ -140,6 +144,7 @@ func (rv *requestValidator) buildRESTRequestObservations(
 	httpRequestMethod string,
 	httpRequestBody []byte,
 	servicePayload protocol.Payload,
+	requestOrigin qosobservations.RequestOrigin,
 ) *qosobservations.CosmosRequestObservations {
 
 	// Determine content type from headers if available, otherwise empty
@@ -147,9 +152,10 @@ func (rv *requestValidator) buildRESTRequestObservations(
 	// Note: We don't have access to headers here, but this would be where we'd extract it
 
 	return &qosobservations.CosmosRequestObservations{
-		ChainId:       rv.chainID,
+		CosmosChainId: rv.cosmosChainID,
+		EvmChainId:    rv.evmChainID,
 		ServiceId:     string(rv.serviceID),
-		RequestOrigin: qosobservations.RequestOrigin_REQUEST_ORIGIN_ORGANIC,
+		RequestOrigin: requestOrigin,
 		RequestProfile: &qosobservations.CosmosRequestProfile{
 			BackendServiceDetails: &qosobservations.BackendServiceDetails{
 				BackendServiceType: convertToProtoBackendServiceType(rpcType),
@@ -221,8 +227,9 @@ func (rv *requestValidator) createRESTUnsupportedRPCTypeObservation(
 	jsonrpcResponse jsonrpc.Response,
 ) *qosobservations.CosmosRequestObservations {
 	return &qosobservations.CosmosRequestObservations{
+		CosmosChainId: rv.cosmosChainID,
+		EvmChainId:    rv.evmChainID,
 		ServiceId:     string(rv.serviceID),
-		ChainId:       rv.chainID,
 		RequestOrigin: qosobservations.RequestOrigin_REQUEST_ORIGIN_ORGANIC,
 		RequestProfile: &qosobservations.CosmosRequestProfile{
 			BackendServiceDetails: &qosobservations.BackendServiceDetails{

@@ -8,9 +8,9 @@ import (
 	"github.com/pokt-network/poktroll/pkg/polylog"
 )
 
-// responseValidatorHealth implements jsonrpcResponseValidator for /health endpoint
+// responseValidatorCometBFTHealth implements jsonrpcResponseValidator for /health endpoint
 // Takes a parsed JSONRPC response and validates it as a health response
-func responseValidatorHealth(logger polylog.Logger, jsonrpcResponse jsonrpc.Response) response {
+func responseValidatorCometBFTHealth(logger polylog.Logger, jsonrpcResponse jsonrpc.Response) response {
 	logger = logger.With("response_validator", "health")
 
 	// The endpoint returned an error: no need to do further processing of the response
@@ -20,7 +20,7 @@ func responseValidatorHealth(logger polylog.Logger, jsonrpcResponse jsonrpc.Resp
 			Int("jsonrpc_error_code", jsonrpcResponse.Error.Code).
 			Msg("Endpoint returned JSON-RPC error for /health request")
 
-		return &responseHealth{
+		return &responseCometBFTHealth{
 			logger:              logger,
 			userJSONRPCResponse: jsonrpcResponse,
 			healthy:             false, // Error means unhealthy
@@ -31,16 +31,16 @@ func responseValidatorHealth(logger polylog.Logger, jsonrpcResponse jsonrpc.Resp
 	// Reference: https://docs.cometbft.com/main/spec/rpc/#health
 	logger.Debug().Msg("Successfully validated /health response")
 
-	return &responseHealth{
+	return &responseCometBFTHealth{
 		logger:              logger,
 		userJSONRPCResponse: jsonrpcResponse,
 		healthy:             true,
 	}
 }
 
-// responseHealth captures a Cosmos JSONRPC /health endpoint response
+// responseCometBFTHealth captures a Cosmos JSONRPC /health endpoint response
 // Reference: https://docs.cometbft.com/v1.0/spec/rpc/#health
-type responseHealth struct {
+type responseCometBFTHealth struct {
 	logger polylog.Logger
 
 	// healthy indicates if the endpoint is healthy
@@ -52,14 +52,14 @@ type responseHealth struct {
 
 // GetObservation returns a Cosmos-based /health observation
 // Implements the response interface
-func (r *responseHealth) GetObservation() qosobservations.CosmosEndpointObservation {
+func (r *responseCometBFTHealth) GetObservation() qosobservations.CosmosEndpointObservation {
 	return qosobservations.CosmosEndpointObservation{
 		EndpointResponseValidationResult: &qosobservations.CosmosEndpointResponseValidationResult{
 			ResponseValidationType: qosobservations.CosmosResponseValidationType_COSMOS_RESPONSE_VALIDATION_TYPE_JSONRPC,
 			HttpStatusCode:         int32(r.userJSONRPCResponse.GetRecommendedHTTPStatusCode()),
 			ValidationError:        nil, // No validation error for successfully processed responses
-			ParsedResponse: &qosobservations.CosmosEndpointResponseValidationResult_ResponseHealth{
-				ResponseHealth: &qosobservations.CosmosResponseHealth{
+			ParsedResponse: &qosobservations.CosmosEndpointResponseValidationResult_ResponseCometBftHealth{
+				ResponseCometBftHealth: &qosobservations.CosmosResponseCometBFTHealth{
 					HealthStatus: r.healthy,
 				},
 			},
@@ -69,6 +69,6 @@ func (r *responseHealth) GetObservation() qosobservations.CosmosEndpointObservat
 
 // GetHTTPResponse builds and returns the HTTP response
 // Implements the response interface
-func (r *responseHealth) GetHTTPResponse() gateway.HTTPResponse {
+func (r *responseCometBFTHealth) GetHTTPResponse() gateway.HTTPResponse {
 	return qos.BuildHTTPResponseFromJSONRPCResponse(r.logger, r.userJSONRPCResponse)
 }

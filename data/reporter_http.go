@@ -13,8 +13,8 @@ import (
 	"github.com/buildwithgrove/path/observation"
 )
 
-// defaultPostTimeoutMS defines the default timeout for HTTP POST operations in milliseconds (10 seconds)
-const defaultPostTimeoutMS = 10_000
+// defaultDataReporterPostTimeoutMillisec defines the default timeout for HTTP POST operations in milliseconds (10 seconds)
+const defaultDataReporterPostTimeoutMillisec = 20_000
 
 // DataReporterHTTP exports observations to an external components over HTTP (e.g. Flentd HTTP Plugin, a Messaging system, or a database)
 var _ gateway.RequestResponseReporter = &DataReporterHTTP{}
@@ -63,7 +63,7 @@ func (drh *DataReporterHTTP) sendRecordOverHTTP(serializedDataRecord []byte) err
 	// Determine the timeout to use
 	timeoutMS := drh.PostTimeoutMS
 	if timeoutMS <= 0 {
-		timeoutMS = defaultPostTimeoutMS // Default timeout
+		timeoutMS = defaultDataReporterPostTimeoutMillisec // Default timeout
 	}
 
 	// Create an HTTP client with the configured timeout

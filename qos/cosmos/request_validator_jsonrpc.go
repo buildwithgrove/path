@@ -3,6 +3,7 @@ package cosmos
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
@@ -18,8 +19,6 @@ import (
 const (
 	// maximum length of the error message stored in request validation failure observations and logs.
 	maxErrMessageLen = 1000
-
-	defaultJSONRPCRequestTimeoutMillisec = 10_000
 )
 
 // validateJSONRPCRequest validates a JSONRPC request by:
@@ -46,7 +45,7 @@ func (rv *requestValidator) validateJSONRPCRequest(
 
 	// Hydrate the logger with data extracted from the request.
 	logger = logger.With(
-		"detected_rpc_type", rpcType.String(),
+		"rpc_type", rpcType.String(),
 		"jsonrpc_method", method,
 	)
 
@@ -60,12 +59,14 @@ func (rv *requestValidator) validateJSONRPCRequest(
 	return rv.buildJSONRPCRequestContext(
 		rpcType,
 		jsonrpcReq,
+		qosobservations.RequestOrigin_REQUEST_ORIGIN_ORGANIC,
 	)
 }
 
 func (rv *requestValidator) buildJSONRPCRequestContext(
 	rpcType sharedtypes.RPCType,
 	jsonrpcReq jsonrpc.Request,
+	requestOrigin qosobservations.RequestOrigin,
 ) (gateway.RequestQoSContext, bool) {
 	logger := rv.logger.With(
 		"method", "buildJSONRPCRequestContext",
@@ -81,7 +82,12 @@ func (rv *requestValidator) buildJSONRPCRequestContext(
 
 	// Generate the QoS observation for the request.
 	// requestContext will amend this with endpoint observation(s).
-	requestObservation := rv.buildJSONRPCRequestObservations(rpcType, jsonrpcReq, servicePayload)
+	requestObservation := rv.buildJSONRPCRequestObservations(
+		rpcType,
+		jsonrpcReq,
+		servicePayload,
+		requestOrigin,
+	)
 
 	logger.Debug().
 		Str("id", jsonrpcReq.ID.String()).
@@ -106,22 +112,22 @@ func (rv *requestValidator) buildJSONRPCRequestContext(
 	}, true
 }
 
+// buildJSONRPCServicePayload builds a protocol payload for a JSONRPC request.
 func buildJSONRPCServicePayload(rpcType sharedtypes.RPCType, jsonrpcReq jsonrpc.Request) (protocol.Payload, error) {
 	// DEV_NOTE: marshaling the request, rather than using the original payload, is necessary.
 	// Otherwise, a request missing `id` field could fail.
 	// See the Request struct in `jsonrpc` package for the details.
 	reqBz, err := json.Marshal(jsonrpcReq)
 	if err != nil {
-		return protocol.Payload{}, err
+		return protocol.EmptyErrorPayload(), err
 	}
 
 	return protocol.Payload{
-		Data: string(reqBz),
-		// JSONRPC always uses POST
-		Method:          http.MethodPost,
-		TimeoutMillisec: defaultJSONRPCRequestTimeoutMillisec,
-		// Add the RPCType hint, so protocol sets correct HTTP headers for the endpoint.
-		RPCType: rpcType,
+		Data:    string(reqBz),
+		Method:  http.MethodPost, // JSONRPC always uses POST
+		Path:    "",              // JSONRPC does not use paths
+		Headers: map[string]string{},
+		RPCType: rpcType, // Add the RPCType hint the so protocol sets correct HTTP headers for the endpoint.
 	}, nil
 }
 
@@ -151,12 +157,14 @@ func (rv *requestValidator) buildJSONRPCRequestObservations(
 	rpcType sharedtypes.RPCType,
 	jsonrpcReq jsonrpc.Request,
 	servicePayload protocol.Payload,
+	requestOrigin qosobservations.RequestOrigin,
 ) *qosobservations.CosmosRequestObservations {
 
 	return &qosobservations.CosmosRequestObservations{
-		ChainId:       rv.chainID,
+		CosmosChainId: rv.cosmosChainID,
+		EvmChainId:    rv.evmChainID,
 		ServiceId:     string(rv.serviceID),
-		RequestOrigin: qosobservations.RequestOrigin_REQUEST_ORIGIN_ORGANIC,
+		RequestOrigin: requestOrigin,
 		RequestProfile: &qosobservations.CosmosRequestProfile{
 			BackendServiceDetails: &qosobservations.BackendServiceDetails{
 				BackendServiceType: convertToProtoBackendServiceType(rpcType),
@@ -215,8 +223,9 @@ func (rv *requestValidator) createJSONRPCParseFailureObservation(
 	jsonrpcResponse jsonrpc.Response,
 ) *qosobservations.CosmosRequestObservations {
 	return &qosobservations.CosmosRequestObservations{
+		CosmosChainId: rv.cosmosChainID,
+		EvmChainId:    rv.evmChainID,
 		ServiceId:     string(rv.serviceID),
-		ChainId:       rv.chainID,
 		RequestOrigin: qosobservations.RequestOrigin_REQUEST_ORIGIN_ORGANIC,
 		RequestLevelError: &qosobservations.RequestError{
 			ErrorKind:      qosobservations.RequestErrorKind_REQUEST_ERROR_USER_ERROR_JSONRPC_PARSE_ERROR,
@@ -253,8 +262,9 @@ func (rv *requestValidator) createJSONRPCUnsupportedRPCTypeObservation(
 	jsonrpcResponse jsonrpc.Response,
 ) *qosobservations.CosmosRequestObservations {
 	return &qosobservations.CosmosRequestObservations{
+		CosmosChainId: rv.cosmosChainID,
+		EvmChainId:    rv.evmChainID,
 		ServiceId:     string(rv.serviceID),
-		ChainId:       rv.chainID,
 		RequestOrigin: qosobservations.RequestOrigin_REQUEST_ORIGIN_ORGANIC,
 		RequestProfile: &qosobservations.CosmosRequestProfile{
 			BackendServiceDetails: &qosobservations.BackendServiceDetails{
@@ -267,7 +277,7 @@ func (rv *requestValidator) createJSONRPCUnsupportedRPCTypeObservation(
 		},
 		RequestLevelError: &qosobservations.RequestError{
 			ErrorKind:      qosobservations.RequestErrorKind_REQUEST_ERROR_USER_ERROR_JSONRPC_UNSUPPORTED_RPC_TYPE,
-			ErrorDetails:   "Unsupported RPC type: " + rpcType.String(),
+			ErrorDetails:   fmt.Sprintf("Unsupported RPC type %s for service %s", rpcType.String(), string(rv.serviceID)),
 			HttpStatusCode: int32(jsonrpcResponse.GetRecommendedHTTPStatusCode()),
 		},
 	}
@@ -299,8 +309,9 @@ func (rv *requestValidator) createJSONRPCServicePayloadBuildFailureObservation(
 	jsonrpcResponse jsonrpc.Response,
 ) *qosobservations.CosmosRequestObservations {
 	return &qosobservations.CosmosRequestObservations{
+		CosmosChainId: rv.cosmosChainID,
+		EvmChainId:    rv.evmChainID,
 		ServiceId:     string(rv.serviceID),
-		ChainId:       rv.chainID,
 		RequestOrigin: qosobservations.RequestOrigin_REQUEST_ORIGIN_ORGANIC,
 		RequestProfile: &qosobservations.CosmosRequestProfile{
 			ParsedRequest: &qosobservations.CosmosRequestProfile_JsonrpcRequest{

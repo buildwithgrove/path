@@ -9,9 +9,8 @@
 ## Testing
 - [ ] Run unit tests: `make test_unit`
 - [ ] If changes affect core functionality, run: `make test_all`
-- [ ] For protocol changes, run specific E2E tests:
+- [ ] For protocol changes, run E2E tests:
   - Shannon: `make e2e_test SERVICE_IDS`
-  - Morse: `make morse_e2e_test SERVICE_IDS`
 
 ## Build Verification
 - [ ] Ensure code builds successfully: `make path_build`

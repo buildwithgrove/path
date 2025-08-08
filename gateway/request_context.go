@@ -32,8 +32,12 @@ const (
 	// - If all endpoints are sanctioned, send parallel requests by default
 	// - Make this configurable at the gateway level yaml config
 	// - Enable parallel requests for gateways that maintain their own backend nodes as a special config
-	maxParallelRequests    = 1
-	parallelRequestTimeout = 30 * time.Second
+	maxParallelRequests = 1
+
+	// RelayRequestTimeout is the timeout for relay requests
+	// TODO_TECHDEBT: Look into whether we can remove this variable altogether and consolidate
+	// it with HTTP level timeouts.
+	RelayRequestTimeout = 60 * time.Second
 )
 
 // requestContext is responsible for performing the steps necessary to complete a service request.
@@ -333,7 +337,7 @@ func (rc *requestContext) BroadcastAllObservations() {
 		}
 
 		// The service request context contains all the details the QoS needs to update its internal metrics about endpoint(s), which it should use to build
-		// the observation.QoSObservations struct.
+		// the qosobservations.Observations struct.
 		// This ensures that separate PATH instances can communicate and share their QoS observations.
 		// The QoS context will be nil if the target service ID is not specified correctly by the request.
 		var qosObservations qosobservations.Observations

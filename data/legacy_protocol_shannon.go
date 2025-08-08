@@ -2,8 +2,10 @@ package data
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
+	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 
 	shannonmetrics "github.com/buildwithgrove/path/metrics/protocol/shannon"
 	protocolobservation "github.com/buildwithgrove/path/observation/protocol"
@@ -75,11 +77,12 @@ func setLegacyFieldsFromShannonProtocolObservations(
 	// track time spent waiting for the endpoint: required for calculating the `PortalTripTime` legacy field.
 	legacyRecord.endpointTripTime = endpointObservation.EndpointResponseTimestamp.AsTime().Sub(endpointObservation.EndpointQueryTimestamp.AsTime()).Seconds()
 
-	// Set endpoint address
-	legacyRecord.NodeAddress = endpointObservation.GetEndpointUrl()
+	// Set endpoint address to the supplier address.
+	// Will be "fallback" in the case of a request sent to a fallback endpoint.
+	legacyRecord.NodeAddress = endpointObservation.GetSupplier()
 
 	// Extract the endpoint's domain from its URL.
-	endpointDomain, err := shannonmetrics.ExtractDomainOrHost(endpointObservation.EndpointUrl)
+	endpointDomain, err := shannonmetrics.ExtractDomainOrHost(endpointObservation.GetEndpointUrl())
 	if err != nil {
 		logger.With("endpoint_url", endpointObservation.EndpointUrl).Warn().Err(err).Msg("Could not extract domain from Shannon endpoint URL")
 		return legacyRecord
@@ -129,4 +132,14 @@ func setLegacyErrFieldsFromShannonEndpointError(
 	legacyRecord.ErrorMessage = errMsg
 
 	return legacyRecord
+}
+
+// formatTimestampPbForBigQueryJSON formats a protobuf Timestamp for BigQuery JSON inserts.
+// BigQuery expects timestamps in RFC 3339 format: YYYY-MM-DDTHH:MM:SS[.SSSSSS]Z
+func formatTimestampPbForBigQueryJSON(pbTimestamp *timestamppb.Timestamp) string {
+	// Convert the protobuf timestamp to Go time.Time
+	goTime := pbTimestamp.AsTime()
+
+	// Format in RFC 3339 format which BigQuery expects
+	return goTime.Format(time.RFC3339Nano)
 }
