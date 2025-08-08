@@ -15,7 +15,6 @@ import (
 	"time"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
-	servicetypes "github.com/pokt-network/poktroll/x/service/types"
 )
 
 // Maximum length of an HTTP response's body.
@@ -95,9 +94,9 @@ func newDefaultHTTPClientWithDebugMetrics() *httpClientWithDebugMetrics {
 		IdleConnTimeout:     300 * time.Second, // Long idle timeout to maximize connection reuse
 
 		// Timeout settings optimized for quick failure detection
-		TLSHandshakeTimeout:   5 * time.Second,               // Fast TLS timeout since handshakes typically complete in ~100ms
-		ResponseHeaderTimeout: responseHeaderTimeout,         // Fail fast if no response headers within 1s
-		ExpectContinueTimeout: responseHeaderTimeout,         // Fail fast on 100-continue as well
+		TLSHandshakeTimeout:   5 * time.Second,       // Fast TLS timeout since handshakes typically complete in ~100ms
+		ResponseHeaderTimeout: responseHeaderTimeout, // Fail fast if no response headers within 1s
+		ExpectContinueTimeout: responseHeaderTimeout, // Fail fast on 100-continue as well
 
 		// Performance optimizations
 		DisableKeepAlives:  false, // Enable connection reuse to reduce connection overhead
@@ -124,13 +123,16 @@ func newDefaultHTTPClientWithDebugMetrics() *httpClientWithDebugMetrics {
 // SendHTTPRelay sends an HTTP POST request with the relay data to the specified URL.
 // Uses the provided context for timeout and cancellation control.
 // Logs detailed metrics and debugging information on failure for debugging.
+//
+// Returns: response body, HTTP status code, error
 func (h *httpClientWithDebugMetrics) SendHTTPRelay(
 	ctx context.Context,
 	logger polylog.Logger,
 	endpointURL string,
-	relayRequest *servicetypes.RelayRequest,
+	method string,
+	relayRequestBz []byte,
 	headers map[string]string,
-) ([]byte, error) {
+) ([]byte, int, error) {
 	// Set up debugging context and logging function
 	debugCtx, requestRecorder := h.setupRequestDebugging(ctx, logger, endpointURL)
 
@@ -143,14 +145,7 @@ func (h *httpClientWithDebugMetrics) SendHTTPRelay(
 	_, err := url.Parse(endpointURL)
 	if err != nil {
 		requestErr = fmt.Errorf("SHOULD NEVER HAPPEN: invalid URL: %w", err)
-		return nil, requestErr
-	}
-
-	// Marshal relay request to bytes
-	relayRequestBz, err := relayRequest.Marshal()
-	if err != nil {
-		requestErr = fmt.Errorf("SHOULD NEVER HAPPEN: failed to marshal relay request: %w", err)
-		return nil, requestErr
+		return nil, 0, requestErr
 	}
 
 	// Create a context with 1-second timeout for early cancellation
@@ -165,7 +160,7 @@ func (h *httpClientWithDebugMetrics) SendHTTPRelay(
 	)
 	if err != nil {
 		requestErr = fmt.Errorf("failed to create HTTP request: %w", err)
-		return nil, requestErr
+		return nil, 0, requestErr
 	}
 
 	// TODO_TECHDEBT(@adshmh): Content-Type HTTP header should be set by the QoS.
@@ -181,11 +176,11 @@ func (h *httpClientWithDebugMetrics) SendHTTPRelay(
 		Str("endpoint_url", endpointURL).
 		Dur("context_timeout", responseHeaderTimeout).
 		Msg("Starting HTTP request with early timeout")
-		
+
 	startTime := time.Now()
 	resp, err := h.httpClient.Do(req)
 	requestDuration := time.Since(startTime)
-	
+
 	if err != nil {
 		// Check if the error was due to our early timeout
 		if earlyCtx.Err() == context.DeadlineExceeded {
@@ -202,16 +197,16 @@ func (h *httpClientWithDebugMetrics) SendHTTPRelay(
 			h.timeoutErrors.Add(1)
 			return nil, requestErr
 		}
-		
+
 		logger.Warn().
 			Str("endpoint_url", endpointURL).
 			Dur("actual_duration", requestDuration).
 			Err(err).
 			Msg("HTTP request failed with error")
 		requestErr = h.categorizeError(debugCtx, err)
-		return nil, requestErr
+		return nil, 0, requestErr
 	}
-	
+
 	logger.Debug().
 		Str("endpoint_url", endpointURL).
 		Dur("request_duration", requestDuration).
@@ -226,10 +221,10 @@ func (h *httpClientWithDebugMetrics) SendHTTPRelay(
 	responseBody, err := h.readAndValidateResponse(resp)
 	if err != nil {
 		requestErr = err
-		return nil, requestErr
+		return nil, resp.StatusCode, requestErr
 	}
 
-	return responseBody, nil
+	return responseBody, resp.StatusCode, nil
 }
 
 // setupRequestDebugging initializes request metrics, HTTP debugging context, and atomic counters.

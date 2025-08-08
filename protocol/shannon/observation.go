@@ -18,12 +18,10 @@ func buildSuccessfulEndpointLookupObservation(
 	serviceID protocol.ServiceID,
 ) protocolobservations.Observations {
 	return protocolobservations.Observations{
-		Protocol: &protocolobservations.Observations_Shannon{
-			Shannon: &protocolobservations.ShannonObservationsList{
-				Observations: []*protocolobservations.ShannonRequestObservations{
-					{
-						ServiceId: string(serviceID),
-					},
+		Shannon: &protocolobservations.ShannonObservationsList{
+			Observations: []*protocolobservations.ShannonRequestObservations{
+				{
+					ServiceId: string(serviceID),
 				},
 			},
 		},
@@ -39,15 +37,13 @@ func buildProtocolContextSetupErrorObservation(
 	err error,
 ) protocolobservations.Observations {
 	return protocolobservations.Observations{
-		Protocol: &protocolobservations.Observations_Shannon{
-			Shannon: &protocolobservations.ShannonObservationsList{
-				Observations: []*protocolobservations.ShannonRequestObservations{
-					{
-						ServiceId: string(serviceID),
-						RequestError: &protocolobservations.ShannonRequestError{
-							ErrorType:    translateContextSetupErrorToRequestErrorType(err),
-							ErrorDetails: err.Error(),
-						},
+		Shannon: &protocolobservations.ShannonObservationsList{
+			Observations: []*protocolobservations.ShannonRequestObservations{
+				{
+					ServiceId: string(serviceID),
+					RequestError: &protocolobservations.ShannonRequestError{
+						ErrorType:    translateContextSetupErrorToRequestErrorType(err),
+						ErrorDetails: err.Error(),
 					},
 				},
 			},
@@ -170,11 +166,12 @@ func buildEndpointObservation(
 ) *protocolobservations.ShannonEndpointObservation {
 	// Add session fields to the observation:
 	// app, serviceID, session ID, session start and end heights
-	observation := buildEndpointObservationFromSession(logger, endpoint.session)
+	observation := buildEndpointObservationFromSession(logger, *endpoint.Session())
 
-	// Add endpoint-level details: supplier, URL.
-	observation.Supplier = endpoint.supplier
-	observation.EndpointUrl = endpoint.url
+	// Add endpoint-level details: supplier, URL, isFallback.
+	observation.Supplier = endpoint.Supplier()
+	observation.EndpointUrl = endpoint.PublicURL()
+	observation.IsFallbackEndpoint = endpoint.IsFallback()
 
 	// Add endpoint response details if not nil (i.e. success)
 	if endpointResponse != nil {
@@ -223,9 +220,9 @@ func buildEndpointObservationFromSession(
 // Used to identify an endpoint for applying sanctions.
 func buildEndpointFromObservation(
 	observation *protocolobservations.ShannonEndpointObservation,
-) *endpoint {
+) endpoint {
 	session := buildSessionFromObservation(observation)
-	return &endpoint{
+	return &protocolEndpoint{
 		session:  session,
 		supplier: observation.GetSupplier(),
 		url:      observation.GetEndpointUrl(),

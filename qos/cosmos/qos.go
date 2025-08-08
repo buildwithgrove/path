@@ -33,13 +33,17 @@ type QoS struct {
 
 // NewQoSInstance builds and returns an instance of the CosmosSDK QoS service.
 func NewQoSInstance(logger polylog.Logger, config CosmosSDKServiceQoSConfig) *QoS {
-	cosmosSDKChainID := config.getCosmosSDKChainID()
 	serviceId := config.GetServiceID()
+
+	cosmosChainID := config.getCosmosSDKChainID()
+	// Some CosmosSDK services may have an EVM chain ID. For example, XRPLEVM.
+	evmChainID := config.getEVMChainID()
 
 	logger = logger.With(
 		"qos_instance", "cosmossdk",
 		"service_id", serviceId,
-		"cosmossdk_chain_id", cosmosSDKChainID,
+		"cosmos_chain_id", cosmosChainID,
+		"evm_chain_id", evmChainID,
 	)
 
 	store := &endpointStore{
@@ -57,7 +61,8 @@ func NewQoSInstance(logger polylog.Logger, config CosmosSDKServiceQoSConfig) *Qo
 	requestValidator := &requestValidator{
 		logger:        logger,
 		serviceID:     serviceId,
-		chainID:       cosmosSDKChainID,
+		cosmosChainID: cosmosChainID,
+		evmChainID:    evmChainID,
 		serviceState:  serviceState,
 		supportedAPIs: config.getSupportedAPIs(),
 	}
@@ -85,10 +90,7 @@ func (qos *QoS) ParseHTTPRequest(_ context.Context, req *http.Request) (gateway.
 //
 // Implements gateway.QoSService interface.
 func (qos *QoS) ParseWebsocketRequest(_ context.Context) (gateway.RequestQoSContext, bool) {
-	return &requestContext{
-		logger:       qos.logger,
-		serviceState: qos.serviceState,
-	}, true
+	return qos.validateWebsocketRequest()
 }
 
 // HydrateDisqualifiedEndpointsResponse hydrates the disqualified endpoint response with the QoS-specific data.

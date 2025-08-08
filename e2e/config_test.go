@@ -14,9 +14,6 @@ import (
 	"github.com/buildwithgrove/path/protocol"
 )
 
-const servicesFile = "config/services_shannon.yaml"
-const configFile = "config/.shannon.config.yaml"
-
 // -----------------------------------------------------------------------------
 // Environment Variables
 // -----------------------------------------------------------------------------
@@ -86,11 +83,11 @@ const (
 	// Default config file (used if custom config file is not found)
 	defaultConfigFile = "config/e2e_load_test.config.tmpl.yaml"
 
-	// Template for services file path
-	// One of:
-	//   - `config/services_morse.yaml`
-	//   - `config/services_shannon.yaml`
-	servicesFileTemplate = "config/services_%s.yaml"
+	// Services file path
+	servicesFile = "config/services_shannon.yaml"
+
+	// Shannon config file path
+	shannonConfigFile = "config/.shannon.config.yaml"
 )
 
 // loadE2ELoadTestConfig loads the E2E configuration in the following order:
@@ -124,7 +121,7 @@ func loadE2ELoadTestConfig() (*Config, error) {
 	// Set the environment configuration
 	cfg.envConfig = envConfig
 
-	// Load test services from the file `config/services_shannon.yaml`
+	// Load test services
 	services, err := loadTestServices()
 	if err != nil {
 		return nil, fmt.Errorf("failed to load test services: %w", err)
@@ -192,9 +189,7 @@ type (
 		// not YAML so the requirement for it to be public does not apply.
 		envConfig envConfig
 
-		// services are set after being unmarshalled from either:
-		// - `config/services_morse.yaml`
-		// - `config/services_shannon.yaml`
+		// services are set after being unmarshalled from `config/services_shannon.yaml`
 		services TestServices
 
 		// Below fields are all unmarshalled from the YAML files
@@ -223,7 +218,7 @@ type (
 
 	// DockerConfig for Docker configuration
 	DockerConfig struct {
-		LogToFile         bool `yaml:"log_to_file"`         // Log Docker container output
+		DockerLog         bool `yaml:"docker_log"`          // Log Docker container output
 		ForceRebuildImage bool `yaml:"force_rebuild_image"` // Force Docker image rebuild (useful after code changes)
 	}
 
@@ -317,8 +312,8 @@ func (c *Config) validate() error {
 
 	// Validate e2e test mode
 	if mode == testModeE2E {
-		if _, err := os.Stat(configFile); os.IsNotExist(err) {
-			return fmt.Errorf("e2e test mode requires %s to exist", configFile)
+		if _, err := os.Stat(shannonConfigFile); os.IsNotExist(err) {
+			return fmt.Errorf("e2e test mode requires %s to exist", shannonConfigFile)
 		}
 	}
 

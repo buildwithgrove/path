@@ -123,10 +123,10 @@ func (ses *sanctionedEndpointsStore) FilterSanctionedEndpoints(
 	filteredEndpoints := make(map[protocol.EndpointAddr]endpoint)
 
 	for endpointAddr, endpoint := range allEndpoints {
-		sanctioned, reason := ses.isSanctioned(&endpoint)
+		sanctioned, reason := ses.isSanctioned(endpoint)
 		if sanctioned {
 			// Log and skip sanctioned endpoints
-			hydratedLogger := hydrateLoggerWithEndpoint(ses.logger, &endpoint)
+			hydratedLogger := hydrateLoggerWithEndpoint(ses.logger, endpoint)
 			hydratedLogger.With("sanction_reason", reason).Debug().Msg("Filtering out sanctioned endpoint")
 			continue
 		}
@@ -154,7 +154,7 @@ func (ses *sanctionedEndpointsStore) addPermanentSanction(
 //   - Sanction expires after defaultSessionSanctionExpiration
 //   - Used for temporary issues (e.g., timeouts, connection problems)
 func (ses *sanctionedEndpointsStore) addSessionSanction(
-	endpoint *endpoint,
+	endpoint endpoint,
 	sanction sanction,
 ) {
 	sessionSanctionKey := buildSessionSanctionKey(endpoint)
@@ -163,7 +163,7 @@ func (ses *sanctionedEndpointsStore) addSessionSanction(
 }
 
 // isSanctioned checks if an endpoint has any active sanction (permanent or session-based)
-func (ses *sanctionedEndpointsStore) isSanctioned(endpoint *endpoint) (bool, string) {
+func (ses *sanctionedEndpointsStore) isSanctioned(endpoint endpoint) (bool, string) {
 	// Check permanent sanctions first - these apply regardless of session
 	ses.permanentSanctionsMutex.RLock()
 	defer ses.permanentSanctionsMutex.RUnlock()
@@ -207,9 +207,9 @@ func (s sessionSanctionKey) string() string {
 //   - Session ID: "1234567890"
 //
 // The key is used to store and retrieve session-based sanctions from the cache.
-func buildSessionSanctionKey(endpoint *endpoint) sessionSanctionKey {
+func buildSessionSanctionKey(endpoint endpoint) sessionSanctionKey {
 	endpointAddr := endpoint.Addr()
-	sessionID := endpoint.session.Header.SessionId
+	sessionID := endpoint.Session().Header.SessionId
 	return sessionSanctionKey{
 		endpointAddr: endpointAddr,
 		sessionID:    sessionID,
@@ -251,7 +251,7 @@ func newSessionSanctionKeyFromKey(key string) (sessionSanctionKey, error) {
 // It is called by the router to allow quick information about currently sanctioned endpoints.
 func (ses *sanctionedEndpointsStore) getSanctionDetails(serviceID protocol.ServiceID) devtools.ProtocolLevelDataResponse {
 	permanentSanctionDetails := make(map[protocol.EndpointAddr]devtools.SanctionedEndpoint)
-	sessionSanctionDetails := make(map[protocol.EndpointAddr]devtools.SanctionedEndpoint)
+	sessionSanctionDetails := make(map[string]devtools.SanctionedEndpoint)
 
 	// First get permanent sanctions
 	for endpointAddr, sanction := range ses.permanentSanctions {
@@ -293,7 +293,7 @@ func (ses *sanctionedEndpointsStore) getSanctionDetails(serviceID protocol.Servi
 			continue
 		}
 
-		sessionSanctionDetails[sanctionEndpointAddr] = sanction.sessionSanctionToDetails(
+		sessionSanctionDetails[sanctionKey.string()] = sanction.sessionSanctionToDetails(
 			sanctionEndpointAddr,
 			sanctionKey.sessionID,
 			protocolobservations.ShannonSanctionType_SHANNON_SANCTION_SESSION,
@@ -307,7 +307,7 @@ func (ses *sanctionedEndpointsStore) getSanctionDetails(serviceID protocol.Servi
 	return devtools.ProtocolLevelDataResponse{
 		PermanentlySanctionedEndpoints:    permanentSanctionDetails,
 		SessionSanctionedEndpoints:        sessionSanctionDetails,
-		PermamentSanctionedEndpointsCount: permanentSanctionedEndpointsCount,
+		PermanentSanctionedEndpointsCount: permanentSanctionedEndpointsCount,
 		SessionSanctionedEndpointsCount:   sessionSanctionedEndpointsCount,
 		TotalSanctionedEndpointsCount:     totalSanctionedEndpointsCount,
 	}

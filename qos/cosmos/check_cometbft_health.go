@@ -16,18 +16,18 @@ import (
 // It is a loose convention in the QoS package.
 
 // ID for the CometBFT /health check.
-const idHealthCheck = 2001
+const idCometBFTHealthCheck = 2001
 
-// methodHealth is the CometBFT JSON-RPC method for getting the node health.
+// methodCometBFTHealth is the CometBFT JSON-RPC method for getting the node health.
 // Reference: https://docs.cometbft.com/v1.0/spec/rpc/#health
-const methodHealth = jsonrpc.Method("health")
+const methodCometBFTHealth = jsonrpc.Method("health")
 
 // TODO_IMPROVE(@commoddity): determine an appropriate interval for checking the health.
 const checkHealthInterval = 30 * time.Second
 
 var (
-	errNoHealthObs      = fmt.Errorf("endpoint has not had an observation of its response to a %q request", methodHealth)
-	errInvalidHealthObs = fmt.Errorf("endpoint returned an invalid response to a %q request", methodHealth)
+	errNoHealthObs      = fmt.Errorf("endpoint has not had an observation of its response to a CometBFT '%q' request", methodCometBFTHealth)
+	errInvalidHealthObs = fmt.Errorf("endpoint returned an invalid response to a CometBFT '%q' request", methodCometBFTHealth)
 )
 
 // endpointCheckHealth is a check that ensures the endpoint is healthy.
@@ -51,8 +51,8 @@ type endpointCheckCometBFTHealth struct {
 func (e *endpointCheckCometBFTHealth) getRequest() jsonrpc.Request {
 	return jsonrpc.Request{
 		JSONRPC: jsonrpc.Version2,
-		ID:      jsonrpc.IDFromInt(idHealthCheck),
-		Method:  jsonrpc.Method(methodHealth),
+		ID:      jsonrpc.IDFromInt(idCometBFTHealthCheck),
+		Method:  jsonrpc.Method(methodCometBFTHealth),
 	}
 }
 

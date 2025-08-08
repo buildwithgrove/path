@@ -32,7 +32,7 @@ func Test_connectEndpoint(t *testing.T) {
 				return &selectedEndpoint{
 					url:          nodeURL,
 					websocketUrl: nodeURL,
-					session: &sessiontypes.Session{
+					session: sessiontypes.Session{
 						SessionId: "1",
 						Header: &sessiontypes.SessionHeader{
 							ServiceId:          "service_id",
@@ -53,7 +53,7 @@ func Test_connectEndpoint(t *testing.T) {
 				return &selectedEndpoint{
 					url:          "http://invalid-url",
 					websocketUrl: "http://invalid-url",
-					session: &sessiontypes.Session{
+					session: sessiontypes.Session{
 						SessionId: "1",
 						Header: &sessiontypes.SessionHeader{
 							ServiceId:          "service_id",

@@ -7,94 +7,14 @@
 # Use the following if you need it to point to the local schema file:
 # <REMOVE THIS TAG> yaml-language-server: $schema=../../../config/config.schema.yaml
 
-description: "PATH Gateway Configuration YAML: this file is used to configure a PATH gateway for either Morse or Shannon."
+description: "PATH Gateway Configuration YAML: this file is used to configure a PATH gateway for Shannon."
 type: object
 additionalProperties: false
-oneOf:
-  - required: ["morse_config"]
-  - required: ["shannon_config"]
+required:
+  - shannon_config
 
 properties:
-  # NOTE: Exactly one of either "morse_config" or "shannon_config" must be present
-
-  # TODO_FUTURE: a single PATH deployment can support multiple protocols in theory, but
-  # this is not currently supported in order to simplify deployment. In the future, we
-  # may look into supporting multiple protocols within a single deployment.
-
-  # Morse Configuration (required for Morse gateways)
-  morse_config:
-    description: "Configuration for the Morse gateway; if specified, the PATH instance will use the Morse version of the Pocket protocol."
-    type: object
-    additionalProperties: false
-    properties:
-      full_node_config:
-        description: "Configuration for the full node for Morse gateways. This configuration is used to connect to the Morse full node to get data from the Pocket blockchain."
-        type: object
-        additionalProperties: false
-        required:
-          - url
-        properties:
-          url:
-            description: "The URL of the full Morse Pocket node."
-            type: string
-            pattern: "^(http|https)://.*$"
-          relay_signing_key:
-            description: "The relay signing key for Morse gateways. This key is used to sign relays sent through the Morse gateway."
-            type: string
-            pattern: "^[0-9a-fA-F]{128}$"
-          http_config:
-            type: object
-            additionalProperties: false
-            properties:
-              retries:
-                type: integer
-                description: "Number of retries for HTTP requests using the Pocket Go SDK. (optional, defaults to 0)"
-              timeout:
-                description: "Timeout duration for HTTP requests using the Pocket Go SDK. (optional, defaults to 5 seconds)"
-                type: string
-              transport:
-                description: "HTTP transport configuration for the Pocket Go SDK. (optional, sensible defaults are provided)"
-                type: object
-                additionalProperties: false
-                properties:
-                  max_conns_per_host:
-                    type: integer
-                  max_idle_conns_per_host:
-                    type: integer
-                  max_idle_conns:
-                    type: integer
-                  idle_conn_timeout:
-                    type: string
-                  dial_timeout:
-                    type: string
-                  keep_alive:
-                    type: string
-      signed_aats:
-        type: object
-        additionalProperties: false
-        patternProperties:
-          "^[0-9a-fA-F]{40}$":
-            type: object
-            additionalProperties: false
-            required:
-              - client_public_key
-              - application_public_key
-              - application_signature
-            properties:
-              client_public_key:
-                description: "Client public key for the Morse AAT."
-                type: string
-                pattern: "^[0-9a-fA-F]{64}$"
-              application_public_key:
-                description: "Application public key for the Morse AAT."
-                type: string
-                pattern: "^[0-9a-fA-F]{64}$"
-              application_signature:
-                type: string
-                pattern: "^[0-9a-fA-F]{128}$"
-                description: "Signature of the application for the Morse AAT."
-
-  # Shannon Configuration (required for Shannon gateways)
+  # Shannon Configuration
   shannon_config:
     description: "Configuration for the Shannon gateway; if specified, the PATH instance will use the Shannon version of the Pocket protocol."
     type: object
@@ -190,7 +110,41 @@ properties:
             items:
               type: string
               pattern: "^[0-9a-fA-F]{64}$"
-
+          # TODO_CONSIDERATION(@adshmh): Consider renaming this to gateway_owned_endpoints to enable other use-cases.
+          # E.g. A gateway that uses Shannon as a fallback rather than its own URLs as a fallback.
+          # Note that this would require renaming all instances of fallback in the codebase.
+          service_fallback:
+            description: "Fallback endpoints for the Shannon gateway. An array of service fallback configurations. Each service_id must be unique within the array."
+            type: array
+            uniqueItems: true
+            items:
+              type: object
+              additionalProperties: false
+              required:
+                - service_id
+                - fallback_endpoints
+              properties:
+                service_id:
+                  description: "The service ID for this fallback configuration. Must be unique within the service_fallback array."
+                  type: string
+                fallback_endpoints:
+                  description: "Array of fallback endpoint configurations for this service. Each endpoint can define URLs for different RPC types."
+                  type: array
+                  items:
+                    type: object
+                    additionalProperties: false
+                    required:
+                      - default_url
+                    patternProperties:
+                      "^(default_url|json_rpc|rest|comet_bft|websocket)$":
+                        type: string
+                        anyOf:
+                          - pattern: "^(http|https)://.*$"
+                          - pattern: "^(http|https|ws|wss)://.*$"
+                send_all_traffic:
+                  description: "Whether to send all traffic to fallback endpoints for this service, regardless of protocol endpoint health."
+                  type: boolean
+                  default: false
   # Logger Configuration (optional)
   logger_config:
     description: "Optional configuration for the logger. If not specified, info level will be used."

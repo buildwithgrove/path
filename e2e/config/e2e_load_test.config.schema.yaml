@@ -65,8 +65,8 @@ properties:
             type: object
             additionalProperties: false
             properties:
-              log_to_file:
-                description: "Log Docker container output to file"
+              docker_log:
+                description: "Log Docker container output to stdout in CI and to a file in local"
                 type: boolean
               force_rebuild_image:
                 description: "Force Docker image rebuild (useful after code changes)"

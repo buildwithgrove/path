@@ -207,7 +207,7 @@ func (rc *requestContext) BuildProtocolContextsFromHTTPRequest(httpReq *http.Req
 		logger.Error().Msgf("❌ Failed to select any endpoints for service %s from %d available: %v", rc.serviceID, len(availableEndpoints), err)
 		return fmt.Errorf("%w: no endpoints could be selected from %d available endpoints", errBuildProtocolContextsFromHTTPRequest, len(availableEndpoints))
 	}
-	
+
 	logger.Info().Msgf("✅ Successfully selected %d endpoints for service %s", len(selectedEndpoints), rc.serviceID)
 
 	// Log TLD diversity of selected endpoints
