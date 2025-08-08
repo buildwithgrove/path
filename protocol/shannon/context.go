@@ -635,7 +635,7 @@ func (rc *requestContext) sendHTTPRequest(
 
 	// TODO_INVESTIGATE: Evaluate the impact of `rc.context` vs `context.TODO`
 	// with respect to handling timeouts.
-	ctxWithTimeout, cancelFn := context.WithTimeout(rc.context, timeout)
+	ctxWithTimeout, cancelFn := context.WithTimeout(context.TODO(), timeout)
 	defer cancelFn()
 
 	// Build headers including RPCType header
