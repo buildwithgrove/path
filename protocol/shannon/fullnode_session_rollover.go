@@ -133,42 +133,33 @@ func (lfn *LazyFullNode) updateBlockHeight() {
 // session start and end heights for robust detection even when session data is delayed.
 func (lfn *LazyFullNode) calculateRolloverStatus() bool {
 	blockHeight := lfn.rolloverState.currentBlockHeight
-	sessionStartHeight := lfn.rolloverState.currentSessionStartHeight
 	sessionEndHeight := lfn.rolloverState.currentSessionEndHeight
 
 	if blockHeight == 0 {
 		return false
 	}
 
-	// Check if session data is stale (from previous session)
-	// If current block is past session end, then both start and end heights are stale
-	sessionDataIsStale := sessionEndHeight != 0 && blockHeight > sessionEndHeight
-
-	// If we have fresh session start height, use it for rollover detection
-	if sessionStartHeight != 0 && !sessionDataIsStale {
-		return lfn.isInRolloverWindow(blockHeight, sessionStartHeight)
-	}
-
 	// Fallback: If session start is stale or unavailable, use session end height
 	// to detect next session rollover. Next session starts at sessionEndHeight + 1
-	if sessionEndHeight != 0 {
-		nextSessionStartHeight := sessionEndHeight + 1
-		return lfn.isInRolloverWindow(blockHeight, nextSessionStartHeight)
+	if sessionEndHeight != 0 && sessionEndHeight > blockHeight {
+		return lfn.isInRolloverWindow(blockHeight)
 	}
 
 	// No session data available
 	return false
 }
 
-// isInRolloverWindow checks if blockHeight falls within the rollover window around sessionStartHeight.
-// Rollover window = [sessionStartHeight - 1, sessionStartHeight + gracePeriod]
-func (lfn *LazyFullNode) isInRolloverWindow(blockHeight, sessionStartHeight int64) bool {
-	if sessionStartHeight == 0 || blockHeight == 0 {
+// isInRolloverWindow checks if blockHeight falls within the rollover window around sessionEndHeight.
+// Rollover window = [sessionEndHeight - 1, sessionEndHeight + gracePeriod]
+func (lfn *LazyFullNode) isInRolloverWindow(blockHeight int64) bool {
+	sessionEndHeight := lfn.rolloverState.currentSessionEndHeight
+
+	if sessionEndHeight == 0 || blockHeight == 0 {
 		return false
 	}
 
-	rolloverStart := sessionStartHeight - 1
-	rolloverEnd := sessionStartHeight + sessionRolloverGracePeriodBlocks
+	rolloverStart := sessionEndHeight - 1
+	rolloverEnd := sessionEndHeight + sessionRolloverGracePeriodBlocks
 
 	return blockHeight >= rolloverStart && blockHeight <= rolloverEnd
 }
