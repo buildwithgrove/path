@@ -313,87 +313,12 @@ func Test_isInRolloverWindow(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			lfn := newMockLazyFullNode()
 
-			result := lfn.isInRolloverWindow(tt.blockHeight, tt.sessionStartHeight)
+			result := lfn.isInRolloverWindow(tt.blockHeight)
 
 			if result != tt.expected {
 				t.Errorf("isInRolloverWindow(%v, %v) = %v, want %v",
 					tt.blockHeight, tt.sessionStartHeight, result, tt.expected)
 			}
 		})
-	}
-}
-
-// Test thread safety of getSessionRolloverState
-func Test_getSessionRolloverState_ThreadSafety(t *testing.T) {
-	lfn := newMockLazyFullNode()
-	lfn.rolloverState.isInSessionRollover = true
-
-	// Launch multiple goroutines to access the state concurrently
-	const numGoroutines = 100
-	results := make(chan bool, numGoroutines)
-
-	for i := 0; i < numGoroutines; i++ {
-		go func() {
-			result := lfn.getSessionRolloverState()
-			results <- result
-		}()
-	}
-
-	// Collect all results
-	for i := 0; i < numGoroutines; i++ {
-		result := <-results
-		if result != true {
-			t.Errorf("getSessionRolloverState() = %v, want true", result)
-		}
-	}
-}
-
-// Test thread safety of updateSessionStartHeight
-func Test_updateSessionStartHeight_ThreadSafety(t *testing.T) {
-	lfn := newMockLazyFullNode()
-
-	// Launch multiple goroutines to update state concurrently
-	const numGoroutines = 50
-	var wg sync.WaitGroup
-
-	for i := 0; i < numGoroutines; i++ {
-		wg.Add(1)
-		go func(sessionStartHeight int64) {
-			defer wg.Done()
-			testSession := sessiontypes.Session{
-				Header: &sessiontypes.SessionHeader{
-					SessionStartBlockHeight: sessionStartHeight,
-				},
-			}
-			lfn.updateSessionStartHeight(testSession)
-		}(int64(100 + i))
-	}
-
-	wg.Wait()
-
-	// Verify final state is consistent (no race conditions caused panics)
-	finalHeight := lfn.rolloverState.currentSessionStartHeight
-	if finalHeight < 100 || finalHeight >= 150 {
-		t.Errorf("final currentSessionStartHeight = %v, expected between 100 and 149", finalHeight)
-	}
-}
-
-// Benchmark tests
-func BenchmarkGetSessionRolloverState(b *testing.B) {
-	lfn := newMockLazyFullNode()
-	lfn.rolloverState.isInSessionRollover = true
-
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		lfn.getSessionRolloverState()
-	}
-}
-
-func BenchmarkIsInRolloverWindow(b *testing.B) {
-	lfn := newMockLazyFullNode()
-
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		lfn.isInRolloverWindow(100, 95)
 	}
 }
