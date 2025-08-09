@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	// TODO_TECHDEBT(@commoddity): Make this configurable via config file
+	// TODO_IN_THIS_PR(@commoddity): Make this configurable via config file
 	// Grace period after session end where rollover issues may occur
 	sessionRolloverGracePeriodBlocks = 10
 

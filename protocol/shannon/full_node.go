@@ -71,10 +71,6 @@ type FullNode interface {
 	// GetAccountClient returns the account client from the fullnode, to be used in building relay request signers.
 	GetAccountClient() *sdk.AccountClient
 
-	// TODO_NEXT(@adshmh): Incorporate this with changes in PR #396 to
-	// only use parallel fallback request when in session rollover period
-	// Reference: https://github.com/buildwithgrove/path/pull/396
-	//
 	// IsInSessionRollover returns true if the system is currently in a session rollover period.
 	//
 	// A session rollover period is a critical time window that occurs around session transitions
