@@ -116,10 +116,12 @@ func (lfn *LazyFullNode) updateSessionValues(session sessiontypes.Session) {
 }
 
 // updateBlockHeight fetches current block height and recalculates rollover status
+// Runs on a regular interval to keep the rollover status up to date.
 func (lfn *LazyFullNode) updateBlockHeight() {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
+	// Use the lazy full node's block client to get the current block height
 	newHeight, err := lfn.GetCurrentBlockHeight(ctx)
 	if err != nil {
 		lfn.logger.Error().Err(err).Msg("Failed to get current block height")
@@ -129,11 +131,16 @@ func (lfn *LazyFullNode) updateBlockHeight() {
 	lfn.rolloverState.rolloverStateMu.Lock()
 	defer lfn.rolloverState.rolloverStateMu.Unlock()
 
+	// Record the previous block height for comparison
 	previousHeight := lfn.rolloverState.currentBlockHeight
+
+	// Update the current block height
 	lfn.rolloverState.currentBlockHeight = newHeight
+
+	// Update the cached rollover status based on the new block height
 	lfn.rolloverState.isInSessionRollover = lfn.calculateRolloverStatus()
 
-	// Log block height changes
+	// Log block height changes only if the block height has changed
 	if previousHeight != newHeight {
 		lfn.logger.Debug().
 			Int64("current_height", newHeight).
