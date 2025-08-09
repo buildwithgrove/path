@@ -97,23 +97,12 @@ func (rc *requestContext) HandleServiceRequest(payload protocol.Payload) (protoc
 	// Record endpoint query time.
 	endpointQueryTime := time.Now()
 
-	var (
-		relayResponse protocol.Response
-		err           error
-	)
-	if rc.selectedEndpoint.IsFallback() {
-		// If the selected endpoint is a fallback endpoint, send the relay request to the fallback endpoint.
-		// This will bypass protocol-level request processing and validation, meaning the request is not sent to a RelayMiner.
-		relayResponse, err = rc.sendFallbackRelay(rc.logger, rc.selectedEndpoint, payload)
-	} else {
-		// TODO_TECHDEBT(@adshmh): Separate error handling for fallback and Shannon endpoints.
-		// If the selected endpoint is not a fallback endpoint, send the relay request to the selected protocolendpoint.
-		relayResponse, err = rc.sendRelayWithFallback(payload)
-	}
+	// Execute relay request using the appropriate strategy based on endpoint type and network conditions
+	relayResponse, err := rc.executeRelayRequest(payload)
 
-	// Handle endpoint error and capture RelayMinerError data if available.
+	// Failure:
+	// 	 - Pass the response (which may contain RelayMinerError data) to error handler.
 	if err != nil {
-		// Pass the response (which may contain RelayMinerError data) to error handler.
 		return rc.handleEndpointError(endpointQueryTime, err)
 	}
 
@@ -122,6 +111,40 @@ func (rc *requestContext) HandleServiceRequest(payload protocol.Payload) (protoc
 	// 	 - Return response received from endpoint.
 	err = rc.handleEndpointSuccess(endpointQueryTime, &relayResponse)
 	return relayResponse, err
+}
+
+// executeRelayRequest determines and executes the appropriate relay strategy based on:
+//  1. Endpoint type (fallback vs protocol endpoint)
+//  2. Network conditions (session rollover periods)
+func (rc *requestContext) executeRelayRequest(payload protocol.Payload) (protocol.Response, error) {
+	logger := rc.logger.With("method", "executeRelayRequest")
+
+	switch {
+	// Priority 1: Fallback endpoint
+	case rc.selectedEndpoint.IsFallback():
+		logger.Debug().Msg("Executing fallback relay")
+
+		// Direct fallback relay - bypasses protocol validation and Shannon network
+		// Used when endpoint is explicitly configured as a fallback endpoint
+		return rc.sendFallbackRelay(logger, rc.selectedEndpoint, payload)
+
+	// Priority 2: Session rollover periods
+	case rc.fullNode.IsInSessionRollover():
+		logger.Debug().Msg("Executing protocol relay with fallback protection during session rollover periods")
+		// Protocol relay with fallback protection during session rollover periods
+
+		// TODO_TECHDEBT(@adshmh): Separate error handling for fallback and Shannon endpoints.
+		// Sends requests in parallel to ensure reliability during network transitions
+		return rc.sendRelayWithFallback(payload)
+
+	// Priority 3: Standard protocol relay
+	default:
+		logger.Debug().Msg("Executing standard protocol relay")
+
+		// Standard protocol relay through Shannon network
+		// Used during stable network periods with protocol endpoints
+		return rc.sendProtocolRelay(payload)
+	}
 }
 
 // HandleWebsocketRequest:

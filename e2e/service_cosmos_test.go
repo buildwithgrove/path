@@ -10,9 +10,9 @@ import (
 	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
 
-// TODO_NEXT(@Commoddity): add test cases for XRPL-EVM Testnet and Pocket Shannon once
+// TODO_NEXT(@commoddity): add test cases for XRPL-EVM Testnet and Pocket Shannon once
 // suppliers for both are updated to latest Relay Miner version that supports the new RPC types.
-// TODO_NEXT(@Commoddity): add tests for Cosmos SDK & JSON-RPC types once suppliers are updated.
+// TODO_NEXT(@commoddity): add tests for Cosmos SDK & JSON-RPC types once suppliers are updated.
 
 /* -------------------- CometBFT REST Endpoint Definitions -------------------- */
 
