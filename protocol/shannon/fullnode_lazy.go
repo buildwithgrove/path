@@ -133,7 +133,7 @@ func (lfn *LazyFullNode) GetSession(
 	}
 
 	// Update session end height for rollover monitoring
-	lfn.updateSessionStartHeight(*session)
+	lfn.updateSessionValues(*session)
 
 	return *session, nil
 }
@@ -248,7 +248,7 @@ func (lfn *LazyFullNode) GetSessionWithExtendedValidity(
 	}
 
 	// Update session end height for rollover monitoring
-	lfn.updateSessionStartHeight(currentSession)
+	lfn.updateSessionValues(currentSession)
 
 	// Return the previous session
 	return *prevSession, nil
