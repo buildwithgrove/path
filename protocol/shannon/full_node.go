@@ -75,8 +75,8 @@ type FullNode interface {
 	//
 	// A session rollover period is a critical time window that occurs around session transitions
 	// and can cause reliability issues for relay operations. The rollover period is defined as:
-	// - 1 block before the session start height
-	// - Plus a configurable grace period after the session start (default: 10 blocks)
+	//   - 1 block before the session end height
+	//   - Plus a configurable grace period after the session end
 	//
 	// This method enables the gateway to implement adaptive retry strategies during rollover periods
 	//

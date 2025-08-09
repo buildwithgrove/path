@@ -132,7 +132,7 @@ func (lfn *LazyFullNode) GetSession(
 			)
 	}
 
-	// Update session end height for rollover monitoring
+	// Update session rollover boundaries for rollover monitoring
 	lfn.updateSessionValues(*session)
 
 	return *session, nil
@@ -247,7 +247,7 @@ func (lfn *LazyFullNode) GetSessionWithExtendedValidity(
 		return currentSession, nil
 	}
 
-	// Update session end height for rollover monitoring
+	// Update session rollover boundaries for rollover monitoring
 	lfn.updateSessionValues(currentSession)
 
 	// Return the previous session
@@ -255,8 +255,6 @@ func (lfn *LazyFullNode) GetSessionWithExtendedValidity(
 }
 
 // IsInSessionRollover returns true if we're currently in a session rollover period.
-// A session rollover period is problematic for relay operations and typically lasts
-// about 5 minutes (10 blocks) after a session ends.
 func (lfn *LazyFullNode) IsInSessionRollover() bool {
 	return lfn.getSessionRolloverState()
 }
