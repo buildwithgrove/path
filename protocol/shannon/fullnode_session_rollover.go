@@ -13,7 +13,7 @@ import (
 const (
 	// TODO_IN_THIS_PR(@commoddity): Make this configurable via config file
 	// Grace period after session end where rollover issues may occur
-	sessionRolloverGracePeriodBlocks = 10
+	sessionRolloverGracePeriodBlocks = 24
 
 	// How often to check for block height updates
 	blockCheckInterval = 15 * time.Second
