@@ -86,7 +86,7 @@ func NewLazyFullNode(logger polylog.Logger, config FullNodeConfig) (*LazyFullNod
 		blockClient:   blockClient,
 		accountClient: accountClient,
 		sharedClient:  sharedClient,
-		rolloverState: &sessionRolloverState{},
+		rolloverState: newSessionRolloverState(logger, blockClient),
 	}
 
 	// Start session rollover monitoring in background
@@ -133,7 +133,7 @@ func (lfn *LazyFullNode) GetSession(
 	}
 
 	// Update session rollover boundaries for rollover monitoring
-	lfn.updateSessionValues(*session)
+	lfn.rolloverState.updateSessionRolloverBoundaries(*session)
 
 	return *session, nil
 }
@@ -248,7 +248,7 @@ func (lfn *LazyFullNode) GetSessionWithExtendedValidity(
 	}
 
 	// Update session rollover boundaries for rollover monitoring
-	lfn.updateSessionValues(currentSession)
+	lfn.rolloverState.updateSessionRolloverBoundaries(currentSession)
 
 	// Return the previous session
 	return *prevSession, nil

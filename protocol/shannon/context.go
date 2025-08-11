@@ -117,7 +117,10 @@ func (rc *requestContext) HandleServiceRequest(payload protocol.Payload) (protoc
 //  1. Endpoint type (fallback vs protocol endpoint)
 //  2. Network conditions (session rollover periods)
 func (rc *requestContext) executeRelayRequest(payload protocol.Payload) (protocol.Response, error) {
-	logger := rc.logger.With("method", "executeRelayRequest")
+	logger := rc.logger.With(
+		"method", "executeRelayRequest",
+		"service_id", rc.serviceID,
+	)
 
 	switch {
 	// Priority 1: Fallback endpoint
@@ -299,7 +302,7 @@ func (rc *requestContext) sendRelayToARandomFallbackEndpoint(payload protocol.Pa
 //   - Captures RelayMinerError data for reporting (but doesn't use it for classification).
 //   - Required to fulfill the FullNode interface.
 func (rc *requestContext) sendProtocolRelay(payload protocol.Payload) (protocol.Response, error) {
-	hydratedLogger := rc.getHydratedLogger("sendRelay")
+	hydratedLogger := rc.getHydratedLogger("sendProtocolRelay")
 	hydratedLogger = hydrateLoggerWithPayload(hydratedLogger, &payload)
 
 	// Validate endpoint and session

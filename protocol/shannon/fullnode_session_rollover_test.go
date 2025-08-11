@@ -1,21 +1,22 @@
 package shannon
 
 import (
-	"sync"
 	"testing"
 
 	"github.com/pokt-network/poktroll/pkg/polylog/polyzero"
 	sessiontypes "github.com/pokt-network/poktroll/x/session/types"
+	sdk "github.com/pokt-network/shannon-sdk"
 )
 
-// newMockLazyFullNode creates a minimal LazyFullNode for testing
-func newMockLazyFullNode() *LazyFullNode {
-	return &LazyFullNode{
-		logger: polyzero.NewLogger(),
-		rolloverState: &sessionRolloverState{
-			rolloverStateMu: sync.RWMutex{},
-		},
-	}
+// newMockSessionRolloverState creates a minimal sessionRolloverState for testing
+func newMockSessionRolloverState() *sessionRolloverState {
+	logger := polyzero.NewLogger()
+
+	// Create a mock block client - we can use nil since the tests don't actually call block height methods
+	// For tests that need block height functionality, we'll set up the rollover state manually
+	var mockBlockClient *sdk.BlockClient = nil
+
+	return newSessionRolloverState(logger, mockBlockClient)
 }
 
 func Test_getSessionRolloverState(t *testing.T) {
@@ -38,10 +39,10 @@ func Test_getSessionRolloverState(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			lfn := newMockLazyFullNode()
-			lfn.rolloverState.isInSessionRollover = tt.initialState
+			srs := newMockSessionRolloverState()
+			srs.isInSessionRollover = tt.initialState
 
-			result := lfn.getSessionRolloverState()
+			result := srs.getSessionRolloverState()
 
 			if result != tt.expectedResult {
 				t.Errorf("getSessionRolloverState() = %v, want %v", result, tt.expectedResult)
@@ -50,7 +51,7 @@ func Test_getSessionRolloverState(t *testing.T) {
 	}
 }
 
-func Test_updateSessionValues(t *testing.T) {
+func Test_updateSessionRolloverBoundaries(t *testing.T) {
 	tests := []struct {
 		name                   string
 		session                sessiontypes.Session
@@ -132,28 +133,28 @@ func Test_updateSessionValues(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			lfn := newMockLazyFullNode()
-			lfn.rolloverState.sessionRolloverStart = tt.initialRolloverStart
-			lfn.rolloverState.sessionRolloverEnd = tt.initialRolloverEnd
-			lfn.rolloverState.currentBlockHeight = tt.initialBlockHeight
+			srs := newMockSessionRolloverState()
+			srs.sessionRolloverStart = tt.initialRolloverStart
+			srs.sessionRolloverEnd = tt.initialRolloverEnd
+			srs.currentBlockHeight = tt.initialBlockHeight
 
-			lfn.updateSessionValues(tt.session)
+			srs.updateSessionRolloverBoundaries(tt.session)
 
-			if tt.shouldReturn && (lfn.rolloverState.sessionRolloverStart != tt.expectedRolloverStart || lfn.rolloverState.sessionRolloverEnd != tt.expectedRolloverEnd) {
-				t.Errorf("updateSessionValues() should have returned early, but state changed")
+			if tt.shouldReturn && (srs.sessionRolloverStart != tt.expectedRolloverStart || srs.sessionRolloverEnd != tt.expectedRolloverEnd) {
+				t.Errorf("updateSessionRolloverBoundaries() should have returned early, but state changed")
 				return
 			}
 
-			if lfn.rolloverState.sessionRolloverStart != tt.expectedRolloverStart {
-				t.Errorf("sessionRolloverStart = %v, want %v", lfn.rolloverState.sessionRolloverStart, tt.expectedRolloverStart)
+			if srs.sessionRolloverStart != tt.expectedRolloverStart {
+				t.Errorf("sessionRolloverStart = %v, want %v", srs.sessionRolloverStart, tt.expectedRolloverStart)
 			}
 
-			if lfn.rolloverState.sessionRolloverEnd != tt.expectedRolloverEnd {
-				t.Errorf("sessionRolloverEnd = %v, want %v", lfn.rolloverState.sessionRolloverEnd, tt.expectedRolloverEnd)
+			if srs.sessionRolloverEnd != tt.expectedRolloverEnd {
+				t.Errorf("sessionRolloverEnd = %v, want %v", srs.sessionRolloverEnd, tt.expectedRolloverEnd)
 			}
 
-			if !tt.shouldReturn && lfn.rolloverState.isInSessionRollover != tt.expectedInRollover {
-				t.Errorf("isInSessionRollover = %v, want %v", lfn.rolloverState.isInSessionRollover, tt.expectedInRollover)
+			if !tt.shouldReturn && srs.isInSessionRollover != tt.expectedInRollover {
+				t.Errorf("isInSessionRollover = %v, want %v", srs.isInSessionRollover, tt.expectedInRollover)
 			}
 		})
 	}
@@ -234,12 +235,12 @@ func Test_calculateRolloverStatus(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			lfn := newMockLazyFullNode()
-			lfn.rolloverState.currentBlockHeight = tt.currentBlockHeight
-			lfn.rolloverState.sessionRolloverStart = tt.rolloverStart
-			lfn.rolloverState.sessionRolloverEnd = tt.rolloverEnd
+			srs := newMockSessionRolloverState()
+			srs.currentBlockHeight = tt.currentBlockHeight
+			srs.sessionRolloverStart = tt.rolloverStart
+			srs.sessionRolloverEnd = tt.rolloverEnd
 
-			result := lfn.calculateRolloverStatus()
+			result := srs.calculateRolloverStatus()
 
 			if result != tt.expected {
 				t.Errorf("calculateRolloverStatus() = %v, want %v", result, tt.expected)

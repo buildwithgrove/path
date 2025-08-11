@@ -5,7 +5,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/pokt-network/poktroll/pkg/polylog"
 	sessiontypes "github.com/pokt-network/poktroll/x/session/types"
+	sdk "github.com/pokt-network/shannon-sdk"
 )
 
 const (
@@ -33,20 +35,39 @@ const (
 // All access to this state is protected by rolloverStateMu for thread safety,
 // allowing safe concurrent access from multiple goroutines.
 type sessionRolloverState struct {
-	currentBlockHeight   int64 // Latest block height from the blockchain
-	sessionRolloverStart int64 // Start height of the rollover window
-	sessionRolloverEnd   int64 // End height of the rollover window
-	isInSessionRollover  bool  // Cached rollover status (true = in rollover period)
+	logger polylog.Logger // Logger for rollover operations
+
+	blockClient *sdk.BlockClient // Block client for getting current block height
+
+	currentBlockHeight        int64     // Latest block height from the blockchain
+	sessionRolloverStart      int64     // Start height of the rollover window
+	sessionRolloverEnd        int64     // End height of the rollover window
+	isInSessionRollover       bool      // Cached rollover status (true = in rollover period)
+	lastBlockHeightUpdateTime time.Time // Timestamp of last block height update
 
 	rolloverStateMu sync.RWMutex // Protects all fields above
 }
 
+// newSessionRolloverState creates a new sessionRolloverState with the provided logger and block client
+func newSessionRolloverState(logger polylog.Logger, blockClient *sdk.BlockClient) *sessionRolloverState {
+	return &sessionRolloverState{
+		logger:      logger.With("component", "session_rollover"),
+		blockClient: blockClient,
+	}
+}
+
 // getSessionRolloverState returns whether we're currently in a session rollover period.
 // Thread-safe.
+func (srs *sessionRolloverState) getSessionRolloverState() bool {
+	srs.rolloverStateMu.RLock()
+	defer srs.rolloverStateMu.RUnlock()
+	return srs.isInSessionRollover
+}
+
+// getSessionRolloverState returns whether we're currently in a session rollover period.
+// This is a wrapper method for LazyFullNode to access the rollover state.
 func (lfn *LazyFullNode) getSessionRolloverState() bool {
-	lfn.rolloverState.rolloverStateMu.RLock()
-	defer lfn.rolloverState.rolloverStateMu.RUnlock()
-	return lfn.rolloverState.isInSessionRollover
+	return lfn.rolloverState.getSessionRolloverState()
 }
 
 // startSessionRolloverMonitoring starts background monitoring for session rollovers.
@@ -57,106 +78,124 @@ func (lfn *LazyFullNode) startSessionRolloverMonitoring() {
 		Int("grace_period_blocks", sessionRolloverGracePeriodBlocks).
 		Msg("Starting session rollover monitoring")
 
-	go lfn.monitorLoop()
+	go lfn.rolloverState.blockHeightMonitorLoop()
 }
 
-// monitorLoop continuously checks block height to detect session rollovers
-func (lfn *LazyFullNode) monitorLoop() {
+// blockHeightMonitorLoop continuously checks block height to detect session rollovers
+func (srs *sessionRolloverState) blockHeightMonitorLoop() {
 	ticker := time.NewTicker(blockCheckInterval)
 	defer ticker.Stop()
 
 	for range ticker.C {
-		lfn.updateBlockHeight()
-	}
-}
-
-// updateSessionValues updates rollover boundaries when we fetch a new session.
-// Called from GetSession() to keep rollover monitoring current.
-// Only updates rollover boundaries if the current rollover period has ended.
-func (lfn *LazyFullNode) updateSessionValues(session sessiontypes.Session) {
-	if session.Header == nil {
-		lfn.logger.Warn().Msg("Session header is nil, cannot update session values")
-		return
-	}
-
-	lfn.rolloverState.rolloverStateMu.Lock()
-	defer lfn.rolloverState.rolloverStateMu.Unlock()
-
-	sessionEndHeight := session.Header.SessionEndBlockHeight
-	currentBlockHeight := lfn.rolloverState.currentBlockHeight
-
-	// Only update rollover boundaries if current rollover period has ended
-	// or if we don't have rollover boundaries set yet
-	if lfn.rolloverState.sessionRolloverEnd == 0 || currentBlockHeight > lfn.rolloverState.sessionRolloverEnd {
-		newRolloverStart := sessionEndHeight - 1
-		newRolloverEnd := sessionEndHeight + sessionRolloverGracePeriodBlocks
-
-		oldRolloverStart := lfn.rolloverState.sessionRolloverStart
-
-		// Update rollover boundaries and recalculate rollover status
-		lfn.rolloverState.sessionRolloverStart = newRolloverStart
-		lfn.rolloverState.sessionRolloverEnd = newRolloverEnd
-		lfn.rolloverState.isInSessionRollover = lfn.calculateRolloverStatus()
-
-		// Log rollover boundary changes
-		if oldRolloverStart != newRolloverStart {
-			lfn.logger.Debug().
-				Int64("session_end_height", sessionEndHeight).
-				Int64("rollover_start", newRolloverStart).
-				Int64("rollover_end", newRolloverEnd).
-				Int64("current_block_height", currentBlockHeight).
-				Bool("in_rollover", lfn.rolloverState.isInSessionRollover).
-				Msg("Rollover boundaries updated")
-		}
-	} else {
-		// Even if we don't update boundaries, recalculate rollover status
-		// in case block height has changed
-		lfn.rolloverState.isInSessionRollover = lfn.calculateRolloverStatus()
+		srs.updateBlockHeight()
 	}
 }
 
 // updateBlockHeight fetches current block height and recalculates rollover status
 // Runs on a regular interval to keep the rollover status up to date.
-func (lfn *LazyFullNode) updateBlockHeight() {
+func (srs *sessionRolloverState) updateBlockHeight() {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	// Use the lazy full node's block client to get the current block height
-	newHeight, err := lfn.GetCurrentBlockHeight(ctx)
+	// Use the block client to get the current block height
+	newHeight, err := srs.blockClient.LatestBlockHeight(ctx)
 	if err != nil {
-		lfn.logger.Error().Err(err).Msg("Failed to get current block height")
+		srs.logger.Error().Err(err).Msg("Failed to get current block height")
 		return
 	}
 
-	lfn.rolloverState.rolloverStateMu.Lock()
-	defer lfn.rolloverState.rolloverStateMu.Unlock()
+	srs.rolloverStateMu.Lock()
+	defer srs.rolloverStateMu.Unlock()
 
-	// Record the previous block height for comparison
-	previousHeight := lfn.rolloverState.currentBlockHeight
+	// Record the previous block height and timestamp for comparison
+	previousHeight := srs.currentBlockHeight
+	previousUpdateTime := srs.lastBlockHeightUpdateTime
+
+	// Skip if block height hasn't increased
+	if previousHeight >= newHeight {
+		return
+	}
 
 	// Update the current block height
-	lfn.rolloverState.currentBlockHeight = newHeight
+	srs.currentBlockHeight = newHeight
+
+	// Log block height changes and update cached rollover status
+	currentTime := time.Now()
+
+	// Calculate time elapsed since last block height update (in seconds)
+	var timeSinceLastUpdate float64
+	if !previousUpdateTime.IsZero() {
+		timeSinceLastUpdate = currentTime.Sub(previousUpdateTime).Seconds()
+	}
+
+	// Update the timestamp only when block height actually changes
+	srs.lastBlockHeightUpdateTime = currentTime
 
 	// Update the cached rollover status based on the new block height
-	lfn.rolloverState.isInSessionRollover = lfn.calculateRolloverStatus()
+	srs.isInSessionRollover = srs.calculateRolloverStatus()
 
-	// Log block height changes only if the block height has changed
-	if previousHeight != newHeight {
-		lfn.logger.Debug().
-			Int64("current_height", newHeight).
-			Int64("rollover_start", lfn.rolloverState.sessionRolloverStart).
-			Int64("rollover_end", lfn.rolloverState.sessionRolloverEnd).
-			Bool("in_rollover", lfn.rolloverState.isInSessionRollover).
-			Msg("Block height updated")
+	logEvent := srs.logger.Debug().
+		Int64("current_height", newHeight).
+		Int64("rollover_start", srs.sessionRolloverStart).
+		Int64("rollover_end", srs.sessionRolloverEnd).
+		Bool("in_rollover", srs.isInSessionRollover)
+
+	// DEBUG: Add time since last block height update in human-readable seconds
+	if !previousUpdateTime.IsZero() {
+		logEvent.Float64("seconds_since_last_update", timeSinceLastUpdate)
 	}
+
+	logEvent.Msg("Block height updated")
+}
+
+// updateSessionRolloverBoundaries updates rollover boundaries when we fetch a new session.
+// Called from GetSession() to keep rollover monitoring current.
+// Only updates rollover boundaries if the current rollover period has ended.
+func (srs *sessionRolloverState) updateSessionRolloverBoundaries(session sessiontypes.Session) {
+	if session.Header == nil {
+		srs.logger.Warn().Msg("Session header is nil, cannot update session values")
+		return
+	}
+
+	srs.rolloverStateMu.Lock()
+	defer srs.rolloverStateMu.Unlock()
+
+	sessionEndHeight := session.Header.SessionEndBlockHeight
+	currentBlockHeight := srs.currentBlockHeight
+
+	// Only update rollover boundaries if current rollover period has ended
+	// or if we don't have rollover boundaries set yet
+	if srs.sessionRolloverEnd == 0 || currentBlockHeight > srs.sessionRolloverEnd {
+		newRolloverStart := sessionEndHeight - 1
+		newRolloverEnd := sessionEndHeight + sessionRolloverGracePeriodBlocks
+
+		oldRolloverStart := srs.sessionRolloverStart
+
+		// Update rollover boundaries
+		srs.sessionRolloverStart = newRolloverStart
+		srs.sessionRolloverEnd = newRolloverEnd
+
+		// Log rollover boundary changes
+		if oldRolloverStart != newRolloverStart {
+			srs.logger.Debug().
+				Int64("session_end_height", sessionEndHeight).
+				Int64("rollover_start", newRolloverStart).
+				Int64("rollover_end", newRolloverEnd).
+				Int64("current_block_height", currentBlockHeight).
+				Msg("Rollover boundaries updated")
+		}
+	}
+
+	// Recalculate rollover status based on current state
+	srs.isInSessionRollover = srs.calculateRolloverStatus()
 }
 
 // calculateRolloverStatus determines if we're in a session rollover period using
 // pre-calculated rollover boundaries for efficient and stable detection.
-func (lfn *LazyFullNode) calculateRolloverStatus() bool {
-	blockHeight := lfn.rolloverState.currentBlockHeight
-	rolloverStart := lfn.rolloverState.sessionRolloverStart
-	rolloverEnd := lfn.rolloverState.sessionRolloverEnd
+func (srs *sessionRolloverState) calculateRolloverStatus() bool {
+	blockHeight := srs.currentBlockHeight
+	rolloverStart := srs.sessionRolloverStart
+	rolloverEnd := srs.sessionRolloverEnd
 
 	if blockHeight == 0 || rolloverStart == 0 || rolloverEnd == 0 {
 		return false
