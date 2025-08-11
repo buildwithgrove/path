@@ -84,7 +84,6 @@ func (srs *sessionRolloverState) blockHeightMonitorLoop() {
 	defer ticker.Stop()
 
 	for range ticker.C {
-		srs.logger.Debug().Msg("Block height monitor tick - checking for updates")
 		srs.updateBlockHeight()
 	}
 }
@@ -116,10 +115,6 @@ func (srs *sessionRolloverState) updateBlockHeight() {
 
 	// Skip if block height hasn't increased
 	if previousHeight >= newHeight {
-		srs.logger.Debug().
-			Int64("previous_height", previousHeight).
-			Int64("new_height", newHeight).
-			Msg("Block height unchanged or decreased, skipping update")
 		return
 	}
 
