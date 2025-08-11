@@ -107,12 +107,6 @@ func (srs *sessionRolloverState) updateBlockHeight() {
 	// Record the previous block height
 	previousHeight := srs.currentBlockHeight
 
-	// Log the height comparison for debugging
-	srs.logger.Debug().
-		Int64("previous_height", previousHeight).
-		Int64("new_height", newHeight).
-		Msg("Block height comparison")
-
 	// Skip if block height hasn't increased
 	if previousHeight >= newHeight {
 		return
