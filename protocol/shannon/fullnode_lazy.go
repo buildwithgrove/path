@@ -79,7 +79,7 @@ func NewLazyFullNode(logger polylog.Logger, config FullNodeConfig) (*LazyFullNod
 		return nil, fmt.Errorf("NewSdk: error creating new shared client using url %s: %w", config.GRPCConfig.HostPort, err)
 	}
 
-	fullNode := &LazyFullNode{
+	return &LazyFullNode{
 		logger:        logger,
 		sessionClient: sessionClient,
 		appClient:     appClient,
@@ -87,12 +87,7 @@ func NewLazyFullNode(logger polylog.Logger, config FullNodeConfig) (*LazyFullNod
 		accountClient: accountClient,
 		sharedClient:  sharedClient,
 		rolloverState: newSessionRolloverState(logger, blockClient),
-	}
-
-	// Start session rollover monitoring in background
-	fullNode.startSessionRolloverMonitoring()
-
-	return fullNode, nil
+	}, nil
 }
 
 // GetApp:
@@ -256,7 +251,7 @@ func (lfn *LazyFullNode) GetSessionWithExtendedValidity(
 
 // IsInSessionRollover returns true if we're currently in a session rollover period.
 func (lfn *LazyFullNode) IsInSessionRollover() bool {
-	return lfn.getSessionRolloverState()
+	return lfn.rolloverState.getSessionRolloverState()
 }
 
 // serviceRequestPayload:

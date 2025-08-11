@@ -50,10 +50,19 @@ type sessionRolloverState struct {
 
 // newSessionRolloverState creates a new sessionRolloverState with the provided logger and block client
 func newSessionRolloverState(logger polylog.Logger, blockClient *sdk.BlockClient) *sessionRolloverState {
-	return &sessionRolloverState{
-		logger:      logger.With("component", "session_rollover"),
+	srs := &sessionRolloverState{
+		logger:      logger.With("component", "session_rollover_state"),
 		blockClient: blockClient,
 	}
+
+	go srs.blockHeightMonitorLoop()
+
+	srs.logger.Info().
+		Dur("check_interval", blockCheckInterval).
+		Int("grace_period_blocks", sessionRolloverGracePeriodBlocks).
+		Msg("Starting session rollover monitoring")
+
+	return srs
 }
 
 // getSessionRolloverState returns whether we're currently in a session rollover period.
@@ -64,29 +73,18 @@ func (srs *sessionRolloverState) getSessionRolloverState() bool {
 	return srs.isInSessionRollover
 }
 
-// getSessionRolloverState returns whether we're currently in a session rollover period.
-// This is a wrapper method for LazyFullNode to access the rollover state.
-func (lfn *LazyFullNode) getSessionRolloverState() bool {
-	return lfn.rolloverState.getSessionRolloverState()
-}
-
-// startSessionRolloverMonitoring starts background monitoring for session rollovers.
-// Called automatically when LazyFullNode is created.
-func (lfn *LazyFullNode) startSessionRolloverMonitoring() {
-	lfn.logger.Info().
-		Dur("check_interval", blockCheckInterval).
-		Int("grace_period_blocks", sessionRolloverGracePeriodBlocks).
-		Msg("Starting session rollover monitoring")
-
-	go lfn.rolloverState.blockHeightMonitorLoop()
-}
-
 // blockHeightMonitorLoop continuously checks block height to detect session rollovers
 func (srs *sessionRolloverState) blockHeightMonitorLoop() {
+	srs.logger.Info().
+		Bool("block_client_available", srs.blockClient != nil).
+		Dur("check_interval", blockCheckInterval).
+		Msg("Block height monitor loop starting")
+
 	ticker := time.NewTicker(blockCheckInterval)
 	defer ticker.Stop()
 
 	for range ticker.C {
+		srs.logger.Debug().Msg("Block height monitor tick - checking for updates")
 		srs.updateBlockHeight()
 	}
 }
@@ -107,12 +105,21 @@ func (srs *sessionRolloverState) updateBlockHeight() {
 	srs.rolloverStateMu.Lock()
 	defer srs.rolloverStateMu.Unlock()
 
-	// Record the previous block height and timestamp for comparison
+	// Record the previous block height
 	previousHeight := srs.currentBlockHeight
-	previousUpdateTime := srs.lastBlockHeightUpdateTime
+
+	// Log the height comparison for debugging
+	srs.logger.Debug().
+		Int64("previous_height", previousHeight).
+		Int64("new_height", newHeight).
+		Msg("Block height comparison")
 
 	// Skip if block height hasn't increased
 	if previousHeight >= newHeight {
+		srs.logger.Debug().
+			Int64("previous_height", previousHeight).
+			Int64("new_height", newHeight).
+			Msg("Block height unchanged or decreased, skipping update")
 		return
 	}
 
@@ -121,13 +128,6 @@ func (srs *sessionRolloverState) updateBlockHeight() {
 
 	// Log block height changes and update cached rollover status
 	currentTime := time.Now()
-
-	// Calculate time elapsed since last block height update (in seconds)
-	var timeSinceLastUpdate float64
-	if !previousUpdateTime.IsZero() {
-		timeSinceLastUpdate = currentTime.Sub(previousUpdateTime).Seconds()
-	}
-
 	// Update the timestamp only when block height actually changes
 	srs.lastBlockHeightUpdateTime = currentTime
 
@@ -139,11 +139,6 @@ func (srs *sessionRolloverState) updateBlockHeight() {
 		Int64("rollover_start", srs.sessionRolloverStart).
 		Int64("rollover_end", srs.sessionRolloverEnd).
 		Bool("in_rollover", srs.isInSessionRollover)
-
-	// DEBUG: Add time since last block height update in human-readable seconds
-	if !previousUpdateTime.IsZero() {
-		logEvent.Float64("seconds_since_last_update", timeSinceLastUpdate)
-	}
 
 	logEvent.Msg("Block height updated")
 }
