@@ -63,7 +63,7 @@ type websocketConnection struct {
 	msgChan chan<- message
 }
 
-// UpgradeWebsocketConnection upgrades an HTTP connection to WebSocket.
+// UpgradeClientWebsocketConnection upgrades an HTTP connection to WebSocket.
 // Used to upgrade a Client's HTTP request to a WebSocket connection.
 //
 // Note: This function uses a permissive CheckOrigin policy (always returns true),
@@ -92,7 +92,7 @@ func UpgradeClientWebsocketConnection(
 	return clientConn, nil
 }
 
-// connectClient initiates a websocket connection to the client.
+// newConnection creates a new websocket connection wrapper.
 func newConnection(
 	ctx context.Context,
 	cancelCtx context.CancelFunc,
