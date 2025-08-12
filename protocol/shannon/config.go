@@ -22,6 +22,9 @@ const (
 	// secp256k1 keys are 20 bytes, but are then bech32 encoded -> 43 bytes
 	// Ref: https://docs.cosmos.network/main/build/spec/addresses/bech32
 	shannonAddressLengthBech32 = 43
+
+	// Default session rollover blocks is the default value for the session rollover blocks config.
+	defaultSessionRolloverBlocks = 10
 )
 
 var (
@@ -33,6 +36,7 @@ var (
 	ErrShannonCentralizedGatewayModeRequiresOwnedApps = errors.New("shannon Centralized gateway mode requires at-least 1 owned app")
 	ErrShannonCacheConfigSetForLazyMode               = errors.New("cache config cannot be set for lazy mode")
 	ErrShannonInvalidServiceFallback                  = errors.New("invalid service fallback configuration")
+	ErrShannonInvalidSessionRolloverBlocks            = errors.New("session_rollover_blocks must be positive")
 )
 
 type (
@@ -46,6 +50,10 @@ type (
 
 		// Configuration options for the cache when LazyMode is false
 		CacheConfig CacheConfig `yaml:"cache_config"`
+
+		// SessionRolloverBlocks is a temporary fix to handle session rollover issues.
+		// TODO_TECHDEBT(@commoddity): Should be removed when the rollover issue is solved at the protocol level.
+		SessionRolloverBlocks int64 `yaml:"session_rollover_blocks"`
 	}
 
 	// TODO_TECHDEBT(@adshmh): Move this and related helpers into a new `grpc` package.
@@ -191,6 +199,9 @@ func (c FullNodeConfig) Validate() error {
 	if !isValidHostPort(c.GRPCConfig.HostPort) {
 		return ErrShannonInvalidGrpcHostPort
 	}
+	if c.SessionRolloverBlocks <= 0 {
+		return ErrShannonInvalidSessionRolloverBlocks
+	}
 	if err := c.CacheConfig.validate(c.LazyMode); err != nil {
 		return err
 	}
@@ -324,4 +335,7 @@ func isValidHostPort(hostPort string) bool {
 func (fnc *FullNodeConfig) hydrateDefaults() {
 	fnc.GRPCConfig = fnc.GRPCConfig.hydrateDefaults()
 	fnc.CacheConfig = fnc.CacheConfig.hydrateDefaults()
+	if fnc.SessionRolloverBlocks == 0 {
+		fnc.SessionRolloverBlocks = defaultSessionRolloverBlocks
+	}
 }

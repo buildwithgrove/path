@@ -24,6 +24,9 @@ shannon_config:
       host_port: shannon-grove-grpc.mainnet.poktroll.com:443
     # Setting this to true disables all caching of full node data.
     lazy_mode: false
+    # Session rollover blocks is a temporary fix to handle session rollover issues.
+    # Should be removed when the rollover issue is solved at the protocol level.
+    session_rollover_blocks: 10
     # If lazy_mode is true, the cache_config may not be set.
     cache_config:
       # The TTL for the session cache.
