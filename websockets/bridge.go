@@ -120,7 +120,6 @@ func NewBridge(
 	protocolObservations *protocolobservations.Observations,
 ) (*Bridge, error) {
 	logger = logger.With(
-		"TODO_IN_THIS_PR", "🐞🐞🐞 DEBUG 🐞🐞🐞",
 		"component", "bridge",
 		"endpoint_url", selectedEndpoint.PublicURL(),
 	)
