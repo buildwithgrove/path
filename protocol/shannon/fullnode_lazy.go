@@ -51,9 +51,6 @@ type LazyFullNode struct {
 func NewLazyFullNode(logger polylog.Logger, config FullNodeConfig) (*LazyFullNode, error) {
 	logger = logger.With("component", "fullnode_lazy")
 
-	// Hydrate defaults for all config sections
-	config.hydrateDefaults()
-
 	blockClient, err := newBlockClient(config.RpcURL)
 	if err != nil {
 		return nil, fmt.Errorf("NewSdk: error creating new Shannon block client at URL %s: %w", config.RpcURL, err)

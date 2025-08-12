@@ -331,8 +331,8 @@ func isValidHostPort(hostPort string) bool {
 	return true
 }
 
-// hydrateDefaults applies default values to FullNodeConfig
-func (fnc *FullNodeConfig) hydrateDefaults() {
+// HydrateDefaults applies default values to FullNodeConfig
+func (fnc *FullNodeConfig) HydrateDefaults() {
 	fnc.GRPCConfig = fnc.GRPCConfig.hydrateDefaults()
 	fnc.CacheConfig = fnc.CacheConfig.hydrateDefaults()
 	if fnc.SessionRolloverBlocks == 0 {
