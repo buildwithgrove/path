@@ -16,7 +16,10 @@ func newMockSessionRolloverState() *sessionRolloverState {
 	// For tests that need block height functionality, we'll set up the rollover state manually
 	var mockBlockClient *sdk.BlockClient = nil
 
-	return newSessionRolloverState(logger, mockBlockClient)
+	// Use the default rollover blocks value for testing
+	const testSessionRolloverBlocks = 24
+
+	return newSessionRolloverState(logger, mockBlockClient, testSessionRolloverBlocks)
 }
 
 func Test_getSessionRolloverState(t *testing.T) {
@@ -90,8 +93,8 @@ func Test_updateSessionRolloverBoundaries(t *testing.T) {
 			initialRolloverEnd:     0, // not set yet
 			initialBlockHeight:     105,
 			expectedRolloverStart:  159,   // 160 - 1
-			expectedRolloverEnd:    170,   // 160 + 10
-			expectedInRollover:     false, // 105 is not in [159, 170]
+			expectedRolloverEnd:    184,   // 160 + 24
+			expectedInRollover:     false, // 105 is not in [159, 184]
 			shouldReturn:           false,
 			shouldUpdateBoundaries: true,
 		},
@@ -104,10 +107,10 @@ func Test_updateSessionRolloverBoundaries(t *testing.T) {
 				},
 			},
 			initialRolloverStart:   159, // previous session
-			initialRolloverEnd:     170, // previous session
-			initialBlockHeight:     175, // past previous rollover end
+			initialRolloverEnd:     184, // previous session
+			initialBlockHeight:     190, // past previous rollover end
 			expectedRolloverStart:  259, // 260 - 1
-			expectedRolloverEnd:    270, // 260 + 10
+			expectedRolloverEnd:    284, // 260 + 24
 			expectedInRollover:     false,
 			shouldReturn:           false,
 			shouldUpdateBoundaries: true,
@@ -121,10 +124,10 @@ func Test_updateSessionRolloverBoundaries(t *testing.T) {
 				},
 			},
 			initialRolloverStart:   159, // current session
-			initialRolloverEnd:     170, // current session
+			initialRolloverEnd:     184, // current session
 			initialBlockHeight:     165, // within current rollover window
 			expectedRolloverStart:  159, // unchanged
-			expectedRolloverEnd:    170, // unchanged
+			expectedRolloverEnd:    184, // unchanged
 			expectedInRollover:     true,
 			shouldReturn:           false,
 			shouldUpdateBoundaries: false,
@@ -172,14 +175,14 @@ func Test_calculateRolloverStatus(t *testing.T) {
 			name:               "no block height returns false",
 			currentBlockHeight: 0,
 			rolloverStart:      159,
-			rolloverEnd:        170,
+			rolloverEnd:        184,
 			expected:           false,
 		},
 		{
 			name:               "no rollover start returns false",
 			currentBlockHeight: 165,
 			rolloverStart:      0,
-			rolloverEnd:        170,
+			rolloverEnd:        184,
 			expected:           false,
 		},
 		{
@@ -193,35 +196,35 @@ func Test_calculateRolloverStatus(t *testing.T) {
 			name:               "block height within rollover window",
 			currentBlockHeight: 165,
 			rolloverStart:      159, // session end height - 1
-			rolloverEnd:        170, // session end height + grace period
+			rolloverEnd:        184, // session end height + grace period
 			expected:           true,
 		},
 		{
 			name:               "block height at rollover start",
 			currentBlockHeight: 159,
 			rolloverStart:      159,
-			rolloverEnd:        170,
+			rolloverEnd:        184,
 			expected:           true,
 		},
 		{
 			name:               "block height at rollover end",
-			currentBlockHeight: 170,
+			currentBlockHeight: 184,
 			rolloverStart:      159,
-			rolloverEnd:        170,
+			rolloverEnd:        184,
 			expected:           true,
 		},
 		{
 			name:               "block height before rollover window",
 			currentBlockHeight: 158,
 			rolloverStart:      159,
-			rolloverEnd:        170,
+			rolloverEnd:        184,
 			expected:           false,
 		},
 		{
 			name:               "block height after rollover window",
-			currentBlockHeight: 171,
+			currentBlockHeight: 185,
 			rolloverStart:      159,
-			rolloverEnd:        170,
+			rolloverEnd:        184,
 			expected:           false,
 		},
 		{

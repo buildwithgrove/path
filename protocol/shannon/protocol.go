@@ -354,7 +354,6 @@ func (p *Protocol) getUniqueEndpoints(
 	// Handle the case where no session endpoints are available.
 	// If fallback endpoints are available for the service ID, use them.
 	if len(serviceFallbacks) > 0 {
-		logger.Info().Msgf("No session endpoints available: using fallback endpoints for service %s.", serviceID)
 		return serviceFallbacks, nil
 	}
 

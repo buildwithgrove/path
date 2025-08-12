@@ -11,10 +11,6 @@ import (
 )
 
 const (
-	// TODO_IN_THIS_PR(@commoddity): Make this configurable via config file
-	// Grace period after session end where rollover issues may occur
-	sessionRolloverGracePeriodBlocks = 24
-
 	// How often to check for block height updates
 	blockCheckInterval = 15 * time.Second
 )
@@ -22,7 +18,7 @@ const (
 // sessionRolloverState tracks session rollover status for the LazyFullNode.
 //
 // The rollover window spans from 1 block before session end through
-// `sessionRolloverGracePeriodBlocks` after session end. This provides
+// `sessionRolloverBlocks` after session end. This provides
 // early warning and extended monitoring of potentially problematic periods
 // around session boundaries.
 //
@@ -39,6 +35,8 @@ type sessionRolloverState struct {
 
 	blockClient *sdk.BlockClient // Block client for getting current block height
 
+	sessionRolloverBlocks int64 // Grace period after session end where rollover issues may occur
+
 	currentBlockHeight   int64 // Latest block height from the blockchain
 	sessionRolloverStart int64 // Start height of the rollover window
 	sessionRolloverEnd   int64 // End height of the rollover window
@@ -48,18 +46,19 @@ type sessionRolloverState struct {
 	rolloverStateMu sync.RWMutex // Protects all fields above
 }
 
-// newSessionRolloverState creates a new sessionRolloverState with the provided logger and block client
-func newSessionRolloverState(logger polylog.Logger, blockClient *sdk.BlockClient) *sessionRolloverState {
+// newSessionRolloverState creates a new sessionRolloverState with the provided logger, block client, and rollover blocks
+func newSessionRolloverState(logger polylog.Logger, blockClient *sdk.BlockClient, sessionRolloverBlocks int64) *sessionRolloverState {
 	srs := &sessionRolloverState{
-		logger:      logger.With("component", "session_rollover_state"),
-		blockClient: blockClient,
+		logger:                logger.With("component", "session_rollover_state"),
+		blockClient:           blockClient,
+		sessionRolloverBlocks: sessionRolloverBlocks,
 	}
 
 	go srs.blockHeightMonitorLoop()
 
 	srs.logger.Info().
 		Dur("check_interval", blockCheckInterval).
-		Int("grace_period_blocks", sessionRolloverGracePeriodBlocks).
+		Int64("session_rollover_blocks", sessionRolloverBlocks).
 		Msg("Starting session rollover monitoring")
 
 	return srs
@@ -146,7 +145,7 @@ func (srs *sessionRolloverState) updateSessionRolloverBoundaries(session session
 	// or if we don't have rollover boundaries set yet
 	if srs.sessionRolloverEnd == 0 || currentBlockHeight > srs.sessionRolloverEnd {
 		newRolloverStart := sessionEndHeight - 1
-		newRolloverEnd := sessionEndHeight + sessionRolloverGracePeriodBlocks
+		newRolloverEnd := sessionEndHeight + srs.sessionRolloverBlocks
 
 		oldRolloverStart := srs.sessionRolloverStart
 

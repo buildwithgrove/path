@@ -69,6 +69,10 @@ properties:
             description: "Indicates if lazy mode is enabled for full node connections."
             type: boolean
             default: true
+          session_rollover_blocks:
+            description: "Grace period after session end where rollover issues may occur (in blocks)."
+            type: integer
+            minimum: 1
           cache_config:
             description: "Configuration for the cache."
             type: object

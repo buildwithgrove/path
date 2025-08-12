@@ -86,7 +86,7 @@ func NewLazyFullNode(logger polylog.Logger, config FullNodeConfig) (*LazyFullNod
 		blockClient:   blockClient,
 		accountClient: accountClient,
 		sharedClient:  sharedClient,
-		rolloverState: newSessionRolloverState(logger, blockClient),
+		rolloverState: newSessionRolloverState(logger, blockClient, config.SessionRolloverBlocks),
 	}, nil
 }
 

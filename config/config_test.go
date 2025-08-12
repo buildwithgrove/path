@@ -26,7 +26,8 @@ func Test_LoadGatewayConfigFromYAML(t *testing.T) {
 			want: GatewayConfig{
 				ShannonConfig: &shannon.ShannonGatewayConfig{
 					FullNodeConfig: shannonprotocol.FullNodeConfig{
-						RpcURL: "https://shannon-grove-rpc.mainnet.poktroll.com",
+						RpcURL:                "https://shannon-grove-rpc.mainnet.poktroll.com",
+						SessionRolloverBlocks: 10,
 						GRPCConfig: shannonprotocol.GRPCConfig{
 							HostPort: "shannon-grove-grpc.mainnet.poktroll.com:443",
 						},
@@ -90,6 +91,7 @@ func Test_LoadGatewayConfigFromYAML(t *testing.T) {
 			  full_node_config:
 			    rpc_url: "invalid-url"
 			    grpc_url: "grpcs://grpc-url.io"
+			    session_rollover_blocks: 10
 			`,
 			wantErr: true,
 		},
@@ -101,6 +103,7 @@ func Test_LoadGatewayConfigFromYAML(t *testing.T) {
 			  full_node_config:
 			    rpc_url: "https://rpc-url.io"
 			    grpc_url: "grpcs://grpc-url.io"
+			    session_rollover_blocks: 10
 			  gateway_config:
 			    gateway_address: "invalid_gateway_address"
 			    gateway_private_key_hex: "d5fcbfb894059a21e914a2d6bf1508319ce2b1b8878f15aa0c1cdf883feb018d"
@@ -129,6 +132,7 @@ func Test_LoadGatewayConfigFromYAML(t *testing.T) {
     grpc_config:
       host_port: "shannon-testnet-grove-grpc.beta.poktroll.com:443"
     lazy_mode: false
+    session_rollover_blocks: 10
   gateway_config:
     gateway_mode: "centralized"
     gateway_address: "pokt1up7zlytnmvlsuxzpzvlrta95347w322adsxslw"
@@ -140,7 +144,8 @@ logger_config:
 			want: GatewayConfig{
 				ShannonConfig: &shannon.ShannonGatewayConfig{
 					FullNodeConfig: shannonprotocol.FullNodeConfig{
-						RpcURL: "https://shannon-testnet-grove-rpc.beta.poktroll.com",
+						RpcURL:                "https://shannon-testnet-grove-rpc.beta.poktroll.com",
+						SessionRolloverBlocks: 10,
 						GRPCConfig: shannonprotocol.GRPCConfig{
 							HostPort: "shannon-testnet-grove-grpc.beta.poktroll.com:443",
 						},
@@ -178,6 +183,7 @@ logger_config:
 			    rpc_url: "https://shannon-testnet-grove-rpc.beta.poktroll.com"
 			    grpc_config:
 			      host_port: "shannon-testnet-grove-grpc.beta.poktroll.com:443"
+			    session_rollover_blocks: 10
 			  gateway_config:
 			    gateway_address: "pokt1up7zlytnmvlsuxzpzvlrta95347w322adsxslw"
 			    gateway_private_key_hex: "40af4e7e1b311c76a573610fe115cd2adf1eeade709cd77ca31ad4472509d388"
@@ -195,6 +201,7 @@ logger_config:
 			    rpc_url: "https://shannon-testnet-grove-rpc.beta.poktroll.com"
 			    grpc_config:
 			      host_port: "shannon-testnet-grove-grpc.beta.poktroll.com:443"
+			    session_rollover_blocks: 10
 			  gateway_config:
 			    gateway_mode: "centralized"
 			    gateway_address: "pokt1up7zlytnmvlsuxzpzvlrta95347w322adsxslw"
@@ -218,6 +225,7 @@ logger_config:
 			    rpc_url: "https://shannon-testnet-grove-rpc.beta.poktroll.com"
 			    grpc_config:
 			      host_port: "shannon-testnet-grove-grpc.beta.poktroll.com:443"
+			    session_rollover_blocks: 10
 			  gateway_config:
 			    gateway_mode: "centralized"
 			    gateway_address: "pokt1up7zlytnmvlsuxzpzvlrta95347w322adsxslw"
@@ -240,6 +248,7 @@ logger_config:
 			    rpc_url: "https://shannon-testnet-grove-rpc.beta.poktroll.com"
 			    grpc_config:
 			      host_port: "shannon-testnet-grove-grpc.beta.poktroll.com:443"
+			    session_rollover_blocks: 10
 			  gateway_config:
 			    gateway_mode: "centralized"
 			    gateway_address: "pokt1up7zlytnmvlsuxzpzvlrta95347w322adsxslw"
@@ -264,6 +273,7 @@ logger_config:
 			    rpc_url: "https://shannon-testnet-grove-rpc.beta.poktroll.com"
 			    grpc_config:
 			      host_port: "shannon-testnet-grove-grpc.beta.poktroll.com:443"
+			    session_rollover_blocks: 10
 			  gateway_config:
 			    gateway_mode: "centralized"
 			    gateway_address: "pokt1up7zlytnmvlsuxzpzvlrta95347w322adsxslw"
