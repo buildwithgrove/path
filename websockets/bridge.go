@@ -53,6 +53,7 @@ type SelectedEndpoint interface {
 	WebsocketURL() (string, error)
 	Supplier() string
 	Session() *sessiontypes.Session
+	IsFallback() bool
 }
 
 // Bridge routes data between an Endpoint and a Client.
@@ -282,10 +283,26 @@ func (b *Bridge) Shutdown(err error) {
 	close(b.msgChan)
 }
 
-// handleClientMessage processes a message from the Client and sends it to the Endpoint
-// It signs the request using the RelayRequestSigner and sends the signed request to the Endpoint
+// -------------------- Client -> Relay Miner Message Handling --------------------
+
+// handleClientMessage processes a message from the Client and sends it to a protocol or fallback endpoint.
 func (b *Bridge) handleClientMessage(msg message) {
 	b.logger.Debug().Msgf("received message from client: %s", string(msg.data))
+
+	// If the selected endpoint is a fallback endpoint, skip protocol-level signing of the request.
+	if b.selectedEndpoint.IsFallback() {
+		b.handleClientFallbackEndpointMessage(msg)
+		return
+	}
+
+	// If the selected endpoint is a protocol endpoint, sign the request using the RelayRequestSigner.
+	b.handleClientProtocolEndpointMessage(msg)
+}
+
+// handleClientProtocolEndpointMessage processes a message from the Client and sends it to a protocol endpoint.
+// It signs the request using the RelayRequestSigner and sends the signed request to the Endpoint.
+func (b *Bridge) handleClientProtocolEndpointMessage(msg message) {
+	b.logger.Debug().Msgf("received message from protocol endpoint: %s", string(msg.data))
 
 	// Sign the client message before sending it to the Endpoint
 	signedClientMessageBz, err := b.signClientMessage(msg)
@@ -326,13 +343,27 @@ func (b *Bridge) signClientMessage(msg message) ([]byte, error) {
 	return relayRequestBz, nil
 }
 
+// handleClientFallbackEndpointMessage processes a message from the Client and sends it to a fallback endpoint
+// This skips the protocol-level signing of the request and sends the raw message to the Endpoint.
+func (b *Bridge) handleClientFallbackEndpointMessage(msg message) {
+	b.logger.Debug().Msgf("received message from fallback endpoint: %s", string(msg.data))
+
+	// Send the signed request to the RelayMiner, which will forward it to the Endpoint
+	if err := b.endpointConn.WriteMessage(msg.messageType, msg.data); err != nil {
+		b.endpointConn.handleDisconnect(fmt.Errorf("handleClientMessage: error writing client message to endpoint: %w", err))
+		return
+	}
+}
+
+// -------------------- Relay Miner -> Client Message Handling --------------------
+
 // handleEndpointMessage processes a message from the Endpoint and sends it to the Client
 // It validates the relay response using the Shannon FullNode and sends the relay response to the Client
 // Subscription events pushed from the Endpoint to the Client will be handled here as well.
 func (b *Bridge) handleEndpointMessage(msg message) {
 	b.logger.Debug().Msgf("received message from endpoint: %s", string(msg.data))
 
-	// At the end of each endpoint message, publish the observations.
+	// At the end of each message received from the Endpoint, publish the observations.
 	messageObservations := b.initializeMessageObservations()
 
 	// Publish the observations to the data pipeline after the message is handled.
@@ -343,6 +374,21 @@ func (b *Bridge) handleEndpointMessage(msg message) {
 	if b.dataReporter != nil {
 		defer b.dataReporter.Publish(messageObservations)
 	}
+
+	// If the selected endpoint is a fallback endpoint, skip protocol-level validation of the relay response.
+	if b.selectedEndpoint.IsFallback() {
+		b.handleRelayMinerFallbackEndpointMessage(msg)
+		return
+	}
+
+	// If the selected endpoint is a protocol endpoint, validate the relay response using the Shannon FullNode.
+	b.handleRelayMinerProtocolEndpointMessage(msg)
+}
+
+// handleRelayMinerProtocolEndpointMessage processes a message from the RelayMiner and sends it to the Client
+// It validates the relay response using the Shannon FullNode and sends the relay response to the Client
+func (b *Bridge) handleRelayMinerProtocolEndpointMessage(msg message) {
+	b.logger.Debug().Msgf("received message from relay miner: %s", string(msg.data))
 
 	// Validate the relay response using the Shannon FullNode
 	relayResponse, err := b.fullNode.ValidateRelayResponse(sdk.SupplierAddress(b.selectedEndpoint.Supplier()), msg.data)
@@ -360,6 +406,18 @@ func (b *Bridge) handleEndpointMessage(msg message) {
 
 		// NOTE: On session rollover, the RelayMiner will disconnect the Endpoint connection, which will trigger this
 		// error. This is expected and the Client is expected to handle the reconnection in their connection logic.
+		b.clientConn.handleDisconnect(fmt.Errorf("handleEndpointMessage: error writing endpoint message to client: %w", err))
+		return
+	}
+}
+
+// handleRelayMinerFallbackEndpointMessage processes a message from the RelayMiner and sends it to the Client
+// This skips the protocol-level validation of the relay response and sends the raw message to the Client.
+func (b *Bridge) handleRelayMinerFallbackEndpointMessage(msg message) {
+	b.logger.Debug().Msgf("received message from relay miner: %s", string(msg.data))
+
+	// Send the relay response or subscription push event to the Client
+	if err := b.clientConn.WriteMessage(msg.messageType, msg.data); err != nil {
 		b.clientConn.handleDisconnect(fmt.Errorf("handleEndpointMessage: error writing endpoint message to client: %w", err))
 		return
 	}

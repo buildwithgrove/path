@@ -294,6 +294,7 @@ type selectedEndpoint struct {
 	websocketUrl string // Assigned to the value of the `websocketUrl` returned by `testEndpointConnURL`
 	session      sessiontypes.Session
 	supplier     string
+	fallback     bool
 }
 
 func (e *selectedEndpoint) Addr() protocol.EndpointAddr {
@@ -314,6 +315,10 @@ func (e *selectedEndpoint) Supplier() string {
 
 func (e *selectedEndpoint) Session() *sessiontypes.Session {
 	return &e.session
+}
+
+func (e *selectedEndpoint) IsFallback() bool {
+	return e.fallback
 }
 
 type relayRequestSigner struct{}
