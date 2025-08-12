@@ -107,6 +107,8 @@ type Bridge struct {
 	protocolObservations *protocolobservations.Observations
 }
 
+// -------------------- Bridge Creation --------------------
+
 // NewBridge creates a new Bridge instance and a new connection to the Endpoint from the Endpoint URL
 func NewBridge(
 	logger polylog.Logger,
@@ -118,6 +120,7 @@ func NewBridge(
 	protocolObservations *protocolobservations.Observations,
 ) (*Bridge, error) {
 	logger = logger.With(
+		"TODO_IN_THIS_PR", "🐞🐞🐞 DEBUG 🐞🐞🐞",
 		"component", "bridge",
 		"endpoint_url", selectedEndpoint.PublicURL(),
 	)
@@ -172,6 +175,7 @@ func NewBridge(
 
 // connectWebsocketEndpoint makes a websocket connection to the websocket Endpoint.
 func connectWebsocketEndpoint(logger polylog.Logger, selectedEndpoint SelectedEndpoint) (*websocket.Conn, error) {
+	// Get the websocket-specific URL from the selected endpoint.
 	websocketURL, err := selectedEndpoint.WebsocketURL()
 	if err != nil {
 		logger.Error().Err(err).Msgf("❌ Selected endpoint does not support websocket RPC type: %s", selectedEndpoint.Addr())
@@ -180,42 +184,59 @@ func connectWebsocketEndpoint(logger polylog.Logger, selectedEndpoint SelectedEn
 
 	logger.Info().Msgf("🔗 Connecting to websocket endpoint: %s", websocketURL)
 
+	// Ensure the websocket URL is valid.
 	u, err := url.Parse(websocketURL)
 	if err != nil {
 		logger.Error().Err(err).Msgf("❌ Error parsing endpoint URL: %s", websocketURL)
 		return nil, err
 	}
 
-	headers := getBridgeRequestHeaders(selectedEndpoint.Session())
+	// Prepare the headers for the websocket connection.
+	headers := http.Header{}
 
+	// If the selected endpoint is a protocol endpoint, add the headers
+	// that the RelayMiner requires to forward the request to the Endpoint.
+	//
+	// Requests to fallback endpoints bypass the protocol so RelayMiner headers are not needed.
+	if !selectedEndpoint.IsFallback() {
+		headers = getRelayMinerConnectionHeaders(logger, selectedEndpoint.Session().GetHeader())
+	}
+
+	// Connect to the websocket endpoint using the default websocket dialer.
 	conn, _, err := websocket.DefaultDialer.Dial(u.String(), headers)
 	if err != nil {
 		logger.Error().Err(err).Msgf("❌ Error connecting to endpoint: %s", u.String())
 		return nil, err
 	}
 
+	logger.Debug().Msgf("🔗 Connected to websocket endpoint: %s", websocketURL)
+
 	return conn, nil
 }
 
 // TODO_DOCUMENT(@commoddity): Document these headers and how bridge connections work in more detail.
 //
-// getBridgeRequestHeaders returns the headers that should be sent to the RelayMiner
+// getRelayMinerConnectionHeaders returns the headers that should be sent to the RelayMiner
 // when establishing a new websocket connection to the Endpoint.
 //
 // The headers are:
 //   - `Target-Service-Id`: The service ID of the target service.
 //   - `App-Address:` The address of the session's application.
 //   - `Rpc-Type`: The type of RPC request. Always "websocket" for websocket connection requests.
-func getBridgeRequestHeaders(session *sessiontypes.Session) http.Header {
-	headers := http.Header{}
-	headers.Add(request.HTTPHeaderTargetServiceID, session.Header.ServiceId)
-	headers.Add(request.HTTPHeaderAppAddress, session.Header.ApplicationAddress)
+func getRelayMinerConnectionHeaders(logger polylog.Logger, sessionHeader *sessiontypes.SessionHeader) http.Header {
+	if sessionHeader == nil {
+		logger.Error().Msg("❌ SHOULD NEVER HAPPEN: Error getting relay miner connection headers: session header is nil")
+		return http.Header{}
+	}
 
-	// Get the "WEBSOCKET" RPC type enum value and add it to the headers.
-	rpcTypeWebsocket := strconv.Itoa(int(sharedtypes.RPCType_WEBSOCKET))
-	headers.Add(proxy.RPCTypeHeader, rpcTypeWebsocket)
-	return headers
+	return http.Header{
+		request.HTTPHeaderTargetServiceID: {sessionHeader.ServiceId},
+		request.HTTPHeaderAppAddress:      {sessionHeader.ApplicationAddress},
+		proxy.RPCTypeHeader:               {strconv.Itoa(int(sharedtypes.RPCType_WEBSOCKET))},
+	}
 }
+
+// -------------------- Bridge Operation --------------------
 
 // StartAsync starts the bridge and establishes a bidirectional communication
 // through PATH between the Client and the selected websocket endpoint.
@@ -377,17 +398,17 @@ func (b *Bridge) handleEndpointMessage(msg message) {
 
 	// If the selected endpoint is a fallback endpoint, skip protocol-level validation of the relay response.
 	if b.selectedEndpoint.IsFallback() {
-		b.handleRelayMinerFallbackEndpointMessage(msg)
+		b.handleEndpointFallbackEndpointMessage(msg)
 		return
 	}
 
 	// If the selected endpoint is a protocol endpoint, validate the relay response using the Shannon FullNode.
-	b.handleRelayMinerProtocolEndpointMessage(msg)
+	b.handleEndpointProtocolEndpointMessage(msg)
 }
 
-// handleRelayMinerProtocolEndpointMessage processes a message from the RelayMiner and sends it to the Client
+// handleEndpointProtocolEndpointMessage processes a message from the Endpoint and sends it to the Client
 // It validates the relay response using the Shannon FullNode and sends the relay response to the Client
-func (b *Bridge) handleRelayMinerProtocolEndpointMessage(msg message) {
+func (b *Bridge) handleEndpointProtocolEndpointMessage(msg message) {
 	b.logger.Debug().Msgf("received message from relay miner: %s", string(msg.data))
 
 	// Validate the relay response using the Shannon FullNode
@@ -404,16 +425,16 @@ func (b *Bridge) handleRelayMinerProtocolEndpointMessage(msg message) {
 		// TODO_TECHDEBT(@commoddity, @adshmh): When the TODO_TECHDEBT at the top of this file is resolved,
 		// add a method to update the protocol observations based on the error in the WriteMessage method.
 
-		// NOTE: On session rollover, the RelayMiner will disconnect the Endpoint connection, which will trigger this
+		// NOTE: On session rollover, the Endpoint will disconnect the Endpoint connection, which will trigger this
 		// error. This is expected and the Client is expected to handle the reconnection in their connection logic.
 		b.clientConn.handleDisconnect(fmt.Errorf("handleEndpointMessage: error writing endpoint message to client: %w", err))
 		return
 	}
 }
 
-// handleRelayMinerFallbackEndpointMessage processes a message from the RelayMiner and sends it to the Client
+// handleEndpointFallbackEndpointMessage processes a message from the Endpoint and sends it to the Client
 // This skips the protocol-level validation of the relay response and sends the raw message to the Client.
-func (b *Bridge) handleRelayMinerFallbackEndpointMessage(msg message) {
+func (b *Bridge) handleEndpointFallbackEndpointMessage(msg message) {
 	b.logger.Debug().Msgf("received message from relay miner: %s", string(msg.data))
 
 	// Send the relay response or subscription push event to the Client

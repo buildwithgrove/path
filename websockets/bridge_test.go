@@ -86,6 +86,28 @@ func Test_Bridge_Run(t *testing.T) {
 				`{"jsonrpc":"2.0","method":"eth_subscription","params":{"result":"0x74576327a742af7c9bd4d2f9fa5b75f9911667322c557bda5b2c8df714cafde5","subscription":"0x995f694478fb6d1e56bba87e9bb4405a"}}`: {},
 			},
 		},
+		{
+			name: "should handle fallback endpoint without protocol-level signing and validation",
+			selectedEndpoint: &selectedEndpoint{
+				url: "", // Assigned in test to the value of the `url` returned by `testEndpointConnURL`
+				session: sessiontypes.Session{
+					SessionId: "1",
+					Header: &sessiontypes.SessionHeader{
+						ServiceId:          "service_id",
+						ApplicationAddress: "application_address",
+					},
+					Application: &apptypes.Application{
+						Address: "application_address",
+					},
+				},
+				supplier: "fallback_supplier",
+				fallback: true, // This marks the endpoint as a fallback endpoint
+			},
+			jsonrpcRequests: map[clientReq]endpointResp{
+				`{"jsonrpc":"2.0","id":1,"method":"eth_gasPrice"}`:    `{"jsonrpc":"2.0","id":1,"result":"0x337d04a3b"}`,
+				`{"jsonrpc":"2.0","id":2,"method":"eth_blockNumber"}`: `{"jsonrpc":"2.0","id":2,"result":"0x12c1b21"}`,
+			},
+		},
 	}
 
 	for _, test := range tests {
@@ -103,7 +125,7 @@ func Test_Bridge_Run(t *testing.T) {
 
 			// Create an HTTP test server with a websocket handler to represent an Endpoint connection
 			// Return the URL of the test server to pass to NewBridge
-			testEndpointConnURL := testEndpointConnURL(t, test.jsonrpcRequests, test.subscriptionEvents)
+			testEndpointConnURL := testEndpointConnURLWithFallback(t, test.jsonrpcRequests, test.subscriptionEvents, test.selectedEndpoint.fallback)
 			test.selectedEndpoint.url = testEndpointConnURL
 			test.selectedEndpoint.websocketUrl = testEndpointConnURL
 
@@ -199,6 +221,13 @@ func testClientConn(t *testing.T, jsonrpcRequests map[clientReq]endpointResp) *w
 // testEndpointConn creates an HTTP test server with a websocket handler to represent an Endpoint connection
 // It returns the URL of the test server to pass to NewBridge.
 func testEndpointConnURL(t *testing.T, jsonrpcRequests map[clientReq]endpointResp, subscriptionEvents map[subscriptionEvent]struct{}) string {
+	return testEndpointConnURLWithFallback(t, jsonrpcRequests, subscriptionEvents, false)
+}
+
+// testEndpointConnURLWithFallback creates an HTTP test server with a websocket handler to represent an Endpoint connection
+// It returns the URL of the test server to pass to NewBridge.
+// The isFallback parameter determines whether to expect raw messages or relay request wrappers.
+func testEndpointConnURLWithFallback(t *testing.T, jsonrpcRequests map[clientReq]endpointResp, subscriptionEvents map[subscriptionEvent]struct{}, isFallback bool) string {
 	// endpointSocketHandler is the handler for the Endpoint connection, which:
 	// - upgrades the HTTP connection to a websocket connection
 	// - starts a goroutine to read requests from the Client connection
@@ -216,28 +245,42 @@ func testEndpointConnURL(t *testing.T, jsonrpcRequests map[clientReq]endpointRes
 		// websocket connection and record them in `capturedMessages`
 		go func() {
 			for {
-				_, signedRelayRequestBz, err := conn.ReadMessage()
+				_, requestBz, err := conn.ReadMessage()
 				if err != nil {
 					t.Error("Error reading message:", err)
 					return
 				}
 
-				var signedRelayRequest servicetypes.RelayRequest
-				if err := signedRelayRequest.Unmarshal(signedRelayRequestBz); err != nil {
-					t.Error("Error unmarshalling message:", err)
-					return
-				}
-
-				message := signedRelayRequest.Payload
-
-				if response, ok := jsonrpcRequests[clientReq(message)]; ok {
-					relayResponseBz, err := getRelayResponseBz(response)
-					if err != nil {
-						t.Error("Error getting relay response from endpoint response:", err)
+				var message []byte
+				if isFallback {
+					// For fallback endpoints, expect raw messages (no relay request wrapper)
+					message = requestBz
+				} else {
+					// For protocol endpoints, expect relay request wrapper
+					var signedRelayRequest servicetypes.RelayRequest
+					if err := signedRelayRequest.Unmarshal(requestBz); err != nil {
+						t.Error("Error unmarshalling message:", err)
 						return
 					}
+					message = signedRelayRequest.Payload
+				}
 
-					if err := conn.WriteMessage(websocket.TextMessage, relayResponseBz); err != nil {
+				if response, ok := jsonrpcRequests[clientReq(message)]; ok {
+					var responseBz []byte
+					if isFallback {
+						// For fallback endpoints, send raw response
+						responseBz = []byte(response)
+					} else {
+						// For protocol endpoints, wrap response in relay response
+						relayResponseBz, err := getRelayResponseBz(response)
+						if err != nil {
+							t.Error("Error getting relay response from endpoint response:", err)
+							return
+						}
+						responseBz = relayResponseBz
+					}
+
+					if err := conn.WriteMessage(websocket.TextMessage, responseBz); err != nil {
 						t.Error("Error sending response:", err)
 					}
 				}
@@ -250,13 +293,21 @@ func testEndpointConnURL(t *testing.T, jsonrpcRequests map[clientReq]endpointRes
 
 		// Send the test subscription push events to the Client
 		for event := range subscriptionEvents {
-			relayResponseBz, err := getRelayResponseBz(endpointResp(event))
-			if err != nil {
-				t.Error("Error getting relay response from subscription event:", err)
-				return
+			var eventBz []byte
+			if isFallback {
+				// For fallback endpoints, send raw subscription events
+				eventBz = []byte(event)
+			} else {
+				// For protocol endpoints, wrap subscription events in relay response
+				relayResponseBz, err := getRelayResponseBz(endpointResp(event))
+				if err != nil {
+					t.Error("Error getting relay response from subscription event:", err)
+					return
+				}
+				eventBz = relayResponseBz
 			}
 
-			if err := conn.WriteMessage(websocket.TextMessage, relayResponseBz); err != nil {
+			if err := conn.WriteMessage(websocket.TextMessage, eventBz); err != nil {
 				t.Error("Error sending response:", err)
 			}
 		}

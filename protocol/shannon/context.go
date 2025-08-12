@@ -156,7 +156,7 @@ func (rc *requestContext) HandleWebsocketRequest(logger polylog.Logger, req *htt
 		rc.relayRequestSigner,
 		rc.fullNode,
 		rc.serviceID,
-		buildWebsocketBridgeEndpointObservation(rc.logger, rc.serviceID, *rc.selectedEndpoint),
+		buildWebsocketBridgeEndpointObservation(rc.logger, rc.serviceID, rc.selectedEndpoint),
 	)
 	if err != nil {
 		wrappedErr := fmt.Errorf("%w: %v", errCreatingWebSocketConnection, err)
@@ -542,7 +542,7 @@ func (rc *requestContext) handleEndpointWebsocketError(
 	// Build enhanced observation with RelayMinerError data from request context
 	endpointObs := buildEndpointErrorObservation(
 		rc.logger,
-		*rc.selectedEndpoint,
+		rc.selectedEndpoint,
 		endpointQueryTime,
 		time.Now(), // Timestamp: endpoint query completed.
 		endpointErrorType,
