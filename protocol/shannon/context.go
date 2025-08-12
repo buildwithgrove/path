@@ -457,8 +457,17 @@ func (rc *requestContext) validateAndProcessResponse(
 			return nil, fmt.Errorf("raw_payload: %s: %w", responseStr, errMalformedEndpointPayload)
 		}
 
+		// TODO_TECHDEBT(@adshmh): Refactor to separate Shannon and Fallback endpoints.
+		// The logic below is an example of techdebt resulting from conflating the two.
+		//
+		app := selectedEndpoint.Session().Application
+		var appAddr string
+		if app != nil {
+			appAddr = app.Address
+		}
+
 		return nil, fmt.Errorf("relay: error verifying the relay response for app %s, endpoint %s: %w",
-			selectedEndpoint.Session().Application.Address, selectedEndpoint.PublicURL(), err)
+			appAddr, selectedEndpoint.PublicURL(), err)
 	}
 
 	return response, nil
