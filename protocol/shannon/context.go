@@ -287,6 +287,9 @@ func (rc *requestContext) sendRelayToARandomFallbackEndpoint(payload protocol.Pa
 	}
 	fallbackEndpoint := allFallbackEndpoints[rand.Intn(len(allFallbackEndpoints))]
 
+	// Set the selected endpoint to the randomly selected fallback endpoint.
+	rc.selectedEndpoint = fallbackEndpoint
+
 	// Use the randomly selected fallback endpoint to send a relay.
 	relayResponse, err := rc.sendFallbackRelay(logger, fallbackEndpoint, payload)
 	if err != nil {
