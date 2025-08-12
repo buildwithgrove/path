@@ -91,7 +91,7 @@ func setupPathDocker(
 	t.Helper()
 
 	// Get docker options from the global test options
-	logContainer := dockerOpts.LogToFile
+	logContainer := dockerOpts.DockerLog
 	forceRebuild := dockerOpts.ForceRebuildImage
 
 	// eg. {file_path}/path/e2e/.shannon.config.yaml
@@ -207,7 +207,7 @@ func setupPathDocker(
 				Follow:       true,
 			})
 			if err != nil {
-				t.Fatalf("could not fetch logs for PATH container: %s", err)
+				log.Fatalf("could not fetch logs for PATH container: %s", err)
 			}
 		}(t, f)
 		fmt.Printf("\n ✍️ PATH container output will be logged to %s ✍️ \n", dest)

@@ -19,8 +19,10 @@ e2e_load_test_config:
     wait_for_hydrator: 0
     # [Optional] Docker-related options
     docker_config:
-      # [Optional] Log Docker container output to a file
-      log_to_file: false
+      # [Optional] Log Docker container output
+      #   - In CI, will log to stdout
+      #   - In local, will log to a file
+      docker_log: false
       # [Optional] Force Docker image rebuild (useful after code changes)
       force_rebuild_image: false
 
