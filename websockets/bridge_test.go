@@ -218,12 +218,6 @@ func testClientConn(t *testing.T, jsonrpcRequests map[clientReq]endpointResp) *w
 	return conn
 }
 
-// testEndpointConn creates an HTTP test server with a websocket handler to represent an Endpoint connection
-// It returns the URL of the test server to pass to NewBridge.
-func testEndpointConnURL(t *testing.T, jsonrpcRequests map[clientReq]endpointResp, subscriptionEvents map[subscriptionEvent]struct{}) string {
-	return testEndpointConnURLWithFallback(t, jsonrpcRequests, subscriptionEvents, false)
-}
-
 // testEndpointConnURLWithFallback creates an HTTP test server with a websocket handler to represent an Endpoint connection
 // It returns the URL of the test server to pass to NewBridge.
 // The isFallback parameter determines whether to expect raw messages or relay request wrappers.
