@@ -39,11 +39,11 @@ type sessionRolloverState struct {
 
 	blockClient *sdk.BlockClient // Block client for getting current block height
 
-	currentBlockHeight        int64     // Latest block height from the blockchain
-	sessionRolloverStart      int64     // Start height of the rollover window
-	sessionRolloverEnd        int64     // End height of the rollover window
-	isInSessionRollover       bool      // Cached rollover status (true = in rollover period)
-	lastBlockHeightUpdateTime time.Time // Timestamp of last block height update
+	currentBlockHeight   int64 // Latest block height from the blockchain
+	sessionRolloverStart int64 // Start height of the rollover window
+	sessionRolloverEnd   int64 // End height of the rollover window
+
+	isInSessionRollover bool // Cached rollover status (true = in rollover period)
 
 	rolloverStateMu sync.RWMutex // Protects all fields above
 }
@@ -114,11 +114,6 @@ func (srs *sessionRolloverState) updateBlockHeight() {
 
 	// Update the current block height
 	srs.currentBlockHeight = newHeight
-
-	// Log block height changes and update cached rollover status
-	currentTime := time.Now()
-	// Update the timestamp only when block height actually changes
-	srs.lastBlockHeightUpdateTime = currentTime
 
 	// Update the cached rollover status based on the new block height
 	srs.isInSessionRollover = srs.calculateRolloverStatus()
