@@ -12,6 +12,18 @@ import (
 	shannonprotocol "github.com/buildwithgrove/path/protocol/shannon"
 )
 
+// getTestDefaultGRPCConfig returns a GRPCConfig with default values applied
+// using the same defaults as defined in the shannon package
+func getTestDefaultGRPCConfig() shannonprotocol.GRPCConfig {
+	return shannonprotocol.GRPCConfig{
+		BackoffBaseDelay:  1 * time.Second,
+		BackoffMaxDelay:   60 * time.Second,
+		MinConnectTimeout: 10 * time.Second,
+		KeepAliveTime:     30 * time.Second,
+		KeepAliveTimeout:  30 * time.Second,
+	}
+}
+
 func Test_LoadGatewayConfigFromYAML(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -28,9 +40,11 @@ func Test_LoadGatewayConfigFromYAML(t *testing.T) {
 					FullNodeConfig: shannonprotocol.FullNodeConfig{
 						RpcURL:                "https://shannon-grove-rpc.mainnet.poktroll.com",
 						SessionRolloverBlocks: 10,
-						GRPCConfig: shannonprotocol.GRPCConfig{
-							HostPort: "shannon-grove-grpc.mainnet.poktroll.com:443",
-						},
+						GRPCConfig: func() shannonprotocol.GRPCConfig {
+							config := getTestDefaultGRPCConfig()
+							config.HostPort = "shannon-grove-grpc.mainnet.poktroll.com:443"
+							return config
+						}(),
 						LazyMode: false,
 						CacheConfig: shannonprotocol.CacheConfig{
 							SessionTTL: 30 * time.Second,
@@ -146,10 +160,15 @@ logger_config:
 					FullNodeConfig: shannonprotocol.FullNodeConfig{
 						RpcURL:                "https://shannon-testnet-grove-rpc.beta.poktroll.com",
 						SessionRolloverBlocks: 10,
-						GRPCConfig: shannonprotocol.GRPCConfig{
-							HostPort: "shannon-testnet-grove-grpc.beta.poktroll.com:443",
-						},
+						GRPCConfig: func() shannonprotocol.GRPCConfig {
+							config := getTestDefaultGRPCConfig()
+							config.HostPort = "shannon-testnet-grove-grpc.beta.poktroll.com:443"
+							return config
+						}(),
 						LazyMode: false,
+						CacheConfig: shannonprotocol.CacheConfig{
+							SessionTTL: 20 * time.Second,
+						},
 					},
 					GatewayConfig: shannonprotocol.GatewayConfig{
 						GatewayMode:          protocol.GatewayModeCentralized,
