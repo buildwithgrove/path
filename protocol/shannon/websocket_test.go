@@ -58,7 +58,7 @@ func Test_ShannonWebsocketBridge_ProtocolEndpoints(t *testing.T) {
 				session: &sessiontypes.Session{
 					SessionId: "session1",
 					Header: &sessiontypes.SessionHeader{
-						ServiceId:          "ethereum-mainnet",
+						ServiceId:          "eth",
 						ApplicationAddress: "app_address_1",
 					},
 					Application: &apptypes.Application{
@@ -83,7 +83,7 @@ func Test_ShannonWebsocketBridge_ProtocolEndpoints(t *testing.T) {
 				session: &sessiontypes.Session{
 					SessionId: "session2",
 					Header: &sessiontypes.SessionHeader{
-						ServiceId:          "ethereum-mainnet",
+						ServiceId:          "eth",
 						ApplicationAddress: "app_address_2",
 					},
 					Application: &apptypes.Application{
@@ -121,7 +121,7 @@ func Test_ShannonWebsocketBridge_ProtocolEndpoints(t *testing.T) {
 				selectedEndpoint:   test.selectedEndpoint,
 				relayRequestSigner: &mockRelayRequestSigner{},
 				fullNode:           &mockFullNode{},
-				serviceID:          "ethereum-mainnet",
+				serviceID:          "eth",
 			}
 
 			// Create test WebSocket connections directly
@@ -201,7 +201,7 @@ func Test_ShannonWebsocketBridge_FallbackEndpoints(t *testing.T) {
 		session: &sessiontypes.Session{
 			SessionId: "fallback-session",
 			Header: &sessiontypes.SessionHeader{
-				ServiceId:          "ethereum-mainnet",
+				ServiceId:          "eth",
 				ApplicationAddress: "fallback_app_address",
 			},
 			Application: &apptypes.Application{
@@ -222,7 +222,7 @@ func Test_ShannonWebsocketBridge_FallbackEndpoints(t *testing.T) {
 		selectedEndpoint:   fallbackEndpoint,
 		relayRequestSigner: &mockRelayRequestSigner{},
 		fullNode:           &mockFullNode{},
-		serviceID:          "ethereum-mainnet",
+		serviceID:          "eth",
 	}
 
 	// Create test WebSocket connections directly for fallback endpoint
@@ -287,7 +287,7 @@ func Test_ShannonMessageHandlers(t *testing.T) {
 			supplier: "supplier1",
 			session: &sessiontypes.Session{
 				Header: &sessiontypes.SessionHeader{
-					ServiceId:          "ethereum-mainnet",
+					ServiceId:          "eth",
 					ApplicationAddress: "app_address_1",
 				},
 				Application: &apptypes.Application{
@@ -301,7 +301,7 @@ func Test_ShannonMessageHandlers(t *testing.T) {
 			logger:             polyzero.NewLogger(),
 			selectedEndpoint:   endpoint,
 			relayRequestSigner: &mockRelayRequestSigner{},
-			serviceID:          "ethereum-mainnet",
+			serviceID:          "eth",
 		}
 
 		msg := websockets.Message{
@@ -330,7 +330,7 @@ func Test_ShannonMessageHandlers(t *testing.T) {
 			logger:           polyzero.NewLogger(),
 			selectedEndpoint: endpoint,
 			fullNode:         &mockFullNode{},
-			serviceID:        "ethereum-mainnet",
+			serviceID:        "eth",
 		}
 
 		// Create a mock relay response
@@ -353,7 +353,7 @@ func Test_ShannonMessageHandlers(t *testing.T) {
 		c := require.New(t)
 
 		publisher := &shannonObservationPublisher{
-			serviceID:            "ethereum-mainnet",
+			serviceID:            "eth",
 			protocolObservations: &protocolobservations.Observations{},
 		}
 
@@ -370,47 +370,59 @@ func Test_ShannonMessageHandlers(t *testing.T) {
 	})
 }
 
-func Test_ConnectWebsocketEndpoint(t *testing.T) {
+func Test_getShannonWebsocketConnectionHeaders(t *testing.T) {
 	tests := []struct {
-		name          string
-		endpoint      *mockEndpoint
-		expectedError bool
-		testHeaders   bool
+		name               string
+		endpoint           *mockEndpoint
+		expectedHeaders    map[string]string
+		expectEmptyHeaders bool
 	}{
 		{
-			name: "should connect successfully to protocol endpoint with headers",
+			name: "should return protocol headers for non-fallback endpoint",
 			endpoint: &mockEndpoint{
 				addr:       "protocol-endpoint",
 				supplier:   "supplier1",
 				isFallback: false,
 				session: &sessiontypes.Session{
 					Header: &sessiontypes.SessionHeader{
-						ServiceId:          "ethereum-mainnet",
+						ServiceId:          "eth",
 						ApplicationAddress: "app_address_1",
 					},
 				},
 			},
-			expectedError: false,
-			testHeaders:   true,
+			expectedHeaders: map[string]string{
+				"Target-Service-Id": "eth",
+				"App-Address":       "app_address_1",
+				"Rpc-Type":          "2", // sharedtypes.RPCType_WEBSOCKET = 2
+			},
+			expectEmptyHeaders: false,
 		},
 		{
-			name: "should connect successfully to fallback endpoint without headers",
+			name: "should return empty headers for fallback endpoint",
 			endpoint: &mockEndpoint{
 				addr:       "fallback-endpoint",
 				supplier:   "fallback",
 				isFallback: true,
+				session: &sessiontypes.Session{
+					Header: &sessiontypes.SessionHeader{
+						ServiceId:          "eth",
+						ApplicationAddress: "app_address_1",
+					},
+				},
 			},
-			expectedError: false,
-			testHeaders:   false,
+			expectEmptyHeaders: true,
 		},
 		{
-			name: "should fail with invalid URL",
+			name: "should handle nil session header gracefully",
 			endpoint: &mockEndpoint{
-				addr:          "invalid-endpoint",
-				websocketURL:  "invalid-url",
-				shouldFailURL: true,
+				addr:       "protocol-endpoint-nil-session",
+				supplier:   "supplier1",
+				isFallback: false,
+				session: &sessiontypes.Session{
+					Header: nil, // This will test the nil check
+				},
 			},
-			expectedError: true,
+			expectEmptyHeaders: true,
 		},
 	}
 
@@ -418,39 +430,17 @@ func Test_ConnectWebsocketEndpoint(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			c := require.New(t)
 
-			if !test.endpoint.shouldFailURL {
-				// Create a test server
-				server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-					upgrader := websocket.Upgrader{}
-					_, err := upgrader.Upgrade(w, r, nil)
-					if err != nil {
-						t.Error("Error during connection upgrade:", err)
-						return
-					}
+			headers := getShannonWebsocketConnectionHeaders(polyzero.NewLogger(), test.endpoint)
 
-					// Verify headers for protocol endpoints
-					if test.testHeaders && !test.endpoint.isFallback {
-						c.NotEmpty(r.Header.Get("Target-Service-Id"))
-						c.NotEmpty(r.Header.Get("App-Address"))
-						c.NotEmpty(r.Header.Get("Rpc-Type"))
-					}
-				}))
-				defer server.Close()
-
-				wsURL := "ws" + strings.TrimPrefix(server.URL, "http")
-				test.endpoint.websocketURL = wsURL
-			}
-
-			conn, err := connectWebsocketEndpoint(polyzero.NewLogger(), test.endpoint)
-
-			if test.expectedError {
-				c.Error(err)
-				c.Nil(conn)
+			if test.expectEmptyHeaders {
+				c.Equal(0, len(headers), "Expected empty headers")
 			} else {
-				c.NoError(err)
-				c.NotNil(conn)
-				if conn != nil {
-					conn.Close()
+				c.Equal(len(test.expectedHeaders), len(headers), "Header count mismatch")
+
+				for expectedKey, expectedValue := range test.expectedHeaders {
+					actualValues := headers[expectedKey]
+					c.Len(actualValues, 1, "Expected exactly one value for header %s", expectedKey)
+					c.Equal(expectedValue, actualValues[0], "Header %s value mismatch", expectedKey)
 				}
 			}
 		})

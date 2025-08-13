@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"net/url"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -90,6 +91,29 @@ func UpgradeClientWebsocketConnection(
 	}
 
 	return clientConn, nil
+}
+
+// ConnectWebsocketEndpoint makes a websocket connection to the websocket Endpoint.
+func ConnectWebsocketEndpoint(logger polylog.Logger, websocketURL string, headers http.Header) (*websocket.Conn, error) {
+	logger.Info().Msgf("🔗 Connecting to websocket endpoint: %s", websocketURL)
+
+	// Ensure the websocket URL is valid.
+	u, err := url.Parse(websocketURL)
+	if err != nil {
+		logger.Error().Err(err).Msgf("❌ Error parsing endpoint URL: %s", websocketURL)
+		return nil, err
+	}
+
+	// Connect to the websocket endpoint using the default websocket dialer.
+	conn, _, err := websocket.DefaultDialer.Dial(u.String(), headers)
+	if err != nil {
+		logger.Error().Err(err).Msgf("❌ Error connecting to endpoint: %s", u.String())
+		return nil, err
+	}
+
+	logger.Debug().Msgf("🔗 Connected to websocket endpoint: %s", websocketURL)
+
+	return conn, nil
 }
 
 // newConnection creates a new websocket connection wrapper.

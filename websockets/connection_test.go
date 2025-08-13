@@ -146,6 +146,88 @@ func Test_Connection_HandleDisconnect(t *testing.T) {
 }
 
 // createTestConnection creates a websocket connection for testing
+func Test_ConnectWebsocketEndpoint(t *testing.T) {
+	tests := []struct {
+		name         string
+		websocketURL string
+		headers      http.Header
+		shouldFail   bool
+		testHeaders  bool
+	}{
+		{
+			name:         "should connect successfully with valid URL",
+			websocketURL: "", // Will be set to test server URL
+			headers:      http.Header{},
+			shouldFail:   false,
+		},
+		{
+			name:         "should connect successfully with headers",
+			websocketURL: "", // Will be set to test server URL
+			headers: http.Header{
+				"Target-Service-Id": {"eth"},
+				"App-Address":       {"app_address_1"},
+				"Rpc-Type":          {"3"},
+			},
+			shouldFail:  false,
+			testHeaders: true,
+		},
+		{
+			name:         "should fail with invalid URL",
+			websocketURL: "invalid-websocket-url",
+			headers:      http.Header{},
+			shouldFail:   true,
+		},
+		{
+			name:         "should fail with malformed URL",
+			websocketURL: "://invalid",
+			headers:      http.Header{},
+			shouldFail:   true,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			c := require.New(t)
+
+			var server *httptest.Server
+			if !test.shouldFail && test.websocketURL == "" {
+				// Create a test server for valid URL tests
+				server = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					upgrader := websocket.Upgrader{}
+					_, err := upgrader.Upgrade(w, r, nil)
+					if err != nil {
+						t.Error("Error during connection upgrade:", err)
+						return
+					}
+
+					// Verify headers if testHeaders is true
+					if test.testHeaders {
+						c.Equal("eth", r.Header.Get("Target-Service-Id"))
+						c.Equal("app_address_1", r.Header.Get("App-Address"))
+						c.Equal("3", r.Header.Get("Rpc-Type"))
+					}
+				}))
+				defer server.Close()
+
+				test.websocketURL = "ws" + strings.TrimPrefix(server.URL, "http")
+			}
+
+			conn, err := ConnectWebsocketEndpoint(polyzero.NewLogger(), test.websocketURL, test.headers)
+
+			if test.shouldFail {
+				c.Error(err)
+				c.Nil(conn)
+			} else {
+				c.NoError(err)
+				c.NotNil(conn)
+				if conn != nil {
+					conn.Close()
+				}
+			}
+		})
+	}
+}
+
 func createTestConnection(t *testing.T, msgs map[string]struct{}) *websocket.Conn {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		upgrader := websocket.Upgrader{}
