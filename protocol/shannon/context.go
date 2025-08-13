@@ -21,7 +21,6 @@ import (
 	"github.com/buildwithgrove/path/gateway"
 	protocolobservations "github.com/buildwithgrove/path/observation/protocol"
 	"github.com/buildwithgrove/path/protocol"
-	"github.com/buildwithgrove/path/websockets"
 )
 
 // TODO_TECHDEBT(@adshmh): Make this threshold configurable.
@@ -188,28 +187,13 @@ func (rc *requestContext) HandleWebsocketRequest(logger polylog.Logger, req *htt
 	// Record endpoint query time.
 	endpointQueryTime := time.Now()
 
-	// Upgrade HTTP request from client to websocket connection.
-	// - Connection is passed to websocket bridge for Client <-> Gateway communication.
-	clientConn, err := websockets.UpgradeClientWebsocketConnection(wsLogger, req, w)
-	if err != nil {
-		return nil, err
-	}
-
-	// Create a websocket bridge for the selected endpoint.
+	// Create a Shannon-specific websocket bridge for the selected endpoint.
 	// One bridge represents a single persistent connection to a single endpoint.
 	//
 	// Note that this Bridge is returned by the Shannon protocol method and
 	// started in the Gateway package in order to pass gateway-level observations
 	// and data reporters without leaking Gateway-level logic to the protocol package.
-	bridge, err := websockets.NewBridge(
-		wsLogger,
-		clientConn,
-		selectedEndpoint,
-		rc.relayRequestSigner,
-		rc.fullNode,
-		rc.serviceID,
-		buildWebsocketBridgeEndpointObservation(rc.logger, rc.serviceID, selectedEndpoint),
-	)
+	bridge, err := rc.createShannonWebsocketBridge(wsLogger, req, w)
 	if err != nil {
 		wrappedErr := fmt.Errorf("%w: %v", errCreatingWebSocketConnection, err)
 		wsLogger.Error().Err(wrappedErr).Msg("Error creating websocket bridge")

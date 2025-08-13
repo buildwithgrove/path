@@ -11,102 +11,48 @@ import (
 
 	"github.com/gorilla/websocket"
 	"github.com/pokt-network/poktroll/pkg/polylog/polyzero"
-	apptypes "github.com/pokt-network/poktroll/x/application/types"
-	servicetypes "github.com/pokt-network/poktroll/x/service/types"
-	sessiontypes "github.com/pokt-network/poktroll/x/session/types"
-	sdk "github.com/pokt-network/shannon-sdk"
 	"github.com/stretchr/testify/require"
 
-	"github.com/buildwithgrove/path/protocol"
+	"github.com/buildwithgrove/path/gateway"
+	"github.com/buildwithgrove/path/observation"
 )
 
 type (
-	clientReq         string // clientReq is a single JSON RPC request sent from the client to the endpoint over the websocket
-	endpointResp      string // endpointResp is a single JSON RPC response sent from the endpoint to the client over the websocket
-	subscriptionEvent string // subscriptionEvent is a single subscription push event sent from the endpoint to the client over the websocket
+	testMessage string // testMessage represents a message exchanged between client and endpoint
 )
 
 var capturedMessages struct {
 	sync.Mutex
-	clientRequests     map[clientReq]struct{}         // clientRequests is a map of client requests sent to the endpoint
-	endpointResponses  map[endpointResp]struct{}      // endpointResponses is a map of endpoint responses sent to the client
-	subscriptionEvents map[subscriptionEvent]struct{} // subscriptionEvents is a map of subscription events sent to the client
+	clientToEndpoint map[testMessage]struct{} // Messages sent from client to endpoint
+	endpointToClient map[testMessage]struct{} // Messages sent from endpoint to client
 }
 
-func Test_Bridge_Run(t *testing.T) {
+func Test_Bridge_MessageFlow(t *testing.T) {
 	tests := []struct {
-		name               string
-		selectedEndpoint   *selectedEndpoint
-		jsonrpcRequests    map[clientReq]endpointResp
-		subscriptionEvents map[subscriptionEvent]struct{}
+		name              string
+		clientMessages    []testMessage
+		endpointResponses []testMessage
+		expectError       bool
 	}{
 		{
-			name: "should forward regular JSON RPC messages from Client to Endpoint and receive response",
-			selectedEndpoint: &selectedEndpoint{
-				url: "", // Assigned in test to the value of the `url` returned by `testEndpointConnURL`
-				session: sessiontypes.Session{
-					SessionId: "1",
-					Header: &sessiontypes.SessionHeader{
-						ServiceId:          "service_id",
-						ApplicationAddress: "application_address",
-					},
-					Application: &apptypes.Application{
-						Address: "application_address",
-					},
-				},
-				supplier: "supplier",
+			name: "should forward messages bidirectionally between client and endpoint",
+			clientMessages: []testMessage{
+				"client message 1",
+				"client message 2",
+				"client message 3",
 			},
-			jsonrpcRequests: map[clientReq]endpointResp{
-				`{"jsonrpc":"2.0","id":1,"method":"eth_gasPrice"}`:                                      `{"jsonrpc":"2.0","id":1,"result":"0x337d04a3b"}`,
-				`{"jsonrpc":"2.0","id":1,"method":"eth_blockNumber"}`:                                   `{"jsonrpc":"2.0","id":1,"result":"0x12c1b21"}`,
-				`{"jsonrpc":"2.0","id":1,"method":"eth_subscribe","params":["newPendingTransactions"]}`: `{"id":1,"result":"0xf13f7073ddef66a8c1b0c9c9f0e543c3","jsonrpc":"2.0"}`,
+			endpointResponses: []testMessage{
+				"endpoint response 1",
+				"endpoint response 2",
+				"endpoint response 3",
 			},
+			expectError: false,
 		},
 		{
-			name: "should forward subscription push events from the Endpoint to the Client",
-			selectedEndpoint: &selectedEndpoint{
-				url: "", // Assigned in test to the value of the `url` returned by `testEndpointConnURL`
-				session: sessiontypes.Session{
-					SessionId: "1",
-					Header: &sessiontypes.SessionHeader{
-						ServiceId:          "service_id",
-						ApplicationAddress: "application_address",
-					},
-					Application: &apptypes.Application{
-						Address: "application_address",
-					},
-				},
-				supplier: "supplier",
-			},
-			subscriptionEvents: map[subscriptionEvent]struct{}{
-				`{"jsonrpc":"2.0","method":"eth_subscription","params":{"result":"0x35f48044467e5ec65fd536665cd7dffe0664ff14d47d0ca4cd8c5618712bd550","subscription":"0x995f694478fb6d1e56bba87e9bb4405a"}}`: {},
-				`{"jsonrpc":"2.0","method":"eth_subscription","params":{"result":"0xf819e6c2b499e26ad305c1e4ed342ba16fb43593353d00cd11f42555b187df48","subscription":"0x995f694478fb6d1e56bba87e9bb4405a"}}`: {},
-				`{"jsonrpc":"2.0","method":"eth_subscription","params":{"result":"0x6232a3964ae5cf4df035b7e43cf6be8ac44cfd142a26eeccb27ef59f6621b384","subscription":"0x995f694478fb6d1e56bba87e9bb4405a"}}`: {},
-				`{"jsonrpc":"2.0","method":"eth_subscription","params":{"result":"0x54978b9b5bc5de6c70e7ba9bfd4ff1255bf35a2fc2862322752b53b90b367037","subscription":"0x995f694478fb6d1e56bba87e9bb4405a"}}`: {},
-				`{"jsonrpc":"2.0","method":"eth_subscription","params":{"result":"0x74576327a742af7c9bd4d2f9fa5b75f9911667322c557bda5b2c8df714cafde5","subscription":"0x995f694478fb6d1e56bba87e9bb4405a"}}`: {},
-			},
-		},
-		{
-			name: "should handle fallback endpoint without protocol-level signing and validation",
-			selectedEndpoint: &selectedEndpoint{
-				url: "", // Assigned in test to the value of the `url` returned by `testEndpointConnURL`
-				session: sessiontypes.Session{
-					SessionId: "1",
-					Header: &sessiontypes.SessionHeader{
-						ServiceId:          "service_id",
-						ApplicationAddress: "application_address",
-					},
-					Application: &apptypes.Application{
-						Address: "application_address",
-					},
-				},
-				supplier: "fallback_supplier",
-				fallback: true, // This marks the endpoint as a fallback endpoint
-			},
-			jsonrpcRequests: map[clientReq]endpointResp{
-				`{"jsonrpc":"2.0","id":1,"method":"eth_gasPrice"}`:    `{"jsonrpc":"2.0","id":1,"result":"0x337d04a3b"}`,
-				`{"jsonrpc":"2.0","id":2,"method":"eth_blockNumber"}`: `{"jsonrpc":"2.0","id":2,"result":"0x12c1b21"}`,
-			},
+			name:              "should handle empty message flow",
+			clientMessages:    []testMessage{},
+			endpointResponses: []testMessage{},
+			expectError:       false,
 		},
 	}
 
@@ -115,269 +61,191 @@ func Test_Bridge_Run(t *testing.T) {
 			c := require.New(t)
 
 			// Reset captured messages before each test
-			capturedMessages.clientRequests = make(map[clientReq]struct{})
-			capturedMessages.endpointResponses = make(map[endpointResp]struct{})
-			capturedMessages.subscriptionEvents = make(map[subscriptionEvent]struct{})
+			capturedMessages.clientToEndpoint = make(map[testMessage]struct{})
+			capturedMessages.endpointToClient = make(map[testMessage]struct{})
 
-			// Create an HTTP test server with a websocket handler to represent a Client connection
-			// Return the websocket connection to pass to NewBridge
-			clientConn := testClientConn(t, test.jsonrpcRequests)
+			// Create test websocket connections
+			clientConn, endpointConn := createTestConnections(t, test.clientMessages, test.endpointResponses)
 
-			// Create an HTTP test server with a websocket handler to represent an Endpoint connection
-			// Return the URL of the test server to pass to NewBridge
-			testEndpointConnURL := testEndpointConnURLWithFallback(t, test.jsonrpcRequests, test.subscriptionEvents, test.selectedEndpoint.fallback)
-			test.selectedEndpoint.url = testEndpointConnURL
-			test.selectedEndpoint.websocketUrl = testEndpointConnURL
+			// Create mock message handlers
+			clientHandler := &mockClientMessageHandler{}
+			endpointHandler := &mockEndpointMessageHandler{}
+			observationPublisher := &mockObservationPublisher{}
 
-			// Call NewBridge with the clientConn and testEndpointConnURL
+			// Create the bridge
 			bridge, err := NewBridge(
 				polyzero.NewLogger(),
 				clientConn,
-				test.selectedEndpoint,
-				&relayRequestSigner{},
-				&fullNode{},
-				"service_id",
-				nil,
+				endpointConn,
+				clientHandler,
+				endpointHandler,
+				observationPublisher,
 			)
 			c.NoError(err)
 
 			// Start the bridge in a goroutine
-			go bridge.StartAsync(nil, nil)
+			go bridge.StartAsync(&observation.GatewayObservations{}, nil)
 
-			// Wait for a short duration for test requests and events to get sent
-			<-time.After(2 * time.Second)
+			// Wait for messages to be processed
+			time.Sleep(1 * time.Second)
 
-			// Assert that the Client sent the expected requests and the Endpoint returned the expected responses
-			for clientReq, endpointResp := range test.jsonrpcRequests {
-				_, exists := capturedMessages.clientRequests[clientReq]
-				c.True(exists, "Client did not send expected request: %s", clientReq)
-				_, exists = capturedMessages.endpointResponses[endpointResp]
-				c.True(exists, "Endpoint did not send expected response: %s", endpointResp)
+			// Verify message flow
+			for _, expectedMsg := range test.clientMessages {
+				_, exists := capturedMessages.clientToEndpoint[expectedMsg]
+				c.True(exists, "Expected client message not captured: %s", expectedMsg)
 			}
 
-			// Assert that the expected subscription push events were sent by the Endpoint and received by the Client
-			for event := range test.subscriptionEvents {
-				_, exists := capturedMessages.subscriptionEvents[event]
-				c.True(exists, "Endpoint did not send expected subscription event: %s", event)
+			for _, expectedResp := range test.endpointResponses {
+				_, exists := capturedMessages.endpointToClient[expectedResp]
+				c.True(exists, "Expected endpoint response not captured: %s", expectedResp)
+			}
+
+			// Verify observation publisher was called if configured
+			if len(test.endpointResponses) > 0 {
+				c.True(observationPublisher.publishCalled, "ObservationPublisher.PublishObservations should have been called")
 			}
 		})
 	}
 }
 
-// testClientConn creates an HTTP test server with a websocket handler to represent a Client connection
-// It returns the websocket connection to pass to NewBridge, which handles dialing the Client URL to create the Client connection.
-func testClientConn(t *testing.T, jsonrpcRequests map[clientReq]endpointResp) *websocket.Conn {
-	// clientSocketHandler is the handler for the Client connection, which:
-	// - upgrades the HTTP connection to a websocket connection
-	// - starts a goroutine to read responses and subscription push events from the Endpoint connection
-	// - captures the messages in `capturedMessages`
-	// - sends test JSON RPC requests to the Endpoint
-	clientSocketHandler := func(w http.ResponseWriter, r *http.Request) {
+func Test_Bridge_Shutdown(t *testing.T) {
+	c := require.New(t)
+
+	// Create test connections
+	clientConn, endpointConn := createTestConnections(t, []testMessage{}, []testMessage{})
+
+	// Create mock handlers
+	clientHandler := &mockClientMessageHandler{}
+	endpointHandler := &mockEndpointMessageHandler{}
+	observationPublisher := &mockObservationPublisher{}
+
+	// Create the bridge
+	bridge, err := NewBridge(
+		polyzero.NewLogger(),
+		clientConn,
+		endpointConn,
+		clientHandler,
+		endpointHandler,
+		observationPublisher,
+	)
+	c.NoError(err)
+
+	// Test shutdown functionality
+	bridge.Shutdown(fmt.Errorf("test shutdown"))
+
+	// Verify connections are closed (this would be implementation-dependent)
+	// For now, we just verify the method doesn't panic
+}
+
+// createTestConnections creates a pair of websocket connections for testing
+func createTestConnections(t *testing.T, clientMessages, endpointResponses []testMessage) (*websocket.Conn, *websocket.Conn) {
+	// Create endpoint server
+	endpointServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		upgrader := websocket.Upgrader{}
 		conn, err := upgrader.Upgrade(w, r, nil)
 		if err != nil {
-			t.Error("Error during connection upgradation:", err)
+			t.Error("Error upgrading endpoint connection:", err)
 			return
 		}
 
-		// Start a goroutine to read messages from the Endpoint
-		// websocket connection and record them in `capturedMessages`
+		// Read messages from client and capture them
 		go func() {
 			for {
-				_, endpointMessage, err := conn.ReadMessage()
+				_, message, err := conn.ReadMessage()
 				if err != nil {
-					fmt.Println("error reading response", err)
-					t.Error("Error reading response:", err)
-					return
+					return // Connection closed
 				}
 
 				capturedMessages.Lock()
-				capturedMessages.endpointResponses[endpointResp(string(endpointMessage))] = struct{}{}
-				capturedMessages.subscriptionEvents[subscriptionEvent(string(endpointMessage))] = struct{}{}
+				capturedMessages.clientToEndpoint[testMessage(string(message))] = struct{}{}
 				capturedMessages.Unlock()
 			}
 		}()
 
-		// Send the test JSON RPC requests to the Endpoint
-		for req := range jsonrpcRequests {
-			if err := conn.WriteMessage(websocket.TextMessage, []byte(req)); err != nil {
-				t.Error("Error sending response:", err)
+		// Send responses to client
+		for _, response := range endpointResponses {
+			if err := conn.WriteMessage(websocket.TextMessage, []byte(response)); err != nil {
+				t.Error("Error sending endpoint response:", err)
 			}
 		}
-	}
+	}))
 
-	s := httptest.NewServer(http.HandlerFunc(clientSocketHandler))
-
-	wsURL := "ws" + strings.TrimPrefix(s.URL, "http")
-
-	conn, _, err := websocket.DefaultDialer.Dial(wsURL, nil)
-	if err != nil {
-		t.Error(err)
-	}
-
-	return conn
-}
-
-// testEndpointConnURLWithFallback creates an HTTP test server with a websocket handler to represent an Endpoint connection
-// It returns the URL of the test server to pass to NewBridge.
-// The isFallback parameter determines whether to expect raw messages or relay request wrappers.
-func testEndpointConnURLWithFallback(t *testing.T, jsonrpcRequests map[clientReq]endpointResp, subscriptionEvents map[subscriptionEvent]struct{}, isFallback bool) string {
-	// endpointSocketHandler is the handler for the Endpoint connection, which:
-	// - upgrades the HTTP connection to a websocket connection
-	// - starts a goroutine to read requests from the Client connection
-	// - captures the requests in `capturedMessages`
-	// - sends subscription push events to the Client
-	endpointSocketHandler := func(w http.ResponseWriter, r *http.Request) {
+	// Create client server
+	clientServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		upgrader := websocket.Upgrader{}
 		conn, err := upgrader.Upgrade(w, r, nil)
 		if err != nil {
-			t.Error("Error during connection upgradation:", err)
+			t.Error("Error upgrading client connection:", err)
 			return
 		}
 
-		// Start a goroutine to read requests from the Client
-		// websocket connection and record them in `capturedMessages`
+		// Read responses from endpoint and capture them
 		go func() {
 			for {
-				_, requestBz, err := conn.ReadMessage()
+				_, message, err := conn.ReadMessage()
 				if err != nil {
-					t.Error("Error reading message:", err)
-					return
-				}
-
-				var message []byte
-				if isFallback {
-					// For fallback endpoints, expect raw messages (no relay request wrapper)
-					message = requestBz
-				} else {
-					// For protocol endpoints, expect relay request wrapper
-					var signedRelayRequest servicetypes.RelayRequest
-					if err := signedRelayRequest.Unmarshal(requestBz); err != nil {
-						t.Error("Error unmarshalling message:", err)
-						return
-					}
-					message = signedRelayRequest.Payload
-				}
-
-				if response, ok := jsonrpcRequests[clientReq(message)]; ok {
-					var responseBz []byte
-					if isFallback {
-						// For fallback endpoints, send raw response
-						responseBz = []byte(response)
-					} else {
-						// For protocol endpoints, wrap response in relay response
-						relayResponseBz, err := getRelayResponseBz(response)
-						if err != nil {
-							t.Error("Error getting relay response from endpoint response:", err)
-							return
-						}
-						responseBz = relayResponseBz
-					}
-
-					if err := conn.WriteMessage(websocket.TextMessage, responseBz); err != nil {
-						t.Error("Error sending response:", err)
-					}
+					return // Connection closed
 				}
 
 				capturedMessages.Lock()
-				capturedMessages.clientRequests[clientReq(message)] = struct{}{}
+				capturedMessages.endpointToClient[testMessage(string(message))] = struct{}{}
 				capturedMessages.Unlock()
 			}
 		}()
 
-		// Send the test subscription push events to the Client
-		for event := range subscriptionEvents {
-			var eventBz []byte
-			if isFallback {
-				// For fallback endpoints, send raw subscription events
-				eventBz = []byte(event)
-			} else {
-				// For protocol endpoints, wrap subscription events in relay response
-				relayResponseBz, err := getRelayResponseBz(endpointResp(event))
-				if err != nil {
-					t.Error("Error getting relay response from subscription event:", err)
-					return
-				}
-				eventBz = relayResponseBz
-			}
-
-			if err := conn.WriteMessage(websocket.TextMessage, eventBz); err != nil {
-				t.Error("Error sending response:", err)
+		// Send messages to endpoint
+		for _, message := range clientMessages {
+			if err := conn.WriteMessage(websocket.TextMessage, []byte(message)); err != nil {
+				t.Error("Error sending client message:", err)
 			}
 		}
-	}
+	}))
 
-	s := httptest.NewServer(http.HandlerFunc(endpointSocketHandler))
+	// Connect to servers
+	clientWSURL := "ws" + strings.TrimPrefix(clientServer.URL, "http")
+	endpointWSURL := "ws" + strings.TrimPrefix(endpointServer.URL, "http")
 
-	wsURL := "ws" + strings.TrimPrefix(s.URL, "http")
-
-	return wsURL
-}
-
-func getRelayResponseBz(endpointResp endpointResp) ([]byte, error) {
-	relayResponse := &servicetypes.RelayResponse{
-		Meta: servicetypes.RelayResponseMetadata{SessionHeader: &sessiontypes.SessionHeader{
-			ServiceId:          "service_id",
-			ApplicationAddress: "application_address",
-		}},
-		Payload: []byte(endpointResp),
-	}
-
-	relayResponseBz, err := relayResponse.Marshal()
+	clientConn, _, err := websocket.DefaultDialer.Dial(clientWSURL, nil)
 	if err != nil {
-		return nil, err
+		t.Fatal("Error connecting to client server:", err)
 	}
 
-	return relayResponseBz, nil
-}
-
-/* Mock structs to satisfy the Bridge interfaces */
-// Note these mocks do not test the unerlying logic provided by the `protocol/shannon` structs; they will always return the "happy path"
-
-type selectedEndpoint struct {
-	url          string // Assigned nil as it'
-	websocketUrl string // Assigned to the value of the `websocketUrl` returned by `testEndpointConnURL`
-	session      sessiontypes.Session
-	supplier     string
-	fallback     bool
-}
-
-func (e *selectedEndpoint) Addr() protocol.EndpointAddr {
-	return protocol.EndpointAddr(fmt.Sprintf("%s-%s", e.supplier, e.url))
-}
-
-func (e *selectedEndpoint) PublicURL() string {
-	return e.url
-}
-
-func (e *selectedEndpoint) WebsocketURL() (string, error) {
-	return e.websocketUrl, nil
-}
-
-func (e *selectedEndpoint) Supplier() string {
-	return e.supplier
-}
-
-func (e *selectedEndpoint) Session() *sessiontypes.Session {
-	return &e.session
-}
-
-func (e *selectedEndpoint) IsFallback() bool {
-	return e.fallback
-}
-
-type relayRequestSigner struct{}
-
-func (r *relayRequestSigner) SignRelayRequest(req *servicetypes.RelayRequest, app apptypes.Application) (*servicetypes.RelayRequest, error) {
-	return req, nil
-}
-
-type fullNode struct{}
-
-func (f *fullNode) ValidateRelayResponse(supplierAddr sdk.SupplierAddress, responseBz []byte) (*servicetypes.RelayResponse, error) {
-	relayResponse := &servicetypes.RelayResponse{}
-	if err := relayResponse.Unmarshal(responseBz); err != nil {
-		return nil, err
+	endpointConn, _, err := websocket.DefaultDialer.Dial(endpointWSURL, nil)
+	if err != nil {
+		t.Fatal("Error connecting to endpoint server:", err)
 	}
-	return relayResponse, nil
+
+	return clientConn, endpointConn
+}
+
+// Mock implementations for testing
+
+type mockClientMessageHandler struct{}
+
+func (m *mockClientMessageHandler) HandleMessage(msg Message) ([]byte, error) {
+	// Echo the message as-is (no protocol-specific processing)
+	return msg.Data, nil
+}
+
+type mockEndpointMessageHandler struct{}
+
+func (m *mockEndpointMessageHandler) HandleMessage(msg Message) ([]byte, error) {
+	// Echo the message as-is (no protocol-specific processing)
+	return msg.Data, nil
+}
+
+type mockObservationPublisher struct {
+	publishCalled       bool
+	gatewayObservations *observation.GatewayObservations
+}
+
+func (m *mockObservationPublisher) SetObservationContext(
+	gatewayObservations *observation.GatewayObservations,
+	dataReporter gateway.RequestResponseReporter,
+) {
+	m.gatewayObservations = gatewayObservations
+}
+
+func (m *mockObservationPublisher) PublishObservations() {
+	m.publishCalled = true
 }
