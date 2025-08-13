@@ -206,46 +206,59 @@ func buildHeaders(payload protocol.Payload) map[string]string {
 	return headers
 }
 
+// sendRelayWithFallback:
+// - Attempts Shannon endpoint with timeout
+// - Falls back to random fallback endpoint on failure/timeout
+// - Shields user from endpoint errors
 func (rc *requestContext) sendRelayWithFallback(payload protocol.Payload) (protocol.Response, error) {
 	// TODO_TECHDEBT(@adshmh): Replace this with intelligent fallback.
-	//
-	// Start sending the request to a Shannon endpoint.
-	// The result will only be used if the Shannon endpoint fails.
-	// This is done to shield user from endpoint errors.
+
+	// Setup Shannon endpoint request:
+	// - Create channel for async response
+	// - Initialize response variables
 	shannonEndpointResponseReceivedChan := make(chan error, 1)
 	var (
 		shannonEndpointResponse protocol.Response
 		shannonEndpointErr      error
 	)
 
-	// Send the relay to a Shannon endpoint in parallel.
+	// Send Shannon relay in parallel:
+	// - Execute request asynchronously
+	// - Signal completion via channel
 	go func() {
 		shannonEndpointResponse, shannonEndpointErr = rc.sendProtocolRelay(payload)
-		// Signal the completion of Shannon Network relay.
 		shannonEndpointResponseReceivedChan <- shannonEndpointErr
 	}()
 
-	// Wait for either:
-	// 1. The Shannon endpoint to return a response
-	// 2. The configured time threshold to pass before using a fallback.
+	logger := rc.logger.With("timeout_ms", maxWaitBeforeFallbackMillisecond)
+
+	// Wait for Shannon response or timeout:
+	// - Return Shannon response if successful
+	// - Fall back on error or timeout
 	select {
 	case err := <-shannonEndpointResponseReceivedChan:
-		// Successfully received and validated a response from the shannon endpoint.
-		// No need to use the fallback endpoint's response.
 		if err == nil {
 			return shannonEndpointResponse, nil
 		}
 
-		// Shannon endpoint failed response parsing/validation, use a fallback endpoint.
+		logger.Info().Err(err).Msg("Error getting a valid response from the selected Shannon endpoint. Using a fallback endpoint.")
+
+		// Shannon endpoint failed, use fallback
 		return rc.sendRelayToARandomFallbackEndpoint(payload)
 
-	// Shannon endpoint failed to respond within the set threshold.
-	// Use a fallback endpoint.
+	// Shannon endpoint timeout, use fallback
 	case <-time.After(time.Duration(maxWaitBeforeFallbackMillisecond) * time.Millisecond):
+		logger.Info().Msg("Timed out waiting for Shannon endpoint to respond. Using a fallback endpoint.")
+
+		// Use a random fallback endpoint
 		return rc.sendRelayToARandomFallbackEndpoint(payload)
 	}
 }
 
+// sendRelayToARandomFallbackEndpoint:
+// - Selects random fallback endpoint
+// - Routes payload via selected endpoint
+// - Returns error if no endpoints available
 func (rc *requestContext) sendRelayToARandomFallbackEndpoint(payload protocol.Payload) (protocol.Response, error) {
 	if len(rc.fallbackEndpoints) == 0 {
 		rc.logger.Warn().Msg("SHOULD HAPPEN RARELY: no fallback endpoints available for the service")
@@ -254,14 +267,18 @@ func (rc *requestContext) sendRelayToARandomFallbackEndpoint(payload protocol.Pa
 
 	logger := rc.logger.With("method", "sendRelayToARandomFallbackEndpoint")
 
-	// Randomly select a fallback endpoint.
+	// Select random fallback endpoint:
+	// - Convert map to slice for random selection
+	// - Pick random index
 	allFallbackEndpoints := make([]endpoint, 0, len(rc.fallbackEndpoints))
 	for _, endpoint := range rc.fallbackEndpoints {
 		allFallbackEndpoints = append(allFallbackEndpoints, endpoint)
 	}
 	fallbackEndpoint := allFallbackEndpoints[rand.Intn(len(allFallbackEndpoints))]
 
-	// Use the randomly selected fallback endpoint to send a relay.
+	// Send relay and handle response:
+	// - Use selected fallback endpoint
+	// - Log unexpected errors
 	relayResponse, err := rc.sendFallbackRelay(logger, fallbackEndpoint, payload)
 	if err != nil {
 		logger.Warn().Err(err).Msg("SHOULD NEVER HAPPEN: fallback endpoint returned an error.")
