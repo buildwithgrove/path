@@ -3,6 +3,7 @@ package shannon
 import (
 	"fmt"
 
+	apptypes "github.com/pokt-network/poktroll/x/application/types"
 	sessiontypes "github.com/pokt-network/poktroll/x/session/types"
 	sharedtypes "github.com/pokt-network/poktroll/x/shared/types"
 	sdk "github.com/pokt-network/shannon-sdk"
@@ -100,7 +101,13 @@ func (e fallbackEndpoint) WebsocketURL() (string, error) {
 
 // Session is a no-op for fallback endpoints.
 func (e fallbackEndpoint) Session() *sessiontypes.Session {
-	return &sessiontypes.Session{}
+	return &sessiontypes.Session{
+		// TODO_TECHDEBT(@adshmh): Refactor to separate Shannon and Fallback endpoints.
+		// This will allow removing the empty structs below, used to ensure non-nil values under Session field of any endpoint.
+		//
+		Header:      &sessiontypes.SessionHeader{},
+		Application: &apptypes.Application{},
+	}
 }
 
 // Supplier returns `fallbackSupplierString` as the supplier address.

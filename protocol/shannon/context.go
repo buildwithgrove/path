@@ -5,8 +5,10 @@ import (
 	"errors"
 	"fmt"
 	"maps"
+	"math/rand"
 	"net/http"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
@@ -21,6 +23,11 @@ import (
 	"github.com/buildwithgrove/path/protocol"
 	"github.com/buildwithgrove/path/websockets"
 )
+
+// TODO_TECHDEBT(@adshmh): Make this threshold configurable.
+//
+// Maximum time to wait before using a fallback endpoint.
+const maxWaitBeforeFallbackMillisecond = 1000
 
 // Maximum endpoint payload length for error logging (100 chars)
 const maxEndpointPayloadLenForLogging = 100
@@ -52,9 +59,11 @@ type requestContext struct {
 	relayRequestSigner RelayRequestSigner
 
 	// selectedEndpoint:
-	// 	 - Endpoint selected for sending a relay.
-	// 	 - Must be set via SelectEndpoint before sending a relay (otherwise sending fails).
-	selectedEndpoint endpoint
+	//   - Endpoint selected for sending a relay.
+	//   - Must be set via setSelectedEndpoint before sending a relay (otherwise sending fails).
+	//   - Protected by selectedEndpointMutex for thread safety.
+	selectedEndpoint      endpoint
+	selectedEndpointMutex sync.RWMutex
 
 	// requestErrorObservation:
 	//   - Tracks any errors encountered during request processing.
@@ -72,6 +81,22 @@ type requestContext struct {
 
 	// HTTP client used for sending relay requests to endpoints while also capturing various debug metrics
 	httpClient *httpClientWithDebugMetrics
+
+	fallbackEndpoints map[protocol.EndpointAddr]endpoint
+}
+
+// getSelectedEndpoint returns the currently selected endpoint in a thread-safe manner.
+func (rc *requestContext) getSelectedEndpoint() endpoint {
+	rc.selectedEndpointMutex.RLock()
+	defer rc.selectedEndpointMutex.RUnlock()
+	return rc.selectedEndpoint
+}
+
+// setSelectedEndpoint sets the selected endpoint in a thread-safe manner.
+func (rc *requestContext) setSelectedEndpoint(endpoint endpoint) {
+	rc.selectedEndpointMutex.Lock()
+	defer rc.selectedEndpointMutex.Unlock()
+	rc.selectedEndpoint = endpoint
 }
 
 // HandleServiceRequest:
@@ -81,33 +106,19 @@ type requestContext struct {
 //   - Captures RelayMinerError data when available for reporting purposes.
 func (rc *requestContext) HandleServiceRequest(payload protocol.Payload) (protocol.Response, error) {
 	// Internal error: No endpoint selected.
-	if rc.selectedEndpoint == nil {
+	if rc.getSelectedEndpoint() == nil {
 		return rc.handleInternalError(fmt.Errorf("HandleServiceRequest: no endpoint has been selected on service %s", rc.serviceID))
 	}
 
 	// Record endpoint query time.
 	endpointQueryTime := time.Now()
 
-	// Initialize relay response and error.
-	var (
-		relayResponse protocol.Response
-		err           error
-	)
-	if rc.selectedEndpoint.IsFallback() {
-		// If the selected endpoint is a fallback endpoint, send the relay request to the fallback endpoint.
-		// This will bypass protocol-level request processing and validation, meaning the request is not sent to a RelayMiner.
-		relayResponse, err = rc.sendFallbackRelay(rc.logger, payload)
-	} else {
-		// If the selected endpoint is not a fallback endpoint, send the relay request to the selected protocolendpoint.
-		relayResponse, err = rc.sendProtocolRelay(payload)
-	}
+	// Execute relay request using the appropriate strategy based on endpoint type and network conditions
+	relayResponse, err := rc.executeRelayRequest(payload)
 
-	// Ensure the endpoint address is set on the response in all cases, error or success.
-	relayResponse.EndpointAddr = rc.selectedEndpoint.Addr()
-
-	// Handle endpoint error and capture RelayMinerError data if available.
+	// Failure:
+	// 	 - Pass the response (which may contain RelayMinerError data) to error handler.
 	if err != nil {
-		// Pass the response (which may contain RelayMinerError data) to error handler.
 		return rc.handleEndpointError(endpointQueryTime, err)
 	}
 
@@ -118,6 +129,45 @@ func (rc *requestContext) HandleServiceRequest(payload protocol.Payload) (protoc
 	return relayResponse, err
 }
 
+// executeRelayRequest determines and executes the appropriate relay strategy based on:
+//  1. Endpoint type (fallback vs protocol endpoint)
+//  2. Network conditions (session rollover periods)
+func (rc *requestContext) executeRelayRequest(payload protocol.Payload) (protocol.Response, error) {
+	logger := rc.logger.With(
+		"method", "executeRelayRequest",
+		"service_id", rc.serviceID,
+	)
+
+	selectedEndpoint := rc.getSelectedEndpoint()
+
+	switch {
+	// Priority 1: Fallback endpoint
+	case selectedEndpoint.IsFallback():
+		logger.Debug().Msg("Executing fallback relay")
+
+		// Direct fallback relay - bypasses protocol validation and Shannon network
+		// Used when endpoint is explicitly configured as a fallback endpoint
+		return rc.sendFallbackRelay(logger, selectedEndpoint, payload)
+
+	// Priority 2: Session rollover periods
+	case rc.fullNode.IsInSessionRollover():
+		logger.Debug().Msg("Executing protocol relay with fallback protection during session rollover periods")
+		// Protocol relay with fallback protection during session rollover periods
+
+		// TODO_TECHDEBT(@adshmh): Separate error handling for fallback and Shannon endpoints.
+		// Sends requests in parallel to ensure reliability during network transitions
+		return rc.sendRelayWithFallback(payload)
+
+	// Priority 3: Standard protocol relay
+	default:
+		logger.Debug().Msg("Executing standard protocol relay")
+
+		// Standard protocol relay through Shannon network
+		// Used during stable network periods with protocol endpoints
+		return rc.sendProtocolRelay(payload)
+	}
+}
+
 // HandleWebsocketRequest:
 // - Opens a persistent websocket connection to the selected endpoint.
 // - Satisfies gateway.ProtocolRequestContext interface.
@@ -126,10 +176,12 @@ func (rc *requestContext) HandleWebsocketRequest(logger polylog.Logger, req *htt
 		return nil, fmt.Errorf("handleWebsocketRequest: no endpoint has been selected on service %s", rc.serviceID)
 	}
 
+	selectedEndpoint := rc.getSelectedEndpoint()
+
 	wsLogger := logger.With(
 		"method_name", "HandleWebsocketRequest",
-		"endpoint_url", rc.selectedEndpoint.PublicURL(),
-		"endpoint_addr", rc.selectedEndpoint.Addr(),
+		"endpoint_url", selectedEndpoint.PublicURL(),
+		"endpoint_addr", selectedEndpoint.Addr(),
 		"service_id", rc.serviceID,
 	)
 
@@ -152,11 +204,11 @@ func (rc *requestContext) HandleWebsocketRequest(logger polylog.Logger, req *htt
 	bridge, err := websockets.NewBridge(
 		wsLogger,
 		clientConn,
-		rc.selectedEndpoint,
+		selectedEndpoint,
 		rc.relayRequestSigner,
 		rc.fullNode,
 		rc.serviceID,
-		buildWebsocketBridgeEndpointObservation(rc.logger, rc.serviceID, rc.selectedEndpoint),
+		buildWebsocketBridgeEndpointObservation(rc.logger, rc.serviceID, selectedEndpoint),
 	)
 	if err != nil {
 		wrappedErr := fmt.Errorf("%w: %v", errCreatingWebSocketConnection, err)
@@ -206,13 +258,92 @@ func buildHeaders(payload protocol.Payload) map[string]string {
 	return headers
 }
 
+// Updates the request context's selectedEndpoint for use by logging, metrics, and data logic.
+func (rc *requestContext) sendRelayWithFallback(payload protocol.Payload) (protocol.Response, error) {
+	// TODO_TECHDEBT(@adshmh): Replace this with intelligent fallback.
+	//
+	// Start sending the request to a Shannon endpoint.
+	// The result will only be used if the Shannon endpoint fails.
+	// This is done to shield user from endpoint errors.
+	shannonEndpointResponseReceivedChan := make(chan error, 1)
+	var (
+		shannonEndpointResponse protocol.Response
+		shannonEndpointErr      error
+	)
+
+	// Send the relay to a Shannon endpoint in parallel.
+	go func() {
+		shannonEndpointResponse, shannonEndpointErr = rc.sendProtocolRelay(payload)
+		// Signal the completion of Shannon Network relay.
+		shannonEndpointResponseReceivedChan <- shannonEndpointErr
+	}()
+
+	// Wait for either:
+	// 1. The Shannon endpoint to return a response
+	// 2. The configured time threshold to pass before using a fallback.
+	select {
+	case err := <-shannonEndpointResponseReceivedChan:
+		// Successfully received and validated a response from the shannon endpoint.
+		// No need to use the fallback endpoint's response.
+		if err == nil {
+			return shannonEndpointResponse, nil
+		}
+
+		// Shannon endpoint failed response parsing/validation, use a fallback endpoint.
+		return rc.sendRelayToARandomFallbackEndpoint(payload)
+
+	// Shannon endpoint failed to respond within the set threshold.
+	// Use a fallback endpoint.
+	case <-time.After(time.Duration(maxWaitBeforeFallbackMillisecond) * time.Millisecond):
+		return rc.sendRelayToARandomFallbackEndpoint(payload)
+	}
+}
+
+// Updates the request context's selectedEndpoint for use by logging, metrics, and data logic.
+func (rc *requestContext) sendRelayToARandomFallbackEndpoint(payload protocol.Payload) (protocol.Response, error) {
+	if len(rc.fallbackEndpoints) == 0 {
+		rc.logger.Warn().Msg("SHOULD HAPPEN RARELY: no fallback endpoints available for the service")
+		return protocol.Response{}, fmt.Errorf("no fallback endpoints available")
+	}
+
+	logger := rc.logger.With("method", "sendRelayToARandomFallbackEndpoint")
+
+	// Randomly select a fallback endpoint.
+	allFallbackEndpoints := make([]endpoint, 0, len(rc.fallbackEndpoints))
+	for _, endpoint := range rc.fallbackEndpoints {
+		allFallbackEndpoints = append(allFallbackEndpoints, endpoint)
+	}
+	fallbackEndpoint := allFallbackEndpoints[rand.Intn(len(allFallbackEndpoints))]
+
+	// TODO_TECHDEBT(@adshmh): Support tracking both the selected and fallback endpoints.
+	// This is needed to support accurate visibility/sanctions against both Shannon and fallback endpoints.
+	//
+	// Update the selected endpoint to the randomly selected fallback endpoint
+	// This ensures observations reflect the actually used endpoint
+	rc.setSelectedEndpoint(fallbackEndpoint)
+
+	// Use the randomly selected fallback endpoint to send a relay.
+	relayResponse, err := rc.sendFallbackRelay(logger, fallbackEndpoint, payload)
+	if err != nil {
+		logger.Warn().Err(err).Msg("SHOULD NEVER HAPPEN: fallback endpoint returned an error.")
+	}
+
+	return relayResponse, err
+}
+
+// TODO_TECHDEBT(@adshmh): Refactor to split the selection of and interactions with the fallback endpoint.
+// Aspects to consider in the refactor:
+// - Individual request's settings, e.g. those determined by QoS.
+// - Protocol's responsibilities: potential for a separate component/package.
+// - Observations: consider separating Shannon endpoint observations from fallback endpoints.
+//
 // sendProtocolRelay:
 //   - Sends the supplied payload as a relay request to the endpoint selected via SelectEndpoint.
 //   - Enhanced error handling for more fine-grained endpoint error type classification.
 //   - Captures RelayMinerError data for reporting (but doesn't use it for classification).
 //   - Required to fulfill the FullNode interface.
 func (rc *requestContext) sendProtocolRelay(payload protocol.Payload) (protocol.Response, error) {
-	hydratedLogger := rc.getHydratedLogger("sendRelay")
+	hydratedLogger := rc.getHydratedLogger("sendProtocolRelay")
 	hydratedLogger = hydrateLoggerWithPayload(hydratedLogger, &payload)
 
 	// Validate endpoint and session
@@ -234,35 +365,44 @@ func (rc *requestContext) sendProtocolRelay(payload protocol.Payload) (protocol.
 		return protocol.Response{}, fmt.Errorf("SHOULD NEVER HAPPEN: failed to marshal relay request: %w", err)
 	}
 
+	selectedEndpoint := rc.getSelectedEndpoint()
 	// Send the HTTP request to the protocol endpoint.
-	httpRelayResponseBz, _, err := rc.sendHTTPRequest(hydratedLogger, payload, rc.selectedEndpoint.PublicURL(), relayRequestBz)
+	httpRelayResponseBz, _, err := rc.sendHTTPRequest(hydratedLogger, payload, selectedEndpoint.PublicURL(), relayRequestBz)
 	if err != nil {
-		return protocol.Response{}, err
+		return protocol.Response{
+			EndpointAddr: selectedEndpoint.Addr(),
+		}, err
 	}
 
 	// Validate and process the response
 	response, err := rc.validateAndProcessResponse(hydratedLogger, httpRelayResponseBz)
 	if err != nil {
-		return protocol.Response{}, err
+		return protocol.Response{
+			EndpointAddr: selectedEndpoint.Addr(),
+		}, err
 	}
 
 	// Deserialize the response
 	deserializedResponse, err := rc.deserializeRelayResponse(response)
 	if err != nil {
-		return protocol.Response{}, err
+		return protocol.Response{
+			EndpointAddr: selectedEndpoint.Addr(),
+		}, err
 	}
 
+	deserializedResponse.EndpointAddr = selectedEndpoint.Addr()
 	return deserializedResponse, nil
 }
 
 // validateEndpointAndSession validates that the endpoint and session are properly configured
 func (rc *requestContext) validateEndpointAndSession(hydratedLogger polylog.Logger) (apptypes.Application, error) {
-	if rc.selectedEndpoint == nil {
+	selectedEndpoint := rc.getSelectedEndpoint()
+	if selectedEndpoint == nil {
 		hydratedLogger.Warn().Msg("SHOULD NEVER HAPPEN: No endpoint has been selected. Relay request will fail.")
 		return apptypes.Application{}, fmt.Errorf("sendRelay: no endpoint has been selected on service %s", rc.serviceID)
 	}
 
-	session := rc.selectedEndpoint.Session()
+	session := selectedEndpoint.Session()
 	if session.Application == nil {
 		hydratedLogger.Warn().Msg("SHOULD NEVER HAPPEN: selected endpoint session has nil Application. Relay request will fail.")
 		return apptypes.Application{}, fmt.Errorf("sendRelay: nil app on session %s for service %s", session.SessionId, rc.serviceID)
@@ -277,8 +417,9 @@ func (rc *requestContext) buildAndSignRelayRequest(
 	payload protocol.Payload,
 	app apptypes.Application,
 ) (*servicetypes.RelayRequest, error) {
+	selectedEndpoint := rc.getSelectedEndpoint()
 	// Prepare the relay request
-	relayRequest, err := buildUnsignedRelayRequest(rc.selectedEndpoint, payload)
+	relayRequest, err := buildUnsignedRelayRequest(selectedEndpoint, payload)
 	if err != nil {
 		hydratedLogger.Warn().Err(err).Msg("SHOULD NEVER HAPPEN: Failed to build the unsigned relay request. Relay request will fail.")
 		return nil, err
@@ -300,7 +441,8 @@ func (rc *requestContext) validateAndProcessResponse(
 	httpRelayResponseBz []byte,
 ) (*servicetypes.RelayResponse, error) {
 	// Validate the response - check for specific validation errors that indicate raw payload issues
-	supplierAddr := sdk.SupplierAddress(rc.selectedEndpoint.Supplier())
+	selectedEndpoint := rc.getSelectedEndpoint()
+	supplierAddr := sdk.SupplierAddress(selectedEndpoint.Supplier())
 	response, err := rc.fullNode.ValidateRelayResponse(supplierAddr, httpRelayResponseBz)
 
 	// Track RelayMinerError data for tracking, regardless of validation result
@@ -321,8 +463,17 @@ func (rc *requestContext) validateAndProcessResponse(
 			return nil, fmt.Errorf("raw_payload: %s: %w", responseStr, errMalformedEndpointPayload)
 		}
 
+		// TODO_TECHDEBT(@adshmh): Refactor to separate Shannon and Fallback endpoints.
+		// The logic below is an example of techdebt resulting from conflating the two.
+		//
+		app := selectedEndpoint.Session().Application
+		var appAddr string
+		if app != nil {
+			appAddr = app.Address
+		}
+
 		return nil, fmt.Errorf("relay: error verifying the relay response for app %s, endpoint %s: %w",
-			rc.selectedEndpoint.Session().Application.Address, rc.selectedEndpoint.PublicURL(), err)
+			appAddr, selectedEndpoint.PublicURL(), err)
 	}
 
 	return response, nil
@@ -398,12 +549,13 @@ func buildUnsignedRelayRequest(
 //   - Returns the response received from the fallback endpoint.
 func (rc *requestContext) sendFallbackRelay(
 	hydratedLogger polylog.Logger,
+	selectedEndpoint endpoint,
 	payload protocol.Payload,
 ) (protocol.Response, error) {
 	// Get the fallback URL for the selected endpoint.
 	// If the RPC type is unknown or not configured for the
 	// service, `endpointFallbackURL` will be the default URL.
-	endpointFallbackURL := rc.selectedEndpoint.FallbackURL(payload.RPCType)
+	endpointFallbackURL := selectedEndpoint.FallbackURL(payload.RPCType)
 
 	// Prepare the fallback URL with optional path
 	fallbackURL := prepareURLFromPayload(endpointFallbackURL, payload)
@@ -416,14 +568,16 @@ func (rc *requestContext) sendFallbackRelay(
 		[]byte(payload.Data),
 	)
 	if err != nil {
-		return protocol.Response{}, err
+		return protocol.Response{
+			EndpointAddr: selectedEndpoint.Addr(),
+		}, err
 	}
 
 	// Build and return the fallback response
 	return protocol.Response{
 		Bytes:          httpResponseBz,
 		HTTPStatusCode: httpStatusCode,
-		EndpointAddr:   rc.selectedEndpoint.Addr(),
+		EndpointAddr:   selectedEndpoint.Addr(),
 	}, nil
 }
 
@@ -474,6 +628,9 @@ func (rc *requestContext) handleInternalError(internalErr error) (protocol.Respo
 	return protocol.Response{}, internalErr
 }
 
+// TODO_TECHDEBT(@adshmh): Support tracking errors for Shannon and fallback endpoints.
+// This would allow visibility into potential degradation of fallback endpoints.
+//
 // handleEndpointError:
 //   - Records endpoint error observation with enhanced classification and returns the response.
 //   - Tracks endpoint error in observations with detailed categorization for metrics.
@@ -483,7 +640,8 @@ func (rc *requestContext) handleEndpointError(
 	endpointErr error,
 ) (protocol.Response, error) {
 	hydratedLogger := rc.getHydratedLogger("handleEndpointError")
-	selectedEndpointAddr := rc.selectedEndpoint.Addr()
+	selectedEndpoint := rc.getSelectedEndpoint()
+	selectedEndpointAddr := selectedEndpoint.Addr()
 
 	// Error classification based on trusted error sources only
 	endpointErrorType, recommendedSanctionType := classifyRelayError(hydratedLogger, endpointErr)
@@ -500,7 +658,7 @@ func (rc *requestContext) handleEndpointError(
 	// Build enhanced observation with RelayMinerError data from request context
 	endpointObs := buildEndpointErrorObservation(
 		rc.logger,
-		rc.selectedEndpoint,
+		selectedEndpoint,
 		endpointQueryTime,
 		time.Now(), // Timestamp: endpoint query completed.
 		endpointErrorType,
@@ -576,10 +734,11 @@ func (rc *requestContext) handleEndpointSuccess(
 	hydratedLogger = hydratedLogger.With("endpoint_response_payload_len", len(endpointResponse.Bytes))
 	hydratedLogger.Debug().Msg("Successfully deserialized the response received from the selected endpoint.")
 
+	selectedEndpoint := rc.getSelectedEndpoint()
 	// Build success observation with timing data and any RelayMinerError data from request context
 	endpointObs := buildEndpointSuccessObservation(
 		rc.logger,
-		rc.selectedEndpoint,
+		selectedEndpoint,
 		endpointQueryTime,
 		time.Now(), // Timestamp: endpoint query completed.
 		endpointResponse,
@@ -605,7 +764,7 @@ func (rc *requestContext) sendHTTPRequest(
 
 	// TODO_INVESTIGATE: Evaluate the impact of `rc.context` vs `context.TODO`
 	// with respect to handling timeouts.
-	ctxWithTimeout, cancelFn := context.WithTimeout(rc.context, timeout)
+	ctxWithTimeout, cancelFn := context.WithTimeout(context.TODO(), timeout)
 	defer cancelFn()
 
 	// Build headers including RPCType header
@@ -626,8 +785,9 @@ func (rc *requestContext) sendHTTPRequest(
 		// Wrap the net/http error with our classification error
 		wrappedErr := fmt.Errorf("%w: %v", errSendHTTPRelay, err)
 
-		hydratedLogger.Error().Err(wrappedErr).Msgf("❌ Failed to receive a response from the selected endpoint: '%s'. Relay request will FAIL 😢", rc.selectedEndpoint.Addr())
-		return nil, 0, fmt.Errorf("error sending request to endpoint %s: %w", rc.selectedEndpoint.Addr(), wrappedErr)
+		selectedEndpoint := rc.getSelectedEndpoint()
+		hydratedLogger.Error().Err(wrappedErr).Msgf("❌ Failed to receive a response from the selected endpoint: '%s'. Relay request will FAIL 😢", selectedEndpoint.Addr())
+		return nil, 0, fmt.Errorf("error sending request to endpoint %s: %w", selectedEndpoint.Addr(), wrappedErr)
 	}
 
 	return httpResponseBz, httpStatusCode, nil
@@ -658,16 +818,17 @@ func (rc *requestContext) getHydratedLogger(methodName string) polylog.Logger {
 
 	// No endpoint specified on request context.
 	// - This should never happen.
-	if rc.selectedEndpoint == nil {
+	selectedEndpoint := rc.getSelectedEndpoint()
+	if selectedEndpoint == nil {
 		return logger
 	}
 
 	logger = logger.With(
-		"selected_endpoint_supplier", rc.selectedEndpoint.Supplier(),
-		"selected_endpoint_url", rc.selectedEndpoint.PublicURL(),
+		"selected_endpoint_supplier", selectedEndpoint.Supplier(),
+		"selected_endpoint_url", selectedEndpoint.PublicURL(),
 	)
 
-	sessionHeader := rc.selectedEndpoint.Session().Header
+	sessionHeader := selectedEndpoint.Session().Header
 	if sessionHeader == nil {
 		return logger
 	}

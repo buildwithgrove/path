@@ -70,4 +70,17 @@ type FullNode interface {
 
 	// GetAccountClient returns the account client from the fullnode, to be used in building relay request signers.
 	GetAccountClient() *sdk.AccountClient
+
+	// IsInSessionRollover returns true if the system is currently in a session rollover period.
+	//
+	// A session rollover period is a critical time window that occurs around session transitions
+	// and can cause reliability issues for relay operations. The rollover period is defined as:
+	//   - 1 block before the session end height
+	//   - Plus a configurable grace period after the session end
+	//
+	// This method enables the gateway to implement adaptive retry strategies during rollover periods
+	//
+	// The monitoring is performed automatically in the background and this method
+	// provides a thread-safe way to check the current rollover status.
+	IsInSessionRollover() bool
 }

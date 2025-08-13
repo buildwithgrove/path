@@ -42,12 +42,14 @@ type LazyFullNode struct {
 	blockClient   *sdk.BlockClient
 	accountClient *sdk.AccountClient
 	sharedClient  *sdk.SharedClient
+
+	// Session rollover monitoring state
+	rolloverState *sessionRolloverState
 }
 
 // NewLazyFullNode builds and returns a LazyFullNode using the provided configuration.
 func NewLazyFullNode(logger polylog.Logger, config FullNodeConfig) (*LazyFullNode, error) {
-	// Hydrate defaults for all config sections
-	config.hydrateDefaults()
+	logger = logger.With("component", "fullnode_lazy")
 
 	blockClient, err := newBlockClient(config.RpcURL)
 	if err != nil {
@@ -74,16 +76,15 @@ func NewLazyFullNode(logger polylog.Logger, config FullNodeConfig) (*LazyFullNod
 		return nil, fmt.Errorf("NewSdk: error creating new shared client using url %s: %w", config.GRPCConfig.HostPort, err)
 	}
 
-	fullNode := &LazyFullNode{
+	return &LazyFullNode{
 		logger:        logger,
 		sessionClient: sessionClient,
 		appClient:     appClient,
 		blockClient:   blockClient,
 		accountClient: accountClient,
 		sharedClient:  sharedClient,
-	}
-
-	return fullNode, nil
+		rolloverState: newSessionRolloverState(logger, blockClient, config.SessionRolloverBlocks),
+	}, nil
 }
 
 // GetApp:
@@ -122,6 +123,9 @@ func (lfn *LazyFullNode) GetSession(
 				serviceID, appAddr, err,
 			)
 	}
+
+	// Update session rollover boundaries for rollover monitoring
+	lfn.rolloverState.updateSessionRolloverBoundaries(*session)
 
 	return *session, nil
 }
@@ -235,8 +239,16 @@ func (lfn *LazyFullNode) GetSessionWithExtendedValidity(
 		return currentSession, nil
 	}
 
+	// Update session rollover boundaries for rollover monitoring
+	lfn.rolloverState.updateSessionRolloverBoundaries(currentSession)
+
 	// Return the previous session
 	return *prevSession, nil
+}
+
+// IsInSessionRollover returns true if we're currently in a session rollover period.
+func (lfn *LazyFullNode) IsInSessionRollover() bool {
+	return lfn.rolloverState.getSessionRolloverState()
 }
 
 // serviceRequestPayload:
