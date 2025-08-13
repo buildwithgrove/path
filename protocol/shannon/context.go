@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"maps"
+	"math/rand"
 	"net/http"
 	"strconv"
 	"time"
@@ -22,6 +23,11 @@ import (
 	"github.com/buildwithgrove/path/protocol"
 	"github.com/buildwithgrove/path/websockets"
 )
+
+// TODO_TECHDEBT(@adshmh): Make this threshold configurable.
+//
+// Maximum time to wait before using a fallback endpoint.
+const maxWaitBeforeFallbackMillisecond = 1000
 
 // Maximum endpoint payload length for error logging (100 chars)
 const maxEndpointPayloadLenForLogging = 100
@@ -73,6 +79,8 @@ type requestContext struct {
 
 	// HTTP client used for sending relay requests to endpoints while also capturing various debug metrics
 	httpClient *httpClientWithDebugMetrics
+
+	fallbackEndpoints map[protocol.EndpointAddr]endpoint
 }
 
 // HandleServiceRequest:
@@ -89,7 +97,6 @@ func (rc *requestContext) HandleServiceRequest(payload protocol.Payload) (protoc
 	// Record endpoint query time.
 	endpointQueryTime := time.Now()
 
-	// Initialize relay response and error.
 	var (
 		relayResponse protocol.Response
 		err           error
@@ -97,14 +104,12 @@ func (rc *requestContext) HandleServiceRequest(payload protocol.Payload) (protoc
 	if rc.selectedEndpoint.IsFallback() {
 		// If the selected endpoint is a fallback endpoint, send the relay request to the fallback endpoint.
 		// This will bypass protocol-level request processing and validation, meaning the request is not sent to a RelayMiner.
-		relayResponse, err = rc.sendFallbackRelay(rc.logger, payload)
+		relayResponse, err = rc.sendFallbackRelay(rc.logger, rc.selectedEndpoint, payload)
 	} else {
+		// TODO_TECHDEBT(@adshmh): Separate error handling for fallback and Shannon endpoints.
 		// If the selected endpoint is not a fallback endpoint, send the relay request to the selected protocolendpoint.
-		relayResponse, err = rc.sendProtocolRelay(payload)
+		relayResponse, err = rc.sendRelayWithFallback(payload)
 	}
-
-	// Ensure the endpoint address is set on the response in all cases, error or success.
-	relayResponse.EndpointAddr = rc.selectedEndpoint.Addr()
 
 	// Handle endpoint error and capture RelayMinerError data if available.
 	if err != nil {
@@ -201,6 +206,87 @@ func buildHeaders(payload protocol.Payload) map[string]string {
 	return headers
 }
 
+// sendRelayWithFallback:
+// - Attempts Shannon endpoint with timeout
+// - Falls back to random fallback endpoint on failure/timeout
+// - Shields user from endpoint errors
+func (rc *requestContext) sendRelayWithFallback(payload protocol.Payload) (protocol.Response, error) {
+	// TODO_TECHDEBT(@adshmh): Replace this with intelligent fallback.
+
+	// Setup Shannon endpoint request:
+	// - Create channel for async response
+	// - Initialize response variables
+	shannonEndpointResponseReceivedChan := make(chan error, 1)
+	var (
+		shannonEndpointResponse protocol.Response
+		shannonEndpointErr      error
+	)
+
+	// Send Shannon relay in parallel:
+	// - Execute request asynchronously
+	// - Signal completion via channel
+	go func() {
+		shannonEndpointResponse, shannonEndpointErr = rc.sendProtocolRelay(payload)
+		shannonEndpointResponseReceivedChan <- shannonEndpointErr
+	}()
+
+	logger := rc.logger.With("timeout_ms", maxWaitBeforeFallbackMillisecond)
+
+	// Wait for Shannon response or timeout:
+	// - Return Shannon response if successful
+	// - Fall back on error or timeout
+	select {
+	case err := <-shannonEndpointResponseReceivedChan:
+		if err == nil {
+			return shannonEndpointResponse, nil
+		}
+
+		logger.Info().Err(err).Msg("Error getting a valid response from the selected Shannon endpoint. Using a fallback endpoint.")
+
+		// Shannon endpoint failed, use fallback
+		return rc.sendRelayToARandomFallbackEndpoint(payload)
+
+	// Shannon endpoint timeout, use fallback
+	case <-time.After(time.Duration(maxWaitBeforeFallbackMillisecond) * time.Millisecond):
+		logger.Info().Msg("Timed out waiting for Shannon endpoint to respond. Using a fallback endpoint.")
+
+		// Use a random fallback endpoint
+		return rc.sendRelayToARandomFallbackEndpoint(payload)
+	}
+}
+
+// sendRelayToARandomFallbackEndpoint:
+// - Selects random fallback endpoint
+// - Routes payload via selected endpoint
+// - Returns error if no endpoints available
+func (rc *requestContext) sendRelayToARandomFallbackEndpoint(payload protocol.Payload) (protocol.Response, error) {
+	if len(rc.fallbackEndpoints) == 0 {
+		rc.logger.Warn().Msg("SHOULD HAPPEN RARELY: no fallback endpoints available for the service")
+		return protocol.Response{}, fmt.Errorf("no fallback endpoints available")
+	}
+
+	logger := rc.logger.With("method", "sendRelayToARandomFallbackEndpoint")
+
+	// Select random fallback endpoint:
+	// - Convert map to slice for random selection
+	// - Pick random index
+	allFallbackEndpoints := make([]endpoint, 0, len(rc.fallbackEndpoints))
+	for _, endpoint := range rc.fallbackEndpoints {
+		allFallbackEndpoints = append(allFallbackEndpoints, endpoint)
+	}
+	fallbackEndpoint := allFallbackEndpoints[rand.Intn(len(allFallbackEndpoints))]
+
+	// Send relay and handle response:
+	// - Use selected fallback endpoint
+	// - Log unexpected errors
+	relayResponse, err := rc.sendFallbackRelay(logger, fallbackEndpoint, payload)
+	if err != nil {
+		logger.Warn().Err(err).Msg("SHOULD NEVER HAPPEN: fallback endpoint returned an error.")
+	}
+
+	return relayResponse, err
+}
+
 // sendProtocolRelay:
 //   - Sends the supplied payload as a relay request to the endpoint selected via SelectEndpoint.
 //   - Enhanced error handling for more fine-grained endpoint error type classification.
@@ -232,21 +318,28 @@ func (rc *requestContext) sendProtocolRelay(payload protocol.Payload) (protocol.
 	// Send the HTTP request to the protocol endpoint.
 	httpRelayResponseBz, _, err := rc.sendHTTPRequest(hydratedLogger, payload, rc.selectedEndpoint.PublicURL(), relayRequestBz)
 	if err != nil {
-		return protocol.Response{}, err
+		return protocol.Response{
+			EndpointAddr: rc.selectedEndpoint.Addr(),
+		}, err
 	}
 
 	// Validate and process the response
 	response, err := rc.validateAndProcessResponse(hydratedLogger, httpRelayResponseBz)
 	if err != nil {
-		return protocol.Response{}, err
+		return protocol.Response{
+			EndpointAddr: rc.selectedEndpoint.Addr(),
+		}, err
 	}
 
 	// Deserialize the response
 	deserializedResponse, err := rc.deserializeRelayResponse(response)
 	if err != nil {
-		return protocol.Response{}, err
+		return protocol.Response{
+			EndpointAddr: rc.selectedEndpoint.Addr(),
+		}, err
 	}
 
+	deserializedResponse.EndpointAddr = rc.selectedEndpoint.Addr()
 	return deserializedResponse, nil
 }
 
@@ -393,12 +486,13 @@ func buildUnsignedRelayRequest(
 //   - Returns the response received from the fallback endpoint.
 func (rc *requestContext) sendFallbackRelay(
 	hydratedLogger polylog.Logger,
+	selectedEndpoint endpoint,
 	payload protocol.Payload,
 ) (protocol.Response, error) {
 	// Get the fallback URL for the selected endpoint.
 	// If the RPC type is unknown or not configured for the
 	// service, `endpointFallbackURL` will be the default URL.
-	endpointFallbackURL := rc.selectedEndpoint.FallbackURL(payload.RPCType)
+	endpointFallbackURL := selectedEndpoint.FallbackURL(payload.RPCType)
 
 	// Prepare the fallback URL with optional path
 	fallbackURL := prepareURLFromPayload(endpointFallbackURL, payload)
@@ -411,14 +505,16 @@ func (rc *requestContext) sendFallbackRelay(
 		[]byte(payload.Data),
 	)
 	if err != nil {
-		return protocol.Response{}, err
+		return protocol.Response{
+			EndpointAddr: selectedEndpoint.Addr(),
+		}, err
 	}
 
 	// Build and return the fallback response
 	return protocol.Response{
 		Bytes:          httpResponseBz,
 		HTTPStatusCode: httpStatusCode,
-		EndpointAddr:   rc.selectedEndpoint.Addr(),
+		EndpointAddr:   selectedEndpoint.Addr(),
 	}, nil
 }
 
@@ -556,7 +652,7 @@ func (rc *requestContext) sendHTTPRequest(
 
 	// TODO_INVESTIGATE: Evaluate the impact of `rc.context` vs `context.TODO`
 	// with respect to handling timeouts.
-	ctxWithTimeout, cancelFn := context.WithTimeout(rc.context, timeout)
+	ctxWithTimeout, cancelFn := context.WithTimeout(context.TODO(), timeout)
 	defer cancelFn()
 
 	// Build headers including RPCType header
