@@ -2,6 +2,7 @@ package websockets
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -20,6 +21,7 @@ import (
 	"github.com/buildwithgrove/path/observation"
 	protocolobservations "github.com/buildwithgrove/path/observation/protocol"
 	"github.com/buildwithgrove/path/protocol"
+	"github.com/buildwithgrove/path/qos/jsonrpc"
 	"github.com/buildwithgrove/path/request"
 )
 
@@ -307,8 +309,6 @@ func (b *Bridge) Shutdown(err error) {
 
 // handleClientMessage processes a message from the Client and sends it to a protocol or fallback endpoint.
 func (b *Bridge) handleClientMessage(msg message) {
-	b.logger.Debug().Msgf("received message from client: %s", string(msg.data))
-
 	// If the selected endpoint is a fallback endpoint, skip protocol-level signing of the request.
 	if b.selectedEndpoint.IsFallback() {
 		b.handleClientFallbackEndpointMessage(msg)
@@ -322,12 +322,14 @@ func (b *Bridge) handleClientMessage(msg message) {
 // handleClientProtocolEndpointMessage processes a message from the Client and sends it to a protocol endpoint.
 // It signs the request using the RelayRequestSigner and sends the signed request to the Endpoint.
 func (b *Bridge) handleClientProtocolEndpointMessage(msg message) {
-	b.logger.Debug().Msgf("received message from protocol endpoint: %s", string(msg.data))
+	b.logger.Debug().Msgf("sending message to protocol endpoint: %s", string(msg.data))
 
 	// Sign the client message before sending it to the Endpoint
 	signedClientMessageBz, err := b.signClientMessage(msg)
 	if err != nil {
-		b.clientConn.handleDisconnect(fmt.Errorf("handleClientMessage: error signing client message: %w", err))
+		// Instead of disconnecting, send an error response to the client
+		b.logger.Error().Err(err).Msg("Failed to sign client message, sending error response to client")
+		b.sendErrorToClient(msg, -32000, fmt.Sprintf("Failed to sign request: %s", err.Error()))
 		return
 	}
 
@@ -350,6 +352,12 @@ func (b *Bridge) signClientMessage(msg message) ([]byte, error) {
 	}
 
 	app := b.selectedEndpoint.Session().GetApplication()
+	// SHOULD NEVER HAPPEN: `signClientMessage` is called only for protocol endpoints.
+	// But we guard against it anyway.
+	if app == nil {
+		return nil, fmt.Errorf("session application is nil")
+	}
+
 	signedRelayRequest, err := b.relayRequestSigner.SignRelayRequest(unsignedRelayRequest, *app)
 	if err != nil {
 		return nil, fmt.Errorf("error signing client message: %s", err.Error())
@@ -366,7 +374,7 @@ func (b *Bridge) signClientMessage(msg message) ([]byte, error) {
 // handleClientFallbackEndpointMessage processes a message from the Client and sends it to a fallback endpoint
 // This skips the protocol-level signing of the request and sends the raw message to the Endpoint.
 func (b *Bridge) handleClientFallbackEndpointMessage(msg message) {
-	b.logger.Debug().Msgf("received message from fallback endpoint: %s", string(msg.data))
+	b.logger.Debug().Msgf("sending message to fallback endpoint: %s", string(msg.data))
 
 	// Send the signed request to the RelayMiner, which will forward it to the Endpoint
 	if err := b.endpointConn.WriteMessage(msg.messageType, msg.data); err != nil {
@@ -381,8 +389,6 @@ func (b *Bridge) handleClientFallbackEndpointMessage(msg message) {
 // It validates the relay response using the Shannon FullNode and sends the relay response to the Client
 // Subscription events pushed from the Endpoint to the Client will be handled here as well.
 func (b *Bridge) handleEndpointMessage(msg message) {
-	b.logger.Debug().Msgf("received message from endpoint: %s", string(msg.data))
-
 	// At the end of each message received from the Endpoint, publish the observations.
 	messageObservations := b.initializeMessageObservations()
 
@@ -408,7 +414,7 @@ func (b *Bridge) handleEndpointMessage(msg message) {
 // handleEndpointProtocolEndpointMessage processes a message from the Endpoint and sends it to the Client
 // It validates the relay response using the Shannon FullNode and sends the relay response to the Client
 func (b *Bridge) handleEndpointProtocolEndpointMessage(msg message) {
-	b.logger.Debug().Msgf("received message from relay miner: %s", string(msg.data))
+	b.logger.Debug().Msgf("received message from protocol endpoint: %s", string(msg.data))
 
 	// Validate the relay response using the Shannon FullNode
 	relayResponse, err := b.fullNode.ValidateRelayResponse(sdk.SupplierAddress(b.selectedEndpoint.Supplier()), msg.data)
@@ -434,7 +440,7 @@ func (b *Bridge) handleEndpointProtocolEndpointMessage(msg message) {
 // handleEndpointFallbackEndpointMessage processes a message from the Endpoint and sends it to the Client
 // This skips the protocol-level validation of the relay response and sends the raw message to the Client.
 func (b *Bridge) handleEndpointFallbackEndpointMessage(msg message) {
-	b.logger.Debug().Msgf("received message from relay miner: %s", string(msg.data))
+	b.logger.Debug().Msgf("received message from fallback endpoint: %s", string(msg.data))
 
 	// Send the relay response or subscription push event to the Client
 	if err := b.clientConn.WriteMessage(msg.messageType, msg.data); err != nil {
@@ -451,5 +457,40 @@ func (b *Bridge) initializeMessageObservations() *observation.RequestResponseObs
 		ServiceId: string(b.serviceID),
 		Gateway:   b.gatewayObservations,
 		Protocol:  b.protocolObservations,
+	}
+}
+
+// sendErrorToClient sends a JSON-RPC error response to the client
+// It attempts to extract the request ID from the original message and sends a properly formatted error response
+func (b *Bridge) sendErrorToClient(originalMessage message, errorCode int, errorMessage string) {
+	// Try to extract the request ID from the original message
+	var requestID jsonrpc.ID
+
+	// Attempt to parse the original message to extract the ID
+	var jsonrpcRequest struct {
+		ID jsonrpc.ID `json:"id"`
+	}
+
+	if err := json.Unmarshal(originalMessage.data, &jsonrpcRequest); err != nil {
+		// If we can't parse the original message, use null ID (zero value of ID struct)
+		b.logger.Warn().Err(err).Msg("Failed to parse original message for ID, using null ID")
+		requestID = jsonrpc.ID{} // Zero value creates a null ID
+	} else {
+		requestID = jsonrpcRequest.ID
+	}
+
+	// Create the JSON-RPC error response
+	errorResponse := jsonrpc.GetErrorResponse(requestID, errorCode, errorMessage, nil)
+
+	// Marshal the error response
+	errorResponseBytes, err := json.Marshal(errorResponse)
+	if err != nil {
+		b.logger.Error().Err(err).Msg("Failed to marshal error response")
+		return
+	}
+
+	// Send the error response to the client
+	if err := b.clientConn.WriteMessage(originalMessage.messageType, errorResponseBytes); err != nil {
+		b.logger.Error().Err(err).Msg("Failed to send error response to client")
 	}
 }
