@@ -184,12 +184,9 @@ func buildEndpointObservation(
 	return observation
 }
 
-// builds a Shannon endpoint observation for a websocket bridge.
-// Used to track the endpoint used for a websocket bridge.
-//
-// As a websockets bridge represents a persistent connection to a single endpoint,
-// the protocolObservations will be the same for the duration of the bridge, so
-// a single observation is sufficient.
+// buildWebsocketBridgeEndpointObservation builds a Shannon endpoint observation for a websocket bridge.
+// As a websocket bridge represents a persistent connection to a single endpoint,
+// a single observation is sufficient for the duration of the bridge.
 func buildWebsocketBridgeEndpointObservation(
 	logger polylog.Logger,
 	serviceID protocol.ServiceID,

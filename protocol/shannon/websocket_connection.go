@@ -88,12 +88,10 @@ func (rc *requestContext) createShannonWebsocketBridge(
 	return bridge, nil
 }
 
-// getShannonWebsocketConnectionHeaders returns the headers that should be sent to the websocket connection.
-//
-// The headers are:
-//   - `Target-Service-Id`: The service ID of the target service.
-//   - `App-Address:` The address of the session's application.
-//   - `Rpc-Type`: The type of RPC request. Always "websocket" for websocket connection requests.
+// getShannonWebsocketConnectionHeaders returns headers for the websocket connection:
+//   - Target-Service-Id: The service ID of the target service
+//   - App-Address: The address of the session's application
+//   - Rpc-Type: Always "websocket" for websocket connection requests
 func getShannonWebsocketConnectionHeaders(logger polylog.Logger, selectedEndpoint endpoint) http.Header {
 	headers := http.Header{}
 
@@ -108,13 +106,10 @@ func getShannonWebsocketConnectionHeaders(logger polylog.Logger, selectedEndpoin
 	return headers
 }
 
-// getRelayMinerConnectionHeaders returns the headers that should be sent to the RelayMiner
-// when establishing a new websocket connection to the Endpoint.
-//
-// The headers are:
-//   - `Target-Service-Id`: The service ID of the target service.
-//   - `App-Address:` The address of the session's application.
-//   - `Rpc-Type`: The type of RPC request. Always "websocket" for websocket connection requests.
+// getRelayMinerConnectionHeaders returns headers for RelayMiner websocket connections:
+//   - Target-Service-Id: The service ID of the target service
+//   - App-Address: The address of the session's application
+//   - Rpc-Type: Always "websocket" for websocket connection requests
 func getRelayMinerConnectionHeaders(logger polylog.Logger, sessionHeader *sessiontypes.SessionHeader) http.Header {
 	if sessionHeader == nil {
 		logger.Error().Msg("❌ SHOULD NEVER HAPPEN: Error getting relay miner connection headers: session header is nil")

@@ -77,8 +77,8 @@ func (h *shannonClientMessageHandler) signClientMessage(msg websockets.Message) 
 
 // ---------- Shannon Error Handling ----------
 
-// getClientErrorResponse sends a JSON-RPC error response to the client
-// It attempts to extract the request ID from the original message and sends a properly formatted error response
+// getClientErrorResponse creates a JSON-RPC error response to the client.
+// Attempts to extract the request ID from the original message for proper error formatting.
 func (h *shannonClientMessageHandler) getClientErrorResponse(originalMessage websockets.Message, errorCode int, errorMessage string) ([]byte, error) {
 	// Try to extract the request ID from the original message
 	var requestID jsonrpc.ID

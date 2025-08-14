@@ -167,9 +167,8 @@ func (rc *requestContext) executeRelayRequest(payload protocol.Payload) (protoco
 	}
 }
 
-// HandleWebsocketRequest:
-// - Opens a persistent websocket connection to the selected endpoint.
-// - Satisfies gateway.ProtocolRequestContext interface.
+// HandleWebsocketRequest opens a persistent websocket connection to the selected endpoint.
+// Satisfies gateway.ProtocolRequestContext interface.
 func (rc *requestContext) HandleWebsocketRequest(logger polylog.Logger, req *http.Request, w http.ResponseWriter) (gateway.WebsocketsBridge, error) {
 	if rc.selectedEndpoint == nil {
 		return nil, fmt.Errorf("handleWebsocketRequest: no endpoint has been selected on service %s", rc.serviceID)
@@ -187,12 +186,10 @@ func (rc *requestContext) HandleWebsocketRequest(logger polylog.Logger, req *htt
 	// Record endpoint query time.
 	endpointQueryTime := time.Now()
 
-	// Create a Shannon-specific websocket bridge for the selected endpoint.
-	// One bridge represents a single persistent connection to a single endpoint.
-	//
-	// Note that this Bridge is returned by the Shannon protocol method and
-	// started in the Gateway package in order to pass gateway-level observations
-	// and data reporters without leaking Gateway-level logic to the protocol package.
+	// Create Shannon-specific websocket bridge for the selected endpoint.
+	// One bridge = one persistent connection to a single endpoint.
+	// Bridge is returned to Gateway package to pass gateway-level observations
+	// without leaking Gateway logic to the protocol package.
 	bridge, err := rc.createShannonWebsocketBridge(wsLogger, req, w)
 	if err != nil {
 		wrappedErr := fmt.Errorf("%w: %v", errCreatingWebSocketConnection, err)
@@ -680,10 +677,8 @@ func (rc *requestContext) handleEndpointError(
 		)
 }
 
-// handleEndpointWebsocketError:
-// - Records endpoint error observation with enhanced classification and returns the response.
-// - Tracks endpoint error in observations with detailed categorization for metrics.
-// - Includes any RelayMinerError data that was captured via trackRelayMinerError.
+// handleEndpointWebsocketError records endpoint error observation with enhanced classification.
+// Tracks endpoint error in observations for metrics and includes RelayMinerError data.
 func (rc *requestContext) handleEndpointWebsocketError(
 	endpointQueryTime time.Time,
 	endpointErr error,
@@ -708,9 +703,9 @@ func (rc *requestContext) handleEndpointWebsocketError(
 		time.Now(), // Timestamp: endpoint query completed.
 		endpointErrorType,
 		fmt.Sprintf("websocket error: %v", endpointErr),
-		// TODO_IMPROVE(@commoddity): introduce proper sanctioning for websocket errors to exclude
-		// them from selection for websocket connection requests only. This is to avoid a failed
-		// websocket connection request from excluding the endpoint from selection for HTTP requests.
+		// TODO(@commoddity): Implement websocket-specific sanctioning.
+		// Currently websocket failures could exclude endpoints from HTTP requests.
+		// Should track websocket vs HTTP failures separately.
 		protocolobservations.ShannonSanctionType_SHANNON_SANCTION_UNSPECIFIED,
 		rc.currentRelayMinerError, // Use RelayMinerError data from request context
 	)
