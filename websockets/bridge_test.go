@@ -222,14 +222,14 @@ func createTestConnections(t *testing.T, clientMessages, endpointResponses []tes
 
 type mockClientMessageHandler struct{}
 
-func (m *mockClientMessageHandler) HandleMessage(msg Message) ([]byte, error) {
+func (m *mockClientMessageHandler) HandleMessage(msg WebSocketMessage) ([]byte, error) {
 	// Echo the message as-is (no protocol-specific processing)
 	return msg.Data, nil
 }
 
 type mockEndpointMessageHandler struct{}
 
-func (m *mockEndpointMessageHandler) HandleMessage(msg Message) ([]byte, error) {
+func (m *mockEndpointMessageHandler) HandleMessage(msg WebSocketMessage) ([]byte, error) {
 	// Echo the message as-is (no protocol-specific processing)
 	return msg.Data, nil
 }

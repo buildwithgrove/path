@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/pokt-network/poktroll/pkg/polylog"
 	"github.com/pokt-network/poktroll/pkg/relayer/proxy"
 	sessiontypes "github.com/pokt-network/poktroll/x/session/types"
 	sharedtypes "github.com/pokt-network/poktroll/x/shared/types"
@@ -15,15 +14,14 @@ import (
 	"github.com/buildwithgrove/path/websockets"
 )
 
-// createShannonWebsocketBridge creates a Shannon-specific websocket bridge.
+// createWebsocketBridge creates a websocket bridge.
 // This function encapsulates all Shannon-specific logic for websocket handling.
-func (rc *requestContext) createShannonWebsocketBridge(
-	logger polylog.Logger,
+func (rc *requestContext) createWebsocketBridge(
 	req *http.Request,
 	w http.ResponseWriter,
 ) (gateway.WebsocketsBridge, error) {
 	// Hydrate the logger with the websocket bridge specific information.
-	logger = logger.With(
+	logger := rc.logger.With(
 		"connection_type", "websocket",
 		"component", "shannon_websocket_bridge",
 		"endpoint_address", rc.selectedEndpoint.Addr(),
@@ -47,28 +45,28 @@ func (rc *requestContext) createShannonWebsocketBridge(
 
 	// Upgrade HTTP request from client to websocket connection.
 	// - Connection is passed to websocket bridge for Client <-> Gateway communication.
-	clientConn, err := websockets.UpgradeClientWebsocketConnection(logger, req, w)
+	clientConn, err := websockets.UpgradeClientWebsocketConnection(rc.logger, req, w)
 	if err != nil {
-		return nil, fmt.Errorf("createShannonWebsocketBridge: %s", err.Error())
+		return nil, fmt.Errorf("createWebsocketBridge: %s", err.Error())
 	}
 
 	// Get the headers for the websocket connection.
-	headers := getShannonWebsocketConnectionHeaders(logger, rc.selectedEndpoint)
+	headers := rc.getWebsocketConnectionHeaders()
 
 	// Connect to the endpoint
-	endpointConn, err := websockets.ConnectWebsocketEndpoint(logger, websocketURL, headers)
+	endpointConn, err := websockets.ConnectWebsocketEndpoint(rc.logger, websocketURL, headers)
 	if err != nil {
-		return nil, fmt.Errorf("createShannonWebsocketBridge: %s", err.Error())
+		return nil, fmt.Errorf("createWebsocketBridge: %s", err.Error())
 	}
 
 	// Create Shannon-specific message handlers
-	clientHandler := &shannonClientMessageHandler{
+	clientHandler := &websocketClientMessageHandler{
 		logger:             logger.With("component", "shannon_client_message_handler"),
 		selectedEndpoint:   rc.selectedEndpoint,
 		relayRequestSigner: rc.relayRequestSigner,
 		serviceID:          rc.serviceID,
 	}
-	endpointHandler := &shannonEndpointMessageHandler{
+	endpointHandler := &endpointMessageHandler{
 		logger:           logger.With("component", "shannon_endpoint_message_handler"),
 		selectedEndpoint: rc.selectedEndpoint,
 		fullNode:         rc.fullNode,
@@ -76,7 +74,7 @@ func (rc *requestContext) createShannonWebsocketBridge(
 	}
 
 	// Create observation publisher
-	observationPublisher := &shannonObservationPublisher{
+	observationPublisher := &observationPublisher{
 		logger:               logger.With("component", "shannon_observation_publisher"),
 		serviceID:            rc.serviceID,
 		protocolObservations: protocolObservations,
@@ -84,7 +82,7 @@ func (rc *requestContext) createShannonWebsocketBridge(
 
 	// Create the generic websocket bridge with Shannon-specific handlers
 	bridge, err := websockets.NewBridge(
-		logger,
+		rc.logger,
 		clientConn,
 		endpointConn,
 		clientHandler,
@@ -98,36 +96,31 @@ func (rc *requestContext) createShannonWebsocketBridge(
 	return bridge, nil
 }
 
-// getShannonWebsocketConnectionHeaders returns the headers that should be sent to the websocket connection.
-//
-// The headers are:
-//   - `Target-Service-Id`: The service ID of the target service.
-//   - `App-Address:` The address of the session's application.
-//   - `Rpc-Type`: The type of RPC request. Always "websocket" for websocket connection requests.
-func getShannonWebsocketConnectionHeaders(logger polylog.Logger, selectedEndpoint endpoint) http.Header {
+// getWebsocketConnectionHeaders returns headers for the websocket connection:
+//   - Target-Service-Id: The service ID of the target service
+//   - App-Address: The address of the session's application
+//   - Rpc-Type: Always "websocket" for websocket connection requests
+func (rc *requestContext) getWebsocketConnectionHeaders() http.Header {
 	headers := http.Header{}
 
 	// If the selected endpoint is a protocol endpoint, add the headers
 	// that the RelayMiner requires to forward the request to the Endpoint.
 	//
 	// Requests to fallback endpoints bypass the protocol so RelayMiner headers are not needed.
-	if !selectedEndpoint.IsFallback() {
-		headers = getRelayMinerConnectionHeaders(logger, selectedEndpoint.Session().GetHeader())
+	if !rc.getSelectedEndpoint().IsFallback() {
+		headers = rc.getRelayMinerConnectionHeaders(rc.getSelectedEndpoint().Session().GetHeader())
 	}
 
 	return headers
 }
 
-// getRelayMinerConnectionHeaders returns the headers that should be sent to the RelayMiner
-// when establishing a new websocket connection to the Endpoint.
-//
-// The headers are:
-//   - `Target-Service-Id`: The service ID of the target service.
-//   - `App-Address:` The address of the session's application.
-//   - `Rpc-Type`: The type of RPC request. Always "websocket" for websocket connection requests.
-func getRelayMinerConnectionHeaders(logger polylog.Logger, sessionHeader *sessiontypes.SessionHeader) http.Header {
+// getRelayMinerConnectionHeaders returns headers for RelayMiner websocket connections:
+//   - Target-Service-Id: The service ID of the target service
+//   - App-Address: The address of the session's application
+//   - Rpc-Type: Always "websocket" for websocket connection requests
+func (rc *requestContext) getRelayMinerConnectionHeaders(sessionHeader *sessiontypes.SessionHeader) http.Header {
 	if sessionHeader == nil {
-		logger.Error().Msg("❌ SHOULD NEVER HAPPEN: Error getting relay miner connection headers: session header is nil")
+		rc.logger.Error().Msg("❌ SHOULD NEVER HAPPEN: Error getting relay miner connection headers: session header is nil")
 		return http.Header{}
 	}
 

@@ -53,7 +53,7 @@ func Test_Connection_MessageHandling(t *testing.T) {
 			ctx, cancelCtx := context.WithCancel(context.Background())
 			defer cancelCtx()
 
-			_ = newConnection(
+			wsConn := newConnection(
 				ctx,
 				cancelCtx,
 				polyzero.NewLogger().With("conn", test.source),
@@ -61,6 +61,7 @@ func Test_Connection_MessageHandling(t *testing.T) {
 				test.source,
 				msgChan,
 			)
+			require.NotNil(t, wsConn)
 
 			receivedMsgs := make(map[string]struct{})
 

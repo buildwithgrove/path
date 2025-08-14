@@ -249,13 +249,13 @@ func (rc *requestContext) BuildProtocolContextsFromHTTPRequest(httpReq *http.Req
 func (rc *requestContext) HandleWebsocketRequest(request *http.Request, responseWriter http.ResponseWriter) error {
 	// Establish a websocket connection with the selected endpoint and handle the request.
 	// In this code path, we are always guaranteed to have exactly one protocol context.
-	bridge, err := rc.protocolContexts[0].HandleWebsocketRequest(rc.logger, request, responseWriter)
+	bridge, err := rc.protocolContexts[0].HandleWebsocketRequest(request, responseWriter)
 	if err != nil {
 		rc.logger.Warn().Err(err).Msg("Failed to establish a websocket connection.")
 		return err
 	}
 
-	// Start the bridge in a goroutine to avoid blocking the HTTP handler.
+	// Start the bridge in a goroutine to avoid blocking the HTTP handler
 	go bridge.StartAsync(
 		rc.gatewayObservations,
 		rc.dataReporter,
@@ -365,9 +365,8 @@ func (rc *requestContext) BroadcastAllObservations() {
 		if rc.metricsReporter != nil {
 			rc.metricsReporter.Publish(observations)
 		}
-		// If the data reporter is not configured using the `data_reporter_config` field
-		// in the config YAML, then the data reporter will be nil so we need to check for that.
-		// For example, when running the Gateway in a local environment, the data reporter may be nil.
+		// Need to account for an empty `data_reporter_config` field in the YAML config file.
+		// E.g. This can happen when running the Gateway in a local environment.
 		if rc.dataReporter != nil {
 			rc.dataReporter.Publish(observations)
 		}

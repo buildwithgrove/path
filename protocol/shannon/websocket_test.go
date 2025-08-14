@@ -130,19 +130,19 @@ func Test_ShannonWebsocketBridge_ProtocolEndpoints(t *testing.T) {
 			test.selectedEndpoint.websocketURL = "ws://test-endpoint"
 
 			// Create Shannon-specific message handlers
-			clientHandler := &shannonClientMessageHandler{
+			clientHandler := &websocketClientMessageHandler{
 				logger:             polyzero.NewLogger(),
 				selectedEndpoint:   test.selectedEndpoint,
 				relayRequestSigner: rc.relayRequestSigner,
 				serviceID:          rc.serviceID,
 			}
-			endpointHandler := &shannonEndpointMessageHandler{
+			endpointHandler := &endpointMessageHandler{
 				logger:           polyzero.NewLogger(),
 				selectedEndpoint: test.selectedEndpoint,
 				fullNode:         rc.fullNode,
 				serviceID:        rc.serviceID,
 			}
-			observationPublisher := &shannonObservationPublisher{
+			observationPublisher := &observationPublisher{
 				serviceID:            rc.serviceID,
 				protocolObservations: buildWebsocketBridgeEndpointObservation(rc.logger, rc.serviceID, test.selectedEndpoint),
 			}
@@ -231,19 +231,19 @@ func Test_ShannonWebsocketBridge_FallbackEndpoints(t *testing.T) {
 	fallbackEndpoint.websocketURL = "ws://fallback-endpoint"
 
 	// Create Shannon-specific message handlers for fallback endpoint
-	clientHandler := &shannonClientMessageHandler{
+	clientHandler := &websocketClientMessageHandler{
 		logger:             polyzero.NewLogger(),
 		selectedEndpoint:   fallbackEndpoint,
 		relayRequestSigner: rc.relayRequestSigner,
 		serviceID:          rc.serviceID,
 	}
-	endpointHandler := &shannonEndpointMessageHandler{
+	endpointHandler := &endpointMessageHandler{
 		logger:           polyzero.NewLogger(),
 		selectedEndpoint: fallbackEndpoint,
 		fullNode:         rc.fullNode,
 		serviceID:        rc.serviceID,
 	}
-	observationPublisher := &shannonObservationPublisher{
+	observationPublisher := &observationPublisher{
 		serviceID:            rc.serviceID,
 		protocolObservations: buildWebsocketBridgeEndpointObservation(rc.logger, rc.serviceID, fallbackEndpoint),
 	}
@@ -297,14 +297,14 @@ func Test_ShannonMessageHandlers(t *testing.T) {
 			isFallback: false,
 		}
 
-		handler := &shannonClientMessageHandler{
+		handler := &websocketClientMessageHandler{
 			logger:             polyzero.NewLogger(),
 			selectedEndpoint:   endpoint,
 			relayRequestSigner: &mockRelayRequestSigner{},
 			serviceID:          "eth",
 		}
 
-		msg := websockets.Message{
+		msg := websockets.WebSocketMessage{
 			Data:        []byte(`{"jsonrpc":"2.0","id":1,"method":"eth_gasPrice"}`),
 			MessageType: websocket.TextMessage,
 		}
@@ -326,7 +326,7 @@ func Test_ShannonMessageHandlers(t *testing.T) {
 			isFallback: false,
 		}
 
-		handler := &shannonEndpointMessageHandler{
+		handler := &endpointMessageHandler{
 			logger:           polyzero.NewLogger(),
 			selectedEndpoint: endpoint,
 			fullNode:         &mockFullNode{},
@@ -339,7 +339,7 @@ func Test_ShannonMessageHandlers(t *testing.T) {
 		}
 		responseBytes, _ := relayResponse.Marshal()
 
-		msg := websockets.Message{
+		msg := websockets.WebSocketMessage{
 			Data:        responseBytes,
 			MessageType: websocket.TextMessage,
 		}
@@ -352,7 +352,7 @@ func Test_ShannonMessageHandlers(t *testing.T) {
 	t.Run("ObservationPublisher", func(t *testing.T) {
 		c := require.New(t)
 
-		publisher := &shannonObservationPublisher{
+		publisher := &observationPublisher{
 			serviceID:            "eth",
 			protocolObservations: &protocolobservations.Observations{},
 		}
@@ -371,7 +371,7 @@ func Test_ShannonMessageHandlers(t *testing.T) {
 	})
 }
 
-func Test_getShannonWebsocketConnectionHeaders(t *testing.T) {
+func Test_getWebsocketConnectionHeaders(t *testing.T) {
 	tests := []struct {
 		name               string
 		endpoint           *mockEndpoint
@@ -431,7 +431,16 @@ func Test_getShannonWebsocketConnectionHeaders(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			c := require.New(t)
 
-			headers := getShannonWebsocketConnectionHeaders(polyzero.NewLogger(), test.endpoint)
+			// Create mock request context
+			rc := &requestContext{
+				logger:             polyzero.NewLogger(),
+				selectedEndpoint:   test.endpoint,
+				relayRequestSigner: &mockRelayRequestSigner{},
+				fullNode:           &mockFullNode{},
+				serviceID:          "eth",
+			}
+
+			headers := rc.getWebsocketConnectionHeaders()
 
 			if test.expectEmptyHeaders {
 				c.Equal(0, len(headers), "Expected empty headers")
@@ -528,7 +537,8 @@ func createTestWebSocketConnections(t *testing.T, jsonrpcRequests map[clientReq]
 						relayResponse := &servicetypes.RelayResponse{
 							Payload: []byte(response),
 						}
-						responseBz, _ = relayResponse.Marshal()
+						responseBz, err = relayResponse.Marshal()
+						require.NoError(t, err)
 						capturedShannonMessages.Lock()
 						capturedShannonMessages.relayResponses = append(capturedShannonMessages.relayResponses, *relayResponse)
 						capturedShannonMessages.Unlock()
@@ -550,7 +560,8 @@ func createTestWebSocketConnections(t *testing.T, jsonrpcRequests map[clientReq]
 				relayResponse := &servicetypes.RelayResponse{
 					Payload: []byte(event),
 				}
-				eventBz, _ = relayResponse.Marshal()
+				eventBz, err = relayResponse.Marshal()
+				require.NoError(t, err)
 			}
 
 			if err := conn.WriteMessage(websocket.TextMessage, eventBz); err != nil {

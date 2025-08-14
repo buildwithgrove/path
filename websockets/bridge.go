@@ -11,11 +11,11 @@ import (
 	"github.com/buildwithgrove/path/observation"
 )
 
-// Message represents a websocket message that can be:
-//   - Client request
-//   - Endpoint response
-//   - Subscription push event (e.g. eth_subscribe)
-type Message struct {
+// WebSocketMessage represents a websocket message that can be one of the following:
+// - Client request
+// - Endpoint response
+// - Subscription push event (e.g. eth_subscribe)
+type WebSocketMessage struct {
 	// Data is the message payload
 	Data []byte
 
@@ -23,12 +23,12 @@ type Message struct {
 	MessageType int
 }
 
-// MessageHandler processes websocket messages.
-// It can transform the message data before forwarding it.
-type MessageHandler interface {
+// WebSocketMessageHandler handles websocket messages.
+// It can, for example, transform the message data before forwarding it.
+type WebSocketMessageHandler interface {
 	// HandleMessage processes a message and returns the data to forward.
 	// If an error is returned, the connection will be closed.
-	HandleMessage(msg Message) ([]byte, error)
+	HandleMessage(msg WebSocketMessage) ([]byte, error)
 }
 
 // ObservationPublisher handles publishing observations after processing endpoint messages.
@@ -50,16 +50,16 @@ type ObservationPublisher interface {
 	PublishMessageObservations(*observation.RequestResponseObservations)
 }
 
-// Bridge routes data between an Endpoint and a Client.
-// One Bridge represents a single WebSocket connection
+// bridge routes data between an Endpoint and a Client.
+// One bridge represents a single WebSocket connection
 // between a Client and a WebSocket Endpoint.
 //
 // This is a generic websocket bridge that handles the websocket protocol
 // and message routing, while delegating protocol-specific logic to the
 // provided message handlers.
 //
-// Full data flow: Client <---clientConn---> PATH Bridge <---endpointConn---> Relay Miner Bridge <------> Endpoint
-type Bridge struct {
+// Full data flow: Client <---clientConn---> PATH bridge <---endpointConn---> Relay Miner bridge <------> Endpoint
+type bridge struct {
 	// ctx is used to stop the bridge when the context is canceled from either connection
 	ctx context.Context
 
@@ -74,9 +74,9 @@ type Bridge struct {
 	msgChan chan message
 
 	// clientMessageHandler processes messages from the client before forwarding to the endpoint
-	clientMessageHandler MessageHandler
+	clientMessageHandler WebSocketMessageHandler
 	// endpointMessageHandler processes messages from the endpoint before forwarding to the client
-	endpointMessageHandler MessageHandler
+	endpointMessageHandler WebSocketMessageHandler
 
 	// observationPublisher handles publishing observations after endpoint message processing
 	observationPublisher ObservationPublisher
@@ -87,10 +87,10 @@ func NewBridge(
 	logger polylog.Logger,
 	clientWSSConn *websocket.Conn,
 	endpointWSSConn *websocket.Conn,
-	clientMessageHandler MessageHandler,
-	endpointMessageHandler MessageHandler,
+	clientMessageHandler WebSocketMessageHandler,
+	endpointMessageHandler WebSocketMessageHandler,
 	observationPublisher ObservationPublisher,
-) (*Bridge, error) {
+) (*bridge, error) {
 	logger = logger.With("component", "websocket_bridge")
 
 	// Create a context that can be canceled from either connection
@@ -100,7 +100,7 @@ func NewBridge(
 	msgChan := make(chan message)
 
 	// Create bridge instance
-	b := &Bridge{
+	b := &bridge{
 		logger: logger,
 		ctx:    ctx,
 
@@ -137,7 +137,7 @@ func NewBridge(
 
 // validateComponents ensures the Bridge is not created with nil components.
 // This is done to avoid panics and to make the Bridge's behavior more predictable.
-func (b *Bridge) validateComponents() error {
+func (b *bridge) validateComponents() error {
 	switch {
 	case b.observationPublisher == nil:
 		return fmt.Errorf("observationPublisher is nil")
@@ -155,7 +155,7 @@ func (b *Bridge) validateComponents() error {
 // This method implements the gateway.WebsocketsBridge interface.
 //
 // Full data flow: Client <---clientConn---> PATH Bridge <---endpointConn---> Relay Miner Bridge <------> Endpoint
-func (b *Bridge) StartAsync(
+func (b *bridge) StartAsync(
 	gatewayObservations *observation.GatewayObservations,
 	dataReporter gateway.RequestResponseReporter,
 ) {
@@ -193,7 +193,7 @@ func (b *Bridge) StartAsync(
 //
 // This is important as it is expected that the RelayMiner connection will be closed on every session rollover
 // and it is critical that the closing of the connection propagates to the Client so they can reconnect.
-func (b *Bridge) Shutdown(err error) {
+func (b *bridge) Shutdown(err error) {
 	b.logger.Error().Err(err).Msg("🔌 ❌ Websocket bridge shutting down due to error!")
 
 	// Send close message to both connections and close the connections
@@ -218,9 +218,9 @@ func (b *Bridge) Shutdown(err error) {
 }
 
 // handleClientMessage processes a message from the Client and sends it to the endpoint.
-func (b *Bridge) handleClientMessage(msg message) {
+func (b *bridge) handleClientMessage(msg message) {
 	// Create a Message struct for the handler
-	handlerMsg := Message{
+	handlerMsg := WebSocketMessage{
 		Data:        msg.data,
 		MessageType: msg.messageType,
 	}
@@ -240,9 +240,9 @@ func (b *Bridge) handleClientMessage(msg message) {
 }
 
 // handleEndpointMessage processes a message from the Endpoint and sends it to the Client.
-func (b *Bridge) handleEndpointMessage(msg message) {
+func (b *bridge) handleEndpointMessage(msg message) {
 	// Create a Message struct for the handler
-	handlerMsg := Message{
+	handlerMsg := WebSocketMessage{
 		Data:        msg.data,
 		MessageType: msg.messageType,
 	}
