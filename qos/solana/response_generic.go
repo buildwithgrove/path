@@ -2,8 +2,10 @@ package solana
 
 import (
 	"encoding/json"
+	"time"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	qosobservations "github.com/buildwithgrove/path/observation/qos"
 	"github.com/buildwithgrove/path/qos/jsonrpc"
@@ -45,43 +47,46 @@ func responseUnmarshallerGeneric(
 	}
 }
 
-// TODO_MVP(@adshmh): implement the generic jsonrpc response
-// (with the scope limited to the Solana blockchain)
-// responseGeneric captures the fields expected in response to any request on the Solana blockchain.
-// It is intended to be used when no validation/observation is applicable to the corresponding request's JSON-RPC method.
-// i.e. when there are no unmarshallers/structs matching the method specified by the request.
+// responseGeneric captures fields for any Solana blockchain response.
+// Used when no validation/observation applies to the request's JSON-RPC method.
 type responseGeneric struct {
 	Logger polylog.Logger
 	jsonrpc.Response
+	// validationError tracks JSON-RPC validation errors if response unmarshaling failed
+	validationError *qosobservations.JsonRpcResponseValidationError
 }
 
-// GetObservation returns an observation that is NOT used in validating endpoints.
-// This allows sharing data with other entities, e.g. a data pipeline.
-// Implements the response interface.
-// As of PR 372, this is a default catchall for any response to any requests other than `getHealth` and `getEpochInfo`.
+// GetObservation returns observation NOT used for endpoint validation.
+// Shares data with other entities (e.g., data pipeline).
+// As of PR 372, default catchall for responses other than `getHealth` and `getEpochInfo`.
 func (r responseGeneric) GetObservation() qosobservations.SolanaEndpointObservation {
-	return qosobservations.SolanaEndpointObservation{
+	unrecognizedResponse := &qosobservations.SolanaUnrecognizedResponse{
 		// TODO_TECHDEBT(@adshmh): set additional JSON-RPC response fields, specifically the `error` object, on the observation.
 		// This needs a utility function to convert a `qos.jsonrpc.Response` to an `observation.qos.JsonRpcResponse.
+		JsonrpcResponse: &qosobservations.JsonRpcResponse{
+			Id: r.ID.String(),
+		},
+	}
+
+	// Include validation error if present
+	if r.validationError != nil {
+		unrecognizedResponse.ValidationError = r.validationError
+	}
+
+	return qosobservations.SolanaEndpointObservation{
 		ResponseObservation: &qosobservations.SolanaEndpointObservation_UnrecognizedResponse{
-			UnrecognizedResponse: &qosobservations.SolanaUnrecognizedResponse{
-				JsonrpcResponse: &qosobservations.JsonRpcResponse{
-					Id: r.ID.String(),
-				},
-			},
+			UnrecognizedResponse: unrecognizedResponse,
 		},
 	}
 }
 
-// GetResponsePayload returns the payload for the response to a `/health` request.
-// Implements the response interface.
-//
-// TODO_MVP(@adshmh): handle any unmarshaling errors and build a method-specific payload generator.
+// GetJSONRPCResponse returns response payload.
 func (r responseGeneric) GetJSONRPCResponse() jsonrpc.Response {
 	return r.Response
 }
 
-// getGenericJSONRPCErrResponse returns a generic response wrapped around a JSON-RPC error response with the supplied ID, error, and the invalid payload in the "data" field.
+// getGenericJSONRPCErrResponse returns generic response with JSON-RPC error and validation error observation.
+// Includes supplied ID, error, and invalid payload in "data" field.
 func getGenericJSONRPCErrResponse(
 	logger polylog.Logger,
 	id jsonrpc.ID,
@@ -93,7 +98,14 @@ func getGenericJSONRPCErrResponse(
 		errDataFieldUnmarshalingErr: err.Error(),
 	}
 
+	// Create validation error observation
+	validationError := &qosobservations.JsonRpcResponseValidationError{
+		ErrorType: qosobservations.JsonRpcValidationErrorType_NON_JSONRPC_RESPONSE,
+		Timestamp: timestamppb.New(time.Now()),
+	}
+
 	return responseGeneric{
-		Response: jsonrpc.GetErrorResponse(id, errCodeUnmarshaling, errMsgUnmarshaling, errData),
+		Response:        jsonrpc.GetErrorResponse(id, errCodeUnmarshaling, errMsgUnmarshaling, errData),
+		validationError: validationError,
 	}
 }

@@ -1,0 +1,24 @@
+syntax = "proto3";
+package path.qos;
+
+option go_package = "github.com/buildwithgrove/path/observation/qos";
+
+import "google/protobuf/timestamp.proto";
+
+// JsonRpcResponseValidationError captures validation errors for JSON-RPC responses
+message JsonRpcResponseValidationError {
+  // Type of validation error
+  JsonRpcValidationErrorType error_type = 1;
+  
+  // Timestamp when the validation error occurred
+  google.protobuf.Timestamp timestamp = 2;
+}
+
+// Enum for different types of JSON-RPC validation errors
+enum JsonRpcValidationErrorType {
+  // Default/unspecified validation error
+  JSON_RPC_VALIDATION_ERROR_TYPE_UNSPECIFIED = 0;
+  
+  // Response is not a valid JSON-RPC response
+  NON_JSONRPC_RESPONSE = 1;
+}
