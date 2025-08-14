@@ -1,5 +1,7 @@
 -- Initial schema for PATH Portal DB
 
+-- TODO: Add more comments to tables so the business logic is more clear
+
 -- Create custom enum types
 CREATE TYPE endpoint_type AS ENUM ('cometBFT', 'cosmos', 'REST', 'JSON-RPC', 'WSS', 'gRPC');
 CREATE TYPE plan_interval AS ENUM ('day', 'month', 'year');
@@ -17,6 +19,7 @@ CREATE TABLE organizations (
 CREATE TABLE contacts (
     contact_id SERIAL PRIMARY KEY,
     organization_id INT,
+    portal_user_id INT,
     contact_telegram_handle VARCHAR(32),
     contact_twitter_handle VARCHAR(15),
     contact_linkedin_handle VARCHAR(30),
@@ -25,7 +28,8 @@ CREATE TABLE contacts (
     contact_initial_meeting_datetime TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (organization_id) REFERENCES organizations(organization_id)
+    FOREIGN KEY (organization_id) REFERENCES organizations(organization_id),
+    FOREIGN KEY (portal_user_id) REFERENCES portal_users(portal_user_id)
 );
 
 -- Organization tags table
@@ -50,11 +54,13 @@ CREATE TABLE portal_plans (
 CREATE TABLE portal_accounts (
     portal_account_id VARCHAR(24) PRIMARY KEY,
     organization_id INT,
-    portal_plan_type VARCHAR(42),
+    portal_plan_type VARCHAR(42) NOT NULL,
     user_account_name VARCHAR(42),
     internal_account_name VARCHAR(42),
-    monthly_user_limit INT,
-    billing_type INT,
+    portal_account_user_limit INT,
+    portal_account_user_limit_interval plan_interval,
+    portal_account_user_limit_rps INT,
+    billing_type VARCHAR(20),
     stripe_subscription_id VARCHAR(255),
     gcp_account_id VARCHAR(255),
     gcp_entitlement_id VARCHAR(255),
@@ -70,10 +76,8 @@ CREATE TABLE portal_users (
     portal_user_email VARCHAR(255),
     signed_up BOOLEAN DEFAULT FALSE,
     portal_admin BOOLEAN DEFAULT FALSE,
-    contact_id INT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (contact_id) REFERENCES contacts(contact_id)
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- RBAC table
@@ -88,7 +92,7 @@ CREATE TABLE portal_account_rbac (
     id SERIAL PRIMARY KEY,
     portal_account_id VARCHAR(24) NOT NULL,
     portal_user_id INT NOT NULL,
-    role_name VARCHAR(20),
+    role_name VARCHAR(20) NOT NULL,
     user_joined_account BOOLEAN DEFAULT FALSE,
     FOREIGN KEY (portal_account_id) REFERENCES portal_accounts(portal_account_id),
     FOREIGN KEY (portal_user_id) REFERENCES portal_users(portal_user_id)
@@ -100,7 +104,13 @@ CREATE TABLE portal_applications (
     portal_account_id VARCHAR(24) NOT NULL,
     portal_application_name VARCHAR(42),
     emoji VARCHAR(16),
+    portal_application_user_limit INT,
+    portal_application_user_limit_interval plan_interval,
+    portal_application_user_limit_rps INT,
     portal_application_description VARCHAR(255),
+    favorite_service_ids VARCHAR[],
+    secret_key VARCHAR(64),
+    secret_key_required BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (portal_account_id) REFERENCES portal_accounts(portal_account_id)
@@ -111,24 +121,10 @@ CREATE TABLE portal_application_rbac (
     id SERIAL PRIMARY KEY,
     portal_application_id VARCHAR(42) NOT NULL,
     portal_user_id INT NOT NULL,
-    user_accepted BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (portal_application_id) REFERENCES portal_applications(portal_application_id),
     FOREIGN KEY (portal_user_id) REFERENCES portal_users(portal_user_id)
-);
-
--- Portal application settings table
-CREATE TABLE portal_application_settings (
-    id SERIAL PRIMARY KEY,
-    portal_application_id VARCHAR(42) NOT NULL,
-    portal_application_monthly_relay_limit INT,
-    favorite_service_ids VARCHAR[],
-    secret_key VARCHAR(64),
-    secret_key_required BOOLEAN DEFAULT FALSE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (portal_application_id) REFERENCES portal_applications(portal_application_id)
 );
 
 -- Networks table
@@ -150,10 +146,10 @@ CREATE TABLE gateways (
 -- Services table
 CREATE TABLE services (
     service_id VARCHAR(42) PRIMARY KEY,
-    service_name VARCHAR(169),
-    compute_units_per_relay INT,
-    service_domains VARCHAR[],
-    service_owner_address VARCHAR(50),
+    service_name VARCHAR(169) NOT NULL,
+    compute_units_per_relay INT NOT NULL,
+    service_domains VARCHAR[] NOT NULL,
+    service_owner_address VARCHAR(50) NOT NULL,
     network_id VARCHAR(42) NOT NULL,
     active BOOLEAN DEFAULT FALSE,
     quality_fallback_enabled BOOLEAN DEFAULT FALSE,
@@ -168,7 +164,7 @@ CREATE TABLE services (
 CREATE TABLE service_fallbacks (
     service_fallback_id SERIAL PRIMARY KEY,
     service_id VARCHAR(42) NOT NULL,
-    fallback_url VARCHAR(255),
+    fallback_url VARCHAR(255) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (service_id) REFERENCES services(service_id)
@@ -187,11 +183,11 @@ CREATE TABLE service_endpoints (
 -- Applications table
 CREATE TABLE applications (
     application_address VARCHAR(50) PRIMARY KEY,
-    gateway_address VARCHAR(50),
-    service_id VARCHAR(42),
+    gateway_address VARCHAR(50) NOT NULL,
+    service_id VARCHAR(42) NOT NULL,
     stake_amount INT,
     stake_denom VARCHAR(15),
-    application_private_key_hex VARCHAR(64),
+    application_private_key_hex VARCHAR(64) NOT NULL,
     network_id VARCHAR(42) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -224,7 +220,7 @@ CREATE TABLE supplier_blacklist (
 );
 
 -- Domain blocklist table
-CREATE TABLE domain_blocklist (
+CREATE TABLE domain_blacklist (
     id SERIAL PRIMARY KEY,
     domain VARCHAR(169),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -232,7 +228,7 @@ CREATE TABLE domain_blocklist (
 );
 
 -- Crypto address blocklist table
-CREATE TABLE crypto_address_blocklist (
+CREATE TABLE crypto_address_blacklist (
     id SERIAL PRIMARY KEY,
     address VARCHAR(169),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -249,7 +245,6 @@ CREATE INDEX idx_applications_gateway ON applications(gateway_address);
 CREATE INDEX idx_applications_service ON applications(service_id);
 CREATE INDEX idx_applications_network ON applications(network_id);
 CREATE INDEX idx_portal_applications_account ON portal_applications(portal_account_id);
-CREATE INDEX idx_portal_application_settings_app ON portal_application_settings(portal_application_id);
 CREATE INDEX idx_portal_application_whitelists_app ON portal_application_whitelists(portal_application_id);
 CREATE INDEX idx_portal_account_rbac_account ON portal_account_rbac(portal_account_id);
 CREATE INDEX idx_portal_account_rbac_user ON portal_account_rbac(portal_user_id);
