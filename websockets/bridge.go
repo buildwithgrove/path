@@ -110,7 +110,8 @@ func NewBridge(
 		observationPublisher:   observationPublisher,
 	}
 	if err := b.validateComponents(); err != nil {
-		return nil, fmt.Errorf("invalid bridge components: %w", err)
+		cancelCtx() // Cancel context to prevent leak
+		return nil, fmt.Errorf("❌ invalid bridge components: %w", err)
 	}
 
 	// Initialize connections with context and cancel function

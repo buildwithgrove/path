@@ -246,6 +246,18 @@ func (m *mockObservationPublisher) SetObservationContext(
 	m.gatewayObservations = gatewayObservations
 }
 
-func (m *mockObservationPublisher) PublishObservations() {
+func (m *mockObservationPublisher) InitializeMessageObservations() *observation.RequestResponseObservations {
+	return &observation.RequestResponseObservations{}
+}
+
+func (m *mockObservationPublisher) UpdateMessageObservationsFromSuccess(*observation.RequestResponseObservations) {
+	// Mock implementation - no-op
+}
+
+func (m *mockObservationPublisher) UpdateMessageObservationsFromError(*observation.RequestResponseObservations, error) {
+	// Mock implementation - no-op
+}
+
+func (m *mockObservationPublisher) PublishMessageObservations(*observation.RequestResponseObservations) {
 	m.publishCalled = true
 }
