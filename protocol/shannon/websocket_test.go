@@ -363,7 +363,7 @@ func Test_ShannonMessageHandlers(t *testing.T) {
 		publisher.SetObservationContext(gatewayObs, mockReporter)
 
 		// Publish observations
-		publisher.PublishObservations()
+		publisher.PublishMessageObservations(nil)
 
 		c.True(mockReporter.publishCalled, "Publish should have been called")
 		c.NotNil(mockReporter.lastObservation, "Observation should have been published")

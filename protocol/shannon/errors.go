@@ -69,7 +69,15 @@ var (
 	errMalformedEndpointPayload = errors.New("endpoint returned malformed payload")
 
 	// ** WebSocket errors **
+
+	// Error creating a WebSocket connection.
 	errCreatingWebSocketConnection = errors.New("error creating WebSocket connection")
+
+	// Error signing the relay request.
+	errRelayRequestSigningFailed = errors.New("error signing relay request")
+
+	// Error validating the relay response.
+	errRelayResponseValidationFailed = errors.New("error validating relay response")
 )
 
 // extractErrFromRelayError:

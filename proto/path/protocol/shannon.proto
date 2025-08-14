@@ -118,6 +118,12 @@ enum ShannonEndpointErrorType {
 
   // The relay request sent to the endpoint via WebSocket failed to establish a connection.
   SHANNON_ENDPOINT_ERROR_WEBSOCKET_CONNECTION_FAILED = 39;
+
+  // The relay request sent to the endpoint via WebSocket failed to sign the request.
+  SHANNON_ENDPOINT_ERROR_WEBSOCKET_REQUEST_SIGNING_FAILED = 40;
+
+  // The relay request sent to the endpoint via WebSocket failed to validate the relay response.
+  SHANNON_ENDPOINT_ERROR_WEBSOCKET_RELAY_RESPONSE_VALIDATION_FAILED = 41;
 }
 
 // ShannonSanctionType specifies the duration type for endpoint sanctions

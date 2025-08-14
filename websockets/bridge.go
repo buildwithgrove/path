@@ -12,9 +12,9 @@ import (
 )
 
 // Message represents a websocket message that can be:
-// - Client request
-// - Endpoint response
-// - Subscription push event (e.g. eth_subscribe)
+//   - Client request
+//   - Endpoint response
+//   - Subscription push event (e.g. eth_subscribe)
 type Message struct {
 	// Data is the message payload
 	Data []byte
@@ -33,10 +33,21 @@ type MessageHandler interface {
 
 // ObservationPublisher handles publishing observations after processing endpoint messages.
 type ObservationPublisher interface {
-	// PublishObservations publishes protocol-specific observations.
-	PublishObservations()
 	// SetObservationContext sets the gateway observations and data reporter.
-	SetObservationContext(gatewayObservations *observation.GatewayObservations, dataReporter gateway.RequestResponseReporter)
+	// Set once per Bridge initialization.
+	SetObservationContext(*observation.GatewayObservations, gateway.RequestResponseReporter)
+	// InitializeMessageObservations initializes the observations for the current message.
+	// Called once per message.
+	InitializeMessageObservations() *observation.RequestResponseObservations
+	// UpdateMessageObservations updates the observations for the current message.
+	// Called once per message if the message handler does not return an error.
+	UpdateMessageObservationsFromSuccess(*observation.RequestResponseObservations)
+	// UpdateMessageObservationsFromError updates the observations for the current message.
+	// Called once per message if the message handler returns an error.
+	UpdateMessageObservationsFromError(*observation.RequestResponseObservations, error)
+	// PublishObservations publishes protocol-specific observations.
+	// Called once per message.
+	PublishMessageObservations(*observation.RequestResponseObservations)
 }
 
 // Bridge routes data between an Endpoint and a Client.
@@ -98,6 +109,9 @@ func NewBridge(
 		endpointMessageHandler: endpointMessageHandler,
 		observationPublisher:   observationPublisher,
 	}
+	if err := b.validateComponents(); err != nil {
+		return nil, fmt.Errorf("invalid bridge components: %w", err)
+	}
 
 	// Initialize connections with context and cancel function
 	b.endpointConn = newConnection(
@@ -120,6 +134,20 @@ func NewBridge(
 	return b, nil
 }
 
+// validateComponents ensures the Bridge is not created with nil components.
+// This is done to avoid panics and to make the Bridge's behavior more predictable.
+func (b *Bridge) validateComponents() error {
+	switch {
+	case b.observationPublisher == nil:
+		return fmt.Errorf("observationPublisher is nil")
+	case b.clientMessageHandler == nil:
+		return fmt.Errorf("clientMessageHandler is nil")
+	case b.endpointMessageHandler == nil:
+		return fmt.Errorf("endpointMessageHandler is nil")
+	}
+	return nil
+}
+
 // StartAsync starts the bridge and establishes a bidirectional communication
 // through PATH between the Client and the selected websocket endpoint.
 //
@@ -130,9 +158,12 @@ func (b *Bridge) StartAsync(
 	gatewayObservations *observation.GatewayObservations,
 	dataReporter gateway.RequestResponseReporter,
 ) {
-	b.logger.Info().Msg("bridge operation started successfully")
+	b.logger.Info().Msg("🏗️ Websocket bridge operation started successfully")
 
-	// Set the observation context for protocol-specific observation publishing
+	// Set the observation context for observation publishing.
+	//
+	// These values, both gateway and protocol, are static for the duration of
+	// the bridge's operation. New observations will be set when a new Bridge is created.
 	if b.observationPublisher != nil {
 		b.observationPublisher.SetObservationContext(gatewayObservations, dataReporter)
 	}
@@ -170,13 +201,13 @@ func (b *Bridge) Shutdown(err error) {
 
 	if b.clientConn != nil {
 		if err := b.clientConn.WriteMessage(websocket.CloseMessage, closeMsg); err != nil {
-			b.logger.Error().Err(err).Msg("error writing close message to client connection")
+			b.logger.Error().Err(err).Msg("❌ error writing close message to client connection")
 		}
 		b.clientConn.Close()
 	}
 	if b.endpointConn != nil {
 		if err := b.endpointConn.WriteMessage(websocket.CloseMessage, closeMsg); err != nil {
-			b.logger.Error().Err(err).Msg("error writing close message to endpoint connection")
+			b.logger.Error().Err(err).Msg("❌ error writing close message to endpoint connection")
 		}
 		b.endpointConn.Close()
 	}
@@ -187,8 +218,6 @@ func (b *Bridge) Shutdown(err error) {
 
 // handleClientMessage processes a message from the Client and sends it to the endpoint.
 func (b *Bridge) handleClientMessage(msg message) {
-	b.logger.Debug().Msgf("received message from client")
-
 	// Create a Message struct for the handler
 	handlerMsg := Message{
 		Data:        msg.data,
@@ -211,24 +240,25 @@ func (b *Bridge) handleClientMessage(msg message) {
 
 // handleEndpointMessage processes a message from the Endpoint and sends it to the Client.
 func (b *Bridge) handleEndpointMessage(msg message) {
-	b.logger.Debug().Msgf("received message from endpoint")
-
 	// Create a Message struct for the handler
 	handlerMsg := Message{
 		Data:        msg.data,
 		MessageType: msg.messageType,
 	}
 
+	// Initialize the message observations for the current message.
+	messageObservations := b.observationPublisher.InitializeMessageObservations()
+
+	// Ensure observations are published regardless of success or failure
+	defer b.observationPublisher.PublishMessageObservations(messageObservations)
+
 	// Process the message through the endpoint message handler
 	processedData, err := b.endpointMessageHandler.HandleMessage(handlerMsg)
 	if err != nil {
+		// Update observations with error details before disconnecting
+		b.observationPublisher.UpdateMessageObservationsFromError(messageObservations, err)
 		b.endpointConn.handleDisconnect(fmt.Errorf("handleEndpointMessage: %w", err))
 		return
-	}
-
-	// Publish observations after successful message processing
-	if b.observationPublisher != nil {
-		defer b.observationPublisher.PublishObservations()
 	}
 
 	// Send the processed message to the client
@@ -238,4 +268,7 @@ func (b *Bridge) handleEndpointMessage(msg message) {
 		b.clientConn.handleDisconnect(fmt.Errorf("handleEndpointMessage: error writing to client: %w", err))
 		return
 	}
+
+	// Update observations with success details
+	b.observationPublisher.UpdateMessageObservationsFromSuccess(messageObservations)
 }

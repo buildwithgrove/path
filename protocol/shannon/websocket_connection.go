@@ -22,25 +22,34 @@ func (rc *requestContext) createShannonWebsocketBridge(
 	req *http.Request,
 	w http.ResponseWriter,
 ) (gateway.WebsocketsBridge, error) {
+	// Hydrate the logger with the websocket bridge specific information.
 	logger = logger.With(
+		"connection_type", "websocket",
 		"component", "shannon_websocket_bridge",
-		"endpoint_url", rc.selectedEndpoint.PublicURL(),
+		"endpoint_address", rc.selectedEndpoint.Addr(),
+		"is_fallback", rc.selectedEndpoint.IsFallback(),
 	)
 
-	protocolObservations := buildWebsocketBridgeEndpointObservation(rc.logger, rc.serviceID, rc.selectedEndpoint)
+	// Get the websocket-specific URL from the selected endpoint.
+	websocketURL, err := rc.selectedEndpoint.WebsocketURL()
+	if err != nil {
+		logger.Error().Err(err).Msg("❌ Selected endpoint does not support websocket RPC type")
+		return nil, err
+	}
+	logger = logger.With("websocket_url", websocketURL)
+
+	// Build the protocol observations for the websocket bridge.
+	protocolObservations := buildWebsocketBridgeEndpointObservation(
+		logger,
+		rc.serviceID,
+		rc.selectedEndpoint,
+	)
 
 	// Upgrade HTTP request from client to websocket connection.
 	// - Connection is passed to websocket bridge for Client <-> Gateway communication.
 	clientConn, err := websockets.UpgradeClientWebsocketConnection(logger, req, w)
 	if err != nil {
 		return nil, fmt.Errorf("createShannonWebsocketBridge: %s", err.Error())
-	}
-
-	// Get the websocket-specific URL from the selected endpoint.
-	websocketURL, err := rc.selectedEndpoint.WebsocketURL()
-	if err != nil {
-		logger.Error().Err(err).Msgf("❌ Selected endpoint does not support websocket RPC type: %s", rc.selectedEndpoint.Addr())
-		return nil, err
 	}
 
 	// Get the headers for the websocket connection.
@@ -54,13 +63,13 @@ func (rc *requestContext) createShannonWebsocketBridge(
 
 	// Create Shannon-specific message handlers
 	clientHandler := &shannonClientMessageHandler{
-		logger:             logger,
+		logger:             logger.With("component", "shannon_client_message_handler"),
 		selectedEndpoint:   rc.selectedEndpoint,
 		relayRequestSigner: rc.relayRequestSigner,
 		serviceID:          rc.serviceID,
 	}
 	endpointHandler := &shannonEndpointMessageHandler{
-		logger:           logger,
+		logger:           logger.With("component", "shannon_endpoint_message_handler"),
 		selectedEndpoint: rc.selectedEndpoint,
 		fullNode:         rc.fullNode,
 		serviceID:        rc.serviceID,
@@ -68,6 +77,7 @@ func (rc *requestContext) createShannonWebsocketBridge(
 
 	// Create observation publisher
 	observationPublisher := &shannonObservationPublisher{
+		logger:               logger.With("component", "shannon_observation_publisher"),
 		serviceID:            rc.serviceID,
 		protocolObservations: protocolObservations,
 	}
