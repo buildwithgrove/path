@@ -692,7 +692,7 @@ func (rc *requestContext) handleEndpointWebsocketError(
 	selectedEndpointAddr := rc.selectedEndpoint.Addr()
 
 	// Error classification based on trusted error sources only
-	endpointErrorType, _ := classifyRelayError(hydratedLogger, endpointErr)
+	endpointErrorType, recommendedSanctionType := classifyRelayError(hydratedLogger, endpointErr)
 
 	// Enhanced logging with error type and error source classification
 	hydratedLogger.Error().
@@ -711,7 +711,7 @@ func (rc *requestContext) handleEndpointWebsocketError(
 		// TODO_IMPROVE(@commoddity): introduce proper sanctioning for websocket errors to exclude
 		// them from selection for websocket connection requests only. This is to avoid a failed
 		// websocket connection request from excluding the endpoint from selection for HTTP requests.
-		protocolobservations.ShannonSanctionType_SHANNON_SANCTION_UNSPECIFIED,
+		recommendedSanctionType,
 		rc.currentRelayMinerError, // Use RelayMinerError data from request context
 	)
 
