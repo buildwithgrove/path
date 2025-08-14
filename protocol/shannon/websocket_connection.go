@@ -14,6 +14,21 @@ import (
 	"github.com/buildwithgrove/path/websockets"
 )
 
+// TODO_TECHDEBT(@commoddity): Integrate session rollover detection for faster WebSocket disconnection.
+// See: https://github.com/buildwithgrove/path/issues/408
+//
+// Currently, WebSocket connections during session rollovers experience dead connection periods
+// of up to 30 seconds due to ping/pong timeout detection. This should be improved by:
+//
+// 1. Integrating existing sessionRolloverState monitoring from fullnode_session_rollover.go
+//    into the WebSocket bridge to proactively detect when endpoints become unresponsive
+// 2. Immediately dropping client connections when session rollovers are detected rather than
+//    waiting for ping/pong timeouts
+// 3. Making ping/pong timeouts configurable for faster dead connection detection
+//
+// This will eliminate multi-second dead connection periods and improve client experience
+// during session transitions while maintaining client-side reconnection responsibility.
+
 // createWebsocketBridge creates a websocket bridge.
 // This function encapsulates all Shannon-specific logic for websocket handling.
 func (rc *requestContext) createWebsocketBridge(
