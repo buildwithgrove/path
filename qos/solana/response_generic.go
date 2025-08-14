@@ -58,11 +58,11 @@ type responseGeneric struct {
 
 // GetObservation returns observation NOT used for endpoint validation.
 // Shares data with other entities (e.g., data pipeline).
-// As of PR 372, default catchall for responses other than `getHealth` and `getEpochInfo`.
+// Default catchall for responses other than `getHealth` and `getEpochInfo`.
 func (r responseGeneric) GetObservation() qosobservations.SolanaEndpointObservation {
 	unrecognizedResponse := &qosobservations.SolanaUnrecognizedResponse{
-		// TODO_TECHDEBT(@adshmh): set additional JSON-RPC response fields, specifically the `error` object, on the observation.
-		// This needs a utility function to convert a `qos.jsonrpc.Response` to an `observation.qos.JsonRpcResponse.
+		// TODO_TECHDEBT(@adshmh): Add utility to convert qos.jsonrpc.Response to observation.qos.JsonRpcResponse
+		// to include error object and other fields in observations.
 		JsonrpcResponse: &qosobservations.JsonRpcResponse{
 			Id: r.ID.String(),
 		},
@@ -100,7 +100,7 @@ func getGenericJSONRPCErrResponse(
 
 	// Create validation error observation
 	validationError := &qosobservations.JsonRpcResponseValidationError{
-		ErrorType: qosobservations.JsonRpcValidationErrorType_NON_JSONRPC_RESPONSE,
+		ErrorType: qosobservations.JsonRpcValidationErrorType_JSON_RPC_VALIDATION_ERROR_TYPE_NON_JSONRPC_RESPONSE,
 		Timestamp: timestamppb.New(time.Now()),
 	}
 

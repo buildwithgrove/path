@@ -9,7 +9,7 @@ import "google/protobuf/timestamp.proto";
 message JsonRpcResponseValidationError {
   // Type of validation error
   JsonRpcValidationErrorType error_type = 1;
-  
+
   // Timestamp when the validation error occurred
   google.protobuf.Timestamp timestamp = 2;
 }
@@ -18,7 +18,7 @@ message JsonRpcResponseValidationError {
 enum JsonRpcValidationErrorType {
   // Default/unspecified validation error
   JSON_RPC_VALIDATION_ERROR_TYPE_UNSPECIFIED = 0;
-  
+
   // Response is not a valid JSON-RPC response
-  NON_JSONRPC_RESPONSE = 1;
+  JSON_RPC_VALIDATION_ERROR_TYPE_NON_JSONRPC_RESPONSE = 1;
 }

@@ -11,8 +11,10 @@ import (
 const resultGetHealthOK = "ok"
 
 const (
-	// TODO_TECHDEBT(@adshmh): Make this configurable.
-	validationErrorWindow = 30 * time.Minute
+	// TODO_TECHDEBT(@adshmh): Make configurable via service config.
+	// 30 minutes allows for temporary network issues while preventing
+	// persistently broken endpoints from being used.
+	validationErrorResponseWindow = 30 * time.Minute
 )
 
 // The errors below list all the possible basic validation errors on an endpoint.
@@ -25,9 +27,8 @@ var (
 	errRecentValidationError            = fmt.Errorf("endpoint has recent JSON-RPC validation errors")
 )
 
-// TODO_TECHDEBT(@adshmh): Include a Sanctions mechanism to handle endpoints with dishonest behavior, e.g. using public RPCs.
-//
 // endpoint captures details required to validate a Solana endpoint.
+// TODO_TECHDEBT(@adshmh): Add sanctions mechanism for dishonest endpoints (e.g., using public RPCs).
 type endpoint struct {
 	// SolanaGetHealthResponse stores result of processing endpoint's `getHealth` response.
 	// Pointer distinguishes between no observation vs. observed response scenarios.
@@ -78,8 +79,8 @@ func (e endpoint) hasRecentValidationErrors() bool {
 		return false
 	}
 
-	cutoff := time.Now().Add(-validationErrorWindow)
-	return e.latestValidationError.Timestamp.AsTime().After(cutoff)
+	lastValidationErrorTimestamp := time.Now().Add(-validationErrorResponseWindow)
+	return e.latestValidationError.Timestamp.AsTime().After(lastValidationErrorTimestamp)
 }
 
 // applyObservation updates endpoint data using provided observation.

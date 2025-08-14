@@ -29,18 +29,18 @@ const (
 	// Default/unspecified validation error
 	JsonRpcValidationErrorType_JSON_RPC_VALIDATION_ERROR_TYPE_UNSPECIFIED JsonRpcValidationErrorType = 0
 	// Response is not a valid JSON-RPC response
-	JsonRpcValidationErrorType_NON_JSONRPC_RESPONSE JsonRpcValidationErrorType = 1
+	JsonRpcValidationErrorType_JSON_RPC_VALIDATION_ERROR_TYPE_NON_JSONRPC_RESPONSE JsonRpcValidationErrorType = 1
 )
 
 // Enum value maps for JsonRpcValidationErrorType.
 var (
 	JsonRpcValidationErrorType_name = map[int32]string{
 		0: "JSON_RPC_VALIDATION_ERROR_TYPE_UNSPECIFIED",
-		1: "NON_JSONRPC_RESPONSE",
+		1: "JSON_RPC_VALIDATION_ERROR_TYPE_NON_JSONRPC_RESPONSE",
 	}
 	JsonRpcValidationErrorType_value = map[string]int32{
-		"JSON_RPC_VALIDATION_ERROR_TYPE_UNSPECIFIED": 0,
-		"NON_JSONRPC_RESPONSE":                       1,
+		"JSON_RPC_VALIDATION_ERROR_TYPE_UNSPECIFIED":          0,
+		"JSON_RPC_VALIDATION_ERROR_TYPE_NON_JSONRPC_RESPONSE": 1,
 	}
 )
 
@@ -134,10 +134,10 @@ const file_path_qos_jsonrpc_validation_error_proto_rawDesc = "" +
 	"\x1eJsonRpcResponseValidationError\x12C\n" +
 	"\n" +
 	"error_type\x18\x01 \x01(\x0e2$.path.qos.JsonRpcValidationErrorTypeR\terrorType\x128\n" +
-	"\ttimestamp\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\ttimestamp*f\n" +
+	"\ttimestamp\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\ttimestamp*\x85\x01\n" +
 	"\x1aJsonRpcValidationErrorType\x12.\n" +
-	"*JSON_RPC_VALIDATION_ERROR_TYPE_UNSPECIFIED\x10\x00\x12\x18\n" +
-	"\x14NON_JSONRPC_RESPONSE\x10\x01B0Z.github.com/buildwithgrove/path/observation/qosb\x06proto3"
+	"*JSON_RPC_VALIDATION_ERROR_TYPE_UNSPECIFIED\x10\x00\x127\n" +
+	"3JSON_RPC_VALIDATION_ERROR_TYPE_NON_JSONRPC_RESPONSE\x10\x01B0Z.github.com/buildwithgrove/path/observation/qosb\x06proto3"
 
 var (
 	file_path_qos_jsonrpc_validation_error_proto_rawDescOnce sync.Once
