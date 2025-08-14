@@ -11,16 +11,17 @@ import (
 	"github.com/pokt-network/poktroll/pkg/polylog"
 )
 
+// TODO_IMPROVE(@commoddity): Make all of these configurable
 const (
-	// Time allowed (in seconds) to write a message to the peer.
-	writeWait = 10 * time.Second
+	// Time allowed to write a message to the peer over the websocket connection
+	writeWaitDuration = 10 * time.Second
 
-	// Time allowed (in seconds) to read the next pong message from the peer.
-	pongWait = 30 * time.Second
+	// Time allowed to read the next pong message from the peer over the websocket connection
+	pongWaitDuration = 30 * time.Second
 
-	// Send pings to peer with this period (in seconds).
-	// Must be less than pongWait.
-	pingPeriod = (pongWait * 9) / 10
+	// Send pings to peer with this period over the websocket connection
+	// Must be greater than pongWaitDuration
+	pingPeriodDuration = (pongWaitDuration * 9) / 10
 )
 
 // messageSource is used to identify the source of a message in a bidirectional websocket connection.
@@ -64,10 +65,10 @@ type websocketConnection struct {
 	msgChan chan<- message
 }
 
-// UpgradeClientWebsocketConnection upgrades an HTTP connection to WebSocket.
+// UpgradeClientWebsocketConnection upgrades an HTTP connection to a WebSocket.
 // Used to upgrade a Client's HTTP request to a WebSocket connection.
 //
-// Note: This function uses a permissive CheckOrigin policy (always returns true),
+// DEV_NOTE: This function uses a permissive CheckOrigin policy (always returns true),
 // eliminating origin-based rejections as a potential cause of upgrade failures.
 //
 // See: https://pkg.go.dev/github.com/gorilla/websocket#hdr-Overview
@@ -81,11 +82,12 @@ func UpgradeClientWebsocketConnection(
 		CheckOrigin: func(r *http.Request) bool { return true },
 	}
 
+	// Upgrade the HTTP connection to a WebSocket connection.
 	clientConn, err := upgrader.Upgrade(w, req, nil)
 	if err != nil {
-		// Upgrade errors are often client-side protocol violations, but can also
-		// indicate server resource issues or network problems. The specific error
-		// message will help distinguish between client and server-side causes.
+		// Upgrade errors are often client-side protocol violations.
+		// But, they can also indicate server resource issues or network problems.
+		// The specific error message will help distinguish between client and server-side causes.
 		wsLogger.Error().Err(err).Msg("Error upgrading websocket connection request")
 		return nil, err
 	}
@@ -94,24 +96,28 @@ func UpgradeClientWebsocketConnection(
 }
 
 // ConnectWebsocketEndpoint makes a websocket connection to the websocket Endpoint.
-func ConnectWebsocketEndpoint(logger polylog.Logger, websocketURL string, headers http.Header) (*websocket.Conn, error) {
-	logger.Info().Msgf("🔗 Connecting to websocket endpoint: %s", websocketURL)
+func ConnectWebsocketEndpoint(
+	wsLogger polylog.Logger,
+	websocketURL string,
+	headers http.Header,
+) (*websocket.Conn, error) {
+	wsLogger.Info().Msgf("🔗 Connecting to websocket endpoint: %s", websocketURL)
 
 	// Ensure the websocket URL is valid.
-	u, err := url.Parse(websocketURL)
+	url, err := url.Parse(websocketURL)
 	if err != nil {
-		logger.Error().Err(err).Msgf("❌ Error parsing endpoint URL: %s", websocketURL)
+		wsLogger.Error().Err(err).Msgf("❌ Error parsing endpoint URL: %s", websocketURL)
 		return nil, err
 	}
 
 	// Connect to the websocket endpoint using the default websocket dialer.
-	conn, _, err := websocket.DefaultDialer.Dial(u.String(), headers)
+	conn, _, err := websocket.DefaultDialer.Dial(url.String(), headers)
 	if err != nil {
-		logger.Error().Err(err).Msgf("❌ Error connecting to endpoint: %s", u.String())
+		wsLogger.Error().Err(err).Msgf("❌ Error connecting to endpoint: %s", url.String())
 		return nil, err
 	}
 
-	logger.Debug().Msgf("🔗 Connected to websocket endpoint: %s", websocketURL)
+	wsLogger.Debug().Msgf("🔗 Connected to websocket endpoint: %s", websocketURL)
 
 	return conn, nil
 }
@@ -177,15 +183,15 @@ func (c *websocketConnection) handleDisconnect(err error) {
 // the connection is considered dead and the stopChan is closed.
 // See: https://pkg.go.dev/github.com/gorilla/websocket#hdr-Control_Messages
 func (c *websocketConnection) pingLoop() {
-	ticker := time.NewTicker(pingPeriod)
+	ticker := time.NewTicker(pingPeriodDuration)
 	defer ticker.Stop()
 
-	if err := c.SetReadDeadline(time.Now().Add(pongWait)); err != nil {
+	if err := c.SetReadDeadline(time.Now().Add(pongWaitDuration)); err != nil {
 		c.logger.Error().Err(err).Msg("failed to set initial read deadline")
 	}
 
 	c.SetPongHandler(func(string) error {
-		if err := c.SetReadDeadline(time.Now().Add(pongWait)); err != nil {
+		if err := c.SetReadDeadline(time.Now().Add(pongWaitDuration)); err != nil {
 			c.logger.Error().Err(err).Msg("failed to set pong handler read deadline")
 		}
 		return nil
@@ -194,7 +200,7 @@ func (c *websocketConnection) pingLoop() {
 	for {
 		select {
 		case <-ticker.C:
-			if err := c.WriteControl(websocket.PingMessage, nil, time.Now().Add(writeWait)); err != nil {
+			if err := c.WriteControl(websocket.PingMessage, nil, time.Now().Add(writeWaitDuration)); err != nil {
 				c.logger.Error().Err(err).Msg("failed to send ping to connection")
 				c.handleDisconnect(fmt.Errorf("failed to send ping: %w", err))
 				return

@@ -4,8 +4,6 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/pokt-network/poktroll/pkg/polylog"
-
 	"github.com/buildwithgrove/path/health"
 	"github.com/buildwithgrove/path/metrics/devtools"
 	protocolobservations "github.com/buildwithgrove/path/observation/protocol"
@@ -88,7 +86,7 @@ type ProtocolRequestContext interface {
 	// A Bridge is returned from this method in order to:
 	//   - Adhere to the convention of the `gateway` package handling non-protocol specific request logic
 	//   - Allow passing gateway level observations to the WebsocketsBridge
-	HandleWebsocketRequest(polylog.Logger, *http.Request, http.ResponseWriter) (WebsocketsBridge, error)
+	HandleWebsocketRequest(*http.Request, http.ResponseWriter) (WebsocketsBridge, error)
 
 	// GetObservations builds and returns the set of protocol-specific observations using the current context.
 	//

@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/pokt-network/poktroll/pkg/polylog"
 	"github.com/pokt-network/poktroll/pkg/relayer/proxy"
 	sessiontypes "github.com/pokt-network/poktroll/x/session/types"
 	sharedtypes "github.com/pokt-network/poktroll/x/shared/types"
@@ -15,66 +14,66 @@ import (
 	"github.com/buildwithgrove/path/websockets"
 )
 
-// createShannonWebsocketBridge creates a Shannon-specific websocket bridge.
+// createWebsocketBridge creates a websocket bridge.
 // This function encapsulates all Shannon-specific logic for websocket handling.
-func (rc *requestContext) createShannonWebsocketBridge(
-	logger polylog.Logger,
+func (rc *requestContext) createWebsocketBridge(
 	req *http.Request,
 	w http.ResponseWriter,
 ) (gateway.WebsocketsBridge, error) {
-	logger = logger.With(
-		"component", "shannon_websocket_bridge",
+	rc.logger = rc.logger.With(
+		"component", "websocket_bridge",
 		"endpoint_url", rc.selectedEndpoint.PublicURL(),
 	)
 
+	// Build protocol observations for the websocket bridge.
 	protocolObservations := buildWebsocketBridgeEndpointObservation(rc.logger, rc.serviceID, rc.selectedEndpoint)
 
 	// Upgrade HTTP request from client to websocket connection.
 	// - Connection is passed to websocket bridge for Client <-> Gateway communication.
-	clientConn, err := websockets.UpgradeClientWebsocketConnection(logger, req, w)
+	clientConn, err := websockets.UpgradeClientWebsocketConnection(rc.logger, req, w)
 	if err != nil {
-		return nil, fmt.Errorf("createShannonWebsocketBridge: %s", err.Error())
+		return nil, fmt.Errorf("createWebsocketBridge: %s", err.Error())
 	}
 
 	// Get the websocket-specific URL from the selected endpoint.
 	websocketURL, err := rc.selectedEndpoint.WebsocketURL()
 	if err != nil {
-		logger.Error().Err(err).Msgf("❌ Selected endpoint does not support websocket RPC type: %s", rc.selectedEndpoint.Addr())
+		rc.logger.Error().Err(err).Msgf("❌ Selected endpoint does not support websocket RPC type: %s", rc.selectedEndpoint.Addr())
 		return nil, err
 	}
 
 	// Get the headers for the websocket connection.
-	headers := getShannonWebsocketConnectionHeaders(logger, rc.selectedEndpoint)
+	headers := rc.getWebsocketConnectionHeaders()
 
 	// Connect to the endpoint
-	endpointConn, err := websockets.ConnectWebsocketEndpoint(logger, websocketURL, headers)
+	endpointConn, err := websockets.ConnectWebsocketEndpoint(rc.logger, websocketURL, headers)
 	if err != nil {
-		return nil, fmt.Errorf("createShannonWebsocketBridge: %s", err.Error())
+		return nil, fmt.Errorf("createWebsocketBridge: %s", err.Error())
 	}
 
 	// Create Shannon-specific message handlers
-	clientHandler := &shannonClientMessageHandler{
-		logger:             logger,
+	clientHandler := &websocketClientMessageHandler{
+		logger:             rc.logger,
 		selectedEndpoint:   rc.selectedEndpoint,
 		relayRequestSigner: rc.relayRequestSigner,
 		serviceID:          rc.serviceID,
 	}
-	endpointHandler := &shannonEndpointMessageHandler{
-		logger:           logger,
+	endpointHandler := &endpointMessageHandler{
+		logger:           rc.logger,
 		selectedEndpoint: rc.selectedEndpoint,
 		fullNode:         rc.fullNode,
 		serviceID:        rc.serviceID,
 	}
 
 	// Create observation publisher
-	observationPublisher := &shannonObservationPublisher{
+	observationPublisher := &observationPublisher{
 		serviceID:            rc.serviceID,
 		protocolObservations: protocolObservations,
 	}
 
 	// Create the generic websocket bridge with Shannon-specific handlers
 	bridge, err := websockets.NewBridge(
-		logger,
+		rc.logger,
 		clientConn,
 		endpointConn,
 		clientHandler,
@@ -88,19 +87,19 @@ func (rc *requestContext) createShannonWebsocketBridge(
 	return bridge, nil
 }
 
-// getShannonWebsocketConnectionHeaders returns headers for the websocket connection:
+// getWebsocketConnectionHeaders returns headers for the websocket connection:
 //   - Target-Service-Id: The service ID of the target service
 //   - App-Address: The address of the session's application
 //   - Rpc-Type: Always "websocket" for websocket connection requests
-func getShannonWebsocketConnectionHeaders(logger polylog.Logger, selectedEndpoint endpoint) http.Header {
+func (rc *requestContext) getWebsocketConnectionHeaders() http.Header {
 	headers := http.Header{}
 
 	// If the selected endpoint is a protocol endpoint, add the headers
 	// that the RelayMiner requires to forward the request to the Endpoint.
 	//
 	// Requests to fallback endpoints bypass the protocol so RelayMiner headers are not needed.
-	if !selectedEndpoint.IsFallback() {
-		headers = getRelayMinerConnectionHeaders(logger, selectedEndpoint.Session().GetHeader())
+	if !rc.getSelectedEndpoint().IsFallback() {
+		headers = rc.getRelayMinerConnectionHeaders(rc.getSelectedEndpoint().Session().GetHeader())
 	}
 
 	return headers
@@ -110,9 +109,9 @@ func getShannonWebsocketConnectionHeaders(logger polylog.Logger, selectedEndpoin
 //   - Target-Service-Id: The service ID of the target service
 //   - App-Address: The address of the session's application
 //   - Rpc-Type: Always "websocket" for websocket connection requests
-func getRelayMinerConnectionHeaders(logger polylog.Logger, sessionHeader *sessiontypes.SessionHeader) http.Header {
+func (rc *requestContext) getRelayMinerConnectionHeaders(sessionHeader *sessiontypes.SessionHeader) http.Header {
 	if sessionHeader == nil {
-		logger.Error().Msg("❌ SHOULD NEVER HAPPEN: Error getting relay miner connection headers: session header is nil")
+		rc.logger.Error().Msg("❌ SHOULD NEVER HAPPEN: Error getting relay miner connection headers: session header is nil")
 		return http.Header{}
 	}
 

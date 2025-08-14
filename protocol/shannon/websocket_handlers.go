@@ -4,23 +4,24 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/pokt-network/poktroll/pkg/polylog"
+	servicetypes "github.com/pokt-network/poktroll/x/service/types"
+	sdk "github.com/pokt-network/shannon-sdk"
+
 	"github.com/buildwithgrove/path/gateway"
 	"github.com/buildwithgrove/path/observation"
 	protocolobservations "github.com/buildwithgrove/path/observation/protocol"
 	"github.com/buildwithgrove/path/protocol"
 	"github.com/buildwithgrove/path/qos/jsonrpc"
 	"github.com/buildwithgrove/path/websockets"
-	"github.com/pokt-network/poktroll/pkg/polylog"
-	servicetypes "github.com/pokt-network/poktroll/x/service/types"
-	sdk "github.com/pokt-network/shannon-sdk"
 )
 
 // ---------- Shannon Client Message Handler ----------
 
-var _ websockets.MessageHandler = &shannonClientMessageHandler{}
+var _ websockets.WebSocketMessageHandler = &websocketClientMessageHandler{}
 
-// shannonClientMessageHandler handles client messages with Shannon-specific logic.
-type shannonClientMessageHandler struct {
+// websocketClientMessageHandler handles websocket client messages
+type websocketClientMessageHandler struct {
 	logger             polylog.Logger
 	selectedEndpoint   endpoint
 	relayRequestSigner RelayRequestSigner
@@ -28,7 +29,7 @@ type shannonClientMessageHandler struct {
 }
 
 // HandleMessage processes a message from the client.
-func (h *shannonClientMessageHandler) HandleMessage(msg websockets.Message) ([]byte, error) {
+func (h *websocketClientMessageHandler) HandleMessage(msg websockets.WebSocketMessage) ([]byte, error) {
 	h.logger.Debug().Msgf("received message from client: %s", string(msg.Data))
 
 	// If the selected endpoint is a fallback endpoint, skip protocol-level signing of the request.
@@ -36,7 +37,7 @@ func (h *shannonClientMessageHandler) HandleMessage(msg websockets.Message) ([]b
 		return msg.Data, nil
 	}
 
-	// Sign the client message before sending it to the Endpoint
+	// Sign the client message before sending it to the Endpoint on the network.
 	clientMessageBz, err := h.signClientMessage(msg)
 	if err != nil {
 		return h.getClientErrorResponse(msg, -32000, fmt.Sprintf("Failed to sign request: %s", err.Error()))
@@ -46,7 +47,7 @@ func (h *shannonClientMessageHandler) HandleMessage(msg websockets.Message) ([]b
 }
 
 // signClientMessage signs the client message in order to send it to the Endpoint
-func (h *shannonClientMessageHandler) signClientMessage(msg websockets.Message) ([]byte, error) {
+func (h *websocketClientMessageHandler) signClientMessage(msg websockets.WebSocketMessage) ([]byte, error) {
 	unsignedRelayRequest := &servicetypes.RelayRequest{
 		Meta: servicetypes.RelayRequestMetadata{
 			SessionHeader:           h.selectedEndpoint.Session().GetHeader(),
@@ -56,12 +57,11 @@ func (h *shannonClientMessageHandler) signClientMessage(msg websockets.Message) 
 	}
 
 	app := h.selectedEndpoint.Session().GetApplication()
-	// SHOULD NEVER HAPPEN: `signClientMessage` is called only for protocol endpoints.
-	// But we guard against it anyway.
 	if app == nil {
-		return nil, fmt.Errorf("session application is nil")
+		return nil, fmt.Errorf("SHOULD NEVER HAPPEN: session application is nil during a call to a protocol endpoint")
 	}
 
+	// Sign the unsigned relay request.
 	signedRelayRequest, err := h.relayRequestSigner.SignRelayRequest(unsignedRelayRequest, *app)
 	if err != nil {
 		return nil, fmt.Errorf("error signing client message: %s", err.Error())
@@ -79,7 +79,7 @@ func (h *shannonClientMessageHandler) signClientMessage(msg websockets.Message) 
 
 // getClientErrorResponse creates a JSON-RPC error response to the client.
 // Attempts to extract the request ID from the original message for proper error formatting.
-func (h *shannonClientMessageHandler) getClientErrorResponse(originalMessage websockets.Message, errorCode int, errorMessage string) ([]byte, error) {
+func (h *websocketClientMessageHandler) getClientErrorResponse(originalMessage websockets.WebSocketMessage, errorCode int, errorMessage string) ([]byte, error) {
 	// Try to extract the request ID from the original message
 	var requestID jsonrpc.ID
 
@@ -111,10 +111,10 @@ func (h *shannonClientMessageHandler) getClientErrorResponse(originalMessage web
 
 // ---------- Shannon Endpoint Message Handler ----------
 
-var _ websockets.MessageHandler = &shannonEndpointMessageHandler{}
+var _ websockets.WebSocketMessageHandler = &endpointMessageHandler{}
 
-// shannonEndpointMessageHandler handles endpoint messages with Shannon-specific logic.
-type shannonEndpointMessageHandler struct {
+// endpointMessageHandler handles endpoint messages with Shannon-specific logic.
+type endpointMessageHandler struct {
 	logger           polylog.Logger
 	selectedEndpoint endpoint
 	fullNode         FullNode
@@ -122,7 +122,7 @@ type shannonEndpointMessageHandler struct {
 }
 
 // HandleMessage processes a message from the endpoint.
-func (h *shannonEndpointMessageHandler) HandleMessage(msg websockets.Message) ([]byte, error) {
+func (h *endpointMessageHandler) HandleMessage(msg websockets.WebSocketMessage) ([]byte, error) {
 	h.logger.Debug().Msgf("received message from endpoint: %s", string(msg.Data))
 
 	// If the selected endpoint is a fallback endpoint, skip protocol-level validation of the relay response.
@@ -141,10 +141,10 @@ func (h *shannonEndpointMessageHandler) HandleMessage(msg websockets.Message) ([
 
 // ---------- Shannon Observation Publisher ----------
 
-var _ websockets.ObservationPublisher = &shannonObservationPublisher{}
+var _ websockets.ObservationPublisher = &observationPublisher{}
 
-// shannonObservationPublisher handles publishing Shannon-specific observations.
-type shannonObservationPublisher struct {
+// observationPublisher handles publishing Shannon-specific observations.
+type observationPublisher struct {
 	serviceID            protocol.ServiceID
 	protocolObservations *protocolobservations.Observations
 	gatewayObservations  *observation.GatewayObservations
@@ -153,7 +153,7 @@ type shannonObservationPublisher struct {
 
 // SetObservationContext sets the gateway observations and data reporter.
 // This is called by the gateway when starting the bridge.
-func (p *shannonObservationPublisher) SetObservationContext(
+func (p *observationPublisher) SetObservationContext(
 	gatewayObservations *observation.GatewayObservations,
 	dataReporter gateway.RequestResponseReporter,
 ) {
@@ -162,7 +162,7 @@ func (p *shannonObservationPublisher) SetObservationContext(
 }
 
 // PublishObservations publishes the Shannon-specific observations for this websocket message.
-func (p *shannonObservationPublisher) PublishObservations() {
+func (p *observationPublisher) PublishObservations() {
 	if p.dataReporter == nil || p.gatewayObservations == nil {
 		return
 	}

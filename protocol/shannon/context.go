@@ -23,6 +23,13 @@ import (
 	"github.com/buildwithgrove/path/protocol"
 )
 
+// TODO_IMPROVE(@commoddity): Re-evaluate how much of this code should live in the shannon-sdk package.
+
+// TODO_TECHDEBT(@olshansk): Cleanup the code in this file by:
+// - Renaming this to request_context.go
+// - Moving websocket code to a dedicated file
+// - Moving HTTP request code to a dedicated file
+
 // TODO_TECHDEBT(@adshmh): Make this threshold configurable.
 //
 // Maximum time to wait before using a fallback endpoint.
@@ -169,32 +176,24 @@ func (rc *requestContext) executeRelayRequest(payload protocol.Payload) (protoco
 
 // HandleWebsocketRequest opens a persistent websocket connection to the selected endpoint.
 // Satisfies gateway.ProtocolRequestContext interface.
-func (rc *requestContext) HandleWebsocketRequest(logger polylog.Logger, req *http.Request, w http.ResponseWriter) (gateway.WebsocketsBridge, error) {
+func (rc *requestContext) HandleWebsocketRequest(req *http.Request, w http.ResponseWriter) (gateway.WebsocketsBridge, error) {
 	if rc.selectedEndpoint == nil {
 		return nil, fmt.Errorf("handleWebsocketRequest: no endpoint has been selected on service %s", rc.serviceID)
 	}
 
-	selectedEndpoint := rc.getSelectedEndpoint()
+	rc.logger = rc.getHydratedLogger("HandleWebsocketRequest")
 
-	wsLogger := logger.With(
-		"method_name", "HandleWebsocketRequest",
-		"endpoint_url", selectedEndpoint.PublicURL(),
-		"endpoint_addr", selectedEndpoint.Addr(),
-		"service_id", rc.serviceID,
-	)
-
-	// Record endpoint query time.
-	endpointQueryTime := time.Now()
+	// Record websocket request start time.
+	websocketRequestStartTime := time.Now()
 
 	// Create Shannon-specific websocket bridge for the selected endpoint.
-	// One bridge = one persistent connection to a single endpoint.
-	// Bridge is returned to Gateway package to pass gateway-level observations
-	// without leaking Gateway logic to the protocol package.
-	bridge, err := rc.createShannonWebsocketBridge(wsLogger, req, w)
+	// One bridge ==== one persistent connection to a single endpoint.
+	// A bridge is returned to Gateway package to pass gateway-level observations without leaking Gateway logic to the protocol package.
+	bridge, err := rc.createWebsocketBridge(req, w)
 	if err != nil {
 		wrappedErr := fmt.Errorf("%w: %v", errCreatingWebSocketConnection, err)
-		wsLogger.Error().Err(wrappedErr).Msg("Error creating websocket bridge")
-		return nil, rc.handleEndpointWebsocketError(endpointQueryTime, wrappedErr)
+		rc.logger.Error().Err(wrappedErr).Msg("Error creating websocket bridge")
+		return nil, rc.handleEndpointWebsocketError(websocketRequestStartTime, wrappedErr)
 	}
 
 	return bridge, nil
@@ -680,33 +679,40 @@ func (rc *requestContext) handleEndpointError(
 // handleEndpointWebsocketError records endpoint error observation with enhanced classification.
 // Tracks endpoint error in observations for metrics and includes RelayMinerError data.
 func (rc *requestContext) handleEndpointWebsocketError(
-	endpointQueryTime time.Time,
+	webSocketRequestStartTime time.Time,
 	endpointErr error,
 ) error {
 	hydratedLogger := rc.getHydratedLogger("handleEndpointError")
 	selectedEndpointAddr := rc.selectedEndpoint.Addr()
 
 	// Error classification based on trusted error sources only
-	endpointErrorType, _ := classifyRelayError(hydratedLogger, endpointErr)
+	endpointErrorType, recommendedSanctionType := classifyRelayError(hydratedLogger, endpointErr)
+
+	// TODO(@commoddity): Implement websocket-specific sanctioning.
+	// Currently websocket failures could exclude endpoints from HTTP requests.
+	// Should track websocket vs HTTP failures separately.
+	hydratedLogger.Debug().
+		Str("sanction_type", recommendedSanctionType.String()).
+		Msg("Overriding recommended sanction type for websocket error.")
+	recommendedSanctionType = protocolobservations.ShannonSanctionType_SHANNON_SANCTION_UNSPECIFIED
 
 	// Enhanced logging with error type and error source classification
 	hydratedLogger.Error().
 		Err(endpointErr).
 		Str("error_type", endpointErrorType.String()).
+		Str("sanction_type", recommendedSanctionType.String()).
 		Msg("relay error occurred. Service request will fail.")
 
 	// Build enhanced observation with RelayMinerError data from request context
+	errorDetails := fmt.Sprintf("websocket error: %v", endpointErr)
 	endpointObs := buildEndpointErrorObservation(
 		rc.logger,
 		rc.selectedEndpoint,
-		endpointQueryTime,
+		webSocketRequestStartTime,
 		time.Now(), // Timestamp: endpoint query completed.
 		endpointErrorType,
-		fmt.Sprintf("websocket error: %v", endpointErr),
-		// TODO(@commoddity): Implement websocket-specific sanctioning.
-		// Currently websocket failures could exclude endpoints from HTTP requests.
-		// Should track websocket vs HTTP failures separately.
-		protocolobservations.ShannonSanctionType_SHANNON_SANCTION_UNSPECIFIED,
+		errorDetails,
+		recommendedSanctionType,
 		rc.currentRelayMinerError, // Use RelayMinerError data from request context
 	)
 
