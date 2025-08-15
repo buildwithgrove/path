@@ -11,6 +11,9 @@ go_docs: ## Start Go documentation server
 docusaurus_start: ## Start docusaurus server
 	(cd docusaurus && yarn install && yarn start --port 4000)
 
+.PHONY: docs_serve
+docs_serve: docusaurus_start ## Start documentation server (alias for docusaurus_start)
+
 # Uses https://github.com/PaloAltoNetworks/docusaurus-openapi-docs to generate OpenAPI docs.
 # This is a custom plugin for Docusaurus that allows us to embed the OpenAPI spec into the docs.
 # Outputs docs files to docusaurus/docs/learn/api/*.mdx
