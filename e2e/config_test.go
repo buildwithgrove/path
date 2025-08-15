@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"slices"
+	"strconv"
 	"strings"
 	"time"
 
@@ -47,7 +48,7 @@ func getEnvConfig() (envConfig, error) {
 	}
 
 	// Parse WebSocket-only mode
-	websocketsOnly := strings.ToLower(os.Getenv(envTestWebSockets)) == "true"
+	websocketsOnly, _ := strconv.ParseBool(os.Getenv(envTestWebSockets))
 
 	return envConfig{
 		testMode:       testMode,

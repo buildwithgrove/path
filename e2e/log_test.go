@@ -1,5 +1,27 @@
 //go:build e2e
 
+// Package e2e provides logging, formatting, and progress bar utilities for PATH E2E tests.
+//
+// This file contains all visual output helpers, ANSI color constants, and progress bar
+// management for both HTTP and WebSocket testing modes. It handles terminal formatting,
+// colored output, and interactive progress visualization during load tests.
+//
+// VISUAL OUTPUT FEATURES:
+// - ANSI color constants for terminal output (RED, GREEN, YELLOW, BLUE, etc.)
+// - Color helper functions for success rates, latency values, and HTTP status codes
+// - Progress bar management with automatic CI environment detection
+// - Formatted latency display (milliseconds)
+// - Visual feedback for long-running test operations
+//
+// PROGRESS BAR SYSTEM:
+// - Automatically disabled in CI environments for clean log output
+// - Supports multiple concurrent progress bars for parallel method testing
+// - Custom formatting with method names, counters, and percentage completion
+// - Graceful fallback to text-based progress when bars can't be created
+//
+// This separation ensures clean visual presentation while keeping display logic
+// separate from test execution, calculation, and validation concerns.
+
 package e2e
 
 import (

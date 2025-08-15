@@ -1,5 +1,28 @@
 //go:build e2e
 
+// Package e2e provides metrics calculation functions for PATH E2E and load testing.
+//
+// This file contains all mathematical and statistical calculation logic used to process
+// test results from both HTTP (Vegeta) and WebSocket test executions. It handles success
+// rate calculations, latency percentile computations, and service-level metric aggregation.
+//
+// CALCULATION CATEGORIES:
+// - Success Rate Calculations: HTTP success rates and JSON-RPC validation success rates
+// - Latency Calculations: P50, P90, P95, P99 percentiles and average latency computation
+// - Service Summary Calculations: Cross-method aggregation for service-level reporting
+// - Error Collection: Aggregation of error counts and types across test methods
+//
+// STATISTICAL FUNCTIONS:
+// - Percentile calculation using ceiling-based indexing for sorted latency arrays
+// - Average latency computation across all test results
+// - Success rate calculations for HTTP responses and JSON-RPC validation steps
+// - Service-level metric aggregation from individual method results
+//
+// TRANSPORT AGNOSTIC:
+// All calculation functions work with the shared methodMetrics and VegetaResult structures,
+// making them usable for both HTTP (Vegeta) and WebSocket test result processing.
+// This ensures consistent metric calculation regardless of the underlying transport protocol.
+
 package e2e
 
 import (
@@ -11,36 +34,36 @@ import (
 // ===== Success Rate Calculations =====
 
 // calculateHTTPSuccessRate computes the HTTP success rate for metrics
-func calculateHTTPSuccessRate(m *MethodMetrics) {
-	m.RequestCount = m.Success + m.Failed
-	if m.RequestCount > 0 {
-		m.SuccessRate = float64(m.Success) / float64(m.RequestCount)
+func calculateHTTPSuccessRate(m *methodMetrics) {
+	m.requestCount = m.success + m.failed
+	if m.requestCount > 0 {
+		m.successRate = float64(m.success) / float64(m.requestCount)
 	}
 }
 
 // calculateJSONRPCSuccessRates computes all JSON-RPC related success rates
-func calculateJSONRPCSuccessRates(m *MethodMetrics) {
+func calculateJSONRPCSuccessRates(m *methodMetrics) {
 	// JSON-RPC unmarshal success rate
-	totalJSONAttempts := m.JSONRPCResponses + m.JSONRPCUnmarshalErrors
+	totalJSONAttempts := m.jsonrpcResponses + m.jsonrpcUnmarshalErrors
 	if totalJSONAttempts > 0 {
-		m.JSONRPCSuccessRate = float64(m.JSONRPCResponses) / float64(totalJSONAttempts)
+		m.jsonrpcSuccessRate = float64(m.jsonrpcResponses) / float64(totalJSONAttempts)
 	}
 
 	// Only calculate these if we have valid JSON-RPC responses
-	if m.JSONRPCResponses > 0 {
+	if m.jsonrpcResponses > 0 {
 		// Error field absence rate (success = no error field)
-		m.JSONRPCErrorFieldRate = float64(m.JSONRPCResponses-m.JSONRPCErrorField) / float64(m.JSONRPCResponses)
+		m.jsonrpcErrorFieldRate = float64(m.jsonrpcResponses-m.jsonrpcErrorField) / float64(m.jsonrpcResponses)
 
 		// Non-nil result rate
-		m.JSONRPCResultRate = float64(m.JSONRPCResponses-m.JSONRPCNilResult) / float64(m.JSONRPCResponses)
+		m.jsonrpcResultRate = float64(m.jsonrpcResponses-m.jsonrpcNilResult) / float64(m.jsonrpcResponses)
 
 		// Validation success rate
-		m.JSONRPCValidateRate = float64(m.JSONRPCResponses-m.JSONRPCValidateErrors) / float64(m.JSONRPCResponses)
+		m.jsonrpcValidateRate = float64(m.jsonrpcResponses-m.jsonrpcValidateErrors) / float64(m.jsonrpcResponses)
 	}
 }
 
-// calculateAllSuccessRates computes all success rates for a MethodMetrics struct
-func calculateAllSuccessRates(m *MethodMetrics) {
+// calculateAllSuccessRates computes all success rates for a methodMetrics struct
+func calculateAllSuccessRates(m *methodMetrics) {
 	calculateHTTPSuccessRate(m)
 	calculateJSONRPCSuccessRates(m)
 }
@@ -48,21 +71,21 @@ func calculateAllSuccessRates(m *MethodMetrics) {
 // ===== Latency Calculations =====
 
 // calculatePercentiles computes P50, P95, and P99 latency percentiles
-func calculatePercentiles(m *MethodMetrics) {
-	if len(m.Results) == 0 {
+func calculatePercentiles(m *methodMetrics) {
+	if len(m.results) == 0 {
 		return
 	}
 
 	// Extract latencies
-	latencies := extractLatencies(m.Results)
+	latencies := extractLatencies(m.results)
 
 	// Sort latencies
 	slices.Sort(latencies)
 
 	// Calculate percentiles
-	m.P50 = percentile(latencies, 50)
-	m.P95 = percentile(latencies, 95)
-	m.P99 = percentile(latencies, 99)
+	m.p50 = percentile(latencies, 50)
+	m.p95 = percentile(latencies, 95)
+	m.p99 = percentile(latencies, 99)
 }
 
 // extractLatencies extracts latency values from results
@@ -157,7 +180,7 @@ func calculateAvgLatency(latencies []time.Duration) time.Duration {
 // ===== Service Summary Calculations =====
 
 // calculateServiceAverages calculates average metrics across all methods for a service
-func calculateServiceAverages(summary *serviceSummary, methodResults map[string]*MethodMetrics) {
+func calculateServiceAverages(summary *serviceSummary, methodResults map[string]*methodMetrics) {
 	var totalLatency time.Duration
 	var totalP50Latency time.Duration
 	var totalP90Latency time.Duration
@@ -166,12 +189,12 @@ func calculateServiceAverages(summary *serviceSummary, methodResults map[string]
 
 	for _, metrics := range methodResults {
 		// Skip methods with no data
-		if metrics == nil || len(metrics.Results) == 0 {
+		if metrics == nil || len(metrics.results) == 0 {
 			continue
 		}
 
 		// Extract latencies for calculations
-		latencies := extractLatencies(metrics.Results)
+		latencies := extractLatencies(metrics.results)
 
 		// Calculate percentiles for this method
 		p50 := calculateP50(latencies)
@@ -182,13 +205,13 @@ func calculateServiceAverages(summary *serviceSummary, methodResults map[string]
 		totalLatency += avgLatency
 		totalP50Latency += p50
 		totalP90Latency += p90
-		totalSuccessRate += metrics.SuccessRate
+		totalSuccessRate += metrics.successRate
 		methodsWithResults++
 
 		// Accumulate totals for the service summary
-		summary.TotalRequests += metrics.RequestCount
-		summary.TotalSuccess += metrics.Success
-		summary.TotalFailure += metrics.Failed
+		summary.TotalRequests += metrics.requestCount
+		summary.TotalSuccess += metrics.success
+		summary.TotalFailure += metrics.failed
 	}
 
 	// Calculate averages if we have methods with results
@@ -201,12 +224,12 @@ func calculateServiceAverages(summary *serviceSummary, methodResults map[string]
 }
 
 // collectServiceErrors collects all errors from method metrics into the service summary
-func collectServiceErrors(summary *serviceSummary, methodResults map[string]*MethodMetrics) {
+func collectServiceErrors(summary *serviceSummary, methodResults map[string]*methodMetrics) {
 	summary.MethodErrors = make(map[string]map[string]int)
 	summary.TotalErrors = 0
 
 	for method, metrics := range methodResults {
-		if metrics == nil || len(metrics.Errors) == 0 {
+		if metrics == nil || len(metrics.errors) == 0 {
 			continue
 		}
 
@@ -216,7 +239,7 @@ func collectServiceErrors(summary *serviceSummary, methodResults map[string]*Met
 		}
 
 		// Copy errors to summary
-		for errMsg, count := range metrics.Errors {
+		for errMsg, count := range metrics.errors {
 			summary.MethodErrors[method][errMsg] = count
 			summary.TotalErrors += count
 		}

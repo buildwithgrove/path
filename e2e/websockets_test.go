@@ -145,7 +145,11 @@ func (c *websocketTestClient) sendJSONRPCRequest(ctx context.Context, req jsonrp
 }
 
 // sendEVMRequest sends an EVM JSON-RPC request with the specified method and parameters
-func (c *websocketTestClient) sendEVMRequest(ctx context.Context, method string, params jsonrpc.Params) (*jsonrpc.Response, error) {
+func (c *websocketTestClient) sendEVMRequest(
+	ctx context.Context,
+	method string,
+	params jsonrpc.Params,
+) (*jsonrpc.Response, error) {
 	req := jsonrpc.Request{
 		JSONRPC: jsonrpc.Version2,
 		ID:      jsonrpc.IDFromInt(1),
@@ -243,19 +247,19 @@ type websocketTestResult struct {
 }
 
 // validateWebSocketResults validates WebSocket test results using the existing validation logic
-func validateWebSocketResults(results []*websocketTestResult, serviceID string) map[string]*MethodMetrics {
-	metrics := make(map[string]*MethodMetrics)
+func validateWebSocketResults(results []*websocketTestResult, serviceID string) map[string]*methodMetrics {
+	metrics := make(map[string]*methodMetrics)
 
 	for _, result := range results {
 		// Initialize method metrics if not exists
 		if metrics[result.Method] == nil {
-			metrics[result.Method] = &MethodMetrics{
-				Method:                  result.Method,
-				StatusCodes:             make(map[int]int),
-				Errors:                  make(map[string]int),
-				Results:                 make([]*VegetaResult, 0),
-				JSONRPCParseErrors:      make(map[string]int),
-				JSONRPCValidationErrors: make(map[string]int),
+			metrics[result.Method] = &methodMetrics{
+				method:                  result.Method,
+				statusCodes:             make(map[int]int),
+				errors:                  make(map[string]int),
+				results:                 make([]*VegetaResult, 0),
+				jsonrpcParseErrors:      make(map[string]int),
+				jsonrpcValidationErrors: make(map[string]int),
 			}
 		}
 
@@ -267,14 +271,14 @@ func validateWebSocketResults(results []*websocketTestResult, serviceID string) 
 		}
 
 		if result.Error != nil {
-			methodMetrics.Failed++
-			methodMetrics.Errors[result.Error.Error()]++
+			methodMetrics.failed++
+			methodMetrics.errors[result.Error.Error()]++
 			vegetaResult.Code = 0 // No HTTP status for WebSocket errors
 			vegetaResult.Error = result.Error.Error()
 			// For WebSocket errors, we don't have a valid response body
 			vegetaResult.Body = []byte{}
 		} else {
-			methodMetrics.Success++
+			methodMetrics.success++
 			vegetaResult.Code = 200 // Simulate successful WebSocket connection
 
 			// Validate JSON-RPC response if we have one
@@ -289,8 +293,8 @@ func validateWebSocketResults(results []*websocketTestResult, serviceID string) 
 			}
 		}
 
-		methodMetrics.Results = append(methodMetrics.Results, vegetaResult)
-		methodMetrics.StatusCodes[int(vegetaResult.Code)]++
+		methodMetrics.results = append(methodMetrics.results, vegetaResult)
+		methodMetrics.statusCodes[int(vegetaResult.Code)]++
 	}
 
 	// Calculate success rates and percentiles for all methods using existing functions
@@ -358,7 +362,13 @@ func validateAllWebSocketMethods(
 
 // runWebSocketServiceTest runs WebSocket-based E2E tests for a single service.
 // This function uses a single WebSocket connection to test all EVM methods sequentially.
-func runWebSocketServiceTest(t *testing.T, ctx context.Context, ts *TestService, results map[string]*MethodMetrics, resultsMutex *sync.Mutex) (serviceTestFailed bool) {
+func runWebSocketServiceTest(
+	t *testing.T,
+	ctx context.Context,
+	ts *TestService,
+	results map[string]*methodMetrics,
+	resultsMutex *sync.Mutex,
+) (serviceTestFailed bool) {
 	fmt.Printf("\n%s🔌 Starting WebSocket tests for %s%s\n", BOLD_CYAN, ts.ServiceID, RESET)
 
 	// Get only EVM methods for WebSocket testing

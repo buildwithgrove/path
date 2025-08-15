@@ -1,7 +1,21 @@
 //go:build e2e
 
-// Package e2e provides HTTP load testing functionality using Vegeta for PATH E2E tests.
-//
+package e2e
+
+import (
+	"context"
+	"fmt"
+	"strings"
+	"sync"
+	"testing"
+	"time"
+
+	"github.com/cheggaaa/pb/v3"
+	vegeta "github.com/tsenart/vegeta/lib"
+
+	"github.com/buildwithgrove/path/protocol"
+)
+
 // This file contains HTTP-specific test configuration, execution, and metrics collection.
 // It uses the Vegeta load testing library (https://github.com/tsenart/vegeta) to perform
 // high-performance HTTP requests against PATH gateway endpoints.
@@ -19,21 +33,6 @@
 // 4. Results are collected and validated for HTTP status codes and JSON-RPC responses
 // 5. Metrics are aggregated and compared against configured thresholds
 // 6. Service summaries provide overall test results and failure analysis
-package e2e
-
-import (
-	"context"
-	"fmt"
-	"strings"
-	"sync"
-	"testing"
-	"time"
-
-	"github.com/cheggaaa/pb/v3"
-	vegeta "github.com/tsenart/vegeta/lib"
-
-	"github.com/buildwithgrove/path/protocol"
-)
 
 // ===== Type Aliases for Vegeta =====
 // These aliases allow us to use Vegeta types in our exported structs
@@ -42,38 +41,38 @@ type VegetaResult = vegeta.Result
 
 // ===== Metrics Types (Exported for use across test files) =====
 
-// MethodMetrics stores metrics for each method
+// methodMetrics stores metrics for each method
 // Tracks HTTP and JSON-RPC results and derived rates
 // Used for assertion and reporting
-type MethodMetrics struct {
-	Method       string          // RPC method name
-	Success      int             // Number of successful requests
-	Failed       int             // Number of failed requests
-	StatusCodes  map[int]int     // Count of each status code
-	Errors       map[string]int  // Count of each error type
-	Results      []*VegetaResult // All raw results for this method
-	RequestCount int             // Total number of requests
-	SuccessRate  float64         // Success rate as a ratio (0-1)
-	P50          time.Duration   // 50th percentile latency
-	P95          time.Duration   // 95th percentile latency
-	P99          time.Duration   // 99th percentile latency
+type methodMetrics struct {
+	method       string          // RPC method name
+	success      int             // Number of successful requests
+	failed       int             // Number of failed requests
+	statusCodes  map[int]int     // Count of each status code
+	errors       map[string]int  // Count of each error type
+	results      []*VegetaResult // All raw results for this method
+	requestCount int             // Total number of requests
+	successRate  float64         // Success rate as a ratio (0-1)
+	p50          time.Duration   // 50th percentile latency
+	p95          time.Duration   // 95th percentile latency
+	p99          time.Duration   // 99th percentile latency
 
 	// JSON-RPC specific validation metrics
-	JSONRPCResponses       int // Count of responses we could unmarshal as JSON-RPC
-	JSONRPCUnmarshalErrors int // Count of responses we couldn't unmarshal
-	JSONRPCErrorField      int // Count of responses with non-nil Error field
-	JSONRPCNilResult       int // Count of responses with nil Result field
-	JSONRPCValidateErrors  int // Count of responses that fail validation
+	jsonrpcResponses       int // Count of responses we could unmarshal as JSON-RPC
+	jsonrpcUnmarshalErrors int // Count of responses we couldn't unmarshal
+	jsonrpcErrorField      int // Count of responses with non-nil Error field
+	jsonrpcNilResult       int // Count of responses with nil Result field
+	jsonrpcValidateErrors  int // Count of responses that fail validation
 
 	// Error tracking with response previews
-	JSONRPCParseErrors      map[string]int // Parse errors with response previews
-	JSONRPCValidationErrors map[string]int // Validation errors with response previews
+	jsonrpcParseErrors      map[string]int // Parse errors with response previews
+	jsonrpcValidationErrors map[string]int // Validation errors with response previews
 
 	// Success rates for specific checks
-	JSONRPCSuccessRate    float64 // Success rate for JSON-RPC unmarshaling
-	JSONRPCErrorFieldRate float64 // Error field absent rate (success = no error)
-	JSONRPCResultRate     float64 // Non-nil result rate
-	JSONRPCValidateRate   float64 // Validation success rate
+	jsonrpcSuccessRate    float64 // Success rate for JSON-RPC unmarshaling
+	jsonrpcErrorFieldRate float64 // Error field absent rate (success = no error)
+	jsonrpcResultRate     float64 // Non-nil result rate
+	jsonrpcValidateRate   float64 // Validation success rate
 }
 
 // serviceSummary holds aggregated metrics for a service
@@ -97,7 +96,11 @@ type serviceSummary struct {
 }
 
 // NewServiceSummary creates a new service summary
-func newServiceSummary(serviceID protocol.ServiceID, serviceConfig ServiceConfig, testMethodsMap map[string]testMethodConfig) *serviceSummary {
+func newServiceSummary(
+	serviceID protocol.ServiceID,
+	serviceConfig ServiceConfig,
+	testMethodsMap map[string]testMethodConfig,
+) *serviceSummary {
 	return &serviceSummary{
 		ServiceID:     serviceID,
 		ServiceConfig: serviceConfig,
@@ -115,27 +118,16 @@ func newServiceSummary(serviceID protocol.ServiceID, serviceConfig ServiceConfig
 // 4. runAttack() - Single method load test execution
 // 5. Progress bar management and result processing
 
-// runServiceTest runs the HTTP-based E2E test for a single service in a test case.
-// This function handles only HTTP tests using Vegeta.
-// NOTE: This function is now primarily used for HTTP-only test scenarios.
-// For combined HTTP/WebSocket testing, use runAllServiceTests() in main_test.go.
-func runServiceTest(t *testing.T, ctx context.Context, ts *TestService) (serviceTestFailed bool) {
-	results := make(map[string]*MethodMetrics)
-	var resultsMutex sync.Mutex
-
-	// Run HTTP tests
-	runHTTPServiceTest(t, ctx, ts, results, &resultsMutex)
-
-	// Calculate and validate the service summary
-	serviceTestFailed = calculateServiceSummary(t, ts, results)
-
-	return serviceTestFailed
-}
-
 // runHTTPServiceTest runs the HTTP-based E2E test for a single service using Vegeta.
 // This function focuses exclusively on HTTP request testing and metrics collection.
 // Results are populated into the provided results map for further validation.
-func runHTTPServiceTest(t *testing.T, ctx context.Context, ts *TestService, results map[string]*MethodMetrics, resultsMutex *sync.Mutex) {
+func runHTTPServiceTest(
+	t *testing.T,
+	ctx context.Context,
+	ts *TestService,
+	results map[string]*methodMetrics,
+	resultsMutex *sync.Mutex,
+) {
 	progBars, err := newProgressBars(ts.testMethodsMap)
 	if err != nil {
 		t.Fatalf("Failed to create progress bars: %v", err)
@@ -169,7 +161,12 @@ func runHTTPServiceTest(t *testing.T, ctx context.Context, ts *TestService, resu
 }
 
 // runMethodAttack executes the attack for a single JSON-RPC method and returns metrics.
-func runMethodAttack(ctx context.Context, method string, ts *TestService, progBar *pb.ProgressBar) *MethodMetrics {
+func runMethodAttack(
+	ctx context.Context,
+	method string,
+	ts *TestService,
+	progBar *pb.ProgressBar,
+) *methodMetrics {
 	select {
 	case <-ctx.Done():
 		fmt.Printf("Method %s canceled", method)
@@ -193,7 +190,12 @@ func runMethodAttack(ctx context.Context, method string, ts *TestService, progBa
 //
 // This function sends `serviceConfig.RequestsPerMethod` requests at calculated RPS.
 // See Vegeta documentation: https://github.com/tsenart/vegeta
-func runAttack(ctx context.Context, method string, ts *TestService, progressBar *pb.ProgressBar) *MethodMetrics {
+func runAttack(
+	ctx context.Context,
+	method string,
+	ts *TestService,
+	progressBar *pb.ProgressBar,
+) *methodMetrics {
 	methodConfig := ts.testMethodsMap[method]
 
 	// Calculate RPS per method, rounding up and ensuring at least 1 RPS
@@ -258,16 +260,16 @@ func runAttack(ctx context.Context, method string, ts *TestService, progressBar 
 // ===== Vegeta Configuration and Setup =====
 
 // initMethodMetrics
-// • Initializes MethodMetrics struct for a method
-func initMethodMetrics(method string, totalRequests int) *MethodMetrics {
-	return &MethodMetrics{
-		Method:      method,
-		StatusCodes: make(map[int]int),
-		Errors:      make(map[string]int),
-		Results:     make([]*vegeta.Result, 0, totalRequests),
+// • Initializes methodMetrics struct for a method
+func initMethodMetrics(method string, totalRequests int) *methodMetrics {
+	return &methodMetrics{
+		method:      method,
+		statusCodes: make(map[int]int),
+		errors:      make(map[string]int),
+		results:     make([]*vegeta.Result, 0, totalRequests),
 		// Initialize the error tracking fields
-		JSONRPCParseErrors:      make(map[string]int),
-		JSONRPCValidationErrors: make(map[string]int),
+		jsonrpcParseErrors:      make(map[string]int),
+		jsonrpcValidationErrors: make(map[string]int),
 	}
 }
 
@@ -290,7 +292,7 @@ func startResultsCollector(
 	ts *TestService,
 	method string,
 	methodConfig testMethodConfig,
-	metrics *MethodMetrics,
+	metrics *methodMetrics,
 	resultsChan <-chan *vegeta.Result,
 	resultsWg *sync.WaitGroup,
 	progressBar *pb.ProgressBar,
@@ -330,7 +332,10 @@ func startResultsCollector(
 
 // makeTargeter
 // • Returns a vegeta.Targeter that enforces the request limit
-func makeTargeter(methodConfig testMethodConfig, target vegeta.Targeter) vegeta.Targeter {
+func makeTargeter(
+	methodConfig testMethodConfig,
+	target vegeta.Targeter,
+) vegeta.Targeter {
 	requestSlots := methodConfig.serviceConfig.RequestsPerMethod
 
 	return func(tgt *vegeta.Target) error {
@@ -368,7 +373,7 @@ attackLoop:
 // processResult
 // • Updates metrics based on a single result
 func processResult(
-	m *MethodMetrics,
+	m *methodMetrics,
 	result *vegeta.Result,
 	serviceType serviceType,
 	httpRequestBody []byte,
@@ -378,15 +383,15 @@ func processResult(
 		return
 	}
 	// Store the raw result
-	m.Results = append(m.Results, result)
+	m.results = append(m.results, result)
 	// Process HTTP result
 	if result.Code >= 200 && result.Code < 300 && result.Error == "" {
-		m.Success++
+		m.success++
 	} else {
-		m.Failed++
+		m.failed++
 	}
 	// Update status code counts
-	m.StatusCodes[int(result.Code)]++
+	m.statusCodes[int(result.Code)]++
 
 	// If the request body contains "jsonrpc", it's a JSON-RPC request,
 	// and we should process the result as a JSON-RPC response.
@@ -400,7 +405,7 @@ func processResult(
 func calculateServiceSummary(
 	t *testing.T,
 	ts *TestService,
-	results map[string]*MethodMetrics,
+	results map[string]*methodMetrics,
 ) bool {
 	var serviceTestFailed bool = false
 
@@ -413,7 +418,7 @@ func calculateServiceSummary(
 		metrics := results[method]
 
 		// Skip methods with no data
-		if metrics == nil || len(metrics.Results) == 0 {
+		if metrics == nil || len(metrics.results) == 0 {
 			continue
 		}
 
