@@ -168,6 +168,7 @@ CREATE TABLE gateways (
     stake_amount INT NOT NULL,
     stake_denom VARCHAR(15) NOT NULL,
     network_id VARCHAR(42) NOT NULL,
+    gateway_private_key_hex VARCHAR(64),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (network_id) REFERENCES networks(network_id)
@@ -221,7 +222,7 @@ CREATE TABLE applications (
     service_id VARCHAR(42) NOT NULL,
     stake_amount INT,
     stake_denom VARCHAR(15),
-    application_private_key_hex VARCHAR(64) NOT NULL,
+    application_private_key_hex VARCHAR(64),
     network_id VARCHAR(42) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
