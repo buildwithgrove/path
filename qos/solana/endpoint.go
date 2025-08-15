@@ -43,8 +43,8 @@ type endpoint struct {
 	// Pointer distinguishes between no observation vs. observed response scenarios.
 	*qosobservations.SolanaGetEpochInfoResponse
 
-	// latestValidationError tracks most recent JSON-RPC response validation error
-	latestValidationError *qosobservations.JsonRpcResponseValidationError
+	// latestJSONRPCValidationError tracks most recent JSON-RPC response validation error
+	latestJSONRPCValidationError *qosobservations.JsonRpcResponseValidationError
 
 	// TODO_FUTURE: support archival endpoints.
 }
@@ -54,7 +54,7 @@ type endpoint struct {
 func (e endpoint) validateBasic() error {
 	// Check for recent validation errors first
 	if e.hasRecentValidationErrors() {
-		return errRecentValidationError
+		return errRecentJSONRPCValidationError
 	}
 
 	switch {
@@ -80,12 +80,12 @@ func (e endpoint) validateBasic() error {
 
 // hasRecentValidationErrors checks if endpoint has validation error within the configured window.
 func (e endpoint) hasRecentValidationErrors() bool {
-	if e.latestValidationError == nil {
+	if e.latestJSONRPCValidationError == nil {
 		return false
 	}
 
 	lastValidationErrorTimestamp := time.Now().Add(-validationErrorResponseWindow)
-	return e.latestValidationError.Timestamp.AsTime().After(lastValidationErrorTimestamp)
+	return e.latestJSONRPCValidationError.Timestamp.AsTime().After(lastValidationErrorTimestamp)
 }
 
 // applyObservation updates endpoint data using provided observation.
@@ -105,9 +105,9 @@ func (e *endpoint) applyObservation(obs *qosobservations.SolanaEndpointObservati
 	if unrecognizedResponse := obs.GetUnrecognizedResponse(); unrecognizedResponse != nil {
 		// Update latest validation error if observation contains more recent error
 		if validationError := unrecognizedResponse.ValidationError; validationError != nil {
-			if e.latestValidationError == nil ||
-				validationError.Timestamp.AsTime().After(e.latestValidationError.Timestamp.AsTime()) {
-				e.latestValidationError = validationError
+			if e.latestJSONRPCValidationError == nil ||
+				validationError.Timestamp.AsTime().After(e.latestJSONRPCValidationError.Timestamp.AsTime()) {
+				e.latestJSONRPCValidationError = validationError
 			}
 		}
 		return true

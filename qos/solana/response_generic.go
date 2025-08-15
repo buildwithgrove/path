@@ -60,12 +60,9 @@ type responseGeneric struct {
 // Shares data with other entities (e.g., data pipeline).
 // Default catchall for responses other than `getHealth` and `getEpochInfo`.
 func (r responseGeneric) GetObservation() qosobservations.SolanaEndpointObservation {
+	// Build an observation from the stored JSONRPC response.
 	unrecognizedResponse := &qosobservations.SolanaUnrecognizedResponse{
-		// TODO_TECHDEBT(@adshmh): Add utility to convert qos.jsonrpc.Response to observation.qos.JsonRpcResponse
-		// to include error object and other fields in observations.
-		JsonrpcResponse: &qosobservations.JsonRpcResponse{
-			Id: r.ID.String(),
-		},
+		JsonrpcResponse: r.Response.GetObservation(),
 	}
 
 	// Include validation error if present

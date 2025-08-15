@@ -31,10 +31,7 @@ func (r *jsonrpcUnrecognizedResponse) GetObservation() qosobservations.CosmosEnd
 			HttpStatusCode:         int32(r.jsonrpcResponse.GetRecommendedHTTPStatusCode()),
 			ValidationError:        &r.validationErr,
 			ParsedResponse: &qosobservations.CosmosEndpointResponseValidationResult_ResponseJsonrpc{
-				ResponseJsonrpc: &qosobservations.JsonRpcResponse{
-					Id: r.jsonrpcResponse.ID.String(),
-					// TODO_TECHDEBT(@adshmh): Store JSONRPC response's error code.
-				},
+				ResponseJsonrpc: r.jsonrpcResponse.GetObservation(),
 			},
 		},
 	}
