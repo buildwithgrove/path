@@ -1,3 +1,6 @@
+// TODO_TECHDEBT(@adshmh): Use the JsonRpcResponseValidationError in all JSONRPC QoS.
+// Include this refactor in PR #253 (JUDGE framework)
+//
 syntax = "proto3";
 package path.qos;
 

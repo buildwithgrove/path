@@ -11,6 +11,12 @@ import (
 const resultGetHealthOK = "ok"
 
 const (
+	// TODO_TECHDEBT(@adshmh): Add sanctions mechanism for dishonest endpoints (e.g., using public RPCs).
+	// The sanctions store will apply to all QoS packages via PR #253 (JUDGE framework).
+	// It will replace:
+	// - The constant below with configurable sanction duration for different errors.
+	// - endpoint struct's basicValidation method.
+	//
 	// TODO_TECHDEBT(@adshmh): Make configurable via service config.
 	// 30 minutes allows for temporary network issues while preventing
 	// persistently broken endpoints from being used.
@@ -24,11 +30,10 @@ var (
 	errNoGetEpochInfoObs                = fmt.Errorf("endpoint has not had an observation of its response to a %q request", methodGetEpochInfo)
 	errInvalidGetEpochInfoHeightZeroObs = fmt.Errorf("endpoint responded with blockHeight of 0 to a %q request, expected a blockHeight of > 0", methodGetEpochInfo)
 	errInvalidGetEpochInfoEpochZeroObs  = fmt.Errorf("endpoint responded with epoch of 0 to a %q request, expected an epoch of > 0", methodGetEpochInfo)
-	errRecentJSONRPCValidationError            = fmt.Errorf("endpoint has recent JSON-RPC validation errors")
+	errRecentJSONRPCValidationError     = fmt.Errorf("endpoint has recent JSON-RPC validation errors")
 )
 
 // endpoint captures details required to validate a Solana endpoint.
-// TODO_TECHDEBT(@adshmh): Add sanctions mechanism for dishonest endpoints (e.g., using public RPCs).
 type endpoint struct {
 	// SolanaGetHealthResponse stores result of processing endpoint's `getHealth` response.
 	// Pointer distinguishes between no observation vs. observed response scenarios.

@@ -52,8 +52,8 @@ func responseUnmarshallerGeneric(
 type responseGeneric struct {
 	Logger polylog.Logger
 	jsonrpc.Response
-	// validationError tracks JSON-RPC validation errors if response unmarshaling failed
-	validationError *qosobservations.JsonRpcResponseValidationError
+	// jsonrpcResponseValidationError tracks JSON-RPC validation errors if response unmarshaling failed
+	jsonrpcResponseValidationError *qosobservations.JsonRpcResponseValidationError
 }
 
 // GetObservation returns observation NOT used for endpoint validation.
@@ -69,8 +69,8 @@ func (r responseGeneric) GetObservation() qosobservations.SolanaEndpointObservat
 	}
 
 	// Include validation error if present
-	if r.validationError != nil {
-		unrecognizedResponse.ValidationError = r.validationError
+	if r.jsonrpcResponseValidationError != nil {
+		unrecognizedResponse.ValidationError = r.jsonrpcResponseValidationError
 	}
 
 	return qosobservations.SolanaEndpointObservation{
@@ -99,13 +99,13 @@ func getGenericJSONRPCErrResponse(
 	}
 
 	// Create validation error observation
-	validationError := &qosobservations.JsonRpcResponseValidationError{
+	jsonrpcResponseValidationError := &qosobservations.JsonRpcResponseValidationError{
 		ErrorType: qosobservations.JsonRpcValidationErrorType_JSON_RPC_VALIDATION_ERROR_TYPE_NON_JSONRPC_RESPONSE,
 		Timestamp: timestamppb.New(time.Now()),
 	}
 
 	return responseGeneric{
-		Response:        jsonrpc.GetErrorResponse(id, errCodeUnmarshaling, errMsgUnmarshaling, errData),
-		validationError: validationError,
+		Response:                       jsonrpc.GetErrorResponse(id, errCodeUnmarshaling, errMsgUnmarshaling, errData),
+		jsonrpcResponseValidationError: jsonrpcResponseValidationError,
 	}
 }
