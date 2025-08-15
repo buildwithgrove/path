@@ -94,10 +94,16 @@ func (srs *sessionRolloverState) updateBlockHeight() {
 	defer cancel()
 
 	// Use the block client to get the current block height
-	newHeight, err := srs.blockClient.LatestBlockHeight(ctx)
+	latestHeight, err := srs.blockClient.LatestBlockHeight(ctx)
 	if err != nil {
 		srs.logger.Error().Err(err).Msg("Failed to get current block height")
 		return
+	}
+
+	// TODO_IN_THIS_PR: Just an experiment
+	// Use height - 1 to ensure the block is finalized and propagated
+	if latestHeight > 0 {
+		latestHeight = latestHeight - 1
 	}
 
 	srs.rolloverStateMu.Lock()
@@ -107,18 +113,18 @@ func (srs *sessionRolloverState) updateBlockHeight() {
 	previousHeight := srs.currentBlockHeight
 
 	// Skip if block height hasn't increased
-	if previousHeight >= newHeight {
+	if previousHeight >= latestHeight {
 		return
 	}
 
 	// Update the current block height
-	srs.currentBlockHeight = newHeight
+	srs.currentBlockHeight = latestHeight
 
 	// Update the cached rollover status based on the new block height
 	srs.isInSessionRollover = srs.calculateRolloverStatus()
 
 	logEvent := srs.logger.Debug().
-		Int64("current_height", newHeight).
+		Int64("current_height", latestHeight).
 		Int64("rollover_start", srs.sessionRolloverStart).
 		Int64("rollover_end", srs.sessionRolloverEnd).
 		Bool("in_rollover", srs.isInSessionRollover)
