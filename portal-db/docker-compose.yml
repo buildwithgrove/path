@@ -1,0 +1,21 @@
+services:
+  postgres:
+    image: postgres:15
+    container_name: path-portal-db
+    environment:
+      POSTGRES_DB: portal_db
+      POSTGRES_USER: portal_user
+      POSTGRES_PASSWORD: portal_password
+    ports:
+      - "5435:5432"
+    volumes:
+      - portal_db_data:/var/lib/postgresql/data
+      - ./init:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "portal_user", "-d", "portal_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  portal_db_data:
