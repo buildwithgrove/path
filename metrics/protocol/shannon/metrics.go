@@ -7,6 +7,7 @@ import (
 	"github.com/pokt-network/poktroll/pkg/polylog"
 	"github.com/prometheus/client_golang/prometheus"
 
+	"github.com/buildwithgrove/path/log"
 	protocolobservations "github.com/buildwithgrove/path/observation/protocol"
 )
 
@@ -279,7 +280,7 @@ func recordRelayTotal(
 	// See `ExemplarMaxRunes` below:
 	// https://pkg.go.dev/github.com/prometheus/client_golang/prometheus#pkg-constants
 	exLabels := prometheus.Labels{
-		"endpoint_url": endpointURL[:min(len(endpointURL), 128)],
+		"endpoint_url": log.Preview(endpointURL),
 	}
 
 	// Determine if any of the observations were successful.
@@ -374,7 +375,7 @@ func processEndpointErrors(
 		// Create exemplar with high-cardinality data
 		// Truncate to 128 runes (Prometheus exemplar limit)
 		exLabels := prometheus.Labels{
-			"endpoint_url": endpointURL[:min(len(endpointURL), 128)],
+			"endpoint_url": log.Preview(endpointURL),
 		}
 
 		// Record relay error

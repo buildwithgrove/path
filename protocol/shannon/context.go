@@ -20,6 +20,7 @@ import (
 	sdk "github.com/pokt-network/shannon-sdk"
 
 	"github.com/buildwithgrove/path/gateway"
+	"github.com/buildwithgrove/path/log"
 	protocolobservations "github.com/buildwithgrove/path/observation/protocol"
 	"github.com/buildwithgrove/path/protocol"
 	"github.com/buildwithgrove/path/websockets"
@@ -464,7 +465,7 @@ func (rc *requestContext) validateAndProcessResponse(
 		// Log raw payload for error tracking
 		responseStr := string(httpRelayResponseBz)
 		rc.logger.With(
-			"endpoint_payload", responseStr[:min(len(responseStr), maxEndpointPayloadLenForLogging)],
+			"endpoint_payload", log.Preview(responseStr, maxEndpointPayloadLenForLogging),
 			"endpoint_payload_length", len(httpRelayResponseBz),
 			"validation_error", err.Error(),
 		).Warn().Err(err).Msg("Failed to validate the payload from the selected endpoint. Relay request will fail.")

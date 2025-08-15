@@ -8,6 +8,7 @@ import (
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
 	"github.com/buildwithgrove/path/gateway"
+	"github.com/buildwithgrove/path/log"
 	qosobservations "github.com/buildwithgrove/path/observation/qos"
 	"github.com/buildwithgrove/path/protocol"
 	"github.com/buildwithgrove/path/qos/jsonrpc"
@@ -197,8 +198,7 @@ func parseJSONRPCFromRequestBody(
 	var jsonrpcRequest jsonrpc.Request
 	err := json.Unmarshal(requestBody, &jsonrpcRequest)
 	if err != nil {
-		// Only log a preview of the request body (first 1000 bytes or less) to avoid excessive logging
-		requestPreview := string(requestBody[:min(maxErrMessageLen, len(requestBody))])
+		requestPreview := log.Preview(string(requestBody), maxErrMessageLen)
 		logger.Error().Err(err).Msgf("❌ Request failed JSON-RPC validation - returning generic error response. Request preview: %s", requestPreview)
 	}
 

@@ -8,6 +8,7 @@ import (
 	"github.com/pokt-network/poktroll/pkg/polylog"
 	sdk "github.com/pokt-network/shannon-sdk"
 
+	"github.com/buildwithgrove/path/log"
 	protocolobservations "github.com/buildwithgrove/path/observation/protocol"
 )
 
@@ -260,7 +261,8 @@ func classifyMalformedEndpointPayload(logger polylog.Logger, payloadContent stri
 
 	// If we can't classify the malformed payload, it's an internal error
 	logger.With(
-		"endpoint_payload_preview", payloadContent[:min(100, len(payloadContent))],
+		"endpoint_payload_preview", log.Preview(payloadContent, maxEndpointPayloadLenForLogging),
 	).Warn().Msg("Unable to classify malformed endpoint payload - defaulting to internal error")
+
 	return protocolobservations.ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_UNKNOWN, protocolobservations.ShannonSanctionType_SHANNON_SANCTION_SESSION
 }
