@@ -57,7 +57,7 @@ type Protocol struct {
 	// HTTP client used for sending relay requests to endpoints while also capturing & publishing various debug metrics.
 	httpClient *httpClientWithDebugMetrics
 
-	// serviceFallbacks contains the fallback endpoint information for the protocol.
+	// serviceFallbackMap contains the service fallback config per service.
 	//
 	// The fallback endpoints are used when no endpoints are available for the
 	// requested service from the onchain protocol.
@@ -67,7 +67,7 @@ type Protocol struct {
 	//
 	// Each service can have a SendAllTraffic flag to send all traffic to
 	// fallback endpoints, regardless of the health of the protocol endpoints.
-	serviceFallbacks map[protocol.ServiceID]serviceFallback
+	serviceFallbackMap map[protocol.ServiceID]serviceFallback
 }
 
 // serviceFallback holds the fallback information for a service,
@@ -112,7 +112,7 @@ func NewProtocol(
 		httpClient: newDefaultHTTPClientWithDebugMetrics(),
 
 		// serviceFallbacks contains the fallback information for each service.
-		serviceFallbacks: config.getServiceFallbacks(),
+		serviceFallbackMap: config.getServiceFallbackMap(),
 	}
 
 	return protocolInstance, nil
@@ -245,15 +245,24 @@ func (p *Protocol) BuildRequestContextForEndpoint(
 		return nil, buildProtocolContextSetupErrorObservation(serviceID, err), err
 	}
 
+	// TODO_TECHDEBT: Need to propagate the SendAllTraffic bool to the requestContext.
+	// Example use-case:
+	// Gateway uses PATH in the opposite way as Grove w/ the goal of:
+	// 	1. Primary source: their own infra
+	// 	2. Secondary source: fallback to network
+	// This would require the requestContext to be aware of _SendAllTraffic in this context.
+	fallbackEndpoints, _ := p.getServiceFallbackEndpoints(serviceID)
+
 	// Return new request context for the pre-selected endpoint
 	return &requestContext{
 		logger:             p.logger,
 		context:            ctx,
 		fullNode:           p.FullNode,
-		selectedEndpoint:   &selectedEndpoint,
+		selectedEndpoint:   selectedEndpoint,
 		serviceID:          serviceID,
 		relayRequestSigner: permittedSigner,
 		httpClient:         p.httpClient,
+		fallbackEndpoints:  fallbackEndpoints,
 	}, protocolobservations.Observations{}, nil
 }
 
@@ -327,13 +336,13 @@ func (p *Protocol) getUniqueEndpoints(
 	)
 
 	// Get fallback configuration for the service ID.
-	serviceFallbacks, sendAllTrafficToFallback := p.getServiceFallback(serviceID)
+	fallbackEndpoints, shouldSendAllTrafficToFallback := p.getServiceFallbackEndpoints(serviceID)
 
 	// If the service is configured to send all traffic to fallback endpoints,
 	// return only the fallback endpoints and skip session endpoint logic.
-	if sendAllTrafficToFallback && len(serviceFallbacks) > 0 {
+	if shouldSendAllTrafficToFallback && len(fallbackEndpoints) > 0 {
 		logger.Info().Msgf("🔀 Sending all traffic to fallback endpoints for service %s.", serviceID)
-		return serviceFallbacks, nil
+		return fallbackEndpoints, nil
 	}
 
 	// Try to get session endpoints first.
@@ -350,9 +359,8 @@ func (p *Protocol) getUniqueEndpoints(
 
 	// Handle the case where no session endpoints are available.
 	// If fallback endpoints are available for the service ID, use them.
-	if len(serviceFallbacks) > 0 {
-		logger.Info().Msgf("No session endpoints available: using fallback endpoints for service %s.", serviceID)
-		return serviceFallbacks, nil
+	if len(fallbackEndpoints) > 0 {
+		return fallbackEndpoints, nil
 	}
 
 	// If no unsanctioned session endpoints are available and no fallback
@@ -452,10 +460,10 @@ func (p *Protocol) getSessionsUniqueEndpoints(
 
 // ** Fallback Endpoint Handling **
 
-// getServiceFallback returns the fallback endpoints and SendAllTraffic flag for a given service ID.
+// getServiceFallbackEndpoints returns the fallback endpoints and SendAllTraffic flag for a given service ID.
 // Returns (endpoints, sendAllTraffic) where endpoints is empty if no fallback is configured.
-func (p *Protocol) getServiceFallback(serviceID protocol.ServiceID) (map[protocol.EndpointAddr]endpoint, bool) {
-	fallbackConfig, exists := p.serviceFallbacks[serviceID]
+func (p *Protocol) getServiceFallbackEndpoints(serviceID protocol.ServiceID) (map[protocol.EndpointAddr]endpoint, bool) {
+	fallbackConfig, exists := p.serviceFallbackMap[serviceID]
 	if !exists {
 		return make(map[protocol.EndpointAddr]endpoint), false
 	}
@@ -465,7 +473,7 @@ func (p *Protocol) getServiceFallback(serviceID protocol.ServiceID) (map[protoco
 
 // ** Disqualified Endpoint Reporting **
 
-// GetTotalProtocolEndpointsCount returns the count of all unique endpoints for a service ID
+// GetTotalServiceEndpointsCount returns the count of all unique endpoints for a service ID
 // without filtering sanctioned endpoints.
 func (p *Protocol) GetTotalServiceEndpointsCount(serviceID protocol.ServiceID, httpReq *http.Request) (int, error) {
 	ctx := context.Background()

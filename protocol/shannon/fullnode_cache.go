@@ -410,3 +410,10 @@ func (cfn *cachingFullNode) GetCurrentBlockHeight(ctx context.Context) (int64, e
 
 	return height, err
 }
+
+// IsInSessionRollover: passthrough to underlying lazy full node.
+// The lazy full node manages session rollover monitoring in the background,
+// so we simply delegate to its rollover state.
+func (cfn *cachingFullNode) IsInSessionRollover() bool {
+	return cfn.lazyFullNode.IsInSessionRollover()
+}

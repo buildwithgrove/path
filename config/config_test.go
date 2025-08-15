@@ -12,6 +12,18 @@ import (
 	shannonprotocol "github.com/buildwithgrove/path/protocol/shannon"
 )
 
+// getTestDefaultGRPCConfig returns a GRPCConfig with default values applied
+// using the same defaults as defined in the shannon package
+func getTestDefaultGRPCConfig() shannonprotocol.GRPCConfig {
+	return shannonprotocol.GRPCConfig{
+		BackoffBaseDelay:  1 * time.Second,
+		BackoffMaxDelay:   60 * time.Second,
+		MinConnectTimeout: 10 * time.Second,
+		KeepAliveTime:     30 * time.Second,
+		KeepAliveTimeout:  30 * time.Second,
+	}
+}
+
 func Test_LoadGatewayConfigFromYAML(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -26,10 +38,13 @@ func Test_LoadGatewayConfigFromYAML(t *testing.T) {
 			want: GatewayConfig{
 				ShannonConfig: &shannon.ShannonGatewayConfig{
 					FullNodeConfig: shannonprotocol.FullNodeConfig{
-						RpcURL: "https://shannon-grove-rpc.mainnet.poktroll.com",
-						GRPCConfig: shannonprotocol.GRPCConfig{
-							HostPort: "shannon-grove-grpc.mainnet.poktroll.com:443",
-						},
+						RpcURL:                "https://shannon-grove-rpc.mainnet.poktroll.com",
+						SessionRolloverBlocks: 10,
+						GRPCConfig: func() shannonprotocol.GRPCConfig {
+							config := getTestDefaultGRPCConfig()
+							config.HostPort = "shannon-grove-grpc.mainnet.poktroll.com:443"
+							return config
+						}(),
 						LazyMode: false,
 						CacheConfig: shannonprotocol.CacheConfig{
 							SessionTTL: 30 * time.Second,
@@ -44,11 +59,25 @@ func Test_LoadGatewayConfigFromYAML(t *testing.T) {
 						},
 						ServiceFallback: []shannonprotocol.ServiceFallback{
 							{
+								ServiceID:      "xrplevm",
+								SendAllTraffic: false,
+								FallbackEndpoints: []map[string]string{
+									{
+										"default_url": "http://12.34.56.78",
+										"json_rpc":    "http://12.34.56.78:8545",
+										"rest":        "http://12.34.56.78:1317",
+										"comet_bft":   "http://12.34.56.78:26657",
+										"websocket":   "http://12.34.56.78:8546",
+									},
+								},
+							},
+							{
 								ServiceID:      "eth",
 								SendAllTraffic: false,
-								FallbackURLs: []string{
-									"https://eth.rpc.grove.city/v1/1a2b3c4d",
-									"https://eth.rpc.grove.city/v1/5e6f7a8b",
+								FallbackEndpoints: []map[string]string{
+									{
+										"default_url": "https://eth.rpc.backup.io",
+									},
 								},
 							},
 						},
@@ -76,6 +105,7 @@ func Test_LoadGatewayConfigFromYAML(t *testing.T) {
 			  full_node_config:
 			    rpc_url: "invalid-url"
 			    grpc_url: "grpcs://grpc-url.io"
+			    session_rollover_blocks: 10
 			`,
 			wantErr: true,
 		},
@@ -87,6 +117,7 @@ func Test_LoadGatewayConfigFromYAML(t *testing.T) {
 			  full_node_config:
 			    rpc_url: "https://rpc-url.io"
 			    grpc_url: "grpcs://grpc-url.io"
+			    session_rollover_blocks: 10
 			  gateway_config:
 			    gateway_address: "invalid_gateway_address"
 			    gateway_private_key_hex: "d5fcbfb894059a21e914a2d6bf1508319ce2b1b8878f15aa0c1cdf883feb018d"
@@ -115,6 +146,7 @@ func Test_LoadGatewayConfigFromYAML(t *testing.T) {
     grpc_config:
       host_port: "shannon-testnet-grove-grpc.beta.poktroll.com:443"
     lazy_mode: false
+    session_rollover_blocks: 10
   gateway_config:
     gateway_mode: "centralized"
     gateway_address: "pokt1up7zlytnmvlsuxzpzvlrta95347w322adsxslw"
@@ -126,11 +158,17 @@ logger_config:
 			want: GatewayConfig{
 				ShannonConfig: &shannon.ShannonGatewayConfig{
 					FullNodeConfig: shannonprotocol.FullNodeConfig{
-						RpcURL: "https://shannon-testnet-grove-rpc.beta.poktroll.com",
-						GRPCConfig: shannonprotocol.GRPCConfig{
-							HostPort: "shannon-testnet-grove-grpc.beta.poktroll.com:443",
-						},
+						RpcURL:                "https://shannon-testnet-grove-rpc.beta.poktroll.com",
+						SessionRolloverBlocks: 10,
+						GRPCConfig: func() shannonprotocol.GRPCConfig {
+							config := getTestDefaultGRPCConfig()
+							config.HostPort = "shannon-testnet-grove-grpc.beta.poktroll.com:443"
+							return config
+						}(),
 						LazyMode: false,
+						CacheConfig: shannonprotocol.CacheConfig{
+							SessionTTL: 20 * time.Second,
+						},
 					},
 					GatewayConfig: shannonprotocol.GatewayConfig{
 						GatewayMode:          protocol.GatewayModeCentralized,
@@ -164,6 +202,7 @@ logger_config:
 			    rpc_url: "https://shannon-testnet-grove-rpc.beta.poktroll.com"
 			    grpc_config:
 			      host_port: "shannon-testnet-grove-grpc.beta.poktroll.com:443"
+			    session_rollover_blocks: 10
 			  gateway_config:
 			    gateway_address: "pokt1up7zlytnmvlsuxzpzvlrta95347w322adsxslw"
 			    gateway_private_key_hex: "40af4e7e1b311c76a573610fe115cd2adf1eeade709cd77ca31ad4472509d388"
@@ -181,6 +220,7 @@ logger_config:
 			    rpc_url: "https://shannon-testnet-grove-rpc.beta.poktroll.com"
 			    grpc_config:
 			      host_port: "shannon-testnet-grove-grpc.beta.poktroll.com:443"
+			    session_rollover_blocks: 10
 			  gateway_config:
 			    gateway_mode: "centralized"
 			    gateway_address: "pokt1up7zlytnmvlsuxzpzvlrta95347w322adsxslw"
@@ -190,13 +230,13 @@ logger_config:
 			    service_fallback:
 			      - service_id: ""
 			        send_all_traffic: false
-			        fallback_urls:
-			          - "https://eth.rpc.grove.city/v1/1a2b3c4d"
+			        fallback_endpoints:
+			          - json_rpc: "https://eth.rpc.backup.io""
 			`,
 			wantErr: true,
 		},
 		{
-			name:     "should return error for missing fallback_urls in service_fallback",
+			name:     "should return error for missing fallback_endpoints in service_fallback",
 			filePath: "missing_fallback_urls.yaml",
 			yamlData: `
 			shannon_config:
@@ -204,6 +244,7 @@ logger_config:
 			    rpc_url: "https://shannon-testnet-grove-rpc.beta.poktroll.com"
 			    grpc_config:
 			      host_port: "shannon-testnet-grove-grpc.beta.poktroll.com:443"
+			    session_rollover_blocks: 10
 			  gateway_config:
 			    gateway_mode: "centralized"
 			    gateway_address: "pokt1up7zlytnmvlsuxzpzvlrta95347w322adsxslw"
@@ -213,7 +254,7 @@ logger_config:
 			    service_fallback:
 			      - service_id: eth
 			        send_all_traffic: false
-			        fallback_urls: []
+			        fallback_endpoints: []
 			`,
 			wantErr: true,
 		},
@@ -226,6 +267,7 @@ logger_config:
 			    rpc_url: "https://shannon-testnet-grove-rpc.beta.poktroll.com"
 			    grpc_config:
 			      host_port: "shannon-testnet-grove-grpc.beta.poktroll.com:443"
+			    session_rollover_blocks: 10
 			  gateway_config:
 			    gateway_mode: "centralized"
 			    gateway_address: "pokt1up7zlytnmvlsuxzpzvlrta95347w322adsxslw"
@@ -235,9 +277,9 @@ logger_config:
 			    service_fallback:
 			      - service_id: eth
 			        send_all_traffic: false
-			        fallback_urls:
-			          - "invalid-url-format"
-			          - "ftp://invalid.protocol.com"
+			        fallback_endpoints:
+			          - json_rpc: "invalid-url-format"
+			          - json_rpc: "ftp://invalid.protocol.com"
 			`,
 			wantErr: true,
 		},
@@ -250,6 +292,7 @@ logger_config:
 			    rpc_url: "https://shannon-testnet-grove-rpc.beta.poktroll.com"
 			    grpc_config:
 			      host_port: "shannon-testnet-grove-grpc.beta.poktroll.com:443"
+			    session_rollover_blocks: 10
 			  gateway_config:
 			    gateway_mode: "centralized"
 			    gateway_address: "pokt1up7zlytnmvlsuxzpzvlrta95347w322adsxslw"
@@ -259,12 +302,12 @@ logger_config:
 			    service_fallback:
 			      - service_id: eth
 			        send_all_traffic: false
-			        fallback_urls:
-			          - "https://eth.rpc.grove.city/v1/1a2b3c4d"
+			        fallback_endpoints:
+			          - json_rpc: "https://eth.rpc.backup.io""
 			      - service_id: eth
 			        send_all_traffic: true
-			        fallback_urls:
-			          - "https://eth.rpc.grove.city/v1/5e6f7a8b"
+			        fallback_endpoints:
+			          - json_rpc: "https://eth.rpc.backup.io""
 			`,
 			wantErr: true,
 		},

@@ -125,6 +125,7 @@ func (h *httpClientWithDebugMetrics) SendHTTPRelay(
 	ctx context.Context,
 	logger polylog.Logger,
 	endpointURL string,
+	method string,
 	relayRequestBz []byte,
 	headers map[string]string,
 ) ([]byte, int, error) {
@@ -145,7 +146,7 @@ func (h *httpClientWithDebugMetrics) SendHTTPRelay(
 
 	req, err := http.NewRequestWithContext(
 		debugCtx,
-		http.MethodPost,
+		method,
 		endpointURL,
 		bytes.NewReader(relayRequestBz),
 	)
