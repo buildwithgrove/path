@@ -77,6 +77,11 @@ func (r *Response) IsError() bool {
 	return r.Error != nil
 }
 
+// TODO_TECHDEBT(@adshmh): Validate the results JSONRPC result struct:
+// - Return an error if invalid: e.g. if missing both result and error fields.
+// - Define and use exported errors for each validation failure scenario.
+// - Add a method to construct an observation of type observation.qos.JsonRpcResponseValidationError from the above error.
+//
 // UnmarshalJSON implements custom unmarshaling to handle the result field presence detection
 func (r *Response) UnmarshalJSON(data []byte) error {
 	// Use a temporary struct to unmarshal into, avoiding infinite recursion

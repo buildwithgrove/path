@@ -1,0 +1,30 @@
+// TODO_TECHDEBT(@adshmh): Use the JsonRpcResponseValidationError in all JSONRPC QoS.
+// Include this refactor in PR #253 (JUDGE framework)
+//
+// TODO_TECHDEBT(@adshmh): The JsonRpcResponseValidationError should only be constructed by the qos/jsonrpc package.
+// See the comment in qos/jsonrpc/observation.go
+//
+syntax = "proto3";
+package path.qos;
+
+option go_package = "github.com/buildwithgrove/path/observation/qos";
+
+import "google/protobuf/timestamp.proto";
+
+// JsonRpcResponseValidationError captures validation errors for JSON-RPC responses
+message JsonRpcResponseValidationError {
+  // Type of validation error
+  JsonRpcValidationErrorType error_type = 1;
+
+  // Timestamp when the validation error occurred
+  google.protobuf.Timestamp timestamp = 2;
+}
+
+// Enum for different types of JSON-RPC validation errors
+enum JsonRpcValidationErrorType {
+  // Default/unspecified validation error
+  JSON_RPC_VALIDATION_ERROR_TYPE_UNSPECIFIED = 0;
+
+  // Response is not a valid JSON-RPC response
+  JSON_RPC_VALIDATION_ERROR_TYPE_NON_JSONRPC_RESPONSE = 1;
+}
