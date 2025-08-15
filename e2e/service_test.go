@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"strings"
 
+	sharedtypes "github.com/pokt-network/poktroll/x/shared/types"
 	vegeta "github.com/tsenart/vegeta/lib"
 
 	"github.com/buildwithgrove/path/gateway"
@@ -114,6 +115,21 @@ func getExpectedID(serviceType serviceType) jsonrpc.ID {
 // -----------------------------------------------------------------------------
 // Utility Functions
 // -----------------------------------------------------------------------------
+
+// getRPCTypeFromString converts a string from the config file to a sharedtypes.RPCType.
+// Used to convert a Service's SupportedAPIs to a sharedtypes.RPCType in order
+// to determine which test methods to run.
+//
+// For example, when running Cosmos SDK service tests, the service
+// may support Cosmos SDK, CometBFT and REST APIs.
+func getRPCTypeFromString(rpcType string) sharedtypes.RPCType {
+	rpcTypeUpper := strings.ToUpper(rpcType)
+	rpcTypeValue, ok := sharedtypes.RPCType_value[rpcTypeUpper]
+	if !ok {
+		return sharedtypes.RPCType_UNKNOWN_RPC
+	}
+	return sharedtypes.RPCType(rpcTypeValue)
+}
 
 // getRequestHeaders returns the HTTP headers for a given service ID, including Portal credentials if in load test mode.
 func getRequestHeaders(serviceID protocol.ServiceID) http.Header {

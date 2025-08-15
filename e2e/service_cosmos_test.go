@@ -7,22 +7,12 @@ import (
 	"fmt"
 	"maps"
 	"net/http"
-	"strings"
 
 	sharedtypes "github.com/pokt-network/poktroll/x/shared/types"
 	vegeta "github.com/tsenart/vegeta/lib"
 
 	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
-
-func getRPCTypeFromString(rpcType string) sharedtypes.RPCType {
-	rpcTypeUpper := strings.ToUpper(rpcType)
-	rpcTypeValue, ok := sharedtypes.RPCType_value[rpcTypeUpper]
-	if !ok {
-		return sharedtypes.RPCType_UNKNOWN_RPC
-	}
-	return sharedtypes.RPCType(rpcTypeValue)
-}
 
 func getCosmosSDKVegetaTargets(
 	ts *TestService,
