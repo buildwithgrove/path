@@ -103,11 +103,18 @@ func (lfn *LazyFullNode) GetSession(
 	serviceID protocol.ServiceID,
 	appAddr string,
 ) (sessiontypes.Session, error) {
+	// Get the current block height (already returns latestHeight - 1 for finality)
+	currentHeight, err := lfn.GetCurrentBlockHeight(ctx)
+	if err != nil {
+		return sessiontypes.Session{},
+			fmt.Errorf("GetSession: error getting current block height: %w", err)
+	}
+	
 	session, err := lfn.sessionClient.GetSession(
 		ctx,
 		appAddr,
 		string(serviceID),
-		0,
+		currentHeight,
 	)
 
 	if err != nil {
@@ -169,12 +176,16 @@ func (lfn *LazyFullNode) GetSharedParams(ctx context.Context) (*sharedtypes.Para
 }
 
 // GetCurrentBlockHeight:
-// - Returns the current block height from the blockchain.
+// - Returns the current block height from the blockchain minus 1 to ensure finality.
 // - Used for session validation and grace period calculations.
 func (lfn *LazyFullNode) GetCurrentBlockHeight(ctx context.Context) (int64, error) {
 	height, err := lfn.blockClient.LatestBlockHeight(ctx)
 	if err != nil {
 		return 0, fmt.Errorf("GetCurrentBlockHeight: error getting latest block height: %w", err)
+	}
+	// Return height - 1 to ensure the block is finalized and propagated
+	if height > 0 {
+		return height - 1, nil
 	}
 	return height, nil
 }
