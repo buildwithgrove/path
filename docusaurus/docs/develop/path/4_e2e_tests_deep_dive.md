@@ -48,8 +48,8 @@ What the above make target does:
 
 | Configuration File                        | Custom Config Required? |             Default available?              | Description                            | Command to create or customize                                                     |
 | ----------------------------------------- | :---------------------: | :-----------------------------------------: | :------------------------------------- | :--------------------------------------------------------------------------------- |
-| `./e2e/config/.shannon.config.yaml`       |           ✅            |                     ❌                      | Gateway service configuration for PATH | `make config_copy_path_local_config_shannon_e2e` OR `make config_shannon_populate` |
-| `./e2e/config/.e2e_load_test.config.yaml` |           ❌            | `e2e/config/e2e_load_test.config.tmpl.yaml` | Custom configuration for E2E tests     | `make config_prepare_shannon_e2e`                                                  |
+| `./e2e/config/.shannon.config.yaml`       |            ✅            |                      ❌                      | Gateway service configuration for PATH | `make config_copy_path_local_config_shannon_e2e` OR `make config_shannon_populate` |
+| `./e2e/config/.e2e_load_test.config.yaml` |            ❌            | `e2e/config/e2e_load_test.config.tmpl.yaml` | Custom configuration for E2E tests     | `make config_prepare_shannon_e2e`                                                  |
 
 ## Schema and Validation
 

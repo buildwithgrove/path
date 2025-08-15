@@ -68,9 +68,9 @@ Choose one of the following flows to setup your accounts:
 1. **Recommended Setup**: Follow the [**App & PATH Gateway Cheat Sheet**](https://dev.poktroll.com/operate/cheat_sheets/gateway_cheatsheet) for complete setup.
 2. **Quick Setup** for first-time users:
 
-     <details>
+  <details>
 
-     <summary>Copy-pasta to stake onchain Application & Gateway</summary>
+  <summary>Copy-pasta to stake onchain Application & Gateway</summary>
 
    **Create gateway stake config:**
 
@@ -99,7 +99,7 @@ Choose one of the following flows to setup your accounts:
 
    **Fund accounts**: Use faucet links [here](https://dev.poktroll.com/category/explorers-faucets-wallets-and-more).
 
-   :::tip Grove employees only
+  :::tip 🌿 Grove Employees Only 🌿
 
    Fund using `pkd_beta_tx` helper ([instructions](https://www.notion.so/buildwithgrove/Shannon-Alpha-Beta-Environment-rc-helpers-152a36edfff680019314d468fad88864?pvs=4)):
 
@@ -142,7 +142,7 @@ Choose one of the following flows to setup your accounts:
    --yes
    ```
 
-     </details>
+  </details>
 
 ### 1.2 Account Validation
 
@@ -232,6 +232,12 @@ Your **terminal** should display the following:
 Visit the **Tilt dashboard** at [localhost:10350](<http://localhost:10350/r/(all)/overview>) and make sure everything is 🟢.
 
 ![Tilt Dashboard](../../../static/img/path-in-tilt.png)
+
+:::tip
+
+For more information about the PATH Localnet environment, see the [PATH Localnet Environment](7_env_setup.md) documentation.
+
+:::
 
 ### 3.2 Check configured services
 
