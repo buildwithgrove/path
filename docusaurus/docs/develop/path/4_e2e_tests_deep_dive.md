@@ -32,12 +32,12 @@ description: Deep dive into End-to-End Tests for PATH
 
 ## E2E Test Mode
 
-| Mode                                 | Make Targets                      | Purpose                                                                  |
-| ------------------------------------ | --------------------------------- | ------------------------------------------------------------------------ |
-| **E2E Test All Services**            | `make e2e_test_all`               | Full end-to-end testing that starts PATH in an isolated Docker container |
-| **E2E Test Specific Services**       | `make e2e_test eth,xrplevm`       | Full end-to-end testing that starts PATH in an isolated Docker container |
-| **WebSocket Test All Services**      | `make e2e_test_websocket_all`     | WebSocket-only testing for all WebSocket-compatible services             |
-| **WebSocket Test Specific Services** | `make e2e_test_websocket xrplevm` | WebSocket-only testing for specified WebSocket-compatible services       |
+| Mode                                 | Make Targets                      | Purpose                                                                       |
+| ------------------------------------ | --------------------------------- | ----------------------------------------------------------------------------- |
+| **HTTP Test All Services**           | `make e2e_test_all`               | HTTP-only end-to-end testing that starts PATH in an isolated Docker container |
+| **HTTP Test Specific Services**      | `make e2e_test eth,xrplevm`       | HTTP-only end-to-end testing that starts PATH in an isolated Docker container |
+| **WebSocket Test All Services**      | `make e2e_test_websocket_all`     | WebSocket-only testing for all WebSocket-compatible services                  |
+| **WebSocket Test Specific Services** | `make e2e_test_websocket xrplevm` | WebSocket-only testing for specified WebSocket-compatible services            |
 
 What the above make target does:
 
@@ -81,12 +81,12 @@ These environment variables are set by the test make targets, but if you wish to
 
 <details>
 <summary>Env Vars Table</summary>
-| Variable            | Description                                                                                       | Values                              | Required |
-| ------------------- | ------------------------------------------------------------------------------------------------- | ----------------------------------- | -------- |
-| TEST_MODE           | Determines the test execution mode                                                                | `e2e`                               | Yes      |
-| TEST_PROTOCOL       | Specifies which protocol to test                                                                  | `shannon`                           | Yes      |
-| TEST_SERVICE_IDS    | Specifies which service IDs to test. If not set, all service IDs for the protocol will be tested. | Comma-separated list of service IDs | No       |
-| TEST_WEBSOCKET_ONLY | Run only WebSocket tests, skipping HTTP tests                                                     | `true` or `false`                   | No       |
+| Variable         | Description                                                                                       | Values                              | Required |
+| ---------------- | ------------------------------------------------------------------------------------------------- | ----------------------------------- | -------- |
+| TEST_MODE        | Determines the test execution mode                                                                | `e2e`                               | Yes      |
+| TEST_PROTOCOL    | Specifies which protocol to test                                                                  | `shannon`                           | Yes      |
+| TEST_SERVICE_IDS | Specifies which service IDs to test. If not set, all service IDs for the protocol will be tested. | Comma-separated list of service IDs | No       |
+| TEST_WEBSOCKETS  | Run only WebSocket tests, skipping HTTP tests entirely                                            | `true` or `false`                   | No       |
 </details>
 
 ## Extending/Updating/Adding EVM E2E Tests
@@ -137,15 +137,15 @@ PATH E2E tests support WebSocket testing for compatible services. Currently, XRP
 - **Transport-Agnostic Validation**: Uses the same JSON-RPC validation logic as HTTP tests
 - **Real-time Connection**: Establishes persistent WebSocket connections to test real-time communication
 - **EVM JSON-RPC Support**: Tests all standard EVM JSON-RPC methods over WebSocket
-- **Independent or Combined**: Can run WebSocket tests alone or alongside HTTP tests
+- **Separate from HTTP**: WebSocket tests run independently from HTTP tests
 
 ### WebSocket Test Modes
 
-| Mode                       | Command                           | Description                                                          |
-| -------------------------- | --------------------------------- | -------------------------------------------------------------------- |
-| **Combined Testing**       | `make e2e_test xrplevm`           | Runs both HTTP and WebSocket tests for WebSocket-compatible services |
-| **WebSocket Only**         | `make e2e_test_websocket xrplevm` | Runs only WebSocket tests, skipping HTTP tests                       |
-| **All WebSocket Services** | `make e2e_test_websocket_all`     | Runs WebSocket tests for all WebSocket-compatible services           |
+| Mode                       | Command                           | Description                                                |
+| -------------------------- | --------------------------------- | ---------------------------------------------------------- |
+| **HTTP Only**              | `make e2e_test xrplevm`           | Runs only HTTP tests (default behavior)                    |
+| **WebSocket Only**         | `make e2e_test_websocket xrplevm` | Runs only WebSocket tests, skipping HTTP tests entirely    |
+| **All WebSocket Services** | `make e2e_test_websocket_all`     | Runs WebSocket tests for all WebSocket-compatible services |
 
 ### Service Configuration
 

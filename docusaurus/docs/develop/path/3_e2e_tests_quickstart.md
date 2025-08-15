@@ -27,13 +27,13 @@ First, prepare the Shannon E2E test config file:
 make config_copy_path_local_config_shannon_e2e
 ```
 
-Then, run E2E tests for specific service IDs:
+Then, run HTTP E2E tests for specific service IDs:
 
 ```bash
 make e2e_test eth,xrplevm
 ```
 
-Or, run E2E tests for all service IDs:
+Or, run HTTP E2E tests for all service IDs:
 
 ```bash
 make e2e_test_all
@@ -41,7 +41,7 @@ make e2e_test_all
 
 ### WebSocket E2E Tests
 
-For services that support WebSocket connections (like XRPLEVM), you can run WebSocket-specific tests:
+For services that support WebSocket connections (like XRPLEVM), you can run WebSocket-specific tests separately:
 
 ```bash
 # Run WebSocket tests for specific service IDs
@@ -51,7 +51,7 @@ make e2e_test_websocket xrplevm,xrplevm-testnet
 make e2e_test_websocket_all
 ```
 
-WebSocket tests can also be run alongside HTTP tests (default behavior) or independently using the WebSocket-only commands above.
+**Note:** WebSocket tests are completely separate from HTTP tests. Use the regular `make e2e_test` commands for HTTP-only testing, and the `make e2e_test_websocket` commands for WebSocket-only testing.
 
 ## E2E Test Config Files
 

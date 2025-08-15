@@ -414,12 +414,10 @@ func runWebSocketServiceTest(t *testing.T, ctx context.Context, ts *TestService,
 	// Use the service configuration we retrieved earlier
 	wsServiceConfig := serviceConfig.serviceConfig
 
-	// Add WebSocket results to the combined results map
+	// Add WebSocket results to the results map (no labeling needed since tests are separate)
 	resultsMutex.Lock()
 	for method, metrics := range websocketMetrics {
-		// Append "(WebSocket)" to method name to distinguish from HTTP results
-		websocketMethodKey := method + " (WebSocket)"
-		results[websocketMethodKey] = metrics
+		results[method] = metrics
 
 		// Validate individual WebSocket method results using existing assertion logic
 		if !validateMethodResults(t, ts.ServiceID, metrics, wsServiceConfig) {

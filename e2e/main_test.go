@@ -49,17 +49,17 @@ import (
 //   https://path.grove.city/develop/path/e2e_tests
 //
 // Example Usage - E2E tests:
-//   - make e2e_test_all             # Run all E2E tests for all services
-//   - make e2e_test <service IDs>   # Run all E2E tests for the specified services
-//   - make e2e_test_websocket_all   # Run WebSocket-only E2E tests for all compatible services
-//   - make e2e_test_websocket <IDs> # Run WebSocket-only E2E tests for specified services
+//   - make e2e_test_all             # Run all HTTP E2E tests for all services
+//   - make e2e_test <service IDs>   # Run HTTP E2E tests for the specified services
+//   - make e2e_test_websocket_all   # Run WebSocket E2E tests for all compatible services
+//   - make e2e_test_websocket <IDs> # Run WebSocket E2E tests for specified services
 //   - make e2e_test_eth_fallback <URL> # Run E2E test with ETH fallback URL enabled
 //
 // Example Usage - Load tests:
-//   - make load_test_all            # Run all load tests for all services
-//   - make load_test <service IDs>  # Run all load tests for the specified services
-//   - make load_test_websocket_all  # Run WebSocket-only load tests for all compatible services
-//   - make load_test_websocket <IDs> # Run WebSocket-only load tests for specified services
+//   - make load_test_all            # Run all HTTP load tests for all services
+//   - make load_test <service IDs>  # Run all HTTP load tests for the specified services
+//   - make load_test_websocket_all  # Run all WebSocket load tests for all compatible services
+//   - make load_test_websocket <IDs> # Run all WebSocket load tests for specified services
 // -----------------------------------------------------------------------------
 
 // -------------------- Test Configuration Initialization --------------------
@@ -106,7 +106,7 @@ func Test_PATH_E2E(t *testing.T) {
 	testServiceConfigs := setTestServiceConfigs(testServices)
 
 	// Filter test services for WebSocket-only mode if enabled
-	if cfg.isWebSocketOnly() {
+	if cfg.isWebSocketsOnly() {
 		filteredServices := make([]*TestService, 0)
 		for _, ts := range testServices {
 			if ts.supportsEVMWebSockets() {
@@ -170,49 +170,47 @@ func Test_PATH_E2E(t *testing.T) {
 	printServiceSummaries(serviceSummaries)
 }
 
-// runAllServiceTests orchestrates both HTTP and WebSocket tests based on service configuration and test mode.
-// This function handles the coordination between different test types while keeping them separated.
+// runAllServiceTests orchestrates either HTTP or WebSocket tests based on test mode.
+// This function runs either HTTP tests OR WebSocket tests, never both.
 func runAllServiceTests(t *testing.T, ctx context.Context, ts *TestService) {
 	results := make(map[string]*MethodMetrics)
 	var resultsMutex sync.Mutex
 
-	var websocketTestFailed bool
-
 	// Check if we're in WebSocket-only mode
-	websocketOnlyMode := cfg.isWebSocketOnly()
+	websocketsOnlyMode := cfg.isWebSocketsOnly()
 
-	// Run HTTP tests (unless in WebSocket-only mode)
-	if !websocketOnlyMode {
+	if websocketsOnlyMode {
+		// WebSocket-only mode: only run WebSocket tests
+		if !ts.supportsEVMWebSockets() {
+			t.Errorf("❌ Service %s does not support WebSocket tests but TEST_WEBSOCKETS=true was set", ts.ServiceID)
+			return
+		}
+
+		websocketTestFailed := runWebSocketServiceTest(t, ctx, ts, results, &resultsMutex)
+
+		// Calculate and validate the WebSocket service summary
+		overallTestFailed := calculateServiceSummary(t, ts, results)
+
+		// Mark overall test as failed if any component failed
+		if websocketTestFailed || overallTestFailed {
+			t.Fail()
+		}
+	} else {
+		// Default mode: only run HTTP tests
 		runHTTPServiceTestWithResults(t, ctx, ts, results, &resultsMutex)
-	}
 
-	// Run WebSocket tests if the service supports them
-	if ts.supportsEVMWebSockets() {
-		websocketTestFailed = runWebSocketServiceTest(t, ctx, ts, results, &resultsMutex)
-	} else if websocketOnlyMode {
-		// If in WebSocket-only mode but service doesn't support WebSockets, skip the service
-		fmt.Printf("%s⚠️  Service %s doesn't support WebSocket tests, skipping in WebSocket-only mode%s\n",
-			YELLOW, ts.ServiceID, RESET)
-		return
-	}
+		// Calculate and validate the HTTP service summary
+		overallTestFailed := calculateServiceSummary(t, ts, results)
 
-	// If no tests were run (empty results), skip validation
-	if len(results) == 0 {
-		fmt.Printf("%s⚠️  No tests run for service %s%s\n", YELLOW, ts.ServiceID, RESET)
-		return
-	}
-
-	// Calculate and validate the combined service summary
-	overallTestFailed := calculateServiceSummary(t, ts, results)
-
-	// Mark overall test as failed if any component failed
-	if websocketTestFailed || overallTestFailed {
-		t.Fail()
+		// Mark overall test as failed if HTTP tests failed
+		if overallTestFailed {
+			t.Fail()
+		}
 	}
 }
 
 // runHTTPServiceTestWithResults runs HTTP tests and populates the shared results map.
-// This wrapper function enables coordination between HTTP and WebSocket test results.
+// This function is used when running HTTP-only tests.
 func runHTTPServiceTestWithResults(t *testing.T, ctx context.Context, ts *TestService, results map[string]*MethodMetrics, resultsMutex *sync.Mutex) {
 	httpResults := make(map[string]*MethodMetrics)
 	httpResultsMutex := sync.Mutex{}
@@ -220,15 +218,10 @@ func runHTTPServiceTestWithResults(t *testing.T, ctx context.Context, ts *TestSe
 	// Run the HTTP test with its own results map
 	runHTTPServiceTest(t, ctx, ts, httpResults, &httpResultsMutex)
 
-	// Copy HTTP results to the shared results map with appropriate labeling
+	// Copy HTTP results to the shared results map (no labeling needed since tests are separate)
 	resultsMutex.Lock()
 	for method, metrics := range httpResults {
-		// Add "(HTTP)" suffix only if WebSocket tests will also run for this service
-		if ts.supportsEVMWebSockets() {
-			results[method+" (HTTP)"] = metrics
-		} else {
-			results[method] = metrics
-		}
+		results[method] = metrics
 	}
 	resultsMutex.Unlock()
 }

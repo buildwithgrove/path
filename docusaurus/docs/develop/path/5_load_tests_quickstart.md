@@ -27,13 +27,13 @@ First, prepare the Shannon E2E test config file:
 make config_copy_path_local_config_shannon_e2e
 ```
 
-Then, run load tests for specific service IDs:
+Then, run HTTP load tests for specific service IDs:
 
 ```bash
 make load_test eth,xrplevm
 ```
 
-Or, run load tests for all service IDs:
+Or, run HTTP load tests for all service IDs:
 
 ```bash
 make load_test_all
@@ -41,7 +41,7 @@ make load_test_all
 
 ### WebSocket Load Tests
 
-For services that support WebSocket connections (like XRPLEVM), you can run WebSocket-specific load tests:
+For services that support WebSocket connections (like XRPLEVM), you can run WebSocket-specific load tests separately:
 
 ```bash
 # Run WebSocket load tests for specific service IDs
@@ -51,7 +51,7 @@ make load_test_websocket xrplevm,xrplevm-testnet
 make load_test_websocket_all
 ```
 
-WebSocket load tests can also be run alongside HTTP tests (default behavior) or independently using the WebSocket-only commands above.
+**Note:** WebSocket load tests are completely separate from HTTP tests. Use the regular `make load_test` commands for HTTP-only testing, and the `make load_test_websocket` commands for WebSocket-only testing.
 
 ## Load Testing using Grove Portal
 
@@ -82,10 +82,10 @@ You will be prompted to enter your Grove Portal Application ID and API Key.
 **Next, run load tests against Grove Portal**:
 
 ```bash
-# Shannon load tests with specified service IDs only
+# HTTP load tests with specified service IDs only
 make load_test eth,xrplevm
 
-# Shannon load tests with all service IDs
+# HTTP load tests with all service IDs
 make load_test_all
 
 # WebSocket load tests with specified service IDs only
