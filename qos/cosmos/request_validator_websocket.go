@@ -12,6 +12,15 @@ import (
 	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
 
+// TODO_TECHDEBT(@adshmh): Build the request context with necessary functions for websocket requests:
+// - Do this for ALL QoS services: EVM, Cosmos, Solana, etc.
+// - Validate the request's payload
+// - Track the request to enable the validation of endpoint responses.
+// - Revisit the request context's logic with regard to websockets:
+// - Examples:
+//   - Consider recreating the QoS context per endpoint message
+//   - How to apply the observations for early detection of endpoint errors.
+//
 // TODO_IMPROVE(@commoddity): Add endpoint-level QoS checks to determine WebSocket support.
 // Currently validates WebSocket upgrade requests at the service level only.
 
