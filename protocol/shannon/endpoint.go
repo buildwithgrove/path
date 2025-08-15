@@ -11,26 +11,23 @@ import (
 	"github.com/buildwithgrove/path/protocol"
 )
 
-// TODO_TECHDEBT(@adshmh,@commoddity): Review the implementation of the endpoint interface.
-// Original note: Refactor to cleanly separate the "fallback" logic from the endpoint.
-//
-// Example:
-// Make endpoint an interface, implemented by:
-// - A Shannon endpoint
-// - A "fallback" URL with configurable fields: e.g. the Supplier set as "fallback"
-//
-// PR Review Reference: https://github.com/buildwithgrove/path/pull/395#discussion_r2261426190
+// TODO_TECHDEBT(@adshmh): Refactor this:
+// - Review the implementation of the endpoint interface.
+// - Avoid the need for a shannon specific implementation of Endpoint
+// - Example: Make endpoint an interface, implemented by:
+//   - A Shannon endpoint
+//   - A "fallback" URL with configurable fields: e.g. the Supplier set as "fallback"
+// - PR Review Reference: https://github.com/buildwithgrove/path/pull/395#discussion_r2261426190
 
 // endpoint defines the interface for Shannon endpoints, allowing for
 // different implementations (e.g., protocol vs fallback endpoints).
-//
-// It is defined separately from protocol.Endpoint to allow for
-// Shannon-specific functionality that is not used outside the
-// protocol/shannon package.
 type endpoint interface {
 	protocol.Endpoint
+
 	Session() *sessiontypes.Session
 	Supplier() string
+
+	// TODO_HACK(@adshmh): Remove this after refactoring this interface
 	FallbackURL(sharedtypes.RPCType) string
 	IsFallback() bool
 }
