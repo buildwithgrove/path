@@ -51,6 +51,12 @@ type Gateway struct {
 	DataReporter RequestResponseReporter
 }
 
+// TODO_TECHDEBT(@adshmh): Refactor this method once a new request context struct is added for websockets:
+// - Determine request type (HTTP, WebSocket) at the top.
+// - Immidiately call the corresponding handle method.
+// - Move initialization, defers, etc. to the correct method.
+// - Example: BroadcastAllObservations does not capture how websocket observations are handled.
+//
 // HandleHTTPServiceRequest implements PATH gateway's HTTP request processing:
 //
 // This is written as a template method to allow customization of steps.
@@ -106,6 +112,7 @@ func (g Gateway) handleHTTPServiceRequest(
 	gatewayRequestCtx *requestContext,
 	responseWriter http.ResponseWriter,
 ) {
+	logger := g.Logger.With("method", "handleHTTPServiceRequest")
 	defer func() {
 		// Write the user-facing HTTP response. This is deliberately not called for websocket requests as they do not return an HTTP response.
 		gatewayRequestCtx.WriteHTTPUserResponse(responseWriter)
@@ -115,6 +122,7 @@ func (g Gateway) handleHTTPServiceRequest(
 	// Build the QoS context for the target service ID using the HTTP request's payload.
 	err := gatewayRequestCtx.BuildQoSContextFromHTTP(httpReq)
 	if err != nil {
+		logger.Error().Err(err).Msg("❌ Error building QoS context for HTTP request")
 		return
 	}
 
@@ -128,13 +136,18 @@ func (g Gateway) handleHTTPServiceRequest(
 	// Build the protocol context for the HTTP request.
 	err = gatewayRequestCtx.BuildProtocolContextsFromHTTPRequest(httpReq)
 	if err != nil {
+		logger.Error().Err(err).Msg("❌ Error building protocol context for HTTP request")
 		return
 	}
 
 	// Use the gateway request context to process the relay(s) corresponding to the HTTP request.
 	// Any returned errors are ignored here and processed by the gateway context in the deferred calls.
 	// See the `BroadcastAllObservations` method of `gateway.requestContext` struct for details.
-	_ = gatewayRequestCtx.HandleRelayRequest()
+	err = gatewayRequestCtx.HandleRelayRequest()
+	if err != nil {
+		logger.Error().Err(err).Msg("❌ Error processing relay request")
+		return
+	}
 }
 
 // handleWebSocketRequest handles WebSocket connection requests.
@@ -144,20 +157,37 @@ func (g Gateway) handleWebSocketRequest(
 	gatewayRequestCtx *requestContext,
 	w http.ResponseWriter,
 ) {
+	logger := g.Logger.With("method", "handleWebSocketRequest")
+
+	// TODO_UPNEXT(@adshmh): Initialize and use the QoS context when handling a websocket request:
+	// - Parse the request: e.g. validate the payload is a valid subscribe request.
+	// - Generate observations to track requests: e.g. failed websocket requests due to invalid payload/unsupported on the requested service ID, etc.
+	// - Parse the selected endpoint's responses and use the stored data in the endpoint selection process.
+	// - Return proper response to the user in case of error: e.g. if the selected endpoint refuses the connection.
+	//
 	// Build the QoS context for the target service ID using the HTTP request's payload.
 	err := gatewayRequestCtx.BuildQoSContextFromWebsocket(httpReq)
 	if err != nil {
+		logger.Error().Err(err).Msg("❌ Error building QoS context for websocket request")
 		return
 	}
 
 	// Build the protocol context for the HTTP request.
 	err = gatewayRequestCtx.BuildProtocolContextsFromHTTPRequest(httpReq)
 	if err != nil {
+		logger.Error().Err(err).Msg("❌ Error building protocol context for websocket request")
 		return
 	}
 
+	// TODO_DOCUMENT(@adshmh): Update this comment once the refactoring of observations on websockets is complete:
+	// - BroadcastAllObservations does not apply to websockets due to the continuous flow of messages.
+	//
 	// Use the gateway request context to process the websocket connection request.
 	// Any returned errors are ignored here and processed by the gateway context in the deferred calls.
 	// See the `BroadcastAllObservations` method of `gateway.requestContext` struct for details.
-	_ = gatewayRequestCtx.HandleWebsocketRequest(httpReq, w)
+	err = gatewayRequestCtx.HandleWebsocketRequest(httpReq, w)
+	if err != nil {
+		logger.Error().Err(err).Msg("❌ Error processing websocket request")
+		return
+	}
 }
