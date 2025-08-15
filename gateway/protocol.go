@@ -4,8 +4,6 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/pokt-network/poktroll/pkg/polylog"
-
 	"github.com/buildwithgrove/path/health"
 	"github.com/buildwithgrove/path/metrics/devtools"
 	protocolobservations "github.com/buildwithgrove/path/observation/protocol"
@@ -85,7 +83,7 @@ type ProtocolRequestContext interface {
 	HandleServiceRequest(protocol.Payload) (protocol.Response, error)
 
 	// HandleWebsocketRequest handles a WebSocket connection request.
-	HandleWebsocketRequest(polylog.Logger, *http.Request, http.ResponseWriter) error
+	HandleWebsocketRequest(*http.Request, http.ResponseWriter) error
 
 	// GetObservations builds and returns the set of protocol-specific observations using the current context.
 	//

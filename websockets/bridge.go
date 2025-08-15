@@ -50,8 +50,7 @@ type SelectedEndpoint interface {
 // Full data flow: Client <---clientConn---> PATH Bridge <---endpointConn---> Relay Miner Bridge <------> Endpoint
 type bridge struct {
 	// ctx is used to stop the bridge when the context is canceled from either connection
-	ctx context.Context
-
+	ctx    context.Context
 	logger polylog.Logger
 
 	// endpointConn is the connection to the WebSocket Endpoint
@@ -64,8 +63,10 @@ type bridge struct {
 
 	// selectedEndpoint is the Endpoint that the bridge is connected to
 	selectedEndpoint SelectedEndpoint
+
 	// relayRequestSigner is the RelayRequestSigner that the bridge uses to sign relay requests
 	relayRequestSigner RelayRequestSigner
+
 	// fullNode is the FullNode that the bridge uses to validate relay responses
 	fullNode FullNode
 }
