@@ -157,6 +157,13 @@ func (rc *requestContext) BuildQoSContextFromHTTP(httpReq *http.Request) error {
 	return nil
 }
 
+// TODO_TECHDEBT(@adshmh): Use ParseHTTPRequest as the single entry point to QoS, including for a WebSocket request.
+// - The ParseHTTPRequest method in QoS should:
+//   - Check the request payload
+//   - Detect it is a subscription request.
+//   - Validate the request, e.g. params field.
+//   - Reject invalid WebSocket requests, similar to HTTP requests.
+//
 // BuildQoSContextFromWebsocket builds the QoS context instance using the supplied WebSocket request.
 // This method does not need to parse the HTTP request's payload as the WebSocket request does not have a body,
 // so it will only return an error if called for a service that does not support WebSocket connections.
@@ -245,8 +252,16 @@ func (rc *requestContext) BuildProtocolContextsFromHTTPRequest(httpReq *http.Req
 	return nil
 }
 
+// TODO_TECHDEBT(@adshmh): Split HTTP and WebSocket request contexts:
+// - Expected behavior is fundamentally different.
+// - HTTP context: a single, valid endpoint response is ideal.
+// - WebSocket context: continuous flow of endpoint responses.
+//
 // HandleWebsocketRequest handles a websocket request.
 func (rc *requestContext) HandleWebsocketRequest(request *http.Request, responseWriter http.ResponseWriter) error {
+	// TODO_TECHDEBT(@adshmh): Refactor to have the protocol return a context for a websocket request instead.
+	// This will remove the redundant step of building a context and using it to get a bridge.
+	//
 	// Establish a websocket connection with the selected endpoint and handle the request.
 	// In this code path, we are always guaranteed to have exactly one protocol context.
 	bridge, err := rc.protocolContexts[0].HandleWebsocketRequest(request, responseWriter)
@@ -255,6 +270,10 @@ func (rc *requestContext) HandleWebsocketRequest(request *http.Request, response
 		return err
 	}
 
+	// TODO_TECHDEBT(@adshmh): bridge should only handle websocket logic:
+	// - Pass all data to the (new) Websocket request context.
+	// - Websocket request context handles the flow: QoS, Data/Metrics, etc.
+	//
 	// Start the bridge in a goroutine to avoid blocking the HTTP handler
 	go bridge.StartAsync(
 		rc.gatewayObservations,

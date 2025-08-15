@@ -16,6 +16,12 @@ import (
 	"github.com/buildwithgrove/path/websockets"
 )
 
+// TODO_TECHDEBT(@adshmh): Move any logic unrelated to protocol out of this file:
+// - Data publishing: gateway package.
+// - Observation publishing: gateway package.
+// - getClientErrorResponse: qos/* packages: protocol should not contain JSONRPC logic.
+// - Separate and make fallback-related logic more explicit.
+//
 // ---------- Shannon Client Message Handler ----------
 
 var _ websockets.WebSocketMessageHandler = &websocketClientMessageHandler{}

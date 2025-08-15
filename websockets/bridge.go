@@ -11,6 +11,12 @@ import (
 	"github.com/buildwithgrove/path/observation"
 )
 
+// TODO_TECHDEBT(@adshmh): Refactor the bridge to purely contain any required specialized websocket logic.
+// - Most of the logic here needs to move to a new, specialized gateway.WebsocketRequestContext struct.
+//
+// TODO_TECHDEBT(@adshmh): make this a package private struct.
+// No other package should need to know the details of the underlying protocol (Websocket in this case).
+//
 // WebSocketMessage represents a websocket message that can be one of the following:
 // - Client request
 // - Endpoint response
@@ -23,6 +29,9 @@ type WebSocketMessage struct {
 	MessageType int
 }
 
+// TODO_TECHDEBT(@adshmh): Rename/remove/split this into multiple interfaces.
+// Each interface's name should clearly indicate the responsibilities.
+//
 // WebSocketMessageHandler handles websocket messages.
 // It can, for example, transform the message data before forwarding it.
 type WebSocketMessageHandler interface {
@@ -31,6 +40,11 @@ type WebSocketMessageHandler interface {
 	HandleMessage(msg WebSocketMessage) ([]byte, error)
 }
 
+// TODO_TECHDEBT(@adshmh): Drop this interface once the following are complete:
+// - The gateway package is the sole publisher of observations.
+// - Each message from the client/endpoint should result in a new observation (some fields will have the same values, e.g. the endpoint address)
+// - Each layer (e.g. protocol, QoS) should build and supply its own specialized observations for each message.
+//
 // ObservationPublisher handles publishing observations after processing endpoint messages.
 type ObservationPublisher interface {
 	// SetObservationContext sets the gateway observations and data reporter.
@@ -217,6 +231,9 @@ func (b *bridge) Shutdown(err error) {
 	close(b.msgChan)
 }
 
+// TODO_TECHDEBT(@adshmh): Add observations for client messages.
+// This is needed to track e.g. whether the client closed the connection.
+//
 // handleClientMessage processes a message from the Client and sends it to the endpoint.
 func (b *bridge) handleClientMessage(msg message) {
 	// Create a Message struct for the handler
@@ -239,6 +256,11 @@ func (b *bridge) handleClientMessage(msg message) {
 	}
 }
 
+// TODO_TECHDEBT(@adshmh): Explicitly build/publish observations at all levels: protocol, QoS, etc.
+// - Refactor to clarify the flow of observations/data across layers (endpoint->protocol->qos->gateway->metrics/data).
+// - Use a new gateway.WebSocketRequestContext to handle the coordination of the flow.
+// - Limit the logic in this bridge struct to anything that requires specialized websocket knowledge.
+//
 // handleEndpointMessage processes a message from the Endpoint and sends it to the Client.
 func (b *bridge) handleEndpointMessage(msg message) {
 	// Create a Message struct for the handler

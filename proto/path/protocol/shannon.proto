@@ -162,6 +162,15 @@ message ShannonRequestObservations {
   repeated ShannonEndpointObservation endpoint_observations = 3;
 }
 
+// TODO_TECHDEBT(@adshmh): Consider defining a new message type for Websocket endpoint messages/observations.
+// - use `oneof` over `ShannonWebsocketEndpointObservation`, `ShannonHTTPEndpointObservation`.
+// - This will enable customized fields for each type of observation:
+// - Examples:
+//   - `is_fallback_endpoint` field does not apply to a websocket endpoint connection.
+//   - A new `connection_duration_ms` field to report on websocket endpoint connections.
+// 
+// Current struct best suits HTTP interactions.
+//
 // ShannonEndpointObservation stores a single observation from an endpoint
 message ShannonEndpointObservation {
   // Supplier of the endpoint handling the request

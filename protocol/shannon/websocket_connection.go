@@ -14,6 +14,11 @@ import (
 	"github.com/buildwithgrove/path/websockets"
 )
 
+// TODO_TECHDEBT(@adshmh): Move this functionality to the gateway package.
+// - Build the required protocol observations in the protocol/shannon package.
+// - Coordinate the building and publication of observation in the gateway package.
+// - Move the construction of the bridge to gateway package.
+//
 // TODO_NEXT(@commoddity): Integrate session rollover detection for faster WebSocket disconnection.
 // See: https://github.com/buildwithgrove/path/issues/408
 //
@@ -74,6 +79,12 @@ func (rc *requestContext) createWebsocketBridge(
 		return nil, fmt.Errorf("createWebsocketBridge: %s", err.Error())
 	}
 
+	// TODO_TECHDEBT(@adshmh): Refactor to keep gateway package as the coordinator of components' interactions:
+	// - Update the gateway.ProtocolRequestContext interface to enable handling client/endpoint messages.
+	// - Replace the gateway.ProtocolRequestContext's `HandleWebsocketRequest` with proper methods to be called from gateway package.
+	// - Drop the creation of bridge below.
+	// - Minimize the responsibilities of bridge struct (see TODO comments in websockets/bridge.go)
+	//
 	// Create Shannon-specific message handlers
 	clientHandler := &websocketClientMessageHandler{
 		logger:             logger.With("component", "shannon_client_message_handler"),
