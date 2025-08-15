@@ -4,12 +4,8 @@ package e2e
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"math"
-	"slices"
 	"sort"
-	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -19,29 +15,84 @@ import (
 	vegeta "github.com/tsenart/vegeta/lib"
 
 	"github.com/buildwithgrove/path/protocol"
-	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
 
-// ===== ANSI Color Constants =====
-//
-// • Used for terminal output formatting
-const (
-	RED       = "\x1b[31m"
-	GREEN     = "\x1b[32m"
-	YELLOW    = "\x1b[33m"
-	BLUE      = "\x1b[34m"
-	CYAN      = "\x1b[36m"
-	BOLD      = "\x1b[1m"
-	BOLD_BLUE = "\x1b[1m\x1b[34m"
-	BOLD_CYAN = "\x1b[1m\x1b[36m"
-	RESET     = "\x1b[0m"
-)
+// ===== Type Aliases for Vegeta =====
+// These aliases allow us to use Vegeta types in our exported structs
+// while maintaining clean separation between packages
+type VegetaResult = vegeta.Result
+
+// ===== Metrics Types (Exported for use across test files) =====
+
+// MethodMetrics stores metrics for each method
+// Tracks HTTP and JSON-RPC results and derived rates
+// Used for assertion and reporting
+type MethodMetrics struct {
+	Method       string          // RPC method name
+	Success      int             // Number of successful requests
+	Failed       int             // Number of failed requests
+	StatusCodes  map[int]int     // Count of each status code
+	Errors       map[string]int  // Count of each error type
+	Results      []*VegetaResult // All raw results for this method
+	RequestCount int             // Total number of requests
+	SuccessRate  float64         // Success rate as a ratio (0-1)
+	P50          time.Duration   // 50th percentile latency
+	P95          time.Duration   // 95th percentile latency
+	P99          time.Duration   // 99th percentile latency
+
+	// JSON-RPC specific validation metrics
+	JSONRPCResponses       int // Count of responses we could unmarshal as JSON-RPC
+	JSONRPCUnmarshalErrors int // Count of responses we couldn't unmarshal
+	JSONRPCErrorField      int // Count of responses with non-nil Error field
+	JSONRPCNilResult       int // Count of responses with nil Result field
+	JSONRPCValidateErrors  int // Count of responses that fail validation
+
+	// Error tracking with response previews
+	JSONRPCParseErrors      map[string]int // Parse errors with response previews
+	JSONRPCValidationErrors map[string]int // Validation errors with response previews
+
+	// Success rates for specific checks
+	JSONRPCSuccessRate    float64 // Success rate for JSON-RPC unmarshaling
+	JSONRPCErrorFieldRate float64 // Error field absent rate (success = no error)
+	JSONRPCResultRate     float64 // Non-nil result rate
+	JSONRPCValidateRate   float64 // Validation success rate
+}
+
+// serviceSummary holds aggregated metrics for a service
+// Used for service-level reporting
+type serviceSummary struct {
+	ServiceID protocol.ServiceID
+
+	AvgP50Latency  time.Duration
+	AvgP90Latency  time.Duration
+	AvgLatency     time.Duration
+	AvgSuccessRate float64
+
+	TotalRequests int
+	TotalSuccess  int
+	TotalFailure  int
+
+	ServiceConfig ServiceConfig
+	MethodErrors  map[string]map[string]int
+	MethodCount   int
+	TotalErrors   int
+}
+
+// NewServiceSummary creates a new service summary
+func newServiceSummary(serviceID protocol.ServiceID, serviceConfig ServiceConfig, testMethodsMap map[string]testMethodConfig) *serviceSummary {
+	return &serviceSummary{
+		ServiceID:     serviceID,
+		ServiceConfig: serviceConfig,
+		MethodErrors:  make(map[string]map[string]int),
+		MethodCount:   len(testMethodsMap),
+	}
+}
 
 // ===== Vegeta Helper Functions =====
 
 // runServiceTest runs the E2E test for a single EVM service in a test case.
 func runServiceTest(t *testing.T, ctx context.Context, ts *TestService) (serviceTestFailed bool) {
-	results := make(map[string]*methodMetrics)
+	results := make(map[string]*MethodMetrics)
 	var resultsMutex sync.Mutex
 
 	progBars, err := newProgressBars(ts.testMethodsMap)
@@ -79,7 +130,7 @@ func runServiceTest(t *testing.T, ctx context.Context, ts *TestService) (service
 }
 
 // runMethodAttack executes the attack for a single JSON-RPC method and returns metrics.
-func runMethodAttack(ctx context.Context, method string, ts *TestService, progBar *pb.ProgressBar) *methodMetrics {
+func runMethodAttack(ctx context.Context, method string, ts *TestService, progBar *pb.ProgressBar) *MethodMetrics {
 	select {
 	case <-ctx.Done():
 		fmt.Printf("Method %s canceled", method)
@@ -98,7 +149,7 @@ func runMethodAttack(ctx context.Context, method string, ts *TestService, progBa
 // • Sends `serviceConfig.totalRequests` requests at `serviceConfig.rps` requests/sec
 // • DEV_NOTE: "Attack" is Vegeta's term for a single request
 // • See: https://github.com/tsenart/vegeta
-func runAttack(ctx context.Context, method string, ts *TestService, progressBar *pb.ProgressBar) *methodMetrics {
+func runAttack(ctx context.Context, method string, ts *TestService, progressBar *pb.ProgressBar) *MethodMetrics {
 	methodConfig := ts.testMethodsMap[method]
 
 	// Calculate RPS per method, rounding up and ensuring at least 1 RPS
@@ -155,22 +206,22 @@ func runAttack(ctx context.Context, method string, ts *TestService, progressBar 
 	close(resultsChan)
 	resultsWg.Wait()
 
-	calculateSuccessRate(metrics)
+	calculateAllSuccessRates(metrics)
 	calculatePercentiles(metrics)
 	return metrics
 }
 
 // initMethodMetrics
-// • Initializes serviceConfig struct for a method
-func initMethodMetrics(method string, totalRequests int) *methodMetrics {
-	return &methodMetrics{
-		method:      method,
-		statusCodes: make(map[int]int),
-		errors:      make(map[string]int),
-		results:     make([]*vegeta.Result, 0, totalRequests),
-		// Initialize the new error tracking fields
-		jsonRPCParseErrors:      make(map[string]int),
-		jsonRPCValidationErrors: make(map[string]int),
+// • Initializes MethodMetrics struct for a method
+func initMethodMetrics(method string, totalRequests int) *MethodMetrics {
+	return &MethodMetrics{
+		Method:      method,
+		StatusCodes: make(map[int]int),
+		Errors:      make(map[string]int),
+		Results:     make([]*vegeta.Result, 0, totalRequests),
+		// Initialize the error tracking fields
+		JSONRPCParseErrors:      make(map[string]int),
+		JSONRPCValidationErrors: make(map[string]int),
 	}
 }
 
@@ -191,7 +242,7 @@ func startResultsCollector(
 	ts *TestService,
 	method string,
 	methodConfig testMethodConfig,
-	metrics *methodMetrics,
+	metrics *MethodMetrics,
 	resultsChan <-chan *vegeta.Result,
 	resultsWg *sync.WaitGroup,
 	progressBar *pb.ProgressBar,
@@ -264,37 +315,10 @@ attackLoop:
 	}
 }
 
-// createResponsePreview creates a sanitized preview of the response body for error logging
-func createResponsePreview(body []byte, maxLen int) string {
-	if len(body) == 0 {
-		return "(empty)"
-	}
-
-	// Convert to string and normalize whitespace using strings lib
-	bodyStr := string(body)
-
-	// Replace all whitespace characters with single spaces
-	bodyStr = strings.ReplaceAll(bodyStr, "\n", " ")
-	bodyStr = strings.ReplaceAll(bodyStr, "\r", " ")
-	bodyStr = strings.ReplaceAll(bodyStr, "\t", " ")
-
-	// Collapse multiple spaces into single spaces
-	bodyStr = strings.Join(strings.Fields(bodyStr), " ")
-
-	// Truncate if needed
-	if len(bodyStr) <= maxLen {
-		return bodyStr
-	}
-	if maxLen <= 3 {
-		return bodyStr[:maxLen]
-	}
-	return bodyStr[:maxLen-3] + "..."
-}
-
 // processResult
 // • Updates metrics based on a single result
 func processResult(
-	m *methodMetrics,
+	m *MethodMetrics,
 	result *vegeta.Result,
 	serviceType serviceType,
 	httpRequestBody []byte,
@@ -304,130 +328,21 @@ func processResult(
 		return
 	}
 	// Store the raw result
-	m.results = append(m.results, result)
+	m.Results = append(m.Results, result)
 	// Process HTTP result
 	if result.Code >= 200 && result.Code < 300 && result.Error == "" {
-		m.success++
+		m.Success++
 	} else {
-		m.failed++
+		m.Failed++
 	}
 	// Update status code counts
-	m.statusCodes[int(result.Code)]++
+	m.StatusCodes[int(result.Code)]++
 
 	// If the request body contains "jsonrpc", it's a JSON-RPC request,
 	// and we should process the result as a JSON-RPC response.
 	if strings.Contains(string(httpRequestBody), "jsonrpc") {
-		// Process JSON-RPC validation if we have a successful HTTP response
-		var rpcResponse jsonrpc.Response
-		if err := json.Unmarshal(result.Body, &rpcResponse); err != nil {
-			m.jsonRPCUnmarshalErrors++
-
-			// Create response preview for parse errors
-			preview := createResponsePreview(result.Body, 100)
-			errorMsg := fmt.Sprintf("JSON parse error: %v (response preview: %s)", err, preview)
-			m.jsonRPCParseErrors[errorMsg]++
-			m.errors[errorMsg]++
-		} else {
-			m.jsonRPCResponses++
-
-			// Validate the response first
-			validationErr := rpcResponse.Validate(getExpectedID(serviceType))
-
-			// Check if Error field is nil (good)
-			if rpcResponse.Error != nil {
-				m.jsonRPCErrorField++
-				// Only track the error field message if there's no validation error
-				// (to avoid duplicate tracking when validation fails due to error field)
-				if validationErr == nil {
-					m.errors[rpcResponse.Error.Message]++
-				}
-			}
-
-			// Check if Result field is not nil (good)
-			if rpcResponse.Result == nil {
-				m.jsonRPCNilResult++
-			}
-
-			// Process validation error
-			if validationErr != nil {
-				m.jsonRPCValidateErrors++
-
-				// Create response preview for validation errors
-				preview := createResponsePreview(result.Body, 100)
-				errorMsg := fmt.Sprintf("JSON-RPC validation error: %v (response preview: %s)", validationErr, preview)
-				m.jsonRPCValidationErrors[errorMsg]++
-				m.errors[errorMsg]++
-			}
-		}
-	}
-}
-
-// ===== Assertions and Calculation Helpers =====
-
-// ===== Metrics Types =====
-
-// methodMetrics
-// • Stores metrics for each method
-// • Tracks HTTP and JSON-RPC results and derived rates
-// • Used for assertion and reporting
-type methodMetrics struct {
-	method       string           // RPC method name
-	success      int              // Number of successful requests
-	failed       int              // Number of failed requests
-	statusCodes  map[int]int      // Count of each status code
-	errors       map[string]int   // Count of each error type
-	results      []*vegeta.Result // All raw results for this method
-	requestCount int              // Total number of requests
-	successRate  float64          // Success rate as a ratio (0-1)
-	p50          time.Duration    // 50th percentile latency
-	p95          time.Duration    // 95th percentile latency
-	p99          time.Duration    // 99th percentile latency
-
-	// JSON-RPC specific validation metrics
-	jsonRPCResponses       int // Count of responses we could unmarshal as JSON-RPC
-	jsonRPCUnmarshalErrors int // Count of responses we couldn't unmarshal
-	jsonRPCErrorField      int // Count of responses with non-nil Error field
-	jsonRPCNilResult       int // Count of responses with nil Result field
-	jsonRPCValidateErrors  int // Count of responses that fail validation
-
-	// New fields for detailed error tracking with response previews
-	jsonRPCParseErrors      map[string]int // Parse errors with response previews
-	jsonRPCValidationErrors map[string]int // Validation errors with response previews
-
-	// Success rates for specific checks
-	jsonRPCSuccessRate    float64 // Success rate for JSON-RPC unmarshaling
-	jsonRPCErrorFieldRate float64 // Error field absent rate (success = no error)
-	jsonRPCResultRate     float64 // Non-nil result rate
-	jsonRPCValidateRate   float64 // Validation success rate
-}
-
-// serviceSummary
-// • Holds aggregated metrics for a service
-// • Used for service-level reporting
-type serviceSummary struct {
-	serviceID protocol.ServiceID
-
-	avgP50Latency  time.Duration
-	avgP90Latency  time.Duration
-	avgLatency     time.Duration
-	avgSuccessRate float64
-
-	totalRequests int
-	totalSuccess  int
-	totalFailure  int
-
-	serviceConfig ServiceConfig
-	methodErrors  map[string]map[string]int
-	methodCount   int
-	totalErrors   int
-}
-
-func newServiceSummary(serviceID protocol.ServiceID, serviceConfig ServiceConfig, testMethodsMap map[string]testMethodConfig) *serviceSummary {
-	return &serviceSummary{
-		serviceID:     serviceID,
-		serviceConfig: serviceConfig,
-		methodErrors:  make(map[string]map[string]int),
-		methodCount:   len(testMethodsMap),
+		// Use the decoupled JSON-RPC validation function
+		_ = validateJSONRPCResponse(result.Body, getExpectedID(serviceType), m)
 	}
 }
 
@@ -435,30 +350,20 @@ func newServiceSummary(serviceID protocol.ServiceID, serviceConfig ServiceConfig
 func calculateServiceSummary(
 	t *testing.T,
 	ts *TestService,
-	results map[string]*methodMetrics,
+	results map[string]*MethodMetrics,
 ) bool {
 	var serviceTestFailed bool = false
-	var totalLatency time.Duration
-	var totalP50Latency time.Duration
-	var totalP90Latency time.Duration
-	var totalSuccessRate float64
-	var methodsWithResults int
 
 	methodConfigs := ts.testMethodsMap
 	summary := ts.summary
 	serviceId := ts.ServiceID
 
-	// Track service totals
-	summary.totalRequests = 0
-	summary.totalSuccess = 0
-	summary.totalFailure = 0
-
-	// Validate results for each method and collect summary data
+	// Validate results for each method
 	for method := range methodConfigs {
-		serviceConfig := results[method]
+		metrics := results[method]
 
 		// Skip methods with no data
-		if serviceConfig == nil || len(serviceConfig.results) == 0 {
+		if metrics == nil || len(metrics.Results) == 0 {
 			continue
 		}
 
@@ -473,507 +378,17 @@ func calculateServiceSummary(
 			MaxP99LatencyMS:   methodDef.serviceConfig.MaxP99LatencyMS,
 		}
 
-		validateResults(t, serviceId, serviceConfig, methodTestConfig)
-
-		// If the test has failed after validation, set the service failure flag
-		if t.Failed() {
+		// Use the decoupled validation function
+		if !validateMethodResults(t, serviceId, metrics, methodTestConfig) {
 			serviceTestFailed = true
 		}
-
-		// Accumulate totals for the service summary
-		summary.totalRequests += serviceConfig.requestCount
-		summary.totalSuccess += serviceConfig.success
-		summary.totalFailure += serviceConfig.failed
-
-		// Extract latencies for P90 calculation
-		var latencies []time.Duration
-		for _, res := range serviceConfig.results {
-			latencies = append(latencies, res.Latency)
-		}
-
-		// Calculate p50 and p90 latencies for this method
-		p50 := calculateP50(latencies)
-		p90 := calculateP90(latencies)
-		avgLatency := calculateAvgLatency(latencies)
-
-		// Add to summary totals
-		totalLatency += avgLatency
-		totalP50Latency += p50
-		totalP90Latency += p90
-		totalSuccessRate += serviceConfig.successRate
-		methodsWithResults++
-
-		// Collect errors for the summary
-		if len(serviceConfig.errors) > 0 {
-			// Initialize method errors map if not already created
-			if summary.methodErrors[method] == nil {
-				summary.methodErrors[method] = make(map[string]int)
-			}
-
-			// Copy errors to summary
-			for errMsg, count := range serviceConfig.errors {
-				summary.methodErrors[method][errMsg] = count
-				summary.totalErrors += count
-			}
-		}
 	}
 
-	// Calculate averages if we have methods with results
-	if methodsWithResults > 0 {
-		summary.avgLatency = time.Duration(int64(totalLatency) / int64(methodsWithResults))
-		summary.avgP50Latency = time.Duration(int64(totalP50Latency) / int64(methodsWithResults))
-		summary.avgP90Latency = time.Duration(int64(totalP90Latency) / int64(methodsWithResults))
-		summary.avgSuccessRate = totalSuccessRate / float64(methodsWithResults)
-	}
+	// Calculate service averages using the decoupled calculation functions
+	calculateServiceAverages(summary, results)
+	collectServiceErrors(summary, results)
 
 	return serviceTestFailed
-}
-
-// ===== Metric Calculation Helpers =====
-
-// calculateSuccessRate
-// • Computes all success rates for a serviceConfig struct
-func calculateSuccessRate(m *methodMetrics) {
-	// Overall HTTP success rate
-	m.requestCount = m.success + m.failed
-	if m.requestCount > 0 {
-		m.successRate = float64(m.success) / float64(m.requestCount)
-	}
-
-	// JSON-RPC unmarshal success rate
-	totalJSONAttempts := m.jsonRPCResponses + m.jsonRPCUnmarshalErrors
-	if totalJSONAttempts > 0 {
-		m.jsonRPCSuccessRate = float64(m.jsonRPCResponses) / float64(totalJSONAttempts)
-	}
-
-	// Only calculate these if we have valid JSON-RPC responses
-	if m.jsonRPCResponses > 0 {
-		// Error field absence rate (success = no error field)
-		m.jsonRPCErrorFieldRate = float64(m.jsonRPCResponses-m.jsonRPCErrorField) / float64(m.jsonRPCResponses)
-
-		// Non-nil result rate
-		m.jsonRPCResultRate = float64(m.jsonRPCResponses-m.jsonRPCNilResult) / float64(m.jsonRPCResponses)
-
-		// Validation success rate
-		m.jsonRPCValidateRate = float64(m.jsonRPCResponses-m.jsonRPCValidateErrors) / float64(m.jsonRPCResponses)
-	}
-}
-
-// calculatePercentiles computes P50, P95, and P99 latency percentiles
-func calculatePercentiles(m *methodMetrics) {
-	if len(m.results) == 0 {
-		return
-	}
-
-	// Extract latencies
-	latencies := make([]time.Duration, 0, len(m.results))
-	for _, res := range m.results {
-		latencies = append(latencies, res.Latency)
-	}
-
-	// Sort latencies
-	slices.Sort(latencies)
-
-	// Calculate percentiles
-	m.p50 = percentile(latencies, 50)
-	m.p95 = percentile(latencies, 95)
-	m.p99 = percentile(latencies, 99)
-}
-
-// percentile calculates the p-th percentile of the given sorted slice
-func percentile(sorted []time.Duration, p int) time.Duration {
-	if len(sorted) == 0 {
-		return 0
-	}
-
-	if p <= 0 {
-		return sorted[0]
-	}
-
-	if p >= 100 {
-		return sorted[len(sorted)-1]
-	}
-
-	// Calculate the index
-	idx := int(math.Ceil(float64(p)/100.0*float64(len(sorted)))) - 1
-	// Use max to ensure idx is at least 0
-	idx = max(idx, 0)
-
-	return sorted[idx]
-}
-
-// validateResults performs assertions on test metrics
-func validateResults(t *testing.T, serviceId protocol.ServiceID, m *methodMetrics, serviceConfig ServiceConfig) {
-	// Create a slice to collect all assertion failures
-	var failures []string
-
-	// Add a blank line before each test result for better readability
-	fmt.Println()
-
-	// Print metrics header with method name in blue
-	fmt.Printf("%s~~~~~~~~~~ %s - %s ~~~~~~~~%s\n\n", BOLD_CYAN, serviceId, m.method, RESET)
-
-	// Print success rate with color (green ≥90%, yellow ≥70%, red <70%)
-	successColor := RED // Red by default
-	if m.successRate >= 0.90 {
-		successColor = GREEN // Green for ≥90%
-	} else if m.successRate >= 0.70 {
-		successColor = YELLOW // Yellow for ≥70%
-	}
-	fmt.Printf("%sHTTP Success Rate%s: %s%.2f%%%s (%d/%d requests)\n",
-		BOLD, RESET, successColor, m.successRate*100, RESET, m.success, m.requestCount)
-
-	// Print latencies (yellow if close to limit, green if well below)
-	p50Color := getLatencyColor(m.p50, serviceConfig.MaxP50LatencyMS)
-	p95Color := getLatencyColor(m.p95, serviceConfig.MaxP95LatencyMS)
-	p99Color := getLatencyColor(m.p99, serviceConfig.MaxP99LatencyMS)
-	fmt.Printf("%sLatency P50%s: %s%s%s\n", BOLD, RESET, p50Color, formatLatency(m.p50), RESET)
-	fmt.Printf("%sLatency P95%s: %s%s%s\n", BOLD, RESET, p95Color, formatLatency(m.p95), RESET)
-	fmt.Printf("%sLatency P99%s: %s%s%s\n", BOLD, RESET, p99Color, formatLatency(m.p99), RESET)
-
-	// Print JSON-RPC metrics with coloring
-	if m.jsonRPCResponses+m.jsonRPCUnmarshalErrors > 0 {
-		fmt.Printf("%sJSON-RPC Metrics:%s\n", BOLD, RESET)
-
-		if m.jsonRPCResponses > 0 {
-			// Unmarshal success rate
-			color := getRateColor(m.jsonRPCSuccessRate, serviceConfig.SuccessRate)
-			fmt.Printf("  Unmarshal Success: %s%.2f%%%s (%d/%d responses)\n",
-				color, m.jsonRPCSuccessRate*100, RESET, m.jsonRPCResponses, m.jsonRPCResponses+m.jsonRPCUnmarshalErrors)
-			// Validation success rate
-			color = getRateColor(m.jsonRPCValidateRate, serviceConfig.SuccessRate)
-			fmt.Printf("  Validation Success: %s%.2f%%%s (%d/%d responses)\n",
-				color, m.jsonRPCValidateRate*100, RESET, m.jsonRPCResponses-m.jsonRPCValidateErrors, m.jsonRPCResponses)
-			// Non-nil result rate
-			color = getRateColor(m.jsonRPCResultRate, serviceConfig.SuccessRate)
-			fmt.Printf("  Has Result: %s%.2f%%%s (%d/%d responses)\n",
-				color, m.jsonRPCResultRate*100, RESET, m.jsonRPCResponses-m.jsonRPCNilResult, m.jsonRPCResponses)
-			// Error field absent rate
-			color = getRateColor(m.jsonRPCErrorFieldRate, serviceConfig.SuccessRate)
-			fmt.Printf("  Does Not Have Error: %s%.2f%%%s (%d/%d responses)\n",
-				color, m.jsonRPCErrorFieldRate*100, RESET, m.jsonRPCResponses-m.jsonRPCErrorField, m.jsonRPCResponses)
-		}
-	}
-
-	// Log status codes
-	if len(m.statusCodes) > 0 {
-		statusText := "Status Codes:"
-		for code, count := range m.statusCodes {
-			codeColor := GREEN // Green for 2xx
-			if code >= 400 {
-				codeColor = RED // Red for 4xx/5xx
-			} else if code >= 300 {
-				codeColor = YELLOW // Yellow for 3xx
-			}
-			statusText += fmt.Sprintf("\n  %s%d%s: %d", codeColor, code, RESET, count)
-		}
-		fmt.Println(statusText)
-	}
-
-	// Determine if the test passed based on our metrics
-	testPassed := m.successRate >= serviceConfig.SuccessRate &&
-		m.p50 <= serviceConfig.MaxP50LatencyMS &&
-		m.p95 <= serviceConfig.MaxP95LatencyMS &&
-		m.p99 <= serviceConfig.MaxP99LatencyMS
-
-	// Choose error color based on test passing status
-	errorColor := YELLOW // Yellow for warnings (test passed despite errors)
-	if !testPassed {
-		errorColor = RED // Red for critical errors (test failed)
-	}
-
-	// Log top errors with appropriate color and include detailed JSON-RPC errors
-	if len(m.errors) > 0 {
-		fmt.Println("") // Add a new line before logging errors
-		fmt.Printf("%sTop errors:%s\n", errorColor, RESET)
-
-		// Sort errors by count (descending) to show most frequent first
-		type errorEntry struct {
-			message string
-			count   int
-		}
-		var sortedErrors []errorEntry
-		for errMsg, count := range m.errors {
-			sortedErrors = append(sortedErrors, errorEntry{message: errMsg, count: count})
-		}
-		sort.Slice(sortedErrors, func(i, j int) bool {
-			return sortedErrors[i].count > sortedErrors[j].count
-		})
-
-		// Display top 5 errors
-		for i, err := range sortedErrors {
-			if i >= 5 {
-				break
-			}
-			fmt.Printf("  %d. %s%s%s: %d\n", i+1, errorColor, err.message, RESET, err.count)
-		}
-
-		if len(sortedErrors) > 5 {
-			fmt.Printf("  ... and %s%d%s more error types\n", errorColor, len(sortedErrors)-5, RESET)
-		}
-	}
-
-	// Collect assertion failures
-	failures = append(failures, collectHTTPSuccessRateFailures(m, serviceConfig.SuccessRate)...)
-	failures = append(failures, collectJSONRPCRatesFailures(m, serviceConfig.SuccessRate)...)
-	failures = append(failures, collectLatencyFailures(m, serviceConfig)...)
-
-	// If there are failures, report them all at once at the end
-	if len(failures) > 0 {
-		fmt.Printf("\n%s❌ Assertion failures for %s:%s\n", RED, m.method, RESET)
-		for i, failure := range failures {
-			fmt.Printf("   %s%d. %s%s\n", RED, i+1, failure, RESET)
-		}
-		// Mark the test as failed but continue execution
-		t.Fail()
-	} else {
-		fmt.Printf("\n%s✅ Method %s passed all assertions%s\n", GREEN, m.method, RESET)
-	}
-}
-
-// collectHTTPSuccessRateFailures checks HTTP success rate and returns failure message if not met
-func collectHTTPSuccessRateFailures(m *methodMetrics, requiredRate float64) []string {
-	var failures []string
-
-	if m.successRate < requiredRate {
-		msg := fmt.Sprintf("HTTP success rate %.2f%% is below required %.2f%%", m.successRate*100, requiredRate*100)
-		failures = append(failures, msg)
-	}
-
-	return failures
-}
-
-// collectJSONRPCRatesFailures checks all JSON-RPC success rates and returns failure messages
-func collectJSONRPCRatesFailures(m *methodMetrics, requiredRate float64) []string {
-	var failures []string
-
-	// Skip if we don't have any JSON-RPC responses
-	if m.jsonRPCResponses+m.jsonRPCUnmarshalErrors == 0 {
-		return failures
-	}
-
-	// Check JSON-RPC unmarshal success rate
-	if m.jsonRPCSuccessRate < requiredRate {
-		msg := fmt.Sprintf("JSON-RPC unmarshal success rate %.2f%% is below required %.2f%%", m.jsonRPCSuccessRate*100, requiredRate*100)
-		failures = append(failures, msg)
-	}
-
-	// Skip the rest if we don't have valid JSON-RPC responses
-	if m.jsonRPCResponses == 0 {
-		return failures
-	}
-
-	// Check Error field absence rate
-	if m.jsonRPCErrorFieldRate < requiredRate {
-		msg := fmt.Sprintf("JSON-RPC error field absence rate %.2f%% is below required %.2f%%", m.jsonRPCErrorFieldRate*100, requiredRate*100)
-		failures = append(failures, msg)
-	}
-
-	// Check non-nil result rate
-	if m.jsonRPCResultRate < requiredRate {
-		msg := fmt.Sprintf("JSON-RPC non-nil result rate %.2f%% is below required %.2f%%", m.jsonRPCResultRate*100, requiredRate*100)
-		failures = append(failures, msg)
-	}
-
-	// Check validation success rate
-	if m.jsonRPCValidateRate < requiredRate {
-		msg := fmt.Sprintf("JSON-RPC validation success rate %.2f%% is below required %.2f%%", m.jsonRPCValidateRate*100, requiredRate*100)
-		failures = append(failures, msg)
-	}
-
-	return failures
-}
-
-// collectLatencyFailures checks latency metrics and returns failure messages
-func collectLatencyFailures(m *methodMetrics, serviceConfig ServiceConfig) []string {
-	var failures []string
-
-	// P50 latency check
-	if m.p50 > serviceConfig.MaxP50LatencyMS {
-		msg := fmt.Sprintf("P50 latency %s exceeds maximum allowed %s",
-			formatLatency(m.p50), formatLatency(serviceConfig.MaxP50LatencyMS))
-		failures = append(failures, msg)
-	}
-
-	// P95 latency check
-	if m.p95 > serviceConfig.MaxP95LatencyMS {
-		msg := fmt.Sprintf("P95 latency %s exceeds maximum allowed %s",
-			formatLatency(m.p95), formatLatency(serviceConfig.MaxP95LatencyMS))
-		failures = append(failures, msg)
-	}
-
-	// P99 latency check
-	if m.p99 > serviceConfig.MaxP99LatencyMS {
-		msg := fmt.Sprintf("P99 latency %s exceeds maximum allowed %s",
-			formatLatency(m.p99), formatLatency(serviceConfig.MaxP99LatencyMS))
-		failures = append(failures, msg)
-	}
-
-	return failures
-}
-
-// Helper function to get color for success rates
-func getRateColor(rate, requiredRate float64) string {
-	if rate >= requiredRate {
-		return GREEN // Green for meeting requirement
-	} else if rate >= requiredRate*0.50 {
-		return YELLOW // Yellow for close
-	}
-	return RED // Red for failing
-}
-
-// Helper function to get emoji for success rates
-func getRateEmoji(rate, requiredRate float64) string {
-	if rate >= requiredRate {
-		return "🟢" // Green for meeting requirement
-	} else if rate >= requiredRate*0.50 {
-		return "🟡" // Yellow for close
-	}
-	return "🔴" // Red for failing
-}
-
-// Helper function to get color for latency values
-func getLatencyColor(actual, maxAllowed time.Duration) string {
-	if float64(actual) <= float64(maxAllowed)*0.5 {
-		return GREEN // Green if well under limit (≤50%)
-	} else if float64(actual) <= float64(maxAllowed) {
-		return YELLOW // Yellow if close to limit (50-100%)
-	}
-	return RED // Red if over limit
-}
-
-// formatLatency formats latency values to whole milliseconds
-func formatLatency(d time.Duration) string {
-	return fmt.Sprintf("%dms", d/time.Millisecond)
-}
-
-// calculateP50 computes the 50th percentile latency
-func calculateP50(latencies []time.Duration) time.Duration {
-	if len(latencies) == 0 {
-		return 0
-	}
-
-	// Sort latencies if they aren't already sorted
-	slices.Sort(latencies)
-
-	return percentile(latencies, 50)
-}
-
-// calculateP90 computes the 90th percentile latency
-func calculateP90(latencies []time.Duration) time.Duration {
-	if len(latencies) == 0 {
-		return 0
-	}
-
-	// Sort latencies if they aren't already sorted
-	slices.Sort(latencies)
-
-	return percentile(latencies, 90)
-}
-
-// calculateAvgLatency computes the average latency
-func calculateAvgLatency(latencies []time.Duration) time.Duration {
-	if len(latencies) == 0 {
-		return 0
-	}
-
-	var sum time.Duration
-	for _, lat := range latencies {
-		sum += lat
-	}
-
-	return time.Duration(int64(sum) / int64(len(latencies)))
-}
-
-// printServiceSummaries prints a summary of all services after tests are complete
-func printServiceSummaries(summaries map[protocol.ServiceID]*serviceSummary) {
-	fmt.Printf("\n\n%s===== SERVICE SUMMARY =====%s\n", BOLD_CYAN, RESET)
-
-	// Sort service IDs for consistent output
-	serviceIDs := make([]protocol.ServiceID, 0, len(summaries))
-	for svcID := range summaries {
-		serviceIDs = append(serviceIDs, svcID)
-	}
-	sort.Slice(serviceIDs, func(i, j int) bool {
-		return string(serviceIDs[i]) < string(serviceIDs[j])
-	})
-
-	type row struct {
-		service      string
-		status       string
-		totalReq     int
-		totalSuccess int
-		failuresStr  string
-		successRate  string
-		p50Latency   string
-		p90Latency   string
-		avgLatency   string
-	}
-
-	rows := make([]row, 0, len(serviceIDs))
-
-	for _, svcID := range serviceIDs {
-		summary := summaries[svcID]
-		serviceConfig := summary.serviceConfig
-
-		successEmoji := getRateEmoji(summary.avgSuccessRate, serviceConfig.SuccessRate)
-
-		maxFailureRate := 1.0 - serviceConfig.SuccessRate
-		maxAllowedFailures := int(float64(summary.totalRequests) * maxFailureRate)
-		failuresStr := fmt.Sprintf("%d", summary.totalFailure)
-		if summary.totalFailure > 0 {
-			failuresStr += fmt.Sprintf(" (max allowed: %d)", maxAllowedFailures)
-		}
-
-		rows = append(rows, row{
-			service:      string(svcID),
-			status:       successEmoji,
-			totalReq:     summary.totalRequests,
-			totalSuccess: summary.totalSuccess,
-			failuresStr:  failuresStr,
-			successRate:  fmt.Sprintf("%.2f%%", summary.avgSuccessRate*100),
-			p50Latency:   formatLatency(summary.avgP50Latency),
-			p90Latency:   formatLatency(summary.avgP90Latency),
-			avgLatency:   formatLatency(summary.avgLatency),
-		})
-	}
-
-	// Sort rows by descending success rate, then ascending P90 latency, then ascending avg latency
-	sort.Slice(rows, func(i, j int) bool {
-		// Parse success rates
-		srI, _ := strconv.ParseFloat(strings.TrimSuffix(rows[i].successRate, "%"), 64)
-		srJ, _ := strconv.ParseFloat(strings.TrimSuffix(rows[j].successRate, "%"), 64)
-		if srI != srJ {
-			return srI > srJ // Descending success rate
-		}
-		// Parse P50 latency (remove "ms")
-		p50I, _ := strconv.Atoi(strings.TrimSuffix(rows[i].p50Latency, "ms"))
-		p50J, _ := strconv.Atoi(strings.TrimSuffix(rows[j].p50Latency, "ms"))
-		if p50I != p50J {
-			return p50I < p50J // Ascending P50 latency
-		}
-		// Parse P90 latency (remove "ms")
-		p90I, _ := strconv.Atoi(strings.TrimSuffix(rows[i].p90Latency, "ms"))
-		p90J, _ := strconv.Atoi(strings.TrimSuffix(rows[j].p90Latency, "ms"))
-		if p90I != p90J {
-			return p90I < p90J // Ascending P90 latency
-		}
-		// Parse avg latency (remove "ms")
-		avgI, _ := strconv.Atoi(strings.TrimSuffix(rows[i].avgLatency, "ms"))
-		avgJ, _ := strconv.Atoi(strings.TrimSuffix(rows[j].avgLatency, "ms"))
-		return avgI < avgJ // Ascending avg latency
-	})
-
-	// Print table header
-	fmt.Printf("| %-16s | %-6s | %-8s | %-9s | %-20s | %-12s | %-11s | %-11s | %-11s |\n",
-		"Service", "Status", "Requests", "Successes", "Failures", "Success Rate", "P50 Latency", "P90 Latency", "Avg Latency")
-	fmt.Printf("|------------------|--------|----------|-----------|----------------------|--------------|-------------|-------------|-------------|\n")
-	for _, r := range rows {
-		fmt.Printf("| %-16s | %-6s | %-8d | %-9d | %-20s | %-12s | %-11s | %-11s | %-11s |\n",
-			r.service, r.status, r.totalReq, r.totalSuccess, r.failuresStr, r.successRate, r.p50Latency, r.p90Latency, r.avgLatency)
-	}
-
-	fmt.Printf("\n%s===== END SERVICE SUMMARY =====%s\n", BOLD_CYAN, RESET)
 }
 
 // ===== Progress Bars =====
