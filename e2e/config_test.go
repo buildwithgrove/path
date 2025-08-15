@@ -218,7 +218,7 @@ type (
 
 	// DockerConfig for Docker configuration
 	DockerConfig struct {
-		LogToFile         bool `yaml:"log_to_file"`         // Log Docker container output
+		DockerLog         bool `yaml:"docker_log"`          // Log Docker container output
 		ForceRebuildImage bool `yaml:"force_rebuild_image"` // Force Docker image rebuild (useful after code changes)
 	}
 

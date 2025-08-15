@@ -245,15 +245,18 @@ func (p *Protocol) BuildRequestContextForEndpoint(
 		return nil, buildProtocolContextSetupErrorObservation(serviceID, err), err
 	}
 
+	fallbackEndpoints, _ := p.getServiceFallback(serviceID)
 	// Return new request context for the pre-selected endpoint
 	return &requestContext{
 		logger:             p.logger,
 		context:            ctx,
 		fullNode:           p.FullNode,
-		selectedEndpoint:   &selectedEndpoint,
+		selectedEndpoint:   selectedEndpoint,
 		serviceID:          serviceID,
 		relayRequestSigner: permittedSigner,
 		httpClient:         p.httpClient,
+		// Pass the list of fallback endpoints for the service
+		fallbackEndpoints: fallbackEndpoints,
 	}, protocolobservations.Observations{}, nil
 }
 
@@ -351,7 +354,6 @@ func (p *Protocol) getUniqueEndpoints(
 	// Handle the case where no session endpoints are available.
 	// If fallback endpoints are available for the service ID, use them.
 	if len(serviceFallbacks) > 0 {
-		logger.Info().Msgf("No session endpoints available: using fallback endpoints for service %s.", serviceID)
 		return serviceFallbacks, nil
 	}
 
