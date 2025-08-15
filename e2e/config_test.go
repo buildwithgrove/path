@@ -26,6 +26,10 @@ const (
 	// [OPTIONAL] Run the test only against the specified service IDs.
 	// If not set, all service IDs for the protocol will be used.
 	envTestServiceIDs = "TEST_SERVICE_IDS"
+
+	// [OPTIONAL] Run only WebSocket tests (skips HTTP tests).
+	// If not set, both HTTP and WebSocket tests will run for services that support WebSockets.
+	envTestWebSocketOnly = "TEST_WEBSOCKET_ONLY"
 )
 
 // getEnvConfig fetches and validates environment config from environment variables
@@ -42,9 +46,13 @@ func getEnvConfig() (envConfig, error) {
 		}
 	}
 
+	// Parse WebSocket-only mode
+	websocketOnly := strings.ToLower(os.Getenv(envTestWebSocketOnly)) == "true"
+
 	return envConfig{
 		testMode:       testMode,
 		testServiceIDs: testServiceIDs,
+		websocketOnly:  websocketOnly,
 	}, nil
 }
 
@@ -202,6 +210,7 @@ type (
 	envConfig struct {
 		testMode       testMode
 		testServiceIDs []protocol.ServiceID
+		websocketOnly  bool
 	}
 
 	// E2ELoadTestConfig for test mode configuration
@@ -283,6 +292,10 @@ func (c *Config) getTestMode() testMode {
 
 func (c *Config) getTestServiceIDs() []protocol.ServiceID {
 	return c.envConfig.testServiceIDs
+}
+
+func (c *Config) isWebSocketOnly() bool {
+	return c.envConfig.websocketOnly
 }
 
 func (c *Config) useServiceSubdomain() bool {

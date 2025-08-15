@@ -1,11 +1,35 @@
 //go:build e2e
 
+// Package e2e provides HTTP load testing functionality using Vegeta for PATH E2E tests.
+//
+// This file contains HTTP-specific test configuration, execution, and metrics collection.
+// It uses the Vegeta load testing library (https://github.com/tsenart/vegeta) to perform
+// high-performance HTTP requests against PATH gateway endpoints.
+//
+// VEGETA INTEGRATION:
+// - Vegeta is an HTTP load testing tool and library written in Go
+// - Repository: https://github.com/tsenart/vegeta
+// - Used for generating HTTP traffic at configurable rates and durations
+// - Provides detailed latency metrics and response validation
+//
+// TEST FLOW:
+// 1. Service configuration defines test parameters (RPS, request count, latency thresholds)
+// 2. Each JSON-RPC method gets converted to Vegeta HTTP targets with proper headers/body
+// 3. Vegeta attackers execute parallel HTTP requests at specified rates
+// 4. Results are collected and validated for HTTP status codes and JSON-RPC responses
+// 5. Metrics are aggregated and compared against configured thresholds
+// 6. Service summaries provide overall test results and failure analysis
+//
+// SEPARATION OF CONCERNS:
+// - vegeta_test.go: HTTP testing using Vegeta (this file)
+// - websockets_test.go: WebSocket testing using gorilla/websocket
+// - main_test.go: Test orchestration and coordination
+// - assertions_test.go: Shared validation logic (transport-agnostic)
 package e2e
 
 import (
 	"context"
 	"fmt"
-	"sort"
 	"strings"
 	"sync"
 	"testing"
@@ -88,13 +112,36 @@ func newServiceSummary(serviceID protocol.ServiceID, serviceConfig ServiceConfig
 	}
 }
 
-// ===== Vegeta Helper Functions =====
+// ===== Vegeta HTTP Test Functions =====
+//
+// The following functions implement the HTTP testing workflow using Vegeta:
+// 1. runServiceTest() - Entry point for standalone HTTP testing
+// 2. runHTTPServiceTest() - Core HTTP test execution for a service
+// 3. runMethodAttack() - Individual method attack coordination
+// 4. runAttack() - Single method load test execution
+// 5. Progress bar management and result processing
 
-// runServiceTest runs the E2E test for a single EVM service in a test case.
+// runServiceTest runs the HTTP-based E2E test for a single service in a test case.
+// This function handles only HTTP tests using Vegeta.
+// NOTE: This function is now primarily used for HTTP-only test scenarios.
+// For combined HTTP/WebSocket testing, use runAllServiceTests() in main_test.go.
 func runServiceTest(t *testing.T, ctx context.Context, ts *TestService) (serviceTestFailed bool) {
 	results := make(map[string]*MethodMetrics)
 	var resultsMutex sync.Mutex
 
+	// Run HTTP tests
+	runHTTPServiceTest(t, ctx, ts, results, &resultsMutex)
+
+	// Calculate and validate the service summary
+	serviceTestFailed = calculateServiceSummary(t, ts, results)
+
+	return serviceTestFailed
+}
+
+// runHTTPServiceTest runs the HTTP-based E2E test for a single service using Vegeta.
+// This function focuses exclusively on HTTP request testing and metrics collection.
+// Results are populated into the provided results map for further validation.
+func runHTTPServiceTest(t *testing.T, ctx context.Context, ts *TestService, results map[string]*MethodMetrics, resultsMutex *sync.Mutex) {
 	progBars, err := newProgressBars(ts.testMethodsMap)
 	if err != nil {
 		t.Fatalf("Failed to create progress bars: %v", err)
@@ -125,8 +172,6 @@ func runServiceTest(t *testing.T, ctx context.Context, ts *TestService) (service
 	if err := progBars.finish(); err != nil {
 		fmt.Printf("Error stopping progress bars: %v", err)
 	}
-
-	return calculateServiceSummary(t, ts, results)
 }
 
 // runMethodAttack executes the attack for a single JSON-RPC method and returns metrics.
@@ -144,11 +189,16 @@ func runMethodAttack(ctx context.Context, method string, ts *TestService, progBa
 	return metrics
 }
 
-// runAttack
-// • Executes a load test for a given method
-// • Sends `serviceConfig.totalRequests` requests at `serviceConfig.rps` requests/sec
-// • DEV_NOTE: "Attack" is Vegeta's term for a single request
-// • See: https://github.com/tsenart/vegeta
+// runAttack executes a Vegeta load test attack for a single JSON-RPC method.
+//
+// VEGETA TERMINOLOGY:
+// • "Attack" = Vegeta's term for executing load tests against targets
+// • "Target" = HTTP request configuration (URL, method, headers, body)
+// • "Attacker" = Vegeta component that generates HTTP requests
+// • "Rate" = Requests per second (RPS) for the attack
+//
+// This function sends `serviceConfig.RequestsPerMethod` requests at calculated RPS.
+// See Vegeta documentation: https://github.com/tsenart/vegeta
 func runAttack(ctx context.Context, method string, ts *TestService, progressBar *pb.ProgressBar) *MethodMetrics {
 	methodConfig := ts.testMethodsMap[method]
 
@@ -211,6 +261,8 @@ func runAttack(ctx context.Context, method string, ts *TestService, progressBar 
 	return metrics
 }
 
+// ===== Vegeta Configuration and Setup =====
+
 // initMethodMetrics
 // • Initializes MethodMetrics struct for a method
 func initMethodMetrics(method string, totalRequests int) *MethodMetrics {
@@ -235,6 +287,8 @@ func createVegetaAttacker(rps int, timeout time.Duration) *vegeta.Attacker {
 		vegeta.MaxWorkers(uint64(rps)),
 	)
 }
+
+// ===== Vegeta Attack Execution =====
 
 // startResultsCollector
 // • Launches a goroutine to process results, update progress bar, print status
@@ -315,6 +369,8 @@ attackLoop:
 	}
 }
 
+// ===== HTTP Response Processing =====
+
 // processResult
 // • Updates metrics based on a single result
 func processResult(
@@ -389,129 +445,4 @@ func calculateServiceSummary(
 	collectServiceErrors(summary, results)
 
 	return serviceTestFailed
-}
-
-// ===== Progress Bars =====
-
-// progressBars
-// • Holds and manages progress bars for all methods in a test
-// • Used to visualize test progress interactively
-type progressBars struct {
-	bars    map[string]*pb.ProgressBar
-	pool    *pb.Pool
-	enabled bool
-}
-
-// newProgressBars
-// • Creates a set of progress bars for all methods in a test
-// • Disables progress bars in CI/non-interactive environments
-func newProgressBars(testMethodsMap map[string]testMethodConfig) (*progressBars, error) {
-	// Check if we're running in CI or non-interactive environment
-	if isCIEnv() {
-		fmt.Println("Running in CI environment - progress bars disabled")
-		return &progressBars{
-			bars:    make(map[string]*pb.ProgressBar),
-			enabled: false,
-		}, nil
-	}
-
-	// Sort methods for consistent display order
-	var sortedMethods []string
-	for method := range testMethodsMap {
-		sortedMethods = append(sortedMethods, method)
-	}
-	sort.Slice(sortedMethods, func(i, j int) bool {
-		return string(sortedMethods[i]) < string(sortedMethods[j])
-	})
-
-	// Calculate the longest method name for padding
-	longestLen := 0
-	for _, method := range sortedMethods {
-		if len(string(method)) > longestLen {
-			longestLen = len(string(method))
-		}
-	}
-
-	// Create a progress bar for each method
-	bars := make(map[string]*pb.ProgressBar)
-	barList := make([]*pb.ProgressBar, 0, len(testMethodsMap))
-
-	for _, method := range sortedMethods {
-		def := testMethodsMap[method]
-
-		// Store the method name with padding for display
-		padding := longestLen - len(string(method))
-		methodWithPadding := string(method) + strings.Repeat(" ", padding)
-
-		// Create a custom format for counters with padding for consistent spacing
-		// Format: current/total with padding to make 3 digits minimum
-		// This formats as "  1/300" or "010/300" for consistent width
-		customCounterFormat := `{{ printf "%3d/%3d" .Current .Total }}`
-
-		// Create a colored template with padded counters
-		tmpl := fmt.Sprintf(`{{ blue "%s" }} %s {{ bar . "[" "=" ">" " " "]" | blue }} {{ green (percent .) }}`,
-			methodWithPadding, customCounterFormat)
-
-		// Create the bar with the template and start it
-		bar := pb.ProgressBarTemplate(tmpl).New(def.serviceConfig.RequestsPerMethod)
-
-		// Ensure we're not using byte formatting
-		bar.Set(pb.Bytes, false)
-
-		// Set max width for the bar
-		bar.SetMaxWidth(100)
-
-		bars[method] = bar
-		barList = append(barList, bar)
-	}
-
-	// Try to create a pool with all the bars
-	pool, err := pb.StartPool(barList...)
-	if err != nil {
-		// If we fail to create progress bars, fall back to simple output
-		fmt.Printf("Warning: Could not create progress bars: %v\n", err)
-		return &progressBars{
-			bars:    make(map[string]*pb.ProgressBar),
-			enabled: false,
-		}, nil
-	}
-
-	return &progressBars{
-		bars:    bars,
-		pool:    pool,
-		enabled: true,
-	}, nil
-}
-
-// finish completes all progress bars
-func (p *progressBars) finish() error {
-	if !p.enabled || p.pool == nil {
-		return nil
-	}
-	return p.pool.Stop()
-}
-
-// get returns the progress bar for a specific method
-func (p *progressBars) get(method string) *pb.ProgressBar {
-	if !p.enabled {
-		return nil
-	}
-	return p.bars[method]
-}
-
-// showWaitBar shows a progress bar for the optional for hydrator checks to complete
-func showWaitBar(secondsToWait int) {
-	// Create a progress bar for the optional wait time
-	waitBar := pb.ProgressBarTemplate(`{{ blue "Waiting" }} {{ printf "%2d/%2d" .Current .Total }} {{ bar . "[" "=" ">" " " "]" | blue }} {{ green (percent .) }}`).New(secondsToWait)
-	waitBar.Set(pb.Bytes, false)
-	waitBar.SetMaxWidth(100)
-	waitBar.Start()
-
-	// Wait for specified seconds, updating the progress bar every second
-	for range secondsToWait {
-		waitBar.Increment()
-		<-time.After(1 * time.Second)
-	}
-
-	waitBar.Finish()
 }

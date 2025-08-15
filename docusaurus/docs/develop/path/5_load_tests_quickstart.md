@@ -13,6 +13,7 @@ Add a gif of load tests running locally.
 _tl;dr Fully featured Load Tests to verify PATH works correctly._
 
 - [Load Testing using Local PATH](#load-testing-using-local-path)
+  - [WebSocket Load Tests](#websocket-load-tests)
 - [Load Testing using Grove Portal](#load-testing-using-grove-portal)
 - [Load Testing Grove Fallback Endpoints](#load-testing-grove-fallback-endpoints)
 
@@ -37,6 +38,20 @@ Or, run load tests for all service IDs:
 ```bash
 make load_test_all
 ```
+
+### WebSocket Load Tests
+
+For services that support WebSocket connections (like XRPLEVM), you can run WebSocket-specific load tests:
+
+```bash
+# Run WebSocket load tests for specific service IDs
+make load_test_websocket xrplevm,xrplevm-testnet
+
+# Run WebSocket load tests for all WebSocket-compatible services  
+make load_test_websocket_all
+```
+
+WebSocket load tests can also be run alongside HTTP tests (default behavior) or independently using the WebSocket-only commands above.
 
 ## Load Testing using Grove Portal
 
@@ -72,6 +87,12 @@ make load_test eth,xrplevm
 
 # Shannon load tests with all service IDs
 make load_test_all
+
+# WebSocket load tests with specified service IDs only
+make load_test_websocket xrplevm,xrplevm-testnet
+
+# WebSocket load tests with all WebSocket-compatible service IDs
+make load_test_websocket_all
 ```
 
 ## Load Testing Grove Fallback Endpoints

@@ -35,6 +35,20 @@ e2e_test: shannon_e2e_config_warning ## Run an E2E Shannon relay test with speci
 	fi
 	(cd e2e && TEST_MODE=e2e TEST_PROTOCOL=shannon TEST_SERVICE_IDS=$(filter-out $@,$(MAKECMDGOALS)) go test -v -tags=e2e -count=1 -run Test_PATH_E2E)
 
+.PHONY: e2e_test_websocket_all
+e2e_test_websocket_all: shannon_e2e_config_warning ## Run WebSocket-only E2E tests for all WebSocket-compatible services
+	(cd e2e && TEST_MODE=e2e TEST_PROTOCOL=shannon TEST_WEBSOCKET_ONLY=true go test -v -tags=e2e -count=1 -run Test_PATH_E2E)
+
+.PHONY: e2e_test_websocket
+e2e_test_websocket: shannon_e2e_config_warning ## Run WebSocket-only E2E tests with specified service IDs (e.g. make e2e_test_websocket xrplevm)
+	@if [ "$(filter-out $@,$(MAKECMDGOALS))" = "" ]; then \
+		echo "❌ Error: Service IDs are required (comma-separated list)"; \
+		echo "  👀 Example: make e2e_test_websocket xrplevm,xrplevm-testnet"; \
+		echo "  💡 To run all WebSocket-compatible services, use: make e2e_test_websocket_all"; \
+		exit 1; \
+	fi
+	(cd e2e && TEST_MODE=e2e TEST_PROTOCOL=shannon TEST_SERVICE_IDS=$(filter-out $@,$(MAKECMDGOALS)) TEST_WEBSOCKET_ONLY=true go test -v -tags=e2e -count=1 -run Test_PATH_E2E)
+
 .PHONY: e2e_test_eth_fallback
 e2e_test_eth_fallback: shannon_e2e_config_warning ## Run an E2E Shannon relay test with ETH fallback enabled (requires FALLBACK_URL)
 	@if [ "$(filter-out $@,$(MAKECMDGOALS))" = "" ]; then \
@@ -63,6 +77,20 @@ load_test: ## Run a Shannon load test with specified service IDs (e.g. make load
 		exit 1; \
 	fi
 	@(cd e2e && TEST_MODE=load TEST_PROTOCOL=shannon TEST_SERVICE_IDS=$(filter-out $@,$(MAKECMDGOALS)) go test -v -tags=e2e -count=1 -run Test_PATH_E2E)
+
+.PHONY: load_test_websocket_all
+load_test_websocket_all: ## Run WebSocket-only load tests for all WebSocket-compatible services
+	(cd e2e && TEST_MODE=load TEST_PROTOCOL=shannon TEST_WEBSOCKET_ONLY=true go test -v -tags=e2e -count=1 -run Test_PATH_E2E)
+
+.PHONY: load_test_websocket
+load_test_websocket: ## Run WebSocket-only load tests with specified service IDs (e.g. make load_test_websocket xrplevm)
+	@if [ "$(filter-out $@,$(MAKECMDGOALS))" = "" ]; then \
+		echo "❌ Error: Service IDs are required (comma-separated list)"; \
+		echo "  👀 Example: make load_test_websocket xrplevm,xrplevm-testnet"; \
+		echo "  💡 To run all WebSocket-compatible services, use: make load_test_websocket_all"; \
+		exit 1; \
+	fi
+	@(cd e2e && TEST_MODE=load TEST_PROTOCOL=shannon TEST_SERVICE_IDS=$(filter-out $@,$(MAKECMDGOALS)) TEST_WEBSOCKET_ONLY=true go test -v -tags=e2e -count=1 -run Test_PATH_E2E)
 
 .PHONY: config_enable_grove_fallback
 config_enable_grove_fallback: ## Enable fallback endpoints for all services in PATH config

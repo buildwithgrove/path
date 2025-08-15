@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"sync"
 	"testing"
 	"time"
 
@@ -72,6 +73,25 @@ func Test_PATH_E2E(t *testing.T) {
 	// Assign test service configs to each test service
 	testServiceConfigs := setTestServiceConfigs(testServices)
 
+	// Filter test services for WebSocket-only mode if enabled
+	if cfg.isWebSocketOnly() {
+		filteredServices := make([]*TestService, 0)
+		for _, ts := range testServices {
+			if ts.supportsEVMWebSockets() {
+				filteredServices = append(filteredServices, ts)
+			}
+		}
+		testServices = filteredServices
+
+		if len(testServices) == 0 {
+			fmt.Printf("%s⚠️  No services support WebSocket tests in WebSocket-only mode%s\n", YELLOW, RESET)
+			return
+		}
+
+		fmt.Printf("\n%s🔌 WebSocket-only mode enabled - filtered to %d WebSocket-compatible service(s)%s\n",
+			BOLD_CYAN, len(testServices), RESET)
+	}
+
 	// Log the test service IDs
 	logTestServiceIDs(testServices)
 
@@ -111,11 +131,74 @@ func Test_PATH_E2E(t *testing.T) {
 		// Log service specific info
 		logTestServiceInfo(ts, serviceGatewayURL, serviceConfig)
 
-		// Run the service test
-		runServiceTest(t, ctx, ts)
+		// Run the service tests (HTTP and/or WebSocket based on configuration)
+		runAllServiceTests(t, ctx, ts)
 	}
 
 	printServiceSummaries(serviceSummaries)
+}
+
+// runAllServiceTests orchestrates both HTTP and WebSocket tests based on service configuration and test mode.
+// This function handles the coordination between different test types while keeping them separated.
+func runAllServiceTests(t *testing.T, ctx context.Context, ts *TestService) {
+	results := make(map[string]*MethodMetrics)
+	var resultsMutex sync.Mutex
+
+	var websocketTestFailed bool
+
+	// Check if we're in WebSocket-only mode
+	websocketOnlyMode := cfg.isWebSocketOnly()
+
+	// Run HTTP tests (unless in WebSocket-only mode)
+	if !websocketOnlyMode {
+		runHTTPServiceTestWithResults(t, ctx, ts, results, &resultsMutex)
+	}
+
+	// Run WebSocket tests if the service supports them
+	if ts.supportsEVMWebSockets() {
+		websocketTestFailed = runWebSocketServiceTest(t, ctx, ts, results, &resultsMutex)
+	} else if websocketOnlyMode {
+		// If in WebSocket-only mode but service doesn't support WebSockets, skip the service
+		fmt.Printf("%s⚠️  Service %s doesn't support WebSocket tests, skipping in WebSocket-only mode%s\n",
+			YELLOW, ts.ServiceID, RESET)
+		return
+	}
+
+	// If no tests were run (empty results), skip validation
+	if len(results) == 0 {
+		fmt.Printf("%s⚠️  No tests run for service %s%s\n", YELLOW, ts.ServiceID, RESET)
+		return
+	}
+
+	// Calculate and validate the combined service summary
+	overallTestFailed := calculateServiceSummary(t, ts, results)
+
+	// Mark overall test as failed if any component failed
+	if websocketTestFailed || overallTestFailed {
+		t.Fail()
+	}
+}
+
+// runHTTPServiceTestWithResults runs HTTP tests and populates the shared results map.
+// This wrapper function enables coordination between HTTP and WebSocket test results.
+func runHTTPServiceTestWithResults(t *testing.T, ctx context.Context, ts *TestService, results map[string]*MethodMetrics, resultsMutex *sync.Mutex) {
+	httpResults := make(map[string]*MethodMetrics)
+	httpResultsMutex := sync.Mutex{}
+
+	// Run the HTTP test with its own results map
+	runHTTPServiceTest(t, ctx, ts, httpResults, &httpResultsMutex)
+
+	// Copy HTTP results to the shared results map with appropriate labeling
+	resultsMutex.Lock()
+	for method, metrics := range httpResults {
+		// Add "(HTTP)" suffix only if WebSocket tests will also run for this service
+		if ts.supportsEVMWebSockets() {
+			results[method+" (HTTP)"] = metrics
+		} else {
+			results[method] = metrics
+		}
+	}
+	resultsMutex.Unlock()
 }
 
 // -------------------- Helper Functions --------------------
@@ -185,11 +268,24 @@ func logTestServiceIDs(testServices []*TestService) {
 	fmt.Printf("\n\n=======================================================\n")
 	fmt.Printf("⛓️  Will be running tests for service IDs:\n")
 	for _, ts := range testServices {
-		if ts.Archival {
-			fmt.Printf("  🗄️  %s%s%s (Archival)\n", GREEN, ts.ServiceID, RESET)
+		var typeStr string
+		var icon string
+
+		if ts.Archival && ts.supportsEVMWebSockets() {
+			typeStr = "(Archival + WebSocket)"
+			icon = "🗄️🔌"
+		} else if ts.Archival {
+			typeStr = "(Archival)"
+			icon = "🗄️"
+		} else if ts.supportsEVMWebSockets() {
+			typeStr = "(WebSocket)"
+			icon = "🔌"
 		} else {
-			fmt.Printf("  📝  %s%s%s (Non-archival)\n", GREEN, ts.ServiceID, RESET)
+			typeStr = "(Non-archival)"
+			icon = "📝"
 		}
+
+		fmt.Printf("  %s  %s%s%s %s\n", icon, GREEN, ts.ServiceID, RESET, typeStr)
 	}
 }
 

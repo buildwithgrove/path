@@ -39,13 +39,14 @@ type (
 	}
 
 	TestService struct {
-		Name          string             `yaml:"name"`               // Name of the service
-		ServiceID     protocol.ServiceID `yaml:"service_id"`         // Service ID to test (identifies the specific blockchain service)
-		ServiceType   serviceType        `yaml:"service_type"`       // Type of service to test (evm, cometbft, solana, anvil)
-		Alias         string             `yaml:"alias,omitempty"`    // Alias for the service
-		Archival      bool               `yaml:"archival,omitempty"` // Whether this is an archival test (historical data access)
-		ServiceParams ServiceParams      `yaml:"service_params"`     // Service-specific parameters for test requests
-		SupportedAPIs []string           `yaml:"supported_apis"`     // List of APIs supported by the service
+		Name          string             `yaml:"name"`                 // Name of the service
+		ServiceID     protocol.ServiceID `yaml:"service_id"`           // Service ID to test (identifies the specific blockchain service)
+		ServiceType   serviceType        `yaml:"service_type"`         // Type of service to test (evm, cometbft, solana, anvil)
+		Alias         string             `yaml:"alias,omitempty"`      // Alias for the service
+		Archival      bool               `yaml:"archival,omitempty"`   // Whether this is an archival test (historical data access)
+		WebSockets    bool               `yaml:"websockets,omitempty"` // Whether this service should run WebSocket tests in addition to HTTP tests
+		ServiceParams ServiceParams      `yaml:"service_params"`       // Service-specific parameters for test requests
+		SupportedAPIs []string           `yaml:"supported_apis"`       // List of APIs supported by the service
 		// Not marshaled from YAML; set in test case.
 		serviceType    serviceType
 		testMethodsMap map[string]testMethodConfig
@@ -95,6 +96,19 @@ func (ts *TestService) getVegetaTargets(gatewayURL string) (map[string]vegeta.Ta
 		return getAnvilVegetaTargets(ts, gatewayURL)
 	}
 	return nil, fmt.Errorf("unsupported service type: %s", ts.ServiceType)
+}
+
+// supportsWebSockets returns true if the service is configured for WebSocket testing
+func (ts *TestService) supportsWebSockets() bool {
+	return ts.WebSockets
+}
+
+// supportsEVMWebSockets returns true if the service supports WebSocket EVM JSON-RPC tests
+func (ts *TestService) supportsEVMWebSockets() bool {
+	// Only EVM-like services can run EVM WebSocket tests
+	// This includes pure EVM services and Cosmos SDK services with EVM support (like XRPLEVM)
+	return ts.supportsWebSockets() && (ts.ServiceType == serviceTypeEVM ||
+		(ts.ServiceType == serviceTypeCosmosSDK && ts.ServiceParams.ContractAddress != ""))
 }
 
 func getExpectedID(serviceType serviceType) jsonrpc.ID {

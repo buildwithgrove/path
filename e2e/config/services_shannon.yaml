@@ -770,6 +770,7 @@ services:
     cosmos_sdk_chain_id: "xrplevm_1440000-1"
     evm_chain_id: "0x15f900"
     supported_apis: ["json_rpc", "rest", "comet_bft", "websocket"]
+    websockets: true  # Enable WebSocket E2E tests for this service
     service_params:
       # https://explorer.xrplevm.org/address/0x7C21a90E3eCD3215d16c3BBe76a491f8f792d4Bf
       contract_address: "0x7C21a90E3eCD3215d16c3BBe76a491f8f792d4Bf"
@@ -784,6 +785,7 @@ services:
     cosmos_sdk_chain_id: "xrplevm_1449000-1"
     evm_chain_id: "0x161c28"
     supported_apis: ["json_rpc", "rest", "comet_bft", "websocket"]
+    websockets: true  # Enable WebSocket E2E tests for this service
     service_params:
       # https://explorer.testnet.xrplevm.org/address/0xc29e2583eD5C77df8792067989Baf9E4CCD4D7fc
       contract_address: "0xc29e2583eD5C77df8792067989Baf9E4CCD4D7fc"
