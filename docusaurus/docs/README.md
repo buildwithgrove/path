@@ -30,11 +30,11 @@ An easy way to think about **PATH** and **Pocket Network** is:
 
 ## Where do I get started?
 
-To get started, allocate 1-3 hours of time and start with the [PATH Quick Start](develop/path/1_quick_start.md).
+To get started, allocate 1-3 hours of time and [**click here to jump into the PATH Quickstart guide**](develop/path/1_quick_start.md).
 
 It will go through all the details of how PATH works, how to configure it, and how to run it locally.
 
-## TODO
+## TODO - Improvements Coming Soon
 
 This documentation is an active work in progress and there's a lot more we want to add:
 
@@ -42,9 +42,20 @@ This documentation is an active work in progress and there's a lot more we want 
 - [ ] Deployment instructions
 - [ ] Billing integrations
 - [ ] ETL Pipelines
+- [ ] Portal mode
 - [ ] [Add your request here](https://github.com/buildwithgrove/path/issues/new/choose)
 
 ## Is PATH for me?
+
+:::info Reach us on discord
+
+If you're a Gateway and want to settle some or all of your RPC requests on Pocket Network, PATH is for you.
+
+The software is battle tested in production but the docs are a work in progress.
+
+**Don't hesitate to ping us on [Discord](https://discord.gg/build-with-grove) for hands-on support!**
+
+:::
 
 If you're a Web2 Gateway Provider, you have four modes of operation to choose from:
 
