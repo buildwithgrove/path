@@ -103,18 +103,17 @@ func (lfn *LazyFullNode) GetSession(
 	serviceID protocol.ServiceID,
 	appAddr string,
 ) (sessiontypes.Session, error) {
-	// Get the current block height (already returns latestHeight - 1 for finality)
-	currentHeight, err := lfn.GetCurrentBlockHeight(ctx)
+	blockHeight, err := lfn.GetCurrentBlockHeight(ctx)
 	if err != nil {
 		return sessiontypes.Session{},
 			fmt.Errorf("GetSession: error getting current block height: %w", err)
 	}
-	
+
 	session, err := lfn.sessionClient.GetSession(
 		ctx,
 		appAddr,
 		string(serviceID),
-		currentHeight,
+		blockHeight,
 	)
 
 	if err != nil {
@@ -183,7 +182,8 @@ func (lfn *LazyFullNode) GetCurrentBlockHeight(ctx context.Context) (int64, erro
 	if err != nil {
 		return 0, fmt.Errorf("GetCurrentBlockHeight: error getting latest block height: %w", err)
 	}
-	// Return height - 1 to ensure the block is finalized and propagated
+	// TODO_IN_THIS_PR: This is just an experiment. Remove it!
+	// Return height - 1 to ensure the block is finalized and propagated during the ABCI/Cosmos/Comet comms
 	if height > 0 {
 		return height - 1, nil
 	}

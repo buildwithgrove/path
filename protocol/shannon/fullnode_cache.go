@@ -408,6 +408,7 @@ func (cfn *cachingFullNode) GetCurrentBlockHeight(ctx context.Context) (int64, e
 		},
 	)
 
+	// Not doing -1 because the lazy full node captures that logic.
 	return height, err
 }
 
