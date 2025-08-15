@@ -19,12 +19,6 @@
 // 4. Results are collected and validated for HTTP status codes and JSON-RPC responses
 // 5. Metrics are aggregated and compared against configured thresholds
 // 6. Service summaries provide overall test results and failure analysis
-//
-// SEPARATION OF CONCERNS:
-// - vegeta_test.go: HTTP testing using Vegeta (this file)
-// - websockets_test.go: WebSocket testing using gorilla/websocket
-// - main_test.go: Test orchestration and coordination
-// - assertions_test.go: Shared validation logic (transport-agnostic)
 package e2e
 
 import (

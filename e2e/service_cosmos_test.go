@@ -43,6 +43,8 @@ func getCosmosSDKVegetaTargets(
 
 		case sharedtypes.RPCType_JSON_RPC:
 			// For EVM JSON-RPC, we use the same targets as the EVM service.
+			// NOTE: WebSocket testing for services like XRPLEVM will only test these EVM JSON-RPC methods,
+			// not the CometBFT or REST methods, since WebSockets only support EVM JSON-RPC protocols.
 			evmJSONRPCTargets, err := getEVMVegetaTargets(ts, gatewayURL)
 			if err != nil {
 				return nil, err

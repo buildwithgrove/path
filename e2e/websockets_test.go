@@ -5,10 +5,11 @@
 // JSON-RPC over WebSocket connections, with full integration into the existing
 // E2E test framework and validation logic.
 //
-// SEPARATION OF CONCERNS:
-// - websockets_test.go: Handles all WebSocket-specific functionality
-// - vegeta_test.go: Handles only HTTP testing using Vegeta
-// - main_test.go: Orchestrates both HTTP and WebSocket tests via runAllServiceTests()
+// WEBSOCKET ARCHITECTURE:
+// - Uses a single persistent WebSocket connection per service to test all EVM methods
+// - Sends the configured number of requests per method sequentially over the same connection
+// - Provides progress bars and metrics collection similar to HTTP tests
+// - Only tests EVM JSON-RPC methods (not CometBFT or REST endpoints)
 //
 // This separation ensures clean boundaries between different transport protocols
 // while maintaining shared validation logic in assertions_test.go.
@@ -241,53 +242,6 @@ type websocketTestResult struct {
 	Duration time.Duration
 }
 
-// runWebSocketEVMTest runs a complete EVM test over WebSocket
-func runWebSocketEVMTest(ctx context.Context, gatewayURL, serviceID string, serviceParams ServiceParams) ([]*websocketTestResult, error) {
-	client := newWebSocketTestClient(gatewayURL, serviceID)
-
-	// Connect to WebSocket
-	if err := client.connect(ctx); err != nil {
-		return nil, fmt.Errorf("failed to connect to WebSocket: %w", err)
-	}
-	defer client.close()
-
-	methods := getEVMTestMethods()
-	results := make([]*websocketTestResult, 0, len(methods))
-
-	for _, method := range methods {
-		start := time.Now()
-
-		params := createEVMJsonRPCParams(jsonrpc.Method(method), serviceParams)
-		req := jsonrpc.Request{
-			JSONRPC: jsonrpc.Version2,
-			ID:      jsonrpc.IDFromInt(1),
-			Method:  jsonrpc.Method(method),
-			Params:  params,
-		}
-
-		resp, err := client.sendJSONRPCRequest(ctx, req)
-		duration := time.Since(start)
-
-		result := &websocketTestResult{
-			Method:   method,
-			Request:  req,
-			Response: resp,
-			Error:    err,
-			Duration: duration,
-		}
-
-		results = append(results, result)
-
-		// If there was an error, we might want to continue with other methods
-		// or break depending on the test strategy
-		if err != nil {
-			fmt.Printf("Warning: WebSocket request for method %s failed: %v\n", method, err)
-		}
-	}
-
-	return results, nil
-}
-
 // validateWebSocketResults validates WebSocket test results using the existing validation logic
 func validateWebSocketResults(results []*websocketTestResult, serviceID string) map[string]*MethodMetrics {
 	metrics := make(map[string]*MethodMetrics)
@@ -403,38 +357,62 @@ func validateAllWebSocketMethods(
 }
 
 // runWebSocketServiceTest runs WebSocket-based E2E tests for a single service.
-// This function is called from the main test flow and handles all WebSocket testing logic.
+// This function uses a single WebSocket connection to test all EVM methods sequentially.
 func runWebSocketServiceTest(t *testing.T, ctx context.Context, ts *TestService, results map[string]*MethodMetrics, resultsMutex *sync.Mutex) (serviceTestFailed bool) {
-	// Get the gateway URL from the first method target (they all use the same URL)
-	var gatewayURL string
-	for _, methodConfig := range ts.testMethodsMap {
-		gatewayURL = methodConfig.target.URL
-		break
-	}
-
-	if gatewayURL == "" {
-		t.Errorf("❌ Failed to get gateway URL for WebSocket tests")
-		return true
-	}
-
 	fmt.Printf("\n%s🔌 Starting WebSocket tests for %s%s\n", BOLD_CYAN, ts.ServiceID, RESET)
 
-	// Get the service configuration from any method (they share the same config)
-	var serviceConfig ServiceConfig
-	for _, methodConfig := range ts.testMethodsMap {
-		serviceConfig = methodConfig.serviceConfig
+	// Get only EVM methods for WebSocket testing
+	evmMethods := getEVMTestMethods()
+
+	// Get the service config from any method (they all share the same config)
+	var serviceConfig testMethodConfig
+	for _, config := range ts.testMethodsMap {
+		serviceConfig = config
 		break
 	}
 
-	// Run the WebSocket EVM test
-	websocketResults, err := runWebSocketEVMTest(ctx, gatewayURL, string(ts.ServiceID), ts.ServiceParams)
+	// Create a simplified method map for progress bars (EVM methods only)
+	evmMethodsMap := make(map[string]testMethodConfig)
+	for _, method := range evmMethods {
+		evmMethodsMap[method] = serviceConfig
+	}
+
+	// Create progress bars for WebSocket tests (EVM methods only)
+	progBars, err := newProgressBars(evmMethodsMap)
 	if err != nil {
-		t.Errorf("❌ WebSocket test failed for service %s: %v", ts.ServiceID, err)
+		t.Fatalf("Failed to create progress bars for WebSocket tests: %v", err)
+	}
+	defer func() {
+		if err := progBars.finish(); err != nil {
+			fmt.Printf("Error stopping WebSocket progress bars: %v", err)
+		}
+	}()
+
+	// Create a single WebSocket client for all methods
+	client := newWebSocketTestClient(serviceConfig.target.URL, string(ts.ServiceID))
+
+	// Connect to WebSocket once
+	if err := client.connect(ctx); err != nil {
+		t.Errorf("❌ Failed to connect WebSocket for service %s: %v", ts.ServiceID, err)
 		return true
+	}
+	defer client.close()
+
+	fmt.Printf("✅ WebSocket connected successfully for service %s\n", ts.ServiceID)
+
+	// Run all method tests sequentially using the single connection
+	allResults := runAllMethodsOnSingleConnection(ctx, client, evmMethods, ts, progBars)
+
+	// Finish progress bars
+	if err := progBars.finish(); err != nil {
+		fmt.Printf("Error stopping WebSocket progress bars: %v", err)
 	}
 
 	// Convert WebSocket results to method metrics and validate
-	websocketMetrics := validateWebSocketResults(websocketResults, string(ts.ServiceID))
+	websocketMetrics := validateWebSocketResults(allResults, string(ts.ServiceID))
+
+	// Use the service configuration we retrieved earlier
+	wsServiceConfig := serviceConfig.serviceConfig
 
 	// Add WebSocket results to the combined results map
 	resultsMutex.Lock()
@@ -444,7 +422,7 @@ func runWebSocketServiceTest(t *testing.T, ctx context.Context, ts *TestService,
 		results[websocketMethodKey] = metrics
 
 		// Validate individual WebSocket method results using existing assertion logic
-		if !validateMethodResults(t, ts.ServiceID, metrics, serviceConfig) {
+		if !validateMethodResults(t, ts.ServiceID, metrics, wsServiceConfig) {
 			serviceTestFailed = true
 		}
 	}
@@ -459,23 +437,76 @@ func runWebSocketServiceTest(t *testing.T, ctx context.Context, ts *TestService,
 	return serviceTestFailed
 }
 
-// Example usage function showing how to run WebSocket tests with existing validation
-func runWebSocketTestExample(
-	t *testing.T,
-	gatewayURL string,
-	serviceID string,
-	serviceParams ServiceParams,
-	config ServiceConfig,
-) bool {
-	ctx := context.Background()
+// runAllMethodsOnSingleConnection runs load tests for all EVM methods using a single WebSocket connection.
+// This function sends the configured number of requests per method sequentially over the same connection.
+func runAllMethodsOnSingleConnection(
+	ctx context.Context,
+	client *websocketTestClient,
+	evmMethods []string,
+	ts *TestService,
+	progBars *progressBars,
+) []*websocketTestResult {
+	var allResults []*websocketTestResult
 
-	// Run the WebSocket EVM test
-	results, err := runWebSocketEVMTest(ctx, gatewayURL, serviceID, serviceParams)
-	if err != nil {
-		t.Errorf("WebSocket test failed: %v", err)
-		return false
+	// Get service configuration
+	var methodConfig testMethodConfig
+	for _, config := range ts.testMethodsMap {
+		methodConfig = config
+		break
 	}
 
-	// Validate all methods using the existing assertion infrastructure
-	return validateAllWebSocketMethods(t, serviceID, results, config)
+	// Test each method sequentially using the same connection
+	for _, method := range evmMethods {
+		// Send the configured number of requests for this method
+		for i := 0; i < methodConfig.serviceConfig.RequestsPerMethod; i++ {
+			select {
+			case <-ctx.Done():
+				return allResults
+			default:
+			}
+
+			start := time.Now()
+
+			params := createEVMJsonRPCParams(jsonrpc.Method(method), ts.ServiceParams)
+			req := jsonrpc.Request{
+				JSONRPC: jsonrpc.Version2,
+				ID:      jsonrpc.IDFromInt(1), // Always use ID 1 for consistency
+				Method:  jsonrpc.Method(method),
+				Params:  params,
+			}
+
+			resp, err := client.sendJSONRPCRequest(ctx, req)
+			duration := time.Since(start)
+
+			result := &websocketTestResult{
+				Method:   method,
+				Request:  req,
+				Response: resp,
+				Error:    err,
+				Duration: duration,
+			}
+
+			allResults = append(allResults, result)
+
+			// Update progress bar for this method
+			if progBar := progBars.get(method); progBar != nil {
+				if progBar.Current() < int64(methodConfig.serviceConfig.RequestsPerMethod) {
+					progBar.Increment()
+				}
+			}
+
+			// Add small delay between requests to avoid overwhelming the connection
+			time.Sleep(10 * time.Millisecond)
+		}
+
+		// Ensure progress bar is complete for this method
+		if progBar := progBars.get(method); progBar != nil {
+			if progBar.Current() < int64(methodConfig.serviceConfig.RequestsPerMethod) {
+				remaining := int64(methodConfig.serviceConfig.RequestsPerMethod) - progBar.Current()
+				progBar.Add64(remaining)
+			}
+		}
+	}
+
+	return allResults
 }

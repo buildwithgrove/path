@@ -1,5 +1,32 @@
 //go:build e2e
 
+// Package e2e provides comprehensive End-to-End and Load testing for PATH services.
+//
+// This package implements a flexible testing framework that supports both HTTP and WebSocket
+// protocols, with configurable load testing capabilities using Vegeta and custom WebSocket clients.
+//
+// PACKAGE ARCHITECTURE:
+// - main_test.go: Test orchestration, configuration, and coordination between HTTP/WebSocket tests
+// - vegeta_test.go: HTTP load testing using Vegeta library with concurrent request execution
+// - websockets_test.go: WebSocket testing using single persistent connections for EVM JSON-RPC
+// - assertions_test.go: Shared validation logic for JSON-RPC responses (transport-agnostic)
+// - calculations_test.go: Metrics calculation functions for success rates and latency percentiles
+// - log_test.go: Progress bars, ANSI colors, and formatted logging utilities
+// - config_test.go: Configuration loading, environment variable parsing, and service setup
+// - service_test.go: Service definitions, target generation, and protocol-specific implementations
+// - service_*_test.go: Protocol-specific request builders (EVM, Cosmos SDK, Solana, Anvil)
+// - docker_test.go: Local PATH instance management for E2E testing
+//
+// TESTING MODES:
+// - E2E Mode: Spins up local PATH instance, tests against localhost
+// - Load Mode: Tests against remote PATH deployment with configurable RPS and request volumes
+// - WebSocket-only Mode: Tests only WebSocket-compatible services using persistent connections
+//
+// SUPPORTED PROTOCOLS:
+// - EVM JSON-RPC (HTTP + WebSocket): Ethereum-compatible blockchain interactions
+// - Cosmos SDK REST: RESTful API endpoints for Cosmos-based chains
+// - CometBFT JSON-RPC: Tendermint consensus and node status endpoints
+// - Solana JSON-RPC: Solana-specific blockchain methods
 package e2e
 
 import (
@@ -24,10 +51,15 @@ import (
 // Example Usage - E2E tests:
 //   - make e2e_test_all             # Run all E2E tests for all services
 //   - make e2e_test <service IDs>   # Run all E2E tests for the specified services
+//   - make e2e_test_websocket_all   # Run WebSocket-only E2E tests for all compatible services
+//   - make e2e_test_websocket <IDs> # Run WebSocket-only E2E tests for specified services
+//   - make e2e_test_eth_fallback <URL> # Run E2E test with ETH fallback URL enabled
 //
 // Example Usage - Load tests:
 //   - make load_test_all            # Run all load tests for all services
 //   - make load_test <service IDs>  # Run all load tests for the specified services
+//   - make load_test_websocket_all  # Run WebSocket-only load tests for all compatible services
+//   - make load_test_websocket <IDs> # Run WebSocket-only load tests for specified services
 // -----------------------------------------------------------------------------
 
 // -------------------- Test Configuration Initialization --------------------
