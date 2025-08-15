@@ -14,6 +14,33 @@ portal_db_up: check_docker ## Start local PostgreSQL database on port 5435
 	@echo "   User: portal_user"
 	@echo "   Password: portal_password"
 	@echo "   Connection: postgresql://portal_user:portal_password@localhost:5435/portal_db"
+	@echo ""
+	@echo "🔧 To use the hydrate scripts, export the DB connection string:"
+	@echo "   export DB_CONNECTION_STRING='postgresql://portal_user:portal_password@localhost:5435/portal_db'"
+
+.PHONY: portal_db_env
+portal_db_env: portal_db_up ## Start database and wait for readiness, then export connection string
+	@echo "⏳ Waiting for PostgreSQL to be ready..."
+	@timeout=60; \
+	while [ $$timeout -gt 0 ]; do \
+		if docker exec path-portal-db pg_isready -U portal_user -d portal_db >/dev/null 2>&1; then \
+			echo "✅ PostgreSQL is ready!"; \
+			break; \
+		fi; \
+		echo "⌛ PostgreSQL not ready yet, waiting... ($$timeout seconds left)"; \
+		sleep 2; \
+		timeout=$$((timeout-2)); \
+	done; \
+	if [ $$timeout -eq 0 ]; then \
+		echo "❌ PostgreSQL failed to start within 60 seconds"; \
+		exit 1; \
+	fi
+	@echo ""
+	@echo "🎉 Portal DB is ready! Export the connection string with:"
+	@echo "   export DB_CONNECTION_STRING='postgresql://portal_user:portal_password@localhost:5435/portal_db'"
+	@echo ""
+	@echo "📝 Or copy and paste this command:"
+	@echo 'export DB_CONNECTION_STRING="postgresql://portal_user:portal_password@localhost:5435/portal_db"'
 
 .PHONY: portal_db_down
 portal_db_down: ## Stop local PostgreSQL database

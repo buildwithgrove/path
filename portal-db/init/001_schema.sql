@@ -1,9 +1,6 @@
 -- Initial schema for PATH Portal DB
 
--- TODO: Add more comments to tables so the business logic is more clear
-
 -- Create custom enum types
-
 -- Designates the API Types that we support. We can expand this should new interfaces be introduced.
 CREATE TYPE endpoint_type AS ENUM ('cometBFT', 'cosmos', 'REST', 'JSON-RPC', 'WSS', 'gRPC');
 -- Creates intervals that plans can be evaluated on, also enables users to set their plan limits
@@ -165,7 +162,7 @@ CREATE TABLE pavers (
 -- Stores the relevant information for the onchain Gateway
 CREATE TABLE gateways (
     gateway_address VARCHAR(50) PRIMARY KEY,
-    stake_amount INT NOT NULL,
+    stake_amount BIGINT NOT NULL,
     stake_denom VARCHAR(15) NOT NULL,
     network_id VARCHAR(42) NOT NULL,
     gateway_private_key_hex VARCHAR(64),
@@ -220,7 +217,7 @@ CREATE TABLE applications (
     application_address VARCHAR(50) PRIMARY KEY,
     gateway_address VARCHAR(50) NOT NULL,
     service_id VARCHAR(42) NOT NULL,
-    stake_amount INT,
+    stake_amount BIGINT,
     stake_denom VARCHAR(15),
     application_private_key_hex VARCHAR(64),
     network_id VARCHAR(42) NOT NULL,
@@ -274,6 +271,12 @@ CREATE TABLE crypto_address_blacklist (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Insert default network IDs (Pocket and associated testnets)
+INSERT INTO networks (network_id) VALUES 
+    ('pocket'),
+    ('pocket-beta'),  
+    ('pocket-alpha');
 
 -- Create indeces for better performance
 CREATE INDEX idx_gateways_network_id ON gateways(network_id);
