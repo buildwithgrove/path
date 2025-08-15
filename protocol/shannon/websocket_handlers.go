@@ -215,6 +215,8 @@ func (p *observationPublisher) InitializeMessageObservations() *observation.Requ
 	}
 }
 
+// TODO_IMPROVE(@adshmh): Return and use the modified observation pointer (more GO-idiomaitc)
+//
 // UpdateMessageObservationsFromSuccess updates the observations for the current message
 // if the message handler does not return an error.
 func (p *observationPublisher) UpdateMessageObservationsFromSuccess(
@@ -230,6 +232,8 @@ func (p *observationPublisher) UpdateMessageObservationsFromSuccess(
 	buildWebsocketMessageSuccessObservation(endpointObs)
 }
 
+// TODO_IMPROVE(@adshmh): Return and use the modified observation pointer (more GO-idiomaitc)
+//
 // UpdateMessageObservationsFromError updates the observations for the current message
 // if the message handler returns an error.
 func (p *observationPublisher) UpdateMessageObservationsFromError(
