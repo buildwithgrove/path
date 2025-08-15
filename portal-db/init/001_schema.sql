@@ -3,11 +3,19 @@
 -- TODO: Add more comments to tables so the business logic is more clear
 
 -- Create custom enum types
+
+-- Designates the API Types that we support. We can expand this should new interfaces be introduced.
 CREATE TYPE endpoint_type AS ENUM ('cometBFT', 'cosmos', 'REST', 'JSON-RPC', 'WSS', 'gRPC');
+-- Creates intervals that plans can be evaluated on, also enables users to set their plan limits
 CREATE TYPE plan_interval AS ENUM ('day', 'month', 'year');
+-- Enables users to limit their application access
+-- Service ID - Allow specified list of onchain services
+-- Contract - Allow specific smart contracts
+-- Origin - Allow specific IP addresses or URLs
 CREATE TYPE whitelist_type AS ENUM ('service_id', 'contract', 'origin');
 
 -- Organizations table (referenced by contacts and portal_accounts)
+-- Organizations are Companies or Customer Groups that can be attached to Portal Accounts
 CREATE TABLE organizations (
     organization_id SERIAL PRIMARY KEY,
     organization_name VARCHAR(69),
@@ -15,24 +23,8 @@ CREATE TABLE organizations (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Contacts table
-CREATE TABLE contacts (
-    contact_id SERIAL PRIMARY KEY,
-    organization_id INT,
-    portal_user_id INT,
-    contact_telegram_handle VARCHAR(32),
-    contact_twitter_handle VARCHAR(15),
-    contact_linkedin_handle VARCHAR(30),
-    contact_initial_meeting_location VARCHAR(100),
-    contact_initial_meeting_event VARCHAR(100),
-    contact_initial_meeting_datetime TIMESTAMP,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (organization_id) REFERENCES organizations(organization_id),
-    FOREIGN KEY (portal_user_id) REFERENCES portal_users(portal_user_id)
-);
-
 -- Organization tags table
+-- For categorizing and analyzing organizations
 CREATE TABLE organization_tags (
     id SERIAL PRIMARY KEY,
     organization_id INT NOT NULL,
@@ -41,6 +33,7 @@ CREATE TABLE organization_tags (
 );
 
 -- Portal plans table
+-- Set of plans that can be assigned to Portal Accounts. i.e. PLAN_FREE, PLAN_UNLIMITED
 CREATE TABLE portal_plans (
     portal_plan_type VARCHAR(42) PRIMARY KEY,
     portal_plan_type_description VARCHAR(420),
@@ -51,6 +44,8 @@ CREATE TABLE portal_plans (
 );
 
 -- Portal accounts table
+-- Portal Accounts can have many applications and many users. Only 1 user can be the OWNER.
+-- When a new user signs up in the Portal, they automatically generate a personal account.
 CREATE TABLE portal_accounts (
     portal_account_id VARCHAR(24) PRIMARY KEY,
     organization_id INT,
@@ -71,6 +66,7 @@ CREATE TABLE portal_accounts (
 );
 
 -- Portal users table
+-- Users can belong to multiple Accounts
 CREATE TABLE portal_users (
     portal_user_id SERIAL PRIMARY KEY,
     portal_user_email VARCHAR(255),
@@ -80,7 +76,26 @@ CREATE TABLE portal_users (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Contacts table
+-- Contacts are individuals that are members of an Organization. Can be attached to Portal Users
+CREATE TABLE contacts (
+    contact_id SERIAL PRIMARY KEY,
+    organization_id INT,
+    portal_user_id INT,
+    contact_telegram_handle VARCHAR(32),
+    contact_twitter_handle VARCHAR(15),
+    contact_linkedin_handle VARCHAR(30),
+    contact_initial_meeting_location VARCHAR(100),
+    contact_initial_meeting_event VARCHAR(100),
+    contact_initial_meeting_datetime TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (organization_id) REFERENCES organizations(organization_id),
+    FOREIGN KEY (portal_user_id) REFERENCES portal_users(portal_user_id)
+);
+
 -- RBAC table
+-- Sets the roles and permissions associated with roles across the Portal
 CREATE TABLE rbac (
     role_id SERIAL PRIMARY KEY,
     role_name VARCHAR(20),
@@ -88,6 +103,7 @@ CREATE TABLE rbac (
 );
 
 -- Portal account RBAC table
+-- Sets the role and access controls for a user on a particular account.
 CREATE TABLE portal_account_rbac (
     id SERIAL PRIMARY KEY,
     portal_account_id VARCHAR(24) NOT NULL,
@@ -99,6 +115,7 @@ CREATE TABLE portal_account_rbac (
 );
 
 -- Portal applications table
+-- Portal Accounts can have many Portal Applications that have associated settings.
 CREATE TABLE portal_applications (
     portal_application_id VARCHAR(42) PRIMARY KEY,
     portal_account_id VARCHAR(24) NOT NULL,
@@ -117,6 +134,8 @@ CREATE TABLE portal_applications (
 );
 
 -- Portal application RBAC table
+-- Sets the role and access controls for a user on a particular application. 
+-- Users must be members of the parent Account in order to have access to a particular application
 CREATE TABLE portal_application_rbac (
     id SERIAL PRIMARY KEY,
     portal_application_id VARCHAR(42) NOT NULL,
@@ -128,11 +147,22 @@ CREATE TABLE portal_application_rbac (
 );
 
 -- Networks table
+-- Future proofing table, but allows the Portal/PATH to send traffic on both Pocket Beta and Pocket Mainnet
 CREATE TABLE networks (
     network_id VARCHAR(42) PRIMARY KEY
 );
 
+CREATE TABLE pavers (
+    paver_id SERIAL PRIMARY KEY,
+    paver_url VARCHAR(69) NOT NULL,
+    network_id VARCHAR(42) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (network_id) REFERENCES networks(network_id)
+);
+
 -- Gateways table
+-- Stores the relevant information for the onchain Gateway
 CREATE TABLE gateways (
     gateway_address VARCHAR(50) PRIMARY KEY,
     stake_amount INT NOT NULL,
@@ -144,13 +174,14 @@ CREATE TABLE gateways (
 );
 
 -- Services table
+-- Stores the set of supported Services from the Pocket Chain
 CREATE TABLE services (
     service_id VARCHAR(42) PRIMARY KEY,
     service_name VARCHAR(169) NOT NULL,
-    compute_units_per_relay INT NOT NULL,
+    compute_units_per_relay INT,
     service_domains VARCHAR[] NOT NULL,
-    service_owner_address VARCHAR(50) NOT NULL,
-    network_id VARCHAR(42) NOT NULL,
+    service_owner_address VARCHAR(50),
+    network_id VARCHAR(42),
     active BOOLEAN DEFAULT FALSE,
     quality_fallback_enabled BOOLEAN DEFAULT FALSE,
     hard_fallback_enabled BOOLEAN DEFAULT FALSE,
@@ -161,6 +192,7 @@ CREATE TABLE services (
 );
 
 -- Service fallbacks table
+-- Defines the set of fallbacks per service for offchain processing.
 CREATE TABLE service_fallbacks (
     service_fallback_id SERIAL PRIMARY KEY,
     service_id VARCHAR(42) NOT NULL,
@@ -171,6 +203,7 @@ CREATE TABLE service_fallbacks (
 );
 
 -- Service endpoints table
+-- Defines the active list of endpoints per Service. See: endpoint_type for more information
 CREATE TABLE service_endpoints (
     endpoint_id SERIAL PRIMARY KEY,
     service_id VARCHAR(42) NOT NULL,
@@ -181,6 +214,7 @@ CREATE TABLE service_endpoints (
 );
 
 -- Applications table
+-- Stores the onchain applications for relay processing. Includes Secret Keys
 CREATE TABLE applications (
     application_address VARCHAR(50) PRIMARY KEY,
     gateway_address VARCHAR(50) NOT NULL,
@@ -197,6 +231,7 @@ CREATE TABLE applications (
 );
 
 -- Portal application whitelists table
+-- Sets access controls to Portal Applications based on whitelist_type
 CREATE TABLE portal_application_whitelists (
     id SERIAL PRIMARY KEY,
     portal_application_id VARCHAR(42) NOT NULL,
@@ -210,6 +245,7 @@ CREATE TABLE portal_application_whitelists (
 );
 
 -- Supplier blacklist table
+-- Permanently block specific onchain suppliers from processing traffic
 CREATE TABLE supplier_blacklist (
     id SERIAL PRIMARY KEY,
     supplier_address VARCHAR(50),
@@ -220,6 +256,7 @@ CREATE TABLE supplier_blacklist (
 );
 
 -- Domain blocklist table
+-- Permanently block traffic from being processed by certain domains
 CREATE TABLE domain_blacklist (
     id SERIAL PRIMARY KEY,
     domain VARCHAR(169),
@@ -228,6 +265,8 @@ CREATE TABLE domain_blacklist (
 );
 
 -- Crypto address blocklist table
+-- Permanently block traffic that contains specific addresses. 
+-- !!! IMPORTANT FOR COMPLIANCE !!!
 CREATE TABLE crypto_address_blacklist (
     id SERIAL PRIMARY KEY,
     address VARCHAR(169),
