@@ -9,7 +9,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/buildwithgrove/path/protocol"
 	"github.com/gorilla/websocket"
 	"github.com/pokt-network/poktroll/pkg/polylog/polyzero"
 	apptypes "github.com/pokt-network/poktroll/x/application/types"
@@ -17,6 +16,8 @@ import (
 	sessiontypes "github.com/pokt-network/poktroll/x/session/types"
 	sdk "github.com/pokt-network/shannon-sdk"
 	"github.com/stretchr/testify/require"
+
+	"github.com/buildwithgrove/path/protocol"
 )
 
 type (
@@ -43,7 +44,7 @@ func Test_Bridge_Run(t *testing.T) {
 			name: "should forward regular JSON RPC messages from Client to Endpoint and receive response",
 			selectedEndpoint: &selectedEndpoint{
 				url: "", // Assigned in test to the value of the `url` returned by `testEndpointConnURL`
-				session: &sessiontypes.Session{
+				session: sessiontypes.Session{
 					SessionId: "1",
 					Header: &sessiontypes.SessionHeader{
 						ServiceId:          "service_id",
@@ -65,7 +66,7 @@ func Test_Bridge_Run(t *testing.T) {
 			name: "should forward subscription push events from the Endpoint to the Client",
 			selectedEndpoint: &selectedEndpoint{
 				url: "", // Assigned in test to the value of the `url` returned by `testEndpointConnURL`
-				session: &sessiontypes.Session{
+				session: sessiontypes.Session{
 					SessionId: "1",
 					Header: &sessiontypes.SessionHeader{
 						ServiceId:          "service_id",
@@ -289,7 +290,7 @@ func getRelayResponseBz(endpointResp endpointResp) ([]byte, error) {
 type selectedEndpoint struct {
 	url          string // Assigned nil as it'
 	websocketUrl string // Assigned to the value of the `websocketUrl` returned by `testEndpointConnURL`
-	session      *sessiontypes.Session
+	session      sessiontypes.Session
 	supplier     string
 }
 
@@ -310,7 +311,7 @@ func (e *selectedEndpoint) Supplier() string {
 }
 
 func (e *selectedEndpoint) Session() *sessiontypes.Session {
-	return e.session
+	return &e.session
 }
 
 type relayRequestSigner struct{}

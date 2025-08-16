@@ -20,7 +20,8 @@ func Test_Validate(t *testing.T) {
 			name: "should pass with valid config",
 			config: ShannonGatewayConfig{
 				FullNodeConfig: shannonprotocol.FullNodeConfig{
-					RpcURL: "https://rpc-url.io",
+					RpcURL:                "https://rpc-url.io",
+					SessionRolloverBlocks: 24,
 					GRPCConfig: shannonprotocol.GRPCConfig{
 						HostPort: "grpc-url.io:443",
 					},
@@ -75,6 +76,24 @@ func Test_Validate(t *testing.T) {
 					GatewayMode:          protocol.GatewayModeDelegated,
 					GatewayAddress:       "pokt1710ed9a8d0986d808e607c5815cc5a13f15dba",
 					GatewayPrivateKeyHex: "invalid_private_key",
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "should fail with invalid session rollover blocks",
+			config: ShannonGatewayConfig{
+				FullNodeConfig: shannonprotocol.FullNodeConfig{
+					RpcURL:                "https://rpc-url.io",
+					SessionRolloverBlocks: 0, // Invalid: must be positive
+					GRPCConfig: shannonprotocol.GRPCConfig{
+						HostPort: "grpc-url.io:443",
+					},
+				},
+				GatewayConfig: shannonprotocol.GatewayConfig{
+					GatewayMode:          protocol.GatewayModeDelegated,
+					GatewayAddress:       "pokt1710ed9a8d0986d808e607c5815cc5a13f15dba",
+					GatewayPrivateKeyHex: "d5fcbfb894059a21e914a2d6bf1508319ce2b1b8878f15aa0c1cdf883feb018d",
 				},
 			},
 			wantErr: true,
