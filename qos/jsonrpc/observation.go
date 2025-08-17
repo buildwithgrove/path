@@ -28,7 +28,7 @@ func (r Response) GetObservation() *qos.JsonRpcResponse {
 	var resultPreview string
 	if err := r.UnmarshalResult(&resultPreview); err == nil {
 		// Pick a maximum of 100 characters to include in the observation
-		resultPreview = resultPreview[:max(len(resultPreview), maxResponseResultPreviewLength)]
+		resultPreview = resultPreview[:min(len(resultPreview), maxResponseResultPreviewLength)]
 	}
 
 	// Build the JSONRPC response's observation.
