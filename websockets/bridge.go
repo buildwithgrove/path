@@ -75,8 +75,7 @@ type ObservationPublisher interface {
 // Full data flow: Client <---clientConn---> PATH bridge <---endpointConn---> Relay Miner bridge <------> Endpoint
 type bridge struct {
 	// ctx is used to stop the bridge when the context is canceled from either connection
-	ctx context.Context
-
+	ctx    context.Context
 	logger polylog.Logger
 
 	// endpointConn is the connection to the WebSocket Endpoint

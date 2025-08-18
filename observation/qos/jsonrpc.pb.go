@@ -83,10 +83,11 @@ type JsonRpcResponse struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Must match the id value from the corresponding request
 	Id string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	// JSON-serializable response data
-	Result string `protobuf:"bytes,2,opt,name=result,proto3" json:"result,omitempty"`
+	// A preview of the JSONRPC response's `result` field.
+	// It may have been truncated to reduce message size.
+	ResultPreview string `protobuf:"bytes,2,opt,name=result_preview,json=resultPreview,proto3" json:"result_preview,omitempty"`
 	// Error details, if the request failed
-	Err           *JsonRpcResponseError `protobuf:"bytes,3,opt,name=err,proto3,oneof" json:"err,omitempty"`
+	Error         *JsonRpcResponseError `protobuf:"bytes,3,opt,name=error,proto3,oneof" json:"error,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -128,16 +129,16 @@ func (x *JsonRpcResponse) GetId() string {
 	return ""
 }
 
-func (x *JsonRpcResponse) GetResult() string {
+func (x *JsonRpcResponse) GetResultPreview() string {
 	if x != nil {
-		return x.Result
+		return x.ResultPreview
 	}
 	return ""
 }
 
-func (x *JsonRpcResponse) GetErr() *JsonRpcResponseError {
+func (x *JsonRpcResponse) GetError() *JsonRpcResponseError {
 	if x != nil {
-		return x.Err
+		return x.Error
 	}
 	return nil
 }
@@ -207,12 +208,12 @@ const file_path_qos_jsonrpc_proto_rawDesc = "" +
 	"\x16path/qos/jsonrpc.proto\x12\bpath.qos\"8\n" +
 	"\x0eJsonRpcRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x16\n" +
-	"\x06method\x18\x02 \x01(\tR\x06method\"x\n" +
+	"\x06method\x18\x02 \x01(\tR\x06method\"\x8d\x01\n" +
 	"\x0fJsonRpcResponse\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\x12\x16\n" +
-	"\x06result\x18\x02 \x01(\tR\x06result\x125\n" +
-	"\x03err\x18\x03 \x01(\v2\x1e.path.qos.JsonRpcResponseErrorH\x00R\x03err\x88\x01\x01B\x06\n" +
-	"\x04_err\"D\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12%\n" +
+	"\x0eresult_preview\x18\x02 \x01(\tR\rresultPreview\x129\n" +
+	"\x05error\x18\x03 \x01(\v2\x1e.path.qos.JsonRpcResponseErrorH\x00R\x05error\x88\x01\x01B\b\n" +
+	"\x06_error\"D\n" +
 	"\x14JsonRpcResponseError\x12\x12\n" +
 	"\x04code\x18\x01 \x01(\x03R\x04code\x12\x18\n" +
 	"\amessage\x18\x02 \x01(\tR\amessageB0Z.github.com/buildwithgrove/path/observation/qosb\x06proto3"
@@ -236,7 +237,7 @@ var file_path_qos_jsonrpc_proto_goTypes = []any{
 	(*JsonRpcResponseError)(nil), // 2: path.qos.JsonRpcResponseError
 }
 var file_path_qos_jsonrpc_proto_depIdxs = []int32{
-	2, // 0: path.qos.JsonRpcResponse.err:type_name -> path.qos.JsonRpcResponseError
+	2, // 0: path.qos.JsonRpcResponse.error:type_name -> path.qos.JsonRpcResponseError
 	1, // [1:1] is the sub-list for method output_type
 	1, // [1:1] is the sub-list for method input_type
 	1, // [1:1] is the sub-list for extension type_name
