@@ -51,28 +51,43 @@ type Gateway struct {
 	DataReporter RequestResponseReporter
 }
 
-// TODO_TECHDEBT(@adshmh): Refactor this method once a new request context struct is added for websockets:
-// - Determine request type (HTTP, WebSocket) at the top.
-// - Immidiately call the corresponding handle method.
-// - Move initialization, defers, etc. to the correct method.
-// - Example: BroadcastAllObservations does not capture how websocket observations are handled.
+// HandleServiceRequest implements PATH gateway's service request processing:
 //
-// HandleHTTPServiceRequest implements PATH gateway's HTTP request processing:
+// This method acts as a request router that determines the type of incoming request
+// (HTTP or WebSocket) and delegates to the appropriate handler. This separation
+// allows for different processing flows while maintaining a unified entry point.
 //
-// This is written as a template method to allow customization of steps.
-// Template pattern allows customization of service steps:
-// - Establishing QoS context
-// - Sending payload via relay protocols
-// Reference: https://en.wikipedia.org/wiki/Template_method_pattern
+// Request Flow:
+// 1. Determine request type (HTTP vs WebSocket upgrade)
+// 2. Route to appropriate handler:
+//   - WebSocket: Long-lived bidirectional connection with message-based observations
+//   - HTTP: Request-response cycle with single observation broadcast
 //
 // TODO_FUTURE: Refactor when adding other protocols (e.g. gRPC):
 //   - Extract generic processing into common method
-//   - Keep HTTP-specific details separate
+//   - Keep protocol-specific details separate
 func (g Gateway) HandleServiceRequest(
 	ctx context.Context,
 	httpReq *http.Request,
 	responseWriter http.ResponseWriter,
 ) {
+	// Determine the type of service request and handle it accordingly.
+	switch determineServiceRequestType(httpReq) {
+	case websocketServiceRequest:
+		g.handleWebSocketRequest(ctx, httpReq, responseWriter)
+	default:
+		g.handleHTTPServiceRequest(ctx, httpReq, responseWriter)
+	}
+}
+
+// handleHTTPServiceRequest handles a standard HTTP service request.
+func (g Gateway) handleHTTPServiceRequest(
+	ctx context.Context,
+	httpReq *http.Request,
+	responseWriter http.ResponseWriter,
+) {
+	logger := g.Logger.With("method", "handleHTTPServiceRequest")
+
 	// Build a gatewayRequestContext with components necessary to process requests.
 	gatewayRequestCtx := &requestContext{
 		logger:              g.Logger,
@@ -84,11 +99,6 @@ func (g Gateway) HandleServiceRequest(
 		dataReporter:        g.DataReporter,
 	}
 
-	defer func() {
-		// Broadcast all observations, e.g. protocol-level, QoS-level, etc. contained in the gateway request context.
-		gatewayRequestCtx.BroadcastAllObservations()
-	}()
-
 	// Initialize the GatewayRequestContext struct using the HTTP request.
 	// e.g. extract the target service ID from the HTTP request.
 	err := gatewayRequestCtx.InitFromHTTPRequest(httpReq)
@@ -96,31 +106,15 @@ func (g Gateway) HandleServiceRequest(
 		return
 	}
 
-	// Determine the type of service request and handle it accordingly.
-	switch determineServiceRequestType(httpReq) {
-	case websocketServiceRequest:
-		g.handleWebSocketRequest(ctx, httpReq, gatewayRequestCtx, responseWriter)
-	default:
-		g.handleHTTPServiceRequest(ctx, httpReq, gatewayRequestCtx, responseWriter)
-	}
-}
-
-// handleHTTPServiceRequest handles a standard HTTP service request.
-func (g Gateway) handleHTTPServiceRequest(
-	_ context.Context,
-	httpReq *http.Request,
-	gatewayRequestCtx *requestContext,
-	responseWriter http.ResponseWriter,
-) {
-	logger := g.Logger.With("method", "handleHTTPServiceRequest")
-	defer func() {
+	defer func() { // Broadcast all observations, e.g. protocol-level, QoS-level, etc. contained in the gateway request context.
+		gatewayRequestCtx.BroadcastAllObservations()
 		// Write the user-facing HTTP response. This is deliberately not called for websocket requests as they do not return an HTTP response.
 		gatewayRequestCtx.WriteHTTPUserResponse(responseWriter)
 	}()
 
 	// TODO_TECHDEBT(@adshmh): Pass the context with deadline to QoS once it can handle deadlines.
 	// Build the QoS context for the target service ID using the HTTP request's payload.
-	err := gatewayRequestCtx.BuildQoSContextFromHTTP(httpReq)
+	err = gatewayRequestCtx.BuildQoSContextFromHTTP(httpReq)
 	if err != nil {
 		logger.Error().Err(err).Msg("❌ Error building QoS context for HTTP request")
 		return
@@ -152,42 +146,54 @@ func (g Gateway) handleHTTPServiceRequest(
 
 // handleWebSocketRequest handles WebSocket connection requests.
 func (g Gateway) handleWebSocketRequest(
-	_ context.Context,
+	ctx context.Context,
 	httpReq *http.Request,
-	gatewayRequestCtx *requestContext,
 	w http.ResponseWriter,
 ) {
 	logger := g.Logger.With("method", "handleWebSocketRequest")
 
-	// TODO_UPNEXT(@adshmh): Initialize and use the QoS context when handling a websocket request:
-	// - Parse the request: e.g. validate the payload is a valid subscribe request.
-	// - Generate observations to track requests: e.g. failed websocket requests due to invalid payload/unsupported on the requested service ID, etc.
-	// - Parse the selected endpoint's responses and use the stored data in the endpoint selection process.
-	// - Return proper response to the user in case of error: e.g. if the selected endpoint refuses the connection.
-	//
-	// Build the QoS context for the target service ID using the HTTP request's payload.
-	err := gatewayRequestCtx.BuildQoSContextFromWebsocket(httpReq)
+	// Build a websocketRequestContext with components necessary to process websocket requests.
+	websocketRequestCtx := &websocketRequestContext{
+		logger:              g.Logger,
+		context:             ctx,
+		gatewayObservations: getUserRequestGatewayObservations(httpReq),
+		protocol:            g.Protocol,
+		httpRequestParser:   g.HTTPRequestParser,
+		metricsReporter:     g.MetricsReporter,
+		dataReporter:        g.DataReporter,
+	}
+
+	// Initialize the websocket request context using the HTTP request.
+	err := websocketRequestCtx.InitFromHTTPRequest(httpReq)
+	if err != nil {
+		logger.Error().Err(err).Msg("❌ Error initializing websocket request context")
+		return
+	}
+
+	// Build the QoS context for the target service ID using the HTTP request.
+	// This replaces BuildQoSContextFromWebsocket and uses ParseHTTPRequest as single entry point.
+	err = websocketRequestCtx.BuildQoSContextFromHTTP(httpReq)
 	if err != nil {
 		logger.Error().Err(err).Msg("❌ Error building QoS context for websocket request")
 		return
 	}
 
-	// Build the protocol context for the HTTP request.
-	err = gatewayRequestCtx.BuildProtocolContextsFromHTTPRequest(httpReq)
+	// Build the protocol context for the websocket request.
+	err = websocketRequestCtx.BuildProtocolContextFromHTTPRequest(httpReq)
 	if err != nil {
 		logger.Error().Err(err).Msg("❌ Error building protocol context for websocket request")
 		return
 	}
 
-	// TODO_DOCUMENT(@adshmh): Update this comment once the refactoring of observations on websockets is complete:
-	// - BroadcastAllObservations does not apply to websockets due to the continuous flow of messages.
-	//
-	// Use the gateway request context to process the websocket connection request.
-	// Any returned errors are ignored here and processed by the gateway context in the deferred calls.
-	// See the `BroadcastAllObservations` method of `gateway.requestContext` struct for details.
-	err = gatewayRequestCtx.HandleWebsocketRequest(httpReq, w)
+	// Handle the websocket connection request using the websocket request context.
+	err = websocketRequestCtx.HandleWebsocketRequest(httpReq, w)
 	if err != nil {
 		logger.Error().Err(err).Msg("❌ Error processing websocket request")
 		return
 	}
+
+	// For websockets, we don't immediately broadcast observations since the connection
+	// will be long-lived and observations will be handled per-message basis.
+	// The websocketRequestContext will handle observations during its lifecycle.
+	logger.Info().Msg("✅ Successfully established websocket connection and started bridge")
 }

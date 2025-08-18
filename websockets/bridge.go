@@ -6,62 +6,14 @@ import (
 
 	"github.com/gorilla/websocket"
 	"github.com/pokt-network/poktroll/pkg/polylog"
-
-	"github.com/buildwithgrove/path/gateway"
-	"github.com/buildwithgrove/path/observation"
 )
 
-// TODO_TECHDEBT(@adshmh): Refactor the bridge to purely contain any required specialized websocket logic.
-// - Most of the logic here needs to move to a new, specialized gateway.WebsocketRequestContext struct.
-//
-// TODO_TECHDEBT(@adshmh): make this a package private struct.
-// No other package should need to know the details of the underlying protocol (Websocket in this case).
-//
-// WebSocketMessage represents a websocket message that can be one of the following:
-// - Client request
-// - Endpoint response
-// - Subscription push event (e.g. eth_subscribe)
-type WebSocketMessage struct {
-	// Data is the message payload
-	Data []byte
-
-	// MessageType is an int returned by the gorilla/websocket package
-	MessageType int
-}
-
-// TODO_TECHDEBT(@adshmh): Rename/remove/split this into multiple interfaces.
-// Each interface's name should clearly indicate the responsibilities.
-//
 // WebSocketMessageHandler handles websocket messages.
 // It can, for example, transform the message data before forwarding it.
 type WebSocketMessageHandler interface {
 	// HandleMessage processes a message and returns the data to forward.
 	// If an error is returned, the connection will be closed.
-	HandleMessage(msg WebSocketMessage) ([]byte, error)
-}
-
-// TODO_TECHDEBT(@adshmh): Drop this interface once the following are complete:
-// - The gateway package is the sole publisher of observations.
-// - Each message from the client/endpoint should result in a new observation (some fields will have the same values, e.g. the endpoint address)
-// - Each layer (e.g. protocol, QoS) should build and supply its own specialized observations for each message.
-//
-// ObservationPublisher handles publishing observations after processing endpoint messages.
-type ObservationPublisher interface {
-	// SetObservationContext sets the gateway observations and data reporter.
-	// Set once per Bridge initialization.
-	SetObservationContext(*observation.GatewayObservations, gateway.RequestResponseReporter)
-	// InitializeMessageObservations initializes the observations for the current message.
-	// Called once per message.
-	InitializeMessageObservations() *observation.RequestResponseObservations
-	// UpdateMessageObservations updates the observations for the current message.
-	// Called once per message if the message handler does not return an error.
-	UpdateMessageObservationsFromSuccess(*observation.RequestResponseObservations)
-	// UpdateMessageObservationsFromError updates the observations for the current message.
-	// Called once per message if the message handler returns an error.
-	UpdateMessageObservationsFromError(*observation.RequestResponseObservations, error)
-	// PublishObservations publishes protocol-specific observations.
-	// Called once per message.
-	PublishMessageObservations(*observation.RequestResponseObservations)
+	HandleMessage(msgData []byte) ([]byte, error)
 }
 
 // bridge routes data between an Endpoint and a Client.
@@ -71,6 +23,11 @@ type ObservationPublisher interface {
 // This is a generic websocket bridge that handles the websocket protocol
 // and message routing, while delegating protocol-specific logic to the
 // provided message handlers.
+//
+// Architecture:
+// - Protocol-agnostic: Works with any protocol (Shannon, future protocols)
+// - Message handlers: Protocol-specific logic for signing/validation
+// - Notification channels: Gateway observability without tight coupling
 //
 // Full data flow: Client <---clientConn---> PATH bridge <---endpointConn---> Relay Miner bridge <------> Endpoint
 type bridge struct {
@@ -91,8 +48,10 @@ type bridge struct {
 	// endpointMessageHandler processes messages from the endpoint before forwarding to the client
 	endpointMessageHandler WebSocketMessageHandler
 
-	// observationPublisher handles publishing observations after endpoint message processing
-	observationPublisher ObservationPublisher
+	// messageSuccessChan signals successful message processing to the gateway
+	messageSuccessChan chan<- struct{}
+	// messageErrorChan sends error information when message processing fails
+	messageErrorChan chan<- error
 }
 
 // NewBridge creates a new Bridge instance with connections to both client and endpoint.
@@ -102,7 +61,8 @@ func NewBridge(
 	endpointWSSConn *websocket.Conn,
 	clientMessageHandler WebSocketMessageHandler,
 	endpointMessageHandler WebSocketMessageHandler,
-	observationPublisher ObservationPublisher,
+	messageSuccessChan chan<- struct{},
+	messageErrorChan chan<- error,
 ) (*bridge, error) {
 	logger = logger.With("component", "websocket_bridge")
 
@@ -120,7 +80,8 @@ func NewBridge(
 		msgChan:                msgChan,
 		clientMessageHandler:   clientMessageHandler,
 		endpointMessageHandler: endpointMessageHandler,
-		observationPublisher:   observationPublisher,
+		messageSuccessChan:     messageSuccessChan,
+		messageErrorChan:       messageErrorChan,
 	}
 	if err := b.validateComponents(); err != nil {
 		cancelCtx() // Cancel context to prevent leak
@@ -152,8 +113,10 @@ func NewBridge(
 // This is done to avoid panics and to make the Bridge's behavior more predictable.
 func (b *bridge) validateComponents() error {
 	switch {
-	case b.observationPublisher == nil:
-		return fmt.Errorf("observationPublisher is nil")
+	case b.messageSuccessChan == nil:
+		return fmt.Errorf("messageSuccessChan is nil")
+	case b.messageErrorChan == nil:
+		return fmt.Errorf("messageErrorChan is nil")
 	case b.clientMessageHandler == nil:
 		return fmt.Errorf("clientMessageHandler is nil")
 	case b.endpointMessageHandler == nil:
@@ -168,19 +131,8 @@ func (b *bridge) validateComponents() error {
 // This method implements the gateway.WebsocketsBridge interface.
 //
 // Full data flow: Client <---clientConn---> PATH Bridge <---endpointConn---> Relay Miner Bridge <------> Endpoint
-func (b *bridge) StartAsync(
-	gatewayObservations *observation.GatewayObservations,
-	dataReporter gateway.RequestResponseReporter,
-) {
+func (b *bridge) StartAsync() {
 	b.logger.Info().Msg("🏗️ Websocket bridge operation started successfully")
-
-	// Set the observation context for observation publishing.
-	//
-	// These values, both gateway and protocol, are static for the duration of
-	// the bridge's operation. New observations will be set when a new Bridge is created.
-	if b.observationPublisher != nil {
-		b.observationPublisher.SetObservationContext(gatewayObservations, dataReporter)
-	}
 
 	// Listen for the context to be canceled and shut down the bridge
 	go func() {
@@ -235,14 +187,8 @@ func (b *bridge) Shutdown(err error) {
 //
 // handleClientMessage processes a message from the Client and sends it to the endpoint.
 func (b *bridge) handleClientMessage(msg message) {
-	// Create a Message struct for the handler
-	handlerMsg := WebSocketMessage{
-		Data:        msg.data,
-		MessageType: msg.messageType,
-	}
-
 	// Process the message through the client message handler
-	processedData, err := b.clientMessageHandler.HandleMessage(handlerMsg)
+	processedData, err := b.clientMessageHandler.HandleMessage(msg.data)
 	if err != nil {
 		b.clientConn.handleDisconnect(fmt.Errorf("handleClientMessage: %w", err))
 		return
@@ -255,30 +201,20 @@ func (b *bridge) handleClientMessage(msg message) {
 	}
 }
 
-// TODO_TECHDEBT(@adshmh): Explicitly build/publish observations at all levels: protocol, QoS, etc.
-// - Refactor to clarify the flow of observations/data across layers (endpoint->protocol->qos->gateway->metrics/data).
-// - Use a new gateway.WebSocketRequestContext to handle the coordination of the flow.
-// - Limit the logic in this bridge struct to anything that requires specialized websocket knowledge.
-//
 // handleEndpointMessage processes a message from the Endpoint and sends it to the Client.
+// The bridge notifies the gateway about message processing results through channels,
+// allowing the gateway to handle observations without the bridge knowing about them.
 func (b *bridge) handleEndpointMessage(msg message) {
-	// Create a Message struct for the handler
-	handlerMsg := WebSocketMessage{
-		Data:        msg.data,
-		MessageType: msg.messageType,
-	}
-
-	// Initialize the message observations for the current message.
-	messageObservations := b.observationPublisher.InitializeMessageObservations()
-
-	// Ensure observations are published regardless of success or failure
-	defer b.observationPublisher.PublishMessageObservations(messageObservations)
-
 	// Process the message through the endpoint message handler
-	processedData, err := b.endpointMessageHandler.HandleMessage(handlerMsg)
+	processedData, err := b.endpointMessageHandler.HandleMessage(msg.data)
 	if err != nil {
-		// Update observations with error details before disconnecting
-		b.observationPublisher.UpdateMessageObservationsFromError(messageObservations, err)
+		// Notify gateway about the error
+		select {
+		case b.messageErrorChan <- err:
+		default:
+			// Channel is full, log but don't block
+			b.logger.Warn().Msg("messageErrorChan is full, dropping error notification")
+		}
 		b.endpointConn.handleDisconnect(fmt.Errorf("handleEndpointMessage: %w", err))
 		return
 	}
@@ -287,10 +223,23 @@ func (b *bridge) handleEndpointMessage(msg message) {
 	if err := b.clientConn.WriteMessage(msg.messageType, processedData); err != nil {
 		// NOTE: On session rollover, the Endpoint will disconnect the Endpoint connection, which will trigger this
 		// error. This is expected and the Client is expected to handle the reconnection in their connection logic.
+
+		// Notify gateway about the write error
+		select {
+		case b.messageErrorChan <- fmt.Errorf("error writing to client: %w", err):
+		default:
+			// Channel is full, log but don't block
+			b.logger.Warn().Msg("messageErrorChan is full, dropping error notification")
+		}
 		b.clientConn.handleDisconnect(fmt.Errorf("handleEndpointMessage: error writing to client: %w", err))
 		return
 	}
 
-	// Update observations with success details
-	b.observationPublisher.UpdateMessageObservationsFromSuccess(messageObservations)
+	// Notify gateway about successful message processing
+	select {
+	case b.messageSuccessChan <- struct{}{}:
+	default:
+		// Channel is full, log but don't block
+		b.logger.Warn().Msg("messageSuccessChan is full, dropping success notification")
+	}
 }

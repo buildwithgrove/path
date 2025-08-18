@@ -6,6 +6,7 @@ import (
 
 	"github.com/buildwithgrove/path/health"
 	"github.com/buildwithgrove/path/metrics/devtools"
+	"github.com/buildwithgrove/path/observation"
 	protocolobservations "github.com/buildwithgrove/path/observation/protocol"
 	"github.com/buildwithgrove/path/protocol"
 )
@@ -82,11 +83,25 @@ type ProtocolRequestContext interface {
 	// and receives and verifies the response.
 	HandleServiceRequest(protocol.Payload) (protocol.Response, error)
 
-	// HandleWebsocketRequest returns a WebsocketsBridge that handles a WebSocket connection request.
-	// A Bridge is returned from this method in order to:
-	//   - Adhere to the convention of the `gateway` package handling non-protocol specific request logic
-	//   - Allow passing gateway level observations to the WebsocketsBridge
-	HandleWebsocketRequest(*http.Request, http.ResponseWriter) (WebsocketsBridge, error)
+	// GetWebsocketConnectionHeaders returns protocol-specific headers needed for websocket connections.
+	// These headers contain protocol-specific information like session data, service IDs, etc.
+	GetWebsocketConnectionHeaders() http.Header
+
+	// GetWebsocketEndpointURL returns the websocket URL for the selected endpoint.
+	// This URL is used to establish the websocket connection to the endpoint.
+	GetWebsocketEndpointURL() (string, error)
+
+	// SignClientWebsocketMessage signs the client message before sending it to the Endpoint on the network.
+	SignClientWebsocketMessage([]byte) ([]byte, error)
+
+	// ValidateEndpointWebsocketMessage validates the websocket message received from the Endpoint on the network.
+	ValidateEndpointWebsocketMessage([]byte) ([]byte, error)
+
+	// UpdateMessageObservationsFromSuccess updates the message observations from a successful message.
+	UpdateMessageObservationsFromSuccess(*observation.RequestResponseObservations) *protocolobservations.Observations
+
+	// UpdateMessageObservationsFromError updates the message observations from an error.
+	UpdateMessageObservationsFromError(*observation.RequestResponseObservations, error) *protocolobservations.Observations
 
 	// GetObservations builds and returns the set of protocol-specific observations using the current context.
 	//
