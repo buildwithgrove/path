@@ -12,9 +12,6 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/pokt-network/poktroll/pkg/polylog/polyzero"
 	"github.com/stretchr/testify/require"
-
-	"github.com/buildwithgrove/path/gateway"
-	"github.com/buildwithgrove/path/observation"
 )
 
 type (
@@ -70,7 +67,10 @@ func Test_Bridge_MessageFlow(t *testing.T) {
 			// Create mock message handlers
 			clientHandler := &mockClientMessageHandler{}
 			endpointHandler := &mockEndpointMessageHandler{}
-			observationPublisher := &mockObservationPublisher{}
+
+			// Create channels for bridge notifications
+			successChan := make(chan struct{}, 100)
+			errorChan := make(chan error, 100)
 
 			// Create the bridge
 			bridge, err := NewBridge(
@@ -79,12 +79,13 @@ func Test_Bridge_MessageFlow(t *testing.T) {
 				endpointConn,
 				clientHandler,
 				endpointHandler,
-				observationPublisher,
+				successChan,
+				errorChan,
 			)
 			c.NoError(err)
 
 			// Start the bridge in a goroutine
-			go bridge.StartAsync(&observation.GatewayObservations{}, nil)
+			go bridge.StartAsync()
 
 			// Wait for messages to be processed
 			time.Sleep(1 * time.Second)
@@ -100,9 +101,21 @@ func Test_Bridge_MessageFlow(t *testing.T) {
 				c.True(exists, "Expected endpoint response not captured: %s", expectedResp)
 			}
 
-			// Verify observation publisher was called if configured
+			// Verify notifications were sent for endpoint responses
 			if len(test.endpointResponses) > 0 {
-				c.True(observationPublisher.publishCalled, "ObservationPublisher.PublishObservations should have been called")
+				// Check that we received success notifications
+				successCount := 0
+				timeout := time.After(1 * time.Second)
+			checkSuccessLoop:
+				for successCount < len(test.endpointResponses) {
+					select {
+					case <-successChan:
+						successCount++
+					case <-timeout:
+						break checkSuccessLoop
+					}
+				}
+				c.Equal(len(test.endpointResponses), successCount, "Expected success notifications for all endpoint responses")
 			}
 		})
 	}
@@ -117,7 +130,10 @@ func Test_Bridge_Shutdown(t *testing.T) {
 	// Create mock handlers
 	clientHandler := &mockClientMessageHandler{}
 	endpointHandler := &mockEndpointMessageHandler{}
-	observationPublisher := &mockObservationPublisher{}
+
+	// Create channels for bridge notifications
+	successChan := make(chan struct{}, 10)
+	errorChan := make(chan error, 10)
 
 	// Create the bridge
 	bridge, err := NewBridge(
@@ -126,7 +142,8 @@ func Test_Bridge_Shutdown(t *testing.T) {
 		endpointConn,
 		clientHandler,
 		endpointHandler,
-		observationPublisher,
+		successChan,
+		errorChan,
 	)
 	c.NoError(err)
 
@@ -222,42 +239,14 @@ func createTestConnections(t *testing.T, clientMessages, endpointResponses []tes
 
 type mockClientMessageHandler struct{}
 
-func (m *mockClientMessageHandler) HandleMessage(msg WebSocketMessage) ([]byte, error) {
+func (m *mockClientMessageHandler) HandleMessage(msgData []byte) ([]byte, error) {
 	// Echo the message as-is (no protocol-specific processing)
-	return msg.Data, nil
+	return msgData, nil
 }
 
 type mockEndpointMessageHandler struct{}
 
-func (m *mockEndpointMessageHandler) HandleMessage(msg WebSocketMessage) ([]byte, error) {
+func (m *mockEndpointMessageHandler) HandleMessage(msgData []byte) ([]byte, error) {
 	// Echo the message as-is (no protocol-specific processing)
-	return msg.Data, nil
-}
-
-type mockObservationPublisher struct {
-	publishCalled       bool
-	gatewayObservations *observation.GatewayObservations
-}
-
-func (m *mockObservationPublisher) SetObservationContext(
-	gatewayObservations *observation.GatewayObservations,
-	dataReporter gateway.RequestResponseReporter,
-) {
-	m.gatewayObservations = gatewayObservations
-}
-
-func (m *mockObservationPublisher) InitializeMessageObservations() *observation.RequestResponseObservations {
-	return &observation.RequestResponseObservations{}
-}
-
-func (m *mockObservationPublisher) UpdateMessageObservationsFromSuccess(*observation.RequestResponseObservations) {
-	// Mock implementation - no-op
-}
-
-func (m *mockObservationPublisher) UpdateMessageObservationsFromError(*observation.RequestResponseObservations, error) {
-	// Mock implementation - no-op
-}
-
-func (m *mockObservationPublisher) PublishMessageObservations(*observation.RequestResponseObservations) {
-	m.publishCalled = true
+	return msgData, nil
 }

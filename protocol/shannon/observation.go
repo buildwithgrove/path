@@ -2,7 +2,6 @@ package shannon
 
 import (
 	"errors"
-	"fmt"
 	"time"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
@@ -254,59 +253,6 @@ func buildInternalRequestProcessingErrorObservation(internalErr error) *protocol
 		// Use the error message as the request error details.
 		ErrorDetails: internalErr.Error(),
 	}
-}
-
-// builds a Shannon endpoint observation for a websocket bridge.
-// Used to track the endpoint used for a websocket bridge.
-//
-// As a websockets bridge represents a persistent connection to a single endpoint,
-// the protocolObservations will be the same for the duration of the bridge, so
-// a single observation is sufficient.
-func buildWebsocketBridgeEndpointObservation(
-	logger polylog.Logger,
-	serviceID protocol.ServiceID,
-	endpoint endpoint,
-) *protocolobservations.Observations {
-	return &protocolobservations.Observations{
-		Shannon: &protocolobservations.ShannonObservationsList{
-			Observations: []*protocolobservations.ShannonRequestObservations{
-				{
-					ServiceId: string(serviceID),
-					EndpointObservations: []*protocolobservations.ShannonEndpointObservation{
-						buildEndpointObservation(logger, endpoint, nil),
-					},
-				},
-			},
-		},
-	}
-}
-
-// buildWebsocketMessageErrorObservation updates a Shannon endpoint observation with websocket message processing error details.
-// It classifies the error and updates the relevant fields on the existing observation.
-// Used to update observations when websocket message handling fails.
-func buildWebsocketMessageErrorObservation(
-	logger polylog.Logger,
-	observation *protocolobservations.ShannonEndpointObservation,
-	err error,
-) *protocolobservations.ShannonEndpointObservation {
-	// Classify the error to determine error type and recommended sanction
-	endpointErrorType, recommendedSanctionType := classifyRelayError(logger, err)
-
-	// Update the observation with error details and timestamps
-	now := time.Now()
-	observation.EndpointQueryTimestamp = timestamppb.New(now)
-	observation.EndpointResponseTimestamp = timestamppb.New(now)
-
-	// Set error-specific fields
-	observation.ErrorType = &endpointErrorType
-	errorDetails := fmt.Sprintf("websocket message processing error: %v", err)
-	observation.ErrorDetails = &errorDetails
-	observation.RecommendedSanction = &recommendedSanctionType
-
-	// RelayMinerError is not applicable for websocket message processing errors
-	observation.RelayMinerError = nil
-
-	return observation
 }
 
 // buildWebsocketMessageSuccessObservation updates a Shannon endpoint observation with websocket message processing success details.
