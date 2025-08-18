@@ -354,6 +354,8 @@ func (x *SolanaGetHealthResponse) GetResult() string {
 type SolanaUnrecognizedResponse struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
 	JsonrpcResponse *JsonRpcResponse       `protobuf:"bytes,1,opt,name=jsonrpc_response,json=jsonrpcResponse,proto3" json:"jsonrpc_response,omitempty"`
+	// Optional validation error information
+	ValidationError *JsonRpcResponseValidationError `protobuf:"bytes,2,opt,name=validation_error,json=validationError,proto3,oneof" json:"validation_error,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -395,11 +397,18 @@ func (x *SolanaUnrecognizedResponse) GetJsonrpcResponse() *JsonRpcResponse {
 	return nil
 }
 
+func (x *SolanaUnrecognizedResponse) GetValidationError() *JsonRpcResponseValidationError {
+	if x != nil {
+		return x.ValidationError
+	}
+	return nil
+}
+
 var File_path_qos_solana_proto protoreflect.FileDescriptor
 
 const file_path_qos_solana_proto_rawDesc = "" +
 	"\n" +
-	"\x15path/qos/solana.proto\x12\bpath.qos\x1a\x16path/qos/jsonrpc.proto\x1a\x1dpath/qos/request_origin.proto\x1a\x1cpath/qos/request_error.proto\"\xd5\x03\n" +
+	"\x15path/qos/solana.proto\x12\bpath.qos\x1a\x16path/qos/jsonrpc.proto\x1a\x1dpath/qos/request_origin.proto\x1a\x1cpath/qos/request_error.proto\x1a'path/qos/jsonrpc_validation_error.proto\"\xd5\x03\n" +
 	"\x19SolanaRequestObservations\x12\x19\n" +
 	"\bchain_id\x18\x01 \x01(\tR\achainId\x12\x1d\n" +
 	"\n" +
@@ -421,9 +430,11 @@ const file_path_qos_solana_proto_rawDesc = "" +
 	"\fblock_height\x18\x01 \x01(\x04R\vblockHeight\x12\x14\n" +
 	"\x05epoch\x18\x02 \x01(\x04R\x05epoch\"1\n" +
 	"\x17SolanaGetHealthResponse\x12\x16\n" +
-	"\x06result\x18\x01 \x01(\tR\x06result\"b\n" +
+	"\x06result\x18\x01 \x01(\tR\x06result\"\xd1\x01\n" +
 	"\x1aSolanaUnrecognizedResponse\x12D\n" +
-	"\x10jsonrpc_response\x18\x01 \x01(\v2\x19.path.qos.JsonRpcResponseR\x0fjsonrpcResponseB0Z.github.com/buildwithgrove/path/observation/qosb\x06proto3"
+	"\x10jsonrpc_response\x18\x01 \x01(\v2\x19.path.qos.JsonRpcResponseR\x0fjsonrpcResponse\x12X\n" +
+	"\x10validation_error\x18\x02 \x01(\v2(.path.qos.JsonRpcResponseValidationErrorH\x00R\x0fvalidationError\x88\x01\x01B\x13\n" +
+	"\x11_validation_errorB0Z.github.com/buildwithgrove/path/observation/qosb\x06proto3"
 
 var (
 	file_path_qos_solana_proto_rawDescOnce sync.Once
@@ -439,15 +450,16 @@ func file_path_qos_solana_proto_rawDescGZIP() []byte {
 
 var file_path_qos_solana_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
 var file_path_qos_solana_proto_goTypes = []any{
-	(*SolanaRequestObservations)(nil),  // 0: path.qos.SolanaRequestObservations
-	(*SolanaEndpointObservation)(nil),  // 1: path.qos.SolanaEndpointObservation
-	(*SolanaGetEpochInfoResponse)(nil), // 2: path.qos.SolanaGetEpochInfoResponse
-	(*SolanaGetHealthResponse)(nil),    // 3: path.qos.SolanaGetHealthResponse
-	(*SolanaUnrecognizedResponse)(nil), // 4: path.qos.SolanaUnrecognizedResponse
-	(RequestOrigin)(0),                 // 5: path.qos.RequestOrigin
-	(*RequestError)(nil),               // 6: path.qos.RequestError
-	(*JsonRpcRequest)(nil),             // 7: path.qos.JsonRpcRequest
-	(*JsonRpcResponse)(nil),            // 8: path.qos.JsonRpcResponse
+	(*SolanaRequestObservations)(nil),      // 0: path.qos.SolanaRequestObservations
+	(*SolanaEndpointObservation)(nil),      // 1: path.qos.SolanaEndpointObservation
+	(*SolanaGetEpochInfoResponse)(nil),     // 2: path.qos.SolanaGetEpochInfoResponse
+	(*SolanaGetHealthResponse)(nil),        // 3: path.qos.SolanaGetHealthResponse
+	(*SolanaUnrecognizedResponse)(nil),     // 4: path.qos.SolanaUnrecognizedResponse
+	(RequestOrigin)(0),                     // 5: path.qos.RequestOrigin
+	(*RequestError)(nil),                   // 6: path.qos.RequestError
+	(*JsonRpcRequest)(nil),                 // 7: path.qos.JsonRpcRequest
+	(*JsonRpcResponse)(nil),                // 8: path.qos.JsonRpcResponse
+	(*JsonRpcResponseValidationError)(nil), // 9: path.qos.JsonRpcResponseValidationError
 }
 var file_path_qos_solana_proto_depIdxs = []int32{
 	5, // 0: path.qos.SolanaRequestObservations.request_origin:type_name -> path.qos.RequestOrigin
@@ -458,11 +470,12 @@ var file_path_qos_solana_proto_depIdxs = []int32{
 	3, // 5: path.qos.SolanaEndpointObservation.get_health_response:type_name -> path.qos.SolanaGetHealthResponse
 	4, // 6: path.qos.SolanaEndpointObservation.unrecognized_response:type_name -> path.qos.SolanaUnrecognizedResponse
 	8, // 7: path.qos.SolanaUnrecognizedResponse.jsonrpc_response:type_name -> path.qos.JsonRpcResponse
-	8, // [8:8] is the sub-list for method output_type
-	8, // [8:8] is the sub-list for method input_type
-	8, // [8:8] is the sub-list for extension type_name
-	8, // [8:8] is the sub-list for extension extendee
-	0, // [0:8] is the sub-list for field type_name
+	9, // 8: path.qos.SolanaUnrecognizedResponse.validation_error:type_name -> path.qos.JsonRpcResponseValidationError
+	9, // [9:9] is the sub-list for method output_type
+	9, // [9:9] is the sub-list for method input_type
+	9, // [9:9] is the sub-list for extension type_name
+	9, // [9:9] is the sub-list for extension extendee
+	0, // [0:9] is the sub-list for field type_name
 }
 
 func init() { file_path_qos_solana_proto_init() }
@@ -473,12 +486,14 @@ func file_path_qos_solana_proto_init() {
 	file_path_qos_jsonrpc_proto_init()
 	file_path_qos_request_origin_proto_init()
 	file_path_qos_request_error_proto_init()
+	file_path_qos_jsonrpc_validation_error_proto_init()
 	file_path_qos_solana_proto_msgTypes[0].OneofWrappers = []any{}
 	file_path_qos_solana_proto_msgTypes[1].OneofWrappers = []any{
 		(*SolanaEndpointObservation_GetEpochInfoResponse)(nil),
 		(*SolanaEndpointObservation_GetHealthResponse)(nil),
 		(*SolanaEndpointObservation_UnrecognizedResponse)(nil),
 	}
+	file_path_qos_solana_proto_msgTypes[4].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
