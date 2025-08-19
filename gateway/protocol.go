@@ -82,12 +82,6 @@ type ProtocolRequestContext interface {
 	// and receives and verifies the response.
 	HandleServiceRequest(protocol.Payload) (protocol.Response, error)
 
-	// HandleWebsocketRequest returns a WebsocketsBridge that handles a WebSocket connection request.
-	// A Bridge is returned from this method in order to:
-	//   - Adhere to the convention of the `gateway` package handling non-protocol specific request logic
-	//   - Allow passing gateway level observations to the WebsocketsBridge
-	HandleWebsocketRequest(*http.Request, http.ResponseWriter) (WebsocketsBridge, error)
-
 	// GetObservations builds and returns the set of protocol-specific observations using the current context.
 	//
 	// Hypothetical illustrative example.
@@ -100,4 +94,18 @@ type ProtocolRequestContext interface {
 	// Then the observation can be:
 	//  - `maxed-out endpoint` on `endpoint_101`.
 	GetObservations() protocolobservations.Observations
+
+	// GetWebsocketConnectionHeaders returns protocol-specific headers needed for websocket connections.
+	// These headers contain protocol-specific information like session data, service IDs, etc.
+	GetWebsocketConnectionHeaders() (http.Header, error)
+
+	// GetWebsocketEndpointURL returns the websocket URL for the selected endpoint.
+	// This URL is used to establish the websocket connection to the endpoint.
+	GetWebsocketEndpointURL() (string, error)
+
+	// ProcessProtocolClientWebsocketMessage processes a message from the client.
+	ProcessProtocolClientWebsocketMessage([]byte) ([]byte, error)
+
+	// ProcessProtocolEndpointWebsocketMessage processes a message from the endpoint.
+	ProcessProtocolEndpointWebsocketMessage([]byte) ([]byte, protocolobservations.Observations, error)
 }

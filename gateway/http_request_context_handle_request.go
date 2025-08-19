@@ -13,6 +13,12 @@ import (
 	"github.com/buildwithgrove/path/protocol"
 )
 
+// TODO_TECHDEBT(@adshmh): A single protocol context should handle both single/parallel calls to one or more endpoints.
+// Including:
+// - Support for configuration of parallel requests (including fallback)
+// - Generating and applying of endpoint(s) observations from all outgoing request(s).
+// - Full encapsulation of the parallel request logic.
+//
 // parallelRelayResult is used to track the result of a parallel relay request.
 // It is intended for internal use by the requestContext.
 type parallelRelayResult struct {

@@ -6,6 +6,7 @@ option go_package = "github.com/buildwithgrove/path/observation/qos";
 import "path/qos/jsonrpc.proto";
 import "path/qos/request_origin.proto";
 import "path/qos/request_error.proto";
+import "path/qos/jsonrpc_validation_error.proto";
 
 // SolanaRequestObservations captures QoS data for a single Solana blockchain service request,
 // including all observations made during potential retries.
@@ -79,4 +80,7 @@ message SolanaGetHealthResponse {
 // Examples: getTokenSupply, getTransaction
 message SolanaUnrecognizedResponse {
   JsonRpcResponse jsonrpc_response = 1;
+
+  // Optional validation error information
+  optional JsonRpcResponseValidationError validation_error = 2;
 }

@@ -65,14 +65,14 @@ type websocketConnection struct {
 	msgChan chan<- message
 }
 
-// UpgradeClientWebsocketConnection upgrades an HTTP connection to a WebSocket.
+// upgradeClientWebsocketConnection upgrades an HTTP connection to a WebSocket.
 // Used to upgrade a Client's HTTP request to a WebSocket connection.
 //
 // DEV_NOTE: This function uses a permissive CheckOrigin policy (always returns true),
 // eliminating origin-based rejections as a potential cause of upgrade failures.
 //
 // See: https://pkg.go.dev/github.com/gorilla/websocket#hdr-Overview
-func UpgradeClientWebsocketConnection(
+func upgradeClientWebsocketConnection(
 	wsLogger polylog.Logger,
 	req *http.Request,
 	w http.ResponseWriter,
@@ -95,8 +95,8 @@ func UpgradeClientWebsocketConnection(
 	return clientConn, nil
 }
 
-// ConnectWebsocketEndpoint makes a websocket connection to the websocket Endpoint.
-func ConnectWebsocketEndpoint(
+// connectWebsocketEndpoint makes a websocket connection to the websocket Endpoint.
+func connectWebsocketEndpoint(
 	wsLogger polylog.Logger,
 	websocketURL string,
 	headers http.Header,
@@ -149,12 +149,13 @@ func newConnection(
 	return c
 }
 
-// connLoop reads messages from the websocket connection and sends them to the bridge's msgChan
+// connLoop reads messages from the websocket connection and sends them to the bridge's msgChan.
+// Network-level read errors trigger handleDisconnect() for coordinated bridge shutdown.
 func (c *websocketConnection) connLoop() {
 	for {
 		messageType, msg, err := c.ReadMessage()
 		if err != nil {
-			c.handleDisconnect(err)
+			c.handleDisconnect(err) // Network read failure → async bridge shutdown
 			return
 		}
 
@@ -166,12 +167,19 @@ func (c *websocketConnection) connLoop() {
 	}
 }
 
-// handleDisconnect handles any disconnection issues from the websocket connection.
-// This includes both:
-// - Expected disconnections (e.g. when the RelayMiner disconnects on session rollover)
-// - Unexpected disconnections (e.g. when the connection is lost due to network issues)
+// handleDisconnect handles network-level connection failures.
 //
-// This function will cancel the context to signal the bridge to handle shutdown.
+// Usage:
+// - Network-level errors: Connection drops, read failures, ping/pong timeouts
+// - External disconnections: When remote peer closes the connection
+// - Health check failures: When ping messages fail to send
+//
+// Mechanism:
+// 1. Cancels the context (cancelCtx) shared with the bridge
+// 2. Bridge's context listener detects cancellation and calls bridge.shutdown()
+// 3. This provides async, coordinated shutdown signaling between connections and bridge
+//
+// Note: This is for network transport failures, not application-level message processing errors.
 func (c *websocketConnection) handleDisconnect(err error) {
 	c.logger.Warn().Err(err).Msgf("🔌 Handling websocket disconnection")
 	c.cancelCtx() // Cancel the context to signal the bridge to handle shutdown
@@ -202,7 +210,7 @@ func (c *websocketConnection) pingLoop() {
 		case <-ticker.C:
 			if err := c.WriteControl(websocket.PingMessage, nil, time.Now().Add(writeWaitDuration)); err != nil {
 				c.logger.Error().Err(err).Msg("failed to send ping to connection")
-				c.handleDisconnect(fmt.Errorf("failed to send ping: %w", err))
+				c.handleDisconnect(fmt.Errorf("failed to send ping: %w", err)) // Health check failure → async bridge shutdown
 				return
 			}
 

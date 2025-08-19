@@ -28,6 +28,12 @@ enum GatewayRequestErrorKind {
   // QoS rejected the request.
   // e.g. malformed payload could not be unmarshaled into JSONRPC
   GATEWAY_REQUEST_ERROR_KIND_REJECTED_BY_QOS = 2;
+  // WebSocket request was rejected by QoS instance.
+  // e.g. WebSocket subscription request validation failed.
+  GATEWAY_REQUEST_ERROR_KIND_WEBSOCKET_REJECTED_BY_QOS = 3;
+  // WebSocket connection establishment failed.
+  // e.g. Failed to upgrade HTTP connection to WebSocket or connect to endpoint.
+  GATEWAY_REQUEST_ERROR_KIND_WEBSOCKET_CONNECTION_FAILED = 4;
 }
 
 // GatewayObservations is the set of observations on a service request, made from the perspective of a gateway.
