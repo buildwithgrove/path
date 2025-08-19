@@ -27,22 +27,22 @@ validate_params() {
         print_status $RED "❌ Error: NODE parameter is required"
         exit 1
     fi
-    
+
     if [ -z "$NETWORK" ]; then
         print_status $RED "❌ Error: NETWORK parameter is required"
         exit 1
     fi
-    
+
     if [ -z "$DB_CONNECTION_STRING" ]; then
         print_status $RED "❌ Error: DB_CONNECTION_STRING environment variable is required"
         exit 1
     fi
-    
+
     if [ "$FILE_MODE" != "true" ] && [ -z "$APPLICATION_ADDRESSES" ]; then
         print_status $RED "❌ Error: APPLICATION_ADDRESSES parameter is required when not using file mode"
         exit 1
     fi
-    
+
     if [ "$FILE_MODE" = "true" ] && [ -z "$APPLICATION_FILE" ]; then
         print_status $RED "❌ Error: APPLICATION_FILE parameter is required when using file mode"
         exit 1
@@ -52,14 +52,14 @@ validate_params() {
 # 📊 Function to parse application info from pocketd output
 parse_application_info() {
     local app_output="$1"
-    
+
     # Parse application information from YAML output
     local app_address=$(echo "$app_output" | grep "address:" | head -1 | awk '{print $2}' | tr -d '"')
     local gateway_address=$(echo "$app_output" | sed -n '/delegatee_gateway_addresses:/,/^[^ ]/p' | grep "^  - " | head -1 | sed 's/^  - //' | tr -d '"')
     local service_id=$(echo "$app_output" | sed -n '/service_configs:/,/^[^ ]/p' | grep "service_id:" | head -1 | sed 's/.*service_id:[[:space:]]*//' | tr -d '"')
     local stake_amount=$(echo "$app_output" | grep -A 5 "stake:" | grep "amount:" | head -1 | awk '{print $2}' | tr -d '"')
     local stake_denom=$(echo "$app_output" | grep -A 5 "stake:" | grep "denom:" | head -1 | awk '{print $2}' | tr -d '"')
-    
+
     echo "$app_address|$gateway_address|$service_id|$stake_amount|$stake_denom"
 }
 
@@ -71,13 +71,13 @@ insert_application() {
     local stake_amount=$4
     local stake_denom=$5
     local network_id=$6
-    
-    print_status $CYAN "   💾 Inserting application $app_address into database..."
-    
+
+    echo -e "   💾 Inserting application ${CYAN}$app_address${NC} into database..."
+
     # Use psql to insert the application data
     local db_result
     db_result=$(psql "$DB_CONNECTION_STRING" -c "
-        INSERT INTO applications (application_address, gateway_address, service_id, stake_amount, stake_denom, network_id) 
+        INSERT INTO applications (application_address, gateway_address, service_id, stake_amount, stake_denom, network_id)
         VALUES ('$app_address', '$gateway_address', '$service_id', $stake_amount, '$stake_denom', '$network_id')
         ON CONFLICT (application_address) DO UPDATE SET
             gateway_address = EXCLUDED.gateway_address,
@@ -88,12 +88,12 @@ insert_application() {
             updated_at = CURRENT_TIMESTAMP;
     " 2>&1)
     local exit_code=$?
-    
+
     if [ $exit_code -eq 0 ]; then
-        print_status $GREEN "   ✅ Successfully inserted/updated application: $app_address"
+        echo -e "   ✅ Successfully inserted/updated application: ${CYAN}$app_address${NC}"
     else
-        print_status $RED "   ❌ Failed to insert application: $app_address"
-        print_status $RED "   📋 Database error: $db_result"
+        echo -e "   ❌ Failed to insert application: ${CYAN}$app_address${NC}"
+        echo -e "   📋 Database error: ${RED}$db_result${NC}"
         return 1
     fi
 }
@@ -101,17 +101,17 @@ insert_application() {
 # 📁 Function to read application addresses from file
 read_application_file() {
     local file_path=$1
-    
+
     if [ ! -f "$file_path" ]; then
         print_status $RED "❌ Error: Application file '$file_path' not found"
         exit 1
     fi
-    
+
     if [ ! -r "$file_path" ]; then
         print_status $RED "❌ Error: Application file '$file_path' is not readable"
         exit 1
     fi
-    
+
     # Read file and filter out empty lines and comments
     grep -v '^#' "$file_path" | grep -v '^[[:space:]]*$' | tr '\n' ','
 }
@@ -119,31 +119,31 @@ read_application_file() {
 # 🎯 Main function
 main() {
     print_status $PURPLE "🚀 Starting Application Hydration Process"
-    print_status $BLUE "📋 Parameters:"
+    echo -e "📋 Parameters:"
     if [ "$FILE_MODE" = "true" ]; then
-        print_status $BLUE "   • Application File: $APPLICATION_FILE"
+        echo -e "   • Application File: ${CYAN}${APPLICATION_FILE}${NC}"
     else
-        print_status $BLUE "   • Application Addresses: $APPLICATION_ADDRESSES"
+        echo -e "   • Application Addresses: ${CYAN}${APPLICATION_ADDRESSES}${NC}"
     fi
-    print_status $BLUE "   • RPC Node: $NODE"
-    print_status $BLUE "   • Network: $NETWORK"
+    echo -e "   • RPC Node: ${CYAN}${NODE}${NC}"
+    echo -e "   • Network: ${CYAN}${NETWORK}${NC}"
     echo ""
-    
+
     # Validate required parameters
     validate_params
-    
+
     # Check if pocketd command is available
     if ! command -v pocketd &> /dev/null; then
         print_status $RED "❌ Error: pocketd command not found. Please ensure it's installed and in PATH."
         exit 1
     fi
-    
+
     # Check if psql command is available
     if ! command -v psql &> /dev/null; then
         print_status $RED "❌ Error: psql command not found. Please ensure PostgreSQL client is installed."
         exit 1
     fi
-    
+
     # Test database connection
     print_status $YELLOW "🔍 Testing database connection..."
     if ! psql "$DB_CONNECTION_STRING" -c "SELECT 1;" > /dev/null 2>&1; then
@@ -152,7 +152,7 @@ main() {
     fi
     print_status $GREEN "✅ Database connection successful"
     echo ""
-    
+
     # Get application addresses from file or command line
     local app_addresses_string
     if [ "$FILE_MODE" = "true" ]; then
@@ -164,29 +164,29 @@ main() {
     else
         app_addresses_string="$APPLICATION_ADDRESSES"
     fi
-    
+
     # Convert comma-separated application addresses to array
     IFS=',' read -ra APP_ARRAY <<< "$app_addresses_string"
-    
+
     total_applications=${#APP_ARRAY[@]}
     processed=0
     successful=0
     failed=0
-    
+
     print_status $PURPLE "🔄 Processing $total_applications application addresses..."
     echo ""
-    
+
     # Process each application address
     for app_address in "${APP_ARRAY[@]}"; do
         # Trim whitespace
         app_address=$(echo "$app_address" | xargs)
-        
+
         processed=$((processed + 1))
-        print_status $CYAN "🔍 Processing application $processed/$total_applications: $app_address"
-        
+        echo -e "🔍 Processing application ${BLUE}$processed/${total_applications}${NC}: ${CYAN}$app_address${NC}"
+
         # Query application information using pocketd with timeout
         print_status $YELLOW "   📡 Fetching application info from blockchain..."
-        
+
         if ! app_output=$(timeout 30 pocketd q application show-application "$app_address" --node="$NODE" --chain-id="$NETWORK" 2>&1); then
             print_status $RED "   ❌ Failed to fetch application info for $app_address"
             if echo "$app_output" | grep -q "timeout"; then
@@ -198,7 +198,7 @@ main() {
             echo ""
             continue
         fi
-        
+
         # Check if application exists (look for error indicators)
         if echo "$app_output" | grep -q "not found\|error\|Error"; then
             print_status $RED "   ❌ Application not found or error occurred for $app_address"
@@ -207,22 +207,22 @@ main() {
             echo ""
             continue
         fi
-        
+
         print_status $GREEN "   ✅ Application info retrieved successfully"
-        
+
         # Parse the application information
         print_status $YELLOW "   🔧 Parsing application information..."
         app_info=$(parse_application_info "$app_output")
-        
+
         if [ -z "$app_info" ] || [ "$app_info" = "||||" ]; then
             print_status $RED "   ❌ Failed to parse application information for $app_address"
             failed=$((failed + 1))
             echo ""
             continue
         fi
-        
+
         IFS='|' read -r parsed_address gateway_address service_id stake_amount stake_denom <<< "$app_info"
-        
+
         if [ -z "$parsed_address" ] || [ -z "$gateway_address" ] || [ -z "$service_id" ] || [ -z "$stake_amount" ] || [ -z "$stake_denom" ]; then
             print_status $RED "   ❌ Invalid application information parsed for $app_address"
             print_status $RED "   📋 Parsed data: address='$parsed_address' gateway='$gateway_address' service='$service_id' amount='$stake_amount' denom='$stake_denom'"
@@ -230,25 +230,25 @@ main() {
             echo ""
             continue
         fi
-        
-        print_status $GREEN "   ✅ Parsed - Gateway: $gateway_address, Service: $service_id, Stake: $stake_amount $stake_denom"
-        
+
+        echo -e "   ✅ Parsed - Gateway: ${CYAN}$gateway_address${NC}, Service: ${CYAN}$service_id${NC}, Stake: ${CYAN}$stake_amount${NC} ${CYAN}$stake_denom${NC}"
+
         # Insert into database
         if insert_application "$parsed_address" "$gateway_address" "$service_id" "$stake_amount" "$stake_denom" "$NETWORK"; then
             successful=$((successful + 1))
         else
             failed=$((failed + 1))
         fi
-        
+
         echo ""
     done
-    
+
     # Print final summary
     print_status $PURPLE "📊 Application Hydration Summary:"
     print_status $BLUE "   • Total Processed: $processed"
     print_status $GREEN "   • Successful: $successful"
     print_status $RED "   • Failed: $failed"
-    
+
     if [ $failed -gt 0 ]; then
         print_status $YELLOW "⚠️  Some applications failed to process. Check the output above for details."
         exit 1
@@ -259,33 +259,33 @@ main() {
 
 # 📚 Usage information
 usage() {
-    echo "🔧 Usage: $0 [OPTIONS] <application_addresses|--file application_file> <rpc_node> <network_id>"
+    echo -e "${PURPLE}🔧 Usage:${NC} ${BLUE}$0 [OPTIONS] <application_addresses|--file application_file> <rpc_node> <network_id>${NC}"
     echo ""
-    echo "📝 Parameters:"
-    echo "  application_addresses  Comma-separated list of application addresses"
-    echo "  rpc_node              RPC node endpoint"
-    echo "  network_id            Network/chain ID"
+    echo -e "${YELLOW}📝 Parameters:${NC}"
+    echo -e "  ${CYAN}application_addresses${NC}  Comma-separated list of application addresses"
+    echo -e "  ${CYAN}rpc_node${NC}               RPC node endpoint"
+    echo -e "  ${CYAN}network_id${NC}             Network/chain ID"
     echo ""
-    echo "🔧 Options:"
-    echo "  -h, --help            Show this help message"
-    echo "  -f, --file            Use file mode - read application addresses from file (one per line)"
-    echo "  -d, --debug           Enable debug output"
+    echo -e "${YELLOW}🔧 Options:${NC}"
+    echo -e "  ${CYAN}-h, --help${NC}            Show this help message"
+    echo -e "  ${CYAN}-f, --file${NC}            Use file mode - read application addresses from file (one per line)"
+    echo -e "  ${CYAN}-d, --debug${NC}           Enable debug output"
     echo ""
-    echo "🌍 Environment Variables:"
-    echo "  DB_CONNECTION_STRING  PostgreSQL connection string"
-    echo "  DEBUG                Set to 'true' to enable debug output"
+    echo -e "${YELLOW}🌍 Environment Variables:${NC}"
+    echo -e "  ${CYAN}DB_CONNECTION_STRING${NC}  PostgreSQL connection string"
+    echo -e "  ${CYAN}DEBUG${NC}                 Set to 'true' to enable debug output"
     echo ""
-    echo "💡 Examples:"
-    echo "  # Using comma-separated application addresses:"
-    echo "  export DB_CONNECTION_STRING='postgresql://user:pass@localhost:5435/portal_db'"
-    echo "  $0 'pokt1abc123,pokt1def456' 'https://rpc.example.com:443' 'pocket'"
+    echo -e "${YELLOW}💡 Examples:${NC}"
+    echo -e "  ${YELLOW}# Using comma-separated application addresses:${NC}"
+    echo -e "  ${GREEN}export DB_CONNECTION_STRING='postgresql://user:pass@localhost:5435/portal_db'${NC}"
+    echo -e "  ${GREEN}$0 'pokt1abc123,pokt1def456' 'https://rpc.example.com:443' 'pocket'${NC}"
     echo ""
-    echo "  # Using file mode:"
-    echo "  echo -e 'pokt1abc123\\npokt1def456' > applications.txt"
-    echo "  $0 --file applications.txt 'https://rpc.example.com:443' 'pocket'"
+    echo -e "  ${YELLOW}# Using file mode:${NC}"
+    echo -e "  ${GREEN}echo -e 'pokt1abc123\\\npokt1def456' > applications.txt${NC}"
+    echo -e "  ${GREEN}$0 --file applications.txt 'https://rpc.example.com:443' 'pocket'${NC}"
     echo ""
-    echo "  # With debug output:"
-    echo "  $0 --debug 'pokt1abc123' 'https://rpc.example.com:443' 'pocket'"
+    echo -e "  ${YELLOW}# With debug output:${NC}"
+    echo -e "  ${GREEN}$0 --debug 'pokt1abc123' 'https://rpc.example.com:443' 'pocket'${NC}"
     echo ""
 }
 
