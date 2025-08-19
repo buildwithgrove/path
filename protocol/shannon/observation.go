@@ -255,22 +255,109 @@ func buildInternalRequestProcessingErrorObservation(internalErr error) *protocol
 	}
 }
 
-// buildWebsocketMessageSuccessObservation updates a Shannon endpoint observation with websocket message processing success details.
-// It updates the timestamps to reflect successful message processing.
-// Used to update observations when websocket message handling succeeds.
+// buildWebsocketMessageSuccessObservation creates a Shannon websocket message observation for successful message processing.
+// It includes endpoint details, session information, and message-specific data.
+// Used when websocket message handling succeeds.
 func buildWebsocketMessageSuccessObservation(
-	observation *protocolobservations.ShannonEndpointObservation,
-) *protocolobservations.ShannonEndpointObservation {
-	// Update the observation with success timestamps
-	now := time.Now()
-	observation.EndpointQueryTimestamp = timestamppb.New(now)
-	observation.EndpointResponseTimestamp = timestamppb.New(now)
+	logger polylog.Logger,
+	endpoint endpoint,
+	msgSize int64,
+) *protocolobservations.ShannonWebsocketMessageObservation {
+	session := *endpoint.Session()
+	sessionHeader := session.GetHeader()
 
-	// Clear any error fields that might have been set previously
-	observation.ErrorType = nil
-	observation.ErrorDetails = nil
-	observation.RecommendedSanction = nil
-	observation.RelayMinerError = nil
+	return &protocolobservations.ShannonWebsocketMessageObservation{
+		// Endpoint information
+		Supplier:           endpoint.Supplier(),
+		EndpointUrl:        endpoint.PublicURL(),
+		EndpointAppAddress: sessionHeader.ApplicationAddress,
+		IsFallbackEndpoint: endpoint.IsFallback(),
 
-	return observation
+		// Session information
+		SessionServiceId:   sessionHeader.ServiceId,
+		SessionId:          sessionHeader.SessionId,
+		SessionStartHeight: sessionHeader.SessionStartBlockHeight,
+		SessionEndHeight:   sessionHeader.SessionEndBlockHeight,
+
+		// Message information
+		MessageTimestamp:   timestamppb.New(time.Now()),
+		MessagePayloadSize: msgSize,
+	}
+}
+
+// buildWebsocketConnectionErrorObservation creates a Shannon websocket connection observation for failed connection establishment.
+// Used when websocket connection setup fails during protocol context building.
+func buildWebsocketConnectionErrorObservation(
+	serviceID protocol.ServiceID,
+	err error,
+) protocolobservations.Observations {
+	// Translate the context setup error to appropriate error types
+	errorType, sanctionType := classifyRelayError(nil, err)
+
+	return protocolobservations.Observations{
+		Shannon: &protocolobservations.ShannonObservationsList{
+			Observations: []*protocolobservations.ShannonRequestObservations{
+				{
+					ServiceId: string(serviceID),
+					ObservationData: &protocolobservations.ShannonRequestObservations_WebsocketEndpointObservation{
+						WebsocketEndpointObservation: &protocolobservations.ShannonWebsocketEndpointObservation{
+							// Basic service information
+							SessionServiceId: string(serviceID),
+
+							// Connection attempt timestamp
+							ConnectionAttemptTimestamp: timestamppb.New(time.Now()),
+
+							// Error information
+							ErrorType:           &errorType,
+							ErrorDetails:        func() *string { s := err.Error(); return &s }(),
+							RecommendedSanction: &sanctionType,
+
+							// Fallback endpoint tracking (false since this is a connection error)
+							IsFallbackEndpoint: false,
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+// buildWebsocketMessageErrorObservation creates a Shannon websocket message observation for failed message processing.
+// It includes endpoint details, session information, message data, and error details.
+// Used when websocket message handling fails.
+func buildWebsocketMessageErrorObservation(
+	logger polylog.Logger,
+	endpoint endpoint,
+	msgSize int64,
+	errorType protocolobservations.ShannonEndpointErrorType,
+	errorDetails string,
+	sanctionType protocolobservations.ShannonSanctionType,
+	relayMinerError *protocolobservations.ShannonRelayMinerError,
+) *protocolobservations.ShannonWebsocketMessageObservation {
+	session := *endpoint.Session()
+	sessionHeader := session.GetHeader()
+
+	return &protocolobservations.ShannonWebsocketMessageObservation{
+		// Endpoint information
+		Supplier:           endpoint.Supplier(),
+		EndpointUrl:        endpoint.PublicURL(),
+		EndpointAppAddress: sessionHeader.ApplicationAddress,
+		IsFallbackEndpoint: endpoint.IsFallback(),
+
+		// Session information
+		SessionServiceId:   sessionHeader.ServiceId,
+		SessionId:          sessionHeader.SessionId,
+		SessionStartHeight: sessionHeader.SessionStartBlockHeight,
+		SessionEndHeight:   sessionHeader.SessionEndBlockHeight,
+
+		// Message information
+		MessageTimestamp:   timestamppb.New(time.Now()),
+		MessagePayloadSize: msgSize,
+
+		// Error information
+		ErrorType:           &errorType,
+		ErrorDetails:        &errorDetails,
+		RecommendedSanction: &sanctionType,
+		RelayMinerError:     relayMinerError,
+	}
 }

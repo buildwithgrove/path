@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
-	"time"
 
 	"github.com/pokt-network/poktroll/pkg/relayer/proxy"
 	servicetypes "github.com/pokt-network/poktroll/x/service/types"
@@ -12,7 +11,6 @@ import (
 	sdk "github.com/pokt-network/shannon-sdk"
 
 	"github.com/buildwithgrove/path/gateway"
-	"github.com/buildwithgrove/path/observation"
 	protocolobservations "github.com/buildwithgrove/path/observation/protocol"
 	"github.com/buildwithgrove/path/request"
 )
@@ -130,33 +128,26 @@ func (rc *requestContext) signClientWebsocketMessage(msgData []byte) ([]byte, er
 // ProcessProtocolEndpointWebsocketMessage processes a message from the endpoint.
 func (rc *requestContext) ProcessProtocolEndpointWebsocketMessage(
 	msgData []byte,
-) ([]byte, *protocolobservations.Observations, error) {
+) ([]byte, protocolobservations.Observations, error) {
 	logger := rc.logger.With("method", "ProcessEndpointWebsocketMessage")
 
 	logger.Debug().Msgf("received message from endpoint: %s", string(msgData))
-
-	// TODO_IN_THIS_PR(@commoddity): properly initialize protocol-level observations
-	// using the correct method.
-	observations := &protocolobservations.Observations{}
 
 	// If the selected endpoint is a fallback endpoint, skip validation.
 	// Fallback endpoints bypass the protocol so the raw message is sent to the endpoint.
 	// TODO_IMPROVE(@commoddity,@adshmh): Cleanly separate fallback endpoint handling from the protocol package.
 	if rc.selectedEndpoint.IsFallback() {
-		return msgData, observations, nil
+		return msgData, rc.getWebsocketMessageSuccessObservation(msgData), nil
 	}
 
 	// If the selected endpoint is a protocol endpoint, we need to validate the message.
 	validatedRelayResponse, err := rc.validateEndpointWebsocketMessage(msgData)
 	if err != nil {
 		logger.Error().Err(err).Msg("❌ failed to validate relay response")
-		return nil, observations, err
+		return nil, rc.updateMessageObservationsFromError(msgData, err), err
 	}
 
-	// TODO_IN_THIS_PR(@commoddity): update protocol-level observations.
-	// observations = rc.updateProtocolObservations(observations)
-
-	return validatedRelayResponse, observations, nil
+	return validatedRelayResponse, rc.getWebsocketMessageSuccessObservation(msgData), nil
 }
 
 // validateEndpointWebsocketMessage validates a message from the endpoint using the Shannon FullNode.
@@ -173,26 +164,27 @@ func (rc *requestContext) validateEndpointWebsocketMessage(msgData []byte) ([]by
 	return relayResponse.Payload, nil
 }
 
-// TODO_IN_THIS_PR(@commoddity): clean up the observation initialization logic below
-// TODO_IN_THIS_PR(@commoddity): create a new Shannon observation specific to websockets,
-// which must differentiate between a failed connection attempt and a failed message.
-
-// UpdateMessageObservationsFromSuccess updates the observations for the current message
+// getWebsocketMessageSuccessObservation updates the observations for the current message
 // if the message handler does not return an error.
-func (rc *requestContext) UpdateMessageObservationsFromSuccess() *protocolobservations.Observations {
-	// Get the websocket endpoint observation to update
-	endpointObs, err := rc.getWebsocketEndpointObservation()
-	if err != nil {
-		rc.logger.Error().Err(err).Msg("❌ SHOULD NEVER HAPPEN: failed to get websocket endpoint observation")
-		return nil
-	}
+func (rc *requestContext) getWebsocketMessageSuccessObservation(
+	msgData []byte,
+) protocolobservations.Observations {
+	// Create a new WebSocket message observation for success
+	wsMessageObs := buildWebsocketMessageSuccessObservation(
+		rc.logger,
+		rc.selectedEndpoint,
+		int64(len(msgData)),
+	)
 
-	return &protocolobservations.Observations{
+	// Update the observations to use the WebSocket message observation
+	return protocolobservations.Observations{
 		Shannon: &protocolobservations.ShannonObservationsList{
 			Observations: []*protocolobservations.ShannonRequestObservations{
 				{
-					EndpointObservations: []*protocolobservations.ShannonEndpointObservation{
-						buildWebsocketMessageSuccessObservation(endpointObs),
+					ServiceId:    string(rc.serviceID),
+					RequestError: rc.requestErrorObservation,
+					ObservationData: &protocolobservations.ShannonRequestObservations_WebsocketMessageObservation{
+						WebsocketMessageObservation: wsMessageObs,
 					},
 				},
 			},
@@ -202,37 +194,35 @@ func (rc *requestContext) UpdateMessageObservationsFromSuccess() *protocolobserv
 
 // UpdateMessageObservationsFromError updates the observations for the current message
 // if the message handler returns an error.
-func (rc *requestContext) UpdateMessageObservationsFromError(
-	observations *observation.RequestResponseObservations,
+func (rc *requestContext) updateMessageObservationsFromError(
+	msgData []byte,
 	messageError error,
-) *protocolobservations.Observations {
-	// Set the endpoint observations for the current message
-	rc.handleEndpointWebsocketError(time.Now(), messageError)
+) protocolobservations.Observations {
+	// Error classification based on trusted error sources only
+	endpointErrorType, recommendedSanctionType := classifyRelayError(rc.logger, messageError)
 
-	return &protocolobservations.Observations{
+	// Create a new WebSocket message observation for error
+	wsMessageObs := buildWebsocketMessageErrorObservation(
+		rc.logger,
+		rc.selectedEndpoint,
+		int64(len(msgData)),
+		endpointErrorType,
+		fmt.Sprintf("websocket message error: %v", messageError),
+		recommendedSanctionType,
+		rc.currentRelayMinerError,
+	)
+
+	return protocolobservations.Observations{
 		Shannon: &protocolobservations.ShannonObservationsList{
 			Observations: []*protocolobservations.ShannonRequestObservations{
-				{EndpointObservations: rc.endpointObservations},
+				{
+					ServiceId:    string(rc.serviceID),
+					RequestError: rc.requestErrorObservation,
+					ObservationData: &protocolobservations.ShannonRequestObservations_WebsocketMessageObservation{
+						WebsocketMessageObservation: wsMessageObs,
+					},
+				},
 			},
 		},
 	}
-}
-
-// getWebsocketEndpointObservation safely retrieves the websocket
-// endpoint observation from the request-response observations.
-//
-// This method is primarily a sanity check as Bridge obervations should
-// always have only one request observation with one endpoint observation.
-func (rc *requestContext) getWebsocketEndpointObservation() (*protocolobservations.ShannonEndpointObservation, error) {
-	// Validate observation structure
-	if rc.endpointObservations == nil {
-		return nil, fmt.Errorf("observations are nil")
-	}
-
-	// For websocket connections, we expect exactly one request observation
-	if len(rc.endpointObservations) != 1 {
-		return nil, fmt.Errorf("observations have more than one request observation")
-	}
-
-	return rc.endpointObservations[0], nil
 }

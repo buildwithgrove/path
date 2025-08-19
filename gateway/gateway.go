@@ -20,6 +20,7 @@ import (
 	"net/http"
 
 	"github.com/buildwithgrove/path/observation"
+	protocolobservations "github.com/buildwithgrove/path/observation/protocol"
 	"github.com/pokt-network/poktroll/pkg/polylog"
 )
 
@@ -164,8 +165,16 @@ func (g Gateway) handleWebSocketRequest(
 		httpRequestParser:       g.HTTPRequestParser,
 		metricsReporter:         g.MetricsReporter,
 		dataReporter:            g.DataReporter,
-		messageObservationsChan: make(chan *observation.RequestResponseObservations, 100),
+		messageObservationsChan: make(chan *observation.RequestResponseObservations, 1_000),
 	}
+
+	// Variable to capture protocol observations for broadcasting
+	var protocolObs *protocolobservations.Observations
+
+	// Defer broadcasting connection observations to ensure they are sent even if errors occur
+	defer func() {
+		websocketRequestCtx.BroadcastWebsocketConnectionRequestObservations(protocolObs)
+	}()
 
 	// Initialize the websocket request context using the HTTP request.
 	err := websocketRequestCtx.InitFromHTTPRequest(httpReq)
@@ -183,7 +192,7 @@ func (g Gateway) handleWebSocketRequest(
 	}
 
 	// Build the protocol context for the websocket request.
-	err = websocketRequestCtx.BuildProtocolContextFromHTTPRequest(httpReq)
+	protocolObs, err = websocketRequestCtx.BuildProtocolContextFromHTTPRequest(httpReq)
 	if err != nil {
 		logger.Error().Err(err).Msg("❌ Error building protocol context for websocket request")
 		return

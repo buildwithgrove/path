@@ -145,6 +145,109 @@ message ShannonRelayMinerError {
   string message = 3;
 }
 
+// ShannonWebsocketEndpointObservation stores observations from a WebSocket connection establishment
+message ShannonWebsocketEndpointObservation {
+  // Supplier of the endpoint handling the WebSocket connection
+  string supplier = 1;
+
+  // URL of the WebSocket endpoint
+  string endpoint_url = 2;
+
+  // Application address associated with the endpoint
+  string endpoint_app_address = 3;
+
+  // Service ID of the session associated with the endpoint.
+  string session_service_id = 4;
+
+  // Session ID of the session associated with the endpoint.
+  string session_id = 5;
+
+  // session start height
+  int64 session_start_height = 6;
+
+  // session end height
+  int64 session_end_height = 7;
+
+  // Timestamp marking the WebSocket connection establishment attempt
+  google.protobuf.Timestamp connection_attempt_timestamp = 8;
+
+  // Timestamp marking successful WebSocket connection establishment
+  // Only set if the connection was successful
+  optional google.protobuf.Timestamp connection_established_timestamp = 9;
+
+  // Timestamp marking WebSocket connection termination
+  // Only set if the connection was terminated during observation period
+  optional google.protobuf.Timestamp connection_terminated_timestamp = 10;
+
+  // Duration of the WebSocket connection in milliseconds
+  // Only set if connection was established and terminated during observation
+  optional int64 connection_duration_ms = 11;
+
+  // Error type if WebSocket connection establishment failed
+  optional ShannonEndpointErrorType error_type = 12;
+
+  // Additional error details when available
+  optional string error_details = 13;
+
+  // Recommended sanction type based on the error
+  optional ShannonSanctionType recommended_sanction = 14;
+
+  // RelayMiner error details if the endpoint returned a RelayMinerError during connection
+  optional ShannonRelayMinerError relay_miner_error = 15;
+
+  // Tracks whether the endpoint is a fallback endpoint
+  bool is_fallback_endpoint = 16;
+}
+
+// ShannonWebsocketMessageObservation stores observations from individual WebSocket messages
+message ShannonWebsocketMessageObservation {
+  // Supplier of the endpoint handling the WebSocket message
+  string supplier = 1;
+
+  // URL of the WebSocket endpoint
+  string endpoint_url = 2;
+
+  // Application address associated with the endpoint
+  string endpoint_app_address = 3;
+
+  // Service ID of the session associated with the endpoint.
+  string session_service_id = 4;
+
+  // Session ID of the session associated with the endpoint.
+  string session_id = 5;
+
+  // session start height
+  int64 session_start_height = 6;
+
+  // session end height
+  int64 session_end_height = 7;
+
+  // Timestamp marking when the message was sent to the endpoint
+  // For subscription events, this represents when the event was received from endpoint
+  google.protobuf.Timestamp message_timestamp = 8;
+
+  // Size of the message payload in bytes
+  int64 message_payload_size = 9;
+
+  // Duration of the WebSocket connection in milliseconds
+  optional int64 connection_duration_ms = 10;
+
+  // Error type if message processing failed
+  optional ShannonEndpointErrorType error_type = 11;
+
+  // Additional error details when available
+  optional string error_details = 12;
+
+  // Recommended sanction type based on the error
+  optional ShannonSanctionType recommended_sanction = 13;
+
+  // RelayMiner error details if the endpoint returned a RelayMinerError for this message
+  optional ShannonRelayMinerError relay_miner_error = 14;
+
+  // Tracks whether the endpoint is a fallback endpoint
+  bool is_fallback_endpoint = 15;
+}
+
 // ShannonRequestObservations represents observations collected during the processing
 // of a single Shannon protocol relay request.
 message ShannonRequestObservations {
@@ -154,23 +257,27 @@ message ShannonRequestObservations {
   // Error encountered processing the request, if any.
   optional ShannonRequestError request_error = 2;
 
-  // Tracks endpoint observation(s).
-  // Only set if the request did not encounter any errors (e.g. an internal error)
+  // Observation data - exactly one of the following will be set
+  oneof observation_data {
+    // HTTP endpoint observations (multiple possible due to retries)
+    ShannonHTTPEndpointObservations http_observations = 3;
+    
+    // Single WebSocket connection establishment observation
+    ShannonWebsocketEndpointObservation websocket_endpoint_observation = 4;
+    
+    // Single WebSocket message observation
+    ShannonWebsocketMessageObservation websocket_message_observation = 5;
+  }
+}
+
+// ShannonHTTPEndpointObservations wraps multiple HTTP endpoint observations
+message ShannonHTTPEndpointObservations {
   // Multiple observations possible if:
   // - Original endpoint returns invalid response
   // - Retry mechanism activates
-  repeated ShannonEndpointObservation endpoint_observations = 3;
+  repeated ShannonEndpointObservation endpoint_observations = 1;
 }
 
-// TODO_TECHDEBT(@adshmh): Consider defining a new message type for Websocket endpoint messages/observations.
-// - use `oneof` over `ShannonWebsocketEndpointObservation`, `ShannonHTTPEndpointObservation`.
-// - This will enable customized fields for each type of observation:
-// - Examples:
-//   - `is_fallback_endpoint` field does not apply to a websocket endpoint connection.
-//   - A new `connection_duration_ms` field to report on websocket endpoint connections.
-// 
-// Current struct best suits HTTP interactions.
-//
 // ShannonEndpointObservation stores a single observation from an endpoint
 message ShannonEndpointObservation {
   // Supplier of the endpoint handling the request

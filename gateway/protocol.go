@@ -107,5 +107,5 @@ type ProtocolRequestContext interface {
 	ProcessProtocolClientWebsocketMessage([]byte) ([]byte, error)
 
 	// ProcessProtocolEndpointWebsocketMessage processes a message from the endpoint.
-	ProcessProtocolEndpointWebsocketMessage([]byte) ([]byte, *protocolobservations.Observations, error)
+	ProcessProtocolEndpointWebsocketMessage([]byte) ([]byte, protocolobservations.Observations, error)
 }

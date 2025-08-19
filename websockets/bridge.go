@@ -228,14 +228,7 @@ func (b *bridge) handleEndpointMessage(msg message) {
 	processedData, msgObservations, err := b.websocketMessageProcessor.ProcessEndpointWebsocketMessage(msg.data)
 
 	// Notify gateway about message processing results
-	defer func() {
-		select {
-		case b.messageObservationsChan <- msgObservations:
-		default:
-			// Channel is full, log but don't block
-			b.logger.Warn().Msg("messageObservationsChan is full, dropping message observations")
-		}
-	}()
+	defer b.sendMessageObservations(msgObservations)
 
 	if err != nil {
 		b.logger.Error().Err(err).Msg("❌ error processing endpoint message, disconnecting endpoint connection")
@@ -254,4 +247,16 @@ func (b *bridge) handleEndpointMessage(msg message) {
 
 	b.logger.Debug().Msgf("🔗 endpoint message successfully processed, sending message to client: %s", string(processedData))
 
+}
+
+// sendMessageObservations sends message observations to the gateway.
+// If the channel is full, the message observations are dropped.
+// This is done to avoid blocking the main thread.
+func (b *bridge) sendMessageObservations(msgObservations *observation.RequestResponseObservations) {
+	select {
+	case b.messageObservationsChan <- msgObservations:
+	default:
+		// Channel is full, log but don't block
+		b.logger.Warn().Msg("messageObservationsChan is full, dropping message observations")
+	}
 }

@@ -138,9 +138,13 @@ func (rc *requestContext) GetObservations() protocolobservations.Observations {
 		Shannon: &protocolobservations.ShannonObservationsList{
 			Observations: []*protocolobservations.ShannonRequestObservations{
 				{
-					ServiceId:            string(rc.serviceID),
-					RequestError:         rc.requestErrorObservation,
-					EndpointObservations: rc.endpointObservations,
+					ServiceId:    string(rc.serviceID),
+					RequestError: rc.requestErrorObservation,
+					ObservationData: &protocolobservations.ShannonRequestObservations_HttpObservations{
+						HttpObservations: &protocolobservations.ShannonHTTPEndpointObservations{
+							EndpointObservations: rc.endpointObservations,
+						},
+					},
 				},
 			},
 		},
@@ -644,44 +648,6 @@ func (rc *requestContext) handleEndpointError(
 		fmt.Errorf("relay: error sending relay for service %s endpoint %s: %w",
 			rc.serviceID, selectedEndpointAddr, endpointErr,
 		)
-}
-
-// handleEndpointWebsocketError records endpoint error observation with enhanced classification.
-// Tracks endpoint error in observations for metrics and includes RelayMinerError data.
-func (rc *requestContext) handleEndpointWebsocketError(
-	webSocketErrorTime time.Time,
-	endpointErr error,
-) {
-	rc.hydratedLogger("handleEndpointWebsocketError")
-
-	// Error classification based on trusted error sources only
-	// TODO(@commoddity): Implement websocket-specific sanctioning.
-	// Currently websocket failures could exclude endpoints from HTTP requests.
-	// Should track websocket vs HTTP failures separately.
-	endpointErrorType, recommendedSanctionType := classifyRelayError(rc.logger, endpointErr)
-
-	// Enhanced logging with error type and error source classification
-	rc.logger.Error().
-		Err(endpointErr).
-		Str("error_type", endpointErrorType.String()).
-		Str("sanction_type", recommendedSanctionType.String()).
-		Msg("relay error occurred. Service request will fail.")
-
-	// Build enhanced observation with RelayMinerError data from request context
-	errorDetails := fmt.Sprintf("websocket error: %v", endpointErr)
-	endpointObs := buildEndpointErrorObservation(
-		rc.logger,
-		rc.selectedEndpoint,
-		webSocketErrorTime,
-		time.Now(), // Timestamp: endpoint query completed.
-		endpointErrorType,
-		errorDetails,
-		recommendedSanctionType,
-		rc.currentRelayMinerError, // Use RelayMinerError data from request context
-	)
-
-	// Track endpoint error observation for metrics and sanctioning
-	rc.endpointObservations = append(rc.endpointObservations, endpointObs)
 }
 
 // handleEndpointSuccess:
