@@ -15,8 +15,8 @@ import (
 	"github.com/buildwithgrove/path/request"
 )
 
-// The requestContext implements the websockets.WebsocketMessageProcessor interface.
-// This is because it handles protocol-level message processing for both client and endpoint messages.
+// The requestContext implements the gateway.ProtocolRequestContext interface.
+// It handles protocol-level WebSocket message processing for both client and endpoint messages.
 // For example, client messages are signed and endpoint messages are validated.
 var _ gateway.ProtocolRequestContext = &requestContext{}
 
@@ -144,7 +144,7 @@ func (rc *requestContext) ProcessProtocolEndpointWebsocketMessage(
 	validatedRelayResponse, err := rc.validateEndpointWebsocketMessage(msgData)
 	if err != nil {
 		logger.Error().Err(err).Msg("❌ failed to validate relay response")
-		return nil, rc.updateMessageObservationsFromError(msgData, err), err
+		return nil, rc.getWebsocketMessageErrorObservation(msgData, err), err
 	}
 
 	return validatedRelayResponse, rc.getWebsocketMessageSuccessObservation(msgData), nil
@@ -192,9 +192,9 @@ func (rc *requestContext) getWebsocketMessageSuccessObservation(
 	}
 }
 
-// UpdateMessageObservationsFromError updates the observations for the current message
+// getWebsocketMessageErrorObservation updates the observations for the current message
 // if the message handler returns an error.
-func (rc *requestContext) updateMessageObservationsFromError(
+func (rc *requestContext) getWebsocketMessageErrorObservation(
 	msgData []byte,
 	messageError error,
 ) protocolobservations.Observations {
@@ -203,7 +203,6 @@ func (rc *requestContext) updateMessageObservationsFromError(
 
 	// Create a new WebSocket message observation for error
 	wsMessageObs := buildWebsocketMessageErrorObservation(
-		rc.logger,
 		rc.selectedEndpoint,
 		int64(len(msgData)),
 		endpointErrorType,

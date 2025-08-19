@@ -2,16 +2,22 @@ package websockets
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
+	"sync"
+	"time"
 
-	"github.com/buildwithgrove/path/observation"
 	"github.com/gorilla/websocket"
 	"github.com/pokt-network/poktroll/pkg/polylog"
+
+	"github.com/buildwithgrove/path/observation"
 )
 
-// WebSocketMessageHandler handles websocket messages.
-// It can, for example, transform the message data before forwarding it.
+// A WebsocketMessageProcessor processes websocket messages.
+// For example, the Gateway package's websocketRequestContext implements this interface.
+// It then, in turn, performs both protocol-level and QoS-level message processing
+// on the message data
 type WebsocketMessageProcessor interface {
 	// ProcessClientWebsocketMessage processes a message from the client.
 	ProcessClientWebsocketMessage([]byte) ([]byte, error)
@@ -33,6 +39,11 @@ type WebsocketMessageProcessor interface {
 // - Message handler: Gateway-level processing of messages. Orchestrates protocol and QoS-level message processing.
 // - Notification channels: Gateway-level notifications to trigger sending Observations.
 //
+// Error Handling Strategy:
+// - Network-level errors (connection drops, ping failures): handleDisconnect() → cancelCtx() → async shutdown
+// - Application-level errors (message processing, write failures): bridge.shutdown() → immediate cleanup
+// - All error paths eventually lead to bridge.shutdown() for complete resource cleanup
+//
 // Full data flow: Client <---clientConn---> PATH bridge <---endpointConn---> Relay Miner bridge <------> Endpoint
 type bridge struct {
 	// ctx is used to stop the bridge when the context is canceled from either connection
@@ -52,34 +63,43 @@ type bridge struct {
 	websocketMessageProcessor WebsocketMessageProcessor
 
 	// messageObservationsChan receives message observations from the websocketMessageProcessor.
-	messageObservationsChan chan<- *observation.RequestResponseObservations
+	messageObservationsChan chan *observation.RequestResponseObservations
+
+	// shutdownOnce ensures shutdown() is only called once to prevent panics from double-closing channels
+	shutdownOnce sync.Once
 }
 
 // StartBridge creates a new Bridge instance with connections to both client and endpoint
 // and starts the bridge in a goroutine to avoid blocking the main thread.
 func StartBridge(
+	ctx context.Context,
 	logger polylog.Logger,
 	req *http.Request,
 	w http.ResponseWriter,
 	websocketURL string,
 	headers http.Header,
 	websocketMessageProcessor WebsocketMessageProcessor,
-	messageObservationsChan chan<- *observation.RequestResponseObservations,
+	messageObservationsChan chan *observation.RequestResponseObservations,
 ) error {
 	logger = logger.With("component", "websocket_bridge")
 
-	// Create a context that can be canceled from either connection
-	ctx, cancelCtx := context.WithCancel(context.Background())
+	// Create a bridge-specific context that can be canceled from connections
+	// This is a child of the shared WebSocket context
+	bridgeCtx, cancelCtx := context.WithCancel(ctx)
 
 	// Upgrade HTTP request from client to websocket connection.
 	clientConn, err := upgradeClientWebsocketConnection(logger, req, w)
 	if err != nil {
+		logger.Error().Err(err).Msg("❌ error upgrading client websocket connection")
+		cancelCtx() // Clean up context on error
 		return fmt.Errorf("createWebsocketBridge: %s", err.Error())
 	}
 
 	// Connect to the Relay Miner endpoint
 	endpointConn, err := connectWebsocketEndpoint(logger, websocketURL, headers)
 	if err != nil {
+		logger.Error().Err(err).Msg("❌ error connecting to websocket endpoint")
+		cancelCtx() // Clean up context on error
 		return fmt.Errorf("createWebsocketBridge: %s", err.Error())
 	}
 
@@ -89,7 +109,7 @@ func StartBridge(
 	// Create bridge instance
 	b := &bridge{
 		logger: logger,
-		ctx:    ctx,
+		ctx:    bridgeCtx, // Use the bridge-specific context
 
 		msgChan:                   msgChan,
 		websocketMessageProcessor: websocketMessageProcessor,
@@ -97,11 +117,11 @@ func StartBridge(
 		messageObservationsChan: messageObservationsChan,
 	}
 	if err := b.validateComponents(); err != nil {
-		cancelCtx() // Cancel context to prevent leak
+		cancelCtx() // Clean up context on error
 		return fmt.Errorf("❌ invalid bridge components: %w", err)
 	}
 
-	// Initialize connections with context and cancel function
+	// Initialize connections with bridge context and cancel function
 	b.endpointConn = newConnection(
 		b.ctx,
 		cancelCtx,
@@ -121,6 +141,11 @@ func StartBridge(
 
 	// Start the bridge in a goroutine to avoid blocking the main thread.
 	go b.start()
+
+	// Note: We don't call cancelCtx() here because the bridge context should remain active
+	// until the bridge shuts down naturally (client disconnect, error, etc.)
+	// The context will be cancelled by the connections when they detect disconnection
+
 	return nil
 }
 
@@ -136,10 +161,10 @@ func (b *bridge) validateComponents() error {
 	return nil
 }
 
+// ---------- Bridge Lifecycle ----------
+
 // Start starts the bridge and establishes a bidirectional communication
 // through PATH between the Client and the selected websocket endpoint.
-//
-// This method implements the gateway.WebsocketsBridge interface.
 //
 // Full data flow: Client <---clientConn---> PATH Bridge <---endpointConn---> Relay Miner Bridge <------> Endpoint
 func (b *bridge) start() {
@@ -148,7 +173,7 @@ func (b *bridge) start() {
 	// Listen for the context to be canceled and shut down the bridge
 	go func() {
 		<-b.ctx.Done()
-		b.shutdown(fmt.Errorf("context canceled"))
+		b.shutdown(ErrBridgeContextCancelled)
 	}()
 
 	for msg := range b.msgChan {
@@ -162,48 +187,110 @@ func (b *bridge) start() {
 	}
 }
 
-// Shutdown stops the bridge and closes both connections.
-// This method is passed to each connection and is called when an error is encountered.
+// shutdown performs immediate and complete bridge cleanup.
 //
-// It ensures that both Client and Endpoint connections are closed and the message channel is closed.
+// Usage:
+// - Application-level errors: Call shutdown() directly for immediate cleanup
+// - Message processing failures, protocol errors, write failures to connections
+// - Ensures proper WebSocket close frames are sent before terminating connections
 //
-// This is important as it is expected that the RelayMiner connection will be closed on every session rollover
-// and it is critical that the closing of the connection propagates to the Client so they can reconnect.
+// Cleanup sequence:
+// 1. Sends WebSocket close frames to both client and endpoint with appropriate close codes
+// 2. Closes both WebSocket connections
+// 3. Closes message channel to stop the message processing loop
+//
+// Close Codes:
+// - CloseServiceRestart (1012): For expected service interruptions (encourages reconnection)
+// - CloseInternalServerErr (1011): For unexpected server errors
+//
+// This method ensures all resources are cleaned up immediately and deterministically.
 func (b *bridge) shutdown(err error) {
-	b.logger.Error().Err(err).Msg("🔌 ❌ Websocket bridge shutting down due to error!")
+	// Use sync.Once to ensure shutdown is only called once, preventing panics from double-closing channels
+	b.shutdownOnce.Do(func() {
+		b.logger.Warn().Err(err).Msg("🔌👋 Websocket bridge shutting down.")
 
-	// Send close message to both connections and close the connections
-	errMsg := fmt.Sprintf("bridge shutting down: %s", err.Error())
-	closeMsg := websocket.FormatCloseMessage(websocket.CloseNormalClosure, errMsg)
+		// Determine appropriate close code and message for client reconnection guidance
+		closeCode, errMsg := b.determineCloseCodeAndMessage(err)
+		closeMsg := websocket.FormatCloseMessage(closeCode, errMsg)
 
-	if b.clientConn != nil {
-		if err := b.clientConn.WriteMessage(websocket.CloseMessage, closeMsg); err != nil {
-			b.logger.Error().Err(err).Msg("❌ error writing close message to client connection")
+		// Write close messages with timeout to prevent hanging on broken connections
+		closeTimeout := time.Now().Add(1 * time.Second)
+
+		if b.clientConn != nil {
+			if err := b.clientConn.WriteControl(websocket.CloseMessage, closeMsg, closeTimeout); err != nil {
+				b.logger.Warn().Err(err).Msg("⚠️ could not write close message to client connection")
+			}
+			b.clientConn.Close()
 		}
-		b.clientConn.Close()
-	}
-	if b.endpointConn != nil {
-		if err := b.endpointConn.WriteMessage(websocket.CloseMessage, closeMsg); err != nil {
-			b.logger.Error().Err(err).Msg("❌ error writing close message to endpoint connection")
+		if b.endpointConn != nil {
+			if err := b.endpointConn.WriteControl(websocket.CloseMessage, closeMsg, closeTimeout); err != nil {
+				b.logger.Warn().Err(err).Msg("⚠️ could not write close message to endpoint connection")
+			}
+			b.endpointConn.Close()
 		}
-		b.endpointConn.Close()
-	}
 
-	// Close the message channel to stop the message loop
-	close(b.msgChan)
+		// Close the message channel to stop the message loop
+		close(b.msgChan)
+
+		// Close the observation channel to signal the gateway that no more observations will be sent
+		if b.messageObservationsChan != nil {
+			close(b.messageObservationsChan)
+		}
+	})
 }
 
-// TODO_TECHDEBT(@adshmh): Add observations for client messages.
-// This is needed to track e.g. whether the client closed the connection.
+// determineCloseCodeAndMessage determines the appropriate WebSocket close code and message
+// based on the error that caused the bridge shutdown. This guides client reconnection behavior.
 //
+// Close Code Guidelines (RFC 6455):
+// - 1012 (Service Restart): Server is restarting; client should attempt reconnection
+// - 1011 (Internal Error): Server encountered an unexpected condition; reconnection may help
+// - 1002 (Protocol Error): Protocol violation; client should not reconnect automatically
+// - 1003 (Unsupported Data): Data type cannot be accepted; client should not reconnect
+func (b *bridge) determineCloseCodeAndMessage(err error) (int, string) {
+	// Check for specific error types using errors.Is for proper error chain handling
+	switch {
+	case errors.Is(err, ErrBridgeContextCancelled):
+		// Expected shutdown - encourage reconnection
+		return websocket.CloseServiceRestart, "service restarting, please reconnect"
+
+	case errors.Is(err, ErrBridgeEndpointUnavailable):
+		// Endpoint issues - encourage reconnection (may be temporary)
+		return websocket.CloseServiceRestart, "endpoint temporarily unavailable, please reconnect"
+
+	case errors.Is(err, ErrBridgeMessageProcessingFailed):
+		// Message processing errors - could be transient or client issue
+		return websocket.CloseInternalServerErr, "message processing error occurred"
+
+	case errors.Is(err, ErrBridgeConnectionFailed):
+		// Connection-level errors - likely network issues
+		return websocket.CloseInternalServerErr, "connection error occurred"
+
+	default:
+		// Handle context.Canceled specifically (from context package)
+		if err.Error() == "context canceled" {
+			return websocket.CloseServiceRestart, "service restarting, please reconnect"
+		}
+
+		// Unknown errors - use internal error code
+		return websocket.CloseInternalServerErr, fmt.Sprintf("bridge error: %s", err.Error())
+	}
+}
+
+// ---------- Client Message Handling ----------
+
 // handleClientMessage processes a message from the Client and sends it to the endpoint.
+//
+// Error Handling:
+// - Message processing errors: shutdown() immediately (application-level failure)
+// - Write errors to endpoint: shutdown() immediately (communication failure)
 func (b *bridge) handleClientMessage(msg message) {
 	// Process the message through the client message handler
 	processedData, err := b.websocketMessageProcessor.ProcessClientWebsocketMessage(msg.data)
 	if err != nil {
-		b.logger.Error().Err(err).Msg("❌ error processing client message, disconnecting client connection")
+		b.logger.Error().Err(err).Msg("❌ error processing client message, shutting down bridge")
 
-		b.clientConn.handleDisconnect(fmt.Errorf("handleClientMessage: %w", err))
+		b.shutdown(fmt.Errorf("%w: client message processing failed: %w", ErrBridgeMessageProcessingFailed, err))
 		return
 	}
 
@@ -211,28 +298,38 @@ func (b *bridge) handleClientMessage(msg message) {
 
 	// Send the processed message to the endpoint
 	if err := b.endpointConn.WriteMessage(msg.messageType, processedData); err != nil {
-		b.logger.Error().Err(err).Msg("❌ error writing client message to endpoint, disconnecting endpoint connection")
+		b.logger.Error().Err(err).Msg("❌ error writing client message to endpoint, shutting down bridge")
 
-		b.endpointConn.handleDisconnect(fmt.Errorf("handleClientMessage: error writing to endpoint: %w", err))
+		b.shutdown(fmt.Errorf("%w: failed to write client message to endpoint: %w", ErrBridgeConnectionFailed, err))
 		return
 	}
 }
 
-// TODO_IN_THIS_PR(@commoddity): Clean up message channel sending in the below method.
+// ---------- Endpoint Message Handling ----------
 
 // handleEndpointMessage processes a message from the Endpoint and sends it to the Client.
 // The bridge notifies the gateway about message processing results through channels,
 // allowing the gateway to handle observations without the bridge knowing about them.
+//
+// Error Handling:
+// - Message processing errors: shutdown() immediately (application-level failure)
+// - Write errors to client: shutdown() immediately (communication failure)
+//
+// Note: Session rollover disconnections from endpoints are expected and handled gracefully.
 func (b *bridge) handleEndpointMessage(msg message) {
 	// Process the message through the endpoint message handler
 	processedData, msgObservations, err := b.websocketMessageProcessor.ProcessEndpointWebsocketMessage(msg.data)
 
-	// Notify gateway about message processing results
-	defer b.sendMessageObservations(msgObservations)
+	// Notify gateway about message processing results (only if observations were created)
+	defer func() {
+		if msgObservations != nil {
+			b.sendMessageObservations(msgObservations)
+		}
+	}()
 
 	if err != nil {
-		b.logger.Error().Err(err).Msg("❌ error processing endpoint message, disconnecting endpoint connection")
-		b.endpointConn.handleDisconnect(fmt.Errorf("handleEndpointMessage: %w", err))
+		b.logger.Error().Err(err).Msg("❌ error processing endpoint message, shutting down bridge")
+		b.shutdown(fmt.Errorf("%w: endpoint message processing failed: %w", ErrBridgeMessageProcessingFailed, err))
 		return
 	}
 
@@ -240,8 +337,8 @@ func (b *bridge) handleEndpointMessage(msg message) {
 	// NOTE: On session rollover, the Endpoint will disconnect the Endpoint connection, which will trigger this
 	// error. This is expected and the Client is expected to handle the reconnection in their connection logic.
 	if err := b.clientConn.WriteMessage(msg.messageType, processedData); err != nil {
-		b.logger.Error().Err(err).Msg("❌ error writing endpoint message to client, disconnecting client connection")
-		b.clientConn.handleDisconnect(fmt.Errorf("handleEndpointMessage: error writing to client: %w", err))
+		b.logger.Error().Err(err).Msg("❌ error writing endpoint message to client, shutting down bridge")
+		b.shutdown(fmt.Errorf("%w: failed to write endpoint message to client: %w", ErrBridgeConnectionFailed, err))
 		return
 	}
 
@@ -249,12 +346,15 @@ func (b *bridge) handleEndpointMessage(msg message) {
 
 }
 
+// ---------- Message Observation Sending ----------
+
 // sendMessageObservations sends message observations to the gateway.
-// If the channel is full, the message observations are dropped.
+// If the channel is full or closed, the message observations are dropped.
 // This is done to avoid blocking the main thread.
 func (b *bridge) sendMessageObservations(msgObservations *observation.RequestResponseObservations) {
 	select {
 	case b.messageObservationsChan <- msgObservations:
+		// Successfully sent
 	default:
 		// Channel is full, log but don't block
 		b.logger.Warn().Msg("messageObservationsChan is full, dropping message observations")

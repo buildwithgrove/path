@@ -76,7 +76,7 @@ func (g Gateway) HandleServiceRequest(
 	// Determine the type of service request and handle it accordingly.
 	switch determineServiceRequestType(httpReq) {
 	case websocketServiceRequest:
-		g.handleWebSocketRequest(ctx, httpReq, responseWriter)
+		g.handleWebSocketRequest(httpReq, responseWriter)
 	default:
 		g.handleHTTPServiceRequest(ctx, httpReq, responseWriter)
 	}
@@ -150,16 +150,21 @@ func (g Gateway) handleHTTPServiceRequest(
 
 // handleWebSocketRequest handles WebSocket connection requests.
 func (g Gateway) handleWebSocketRequest(
-	ctx context.Context,
 	httpReq *http.Request,
 	w http.ResponseWriter,
 ) {
 	logger := g.Logger.With("method", "handleWebSocketRequest")
 
+	// Use a background context for the WebSocket connection lifecycle
+	// Unlike HTTP requests, WebSocket connections are long-lived and should not be tied to the HTTP request context
+	// The HTTP request context gets cancelled when the HTTP handler returns, which would stop the observation listener
+	// The bridge will handle its own context lifecycle management
+	websocketCtx := context.Background()
+
 	// Build a websocketRequestContext with components necessary to process websocket requests.
 	websocketRequestCtx := &websocketRequestContext{
 		logger:                  g.Logger.With("component", "websocket_request_context"),
-		context:                 ctx,
+		context:                 websocketCtx, // Use the long-lived WebSocket context
 		gatewayObservations:     getUserRequestGatewayObservations(httpReq),
 		protocol:                g.Protocol,
 		httpRequestParser:       g.HTTPRequestParser,
@@ -168,7 +173,11 @@ func (g Gateway) handleWebSocketRequest(
 		messageObservationsChan: make(chan *observation.RequestResponseObservations, 1_000),
 	}
 
+	// Note: We do NOT close messageObservationsChan here because WebSocket connections
+	// outlive the HTTP handler. The channel will be closed when the WebSocket actually disconnects.
+
 	// Variable to capture protocol observations for broadcasting
+	// Defined here to avoid needing to define protocol observations in the websocketRequestContext struct.
 	var protocolObs *protocolobservations.Observations
 
 	// Defer broadcasting connection observations to ensure they are sent even if errors occur
@@ -205,8 +214,11 @@ func (g Gateway) handleWebSocketRequest(
 		return
 	}
 
-	// For websockets, we don't immediately broadcast observations since the connection
+	// For websockets, we don't immediately broadcast messageobservations since the connection
 	// will be long-lived and observations will be handled per-message basis.
+	//
+	// Only WebSocket connection request observations are broadcast from this method in the defer block.
+	//
 	// The websocketRequestContext will handle observations during its lifecycle.
 	logger.Info().Msg("✅ Successfully established websocket connection and started bridge")
 }

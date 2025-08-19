@@ -285,48 +285,10 @@ func buildWebsocketMessageSuccessObservation(
 	}
 }
 
-// buildWebsocketConnectionErrorObservation creates a Shannon websocket connection observation for failed connection establishment.
-// Used when websocket connection setup fails during protocol context building.
-func buildWebsocketConnectionErrorObservation(
-	serviceID protocol.ServiceID,
-	err error,
-) protocolobservations.Observations {
-	// Translate the context setup error to appropriate error types
-	errorType, sanctionType := classifyRelayError(nil, err)
-
-	return protocolobservations.Observations{
-		Shannon: &protocolobservations.ShannonObservationsList{
-			Observations: []*protocolobservations.ShannonRequestObservations{
-				{
-					ServiceId: string(serviceID),
-					ObservationData: &protocolobservations.ShannonRequestObservations_WebsocketEndpointObservation{
-						WebsocketEndpointObservation: &protocolobservations.ShannonWebsocketEndpointObservation{
-							// Basic service information
-							SessionServiceId: string(serviceID),
-
-							// Connection attempt timestamp
-							ConnectionAttemptTimestamp: timestamppb.New(time.Now()),
-
-							// Error information
-							ErrorType:           &errorType,
-							ErrorDetails:        func() *string { s := err.Error(); return &s }(),
-							RecommendedSanction: &sanctionType,
-
-							// Fallback endpoint tracking (false since this is a connection error)
-							IsFallbackEndpoint: false,
-						},
-					},
-				},
-			},
-		},
-	}
-}
-
 // buildWebsocketMessageErrorObservation creates a Shannon websocket message observation for failed message processing.
 // It includes endpoint details, session information, message data, and error details.
 // Used when websocket message handling fails.
 func buildWebsocketMessageErrorObservation(
-	logger polylog.Logger,
 	endpoint endpoint,
 	msgSize int64,
 	errorType protocolobservations.ShannonEndpointErrorType,
