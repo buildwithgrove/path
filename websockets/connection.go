@@ -65,14 +65,14 @@ type websocketConnection struct {
 	msgChan chan<- message
 }
 
-// UpgradeClientWebsocketConnection upgrades an HTTP connection to a WebSocket.
+// upgradeClientWebsocketConnection upgrades an HTTP connection to a WebSocket.
 // Used to upgrade a Client's HTTP request to a WebSocket connection.
 //
 // DEV_NOTE: This function uses a permissive CheckOrigin policy (always returns true),
 // eliminating origin-based rejections as a potential cause of upgrade failures.
 //
 // See: https://pkg.go.dev/github.com/gorilla/websocket#hdr-Overview
-func UpgradeClientWebsocketConnection(
+func upgradeClientWebsocketConnection(
 	wsLogger polylog.Logger,
 	req *http.Request,
 	w http.ResponseWriter,
@@ -95,8 +95,8 @@ func UpgradeClientWebsocketConnection(
 	return clientConn, nil
 }
 
-// ConnectWebsocketEndpoint makes a websocket connection to the websocket Endpoint.
-func ConnectWebsocketEndpoint(
+// connectWebsocketEndpoint makes a websocket connection to the websocket Endpoint.
+func connectWebsocketEndpoint(
 	wsLogger polylog.Logger,
 	websocketURL string,
 	headers http.Header,

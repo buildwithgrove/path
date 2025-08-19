@@ -7,9 +7,9 @@ package gateway
 //
 //	Client <--- clientConn ---> PATH Bridge <--- endpointConn ---> Relay Miner Bridge <------> Endpoint
 type WebsocketsBridge interface {
-	// StartAsync starts the bridge and handles the data flow between the Client and the Endpoint.
+	// Start starts the bridge and handles the data flow between the Client and the Endpoint.
 	// It is called by the Gateway when a new WebSocket connection is established.
 	//
-	// IMPORTANT: StartAsync should always be run in a goroutine to avoid blocking the main thread.
-	StartAsync()
+	// IMPORTANT: Start should always be run in a goroutine to avoid blocking the main thread.
+	Start()
 }

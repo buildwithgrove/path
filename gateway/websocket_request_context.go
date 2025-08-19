@@ -15,6 +15,8 @@ import (
 	"github.com/buildwithgrove/path/websockets"
 )
 
+var _ websockets.WebsocketMessageProcessor = &websocketRequestContext{}
+
 // websocketRequestContext is responsible for orchestrating the flow of websocket messages
 // between client and endpoint. It handles:
 // - QoS validation and context building
@@ -151,15 +153,14 @@ func (wrc *websocketRequestContext) BuildProtocolContextFromHTTPRequest(httpReq 
 func (wrc *websocketRequestContext) HandleWebsocketRequest(request *http.Request, responseWriter http.ResponseWriter) error {
 	// Create the websocket bridge in the gateway package and start the bridge asynchronously.
 	if err := wrc.initializeWebsocketBridge(request, responseWriter); err != nil {
-		wrc.logger.Warn().Err(err).Msg("Failed to create websocket bridge.")
+		wrc.logger.Error().Err(err).Msg("❌ Failed to create websocket bridge.")
 		return err
 	}
 
 	// Start the bridge with gateway observations and data reporter
-	// This should be handled asynchronously to avoid blocking
-	go wrc.bridge.StartAsync()
-
-	wrc.logger.Info().Msg("🚀 Websocket bridge started successfully")
+	// This should be handled asynchronously to avoid blocking as
+	// a websocket connection is long-lived and continuous.
+	go wrc.bridge.Start()
 	return nil
 }
 
@@ -169,66 +170,38 @@ func (wrc *websocketRequestContext) initializeWebsocketBridge(
 	req *http.Request,
 	w http.ResponseWriter,
 ) error {
-	// Hydrate the logger with the websocket bridge specific information.
-	logger := wrc.logger.With("connection_type", "websocket")
-
 	// Get the websocket-specific URL from the selected endpoint.
 	websocketURL, err := wrc.protocolCtx.GetWebsocketEndpointURL()
 	if err != nil {
-		logger.Error().Err(err).Msg("❌ Selected endpoint does not support websocket RPC type")
+		wrc.logger.Error().Err(err).Msg("❌ Selected endpoint does not support websocket RPC type")
 		return err
 	}
-	logger = logger.With("websocket_url", websocketURL)
+	wrc.logger = wrc.logger.With("websocket_url", websocketURL)
 
-	// Upgrade HTTP request from client to websocket connection.
-	// - Connection is passed to websocket bridge for Client <-> Gateway communication.
-	clientConn, err := websockets.UpgradeClientWebsocketConnection(wrc.logger, req, w)
+	// Get the headers for the websocket connection that will be sent to the endpoint.
+	headers, err := wrc.protocolCtx.GetWebsocketConnectionHeaders()
 	if err != nil {
-		return fmt.Errorf("createWebsocketBridge: %s", err.Error())
+		wrc.logger.Error().Err(err).Msg("❌ Failed to get websocket connection headers")
+		return err
 	}
 
-	// Get the headers for the websocket connection.
-	headers := wrc.protocolCtx.GetWebsocketConnectionHeaders()
-
-	// Connect to the endpoint
-	endpointConn, err := websockets.ConnectWebsocketEndpoint(wrc.logger, websocketURL, headers)
-	if err != nil {
-		return fmt.Errorf("createWebsocketBridge: %s", err.Error())
-	}
-
-	// Create protocol-specific message handlers
-	clientHandler := &websocketClientMessageHandler{
-		logger:      logger.With("component", "websocket_client_message_handler"),
-		protocolCtx: wrc.protocolCtx,
-		serviceID:   wrc.serviceID,
-	}
-	endpointHandler := &websocketEndpointMessageHandler{
-		logger:      logger.With("component", "websocket_endpoint_message_handler"),
-		protocolCtx: wrc.protocolCtx,
-		serviceID:   wrc.serviceID,
-	}
-
-	// Create buffered channels for bridge notifications to avoid blocking the bridge
-	// Buffer size of 100 should be sufficient for typical message processing rates
-	wrc.messageSuccessChan = make(chan struct{}, 100)
-	wrc.messageErrorChan = make(chan error, 100)
-
-	// Create the generic websocket bridge with Shannon-specific handlers
+	// Create the generic websocket bridge with the websocket request context as the message processor.
 	bridge, err := websockets.NewBridge(
 		wrc.logger,
-		clientConn,
-		endpointConn,
-		clientHandler,
-		endpointHandler,
+		req,
+		w,
+		websocketURL,
+		headers,
+		wrc,
 		wrc.messageSuccessChan,
 		wrc.messageErrorChan,
 	)
 	if err != nil {
-		// TODO_IN_THIS_PR(@commoddity): Handle updating protocol observations on websocket error.
+		// TODO_IN_THIS_PR(@commoddity): Handle updating protocol observations on websocket connectionerror.
 		return err
 	}
 
-	// Start listening for message processing notifications
+	// Start listening for message processing notifications from the bridge.
 	go wrc.listenForMessageNotifications()
 
 	// Set the bridge for the websocket request context
@@ -260,6 +233,44 @@ func (wrc *websocketRequestContext) listenForMessageNotifications() {
 		}
 	}
 }
+
+// ---------- Websocket Message Processing ----------
+
+// ProcessClientMessage processes a message from the client.
+// It performs both Protocol-level and QoS-level message processing.
+// If an error occurs, it is returned and the message is not forwarded to the endpoint.
+func (wrc *websocketRequestContext) ProcessClientMessage(msgData []byte) ([]byte, error) {
+	logger := wrc.logger.With("method", "ProcessClientWebsocketMessage")
+
+	logger.Debug().Msgf("received message from client: %s", string(msgData))
+
+	// Process the client message using the protocol context.
+	clientMessageBz, err := wrc.protocolCtx.ProcessClientWebsocketMessage(msgData)
+	if err != nil {
+		logger.Error().Err(err).Msg("❌ failed to sign request")
+		return nil, err
+	}
+
+	return clientMessageBz, nil
+}
+
+// ProcessEndpointMessage processes a message from the endpoint.
+// It performs both Protocol-level and QoS-level message processing.
+// If an error occurs, it is returned and the message is not forwarded to the client.
+func (wrc *websocketRequestContext) ProcessEndpointMessage(msgData []byte) ([]byte, error) {
+	logger := wrc.logger.With("method", "ProcessEndpointMessage")
+
+	// Process the endpoint message using the protocol context.
+	validatedEndpointMessage, err := wrc.protocolCtx.ProcessEndpointWebsocketMessage(msgData)
+	if err != nil {
+		logger.Error().Err(err).Msg("❌ failed to validate relay response")
+		return nil, err
+	}
+
+	return validatedEndpointMessage, nil
+}
+
+// ---------- Message Observations ----------
 
 // BroadcastAllObservations delivers the collected details regarding all aspects
 // of the websocket request to all the interested parties.

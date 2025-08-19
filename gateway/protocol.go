@@ -85,17 +85,17 @@ type ProtocolRequestContext interface {
 
 	// GetWebsocketConnectionHeaders returns protocol-specific headers needed for websocket connections.
 	// These headers contain protocol-specific information like session data, service IDs, etc.
-	GetWebsocketConnectionHeaders() http.Header
+	GetWebsocketConnectionHeaders() (http.Header, error)
 
 	// GetWebsocketEndpointURL returns the websocket URL for the selected endpoint.
 	// This URL is used to establish the websocket connection to the endpoint.
 	GetWebsocketEndpointURL() (string, error)
 
-	// SignClientWebsocketMessage signs the client message before sending it to the Endpoint on the network.
-	SignClientWebsocketMessage([]byte) ([]byte, error)
+	// ProcessClientWebsocketMessage processes the client message before sending it to the Endpoint on the network.
+	ProcessClientWebsocketMessage([]byte) ([]byte, error)
 
-	// ValidateEndpointWebsocketMessage validates the websocket message received from the Endpoint on the network.
-	ValidateEndpointWebsocketMessage([]byte) ([]byte, error)
+	// ProcessEndpointWebsocketMessage processes the websocket message received from the Endpoint on the network.
+	ProcessEndpointWebsocketMessage([]byte) ([]byte, error)
 
 	// UpdateMessageObservationsFromSuccess updates the message observations from a successful message.
 	UpdateMessageObservationsFromSuccess(*observation.RequestResponseObservations) *protocolobservations.Observations

@@ -6,49 +6,50 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/buildwithgrove/path/observation"
-	protocolobservations "github.com/buildwithgrove/path/observation/protocol"
-	"github.com/buildwithgrove/path/request"
 	"github.com/pokt-network/poktroll/pkg/relayer/proxy"
 	servicetypes "github.com/pokt-network/poktroll/x/service/types"
 	sessiontypes "github.com/pokt-network/poktroll/x/session/types"
 	sharedtypes "github.com/pokt-network/poktroll/x/shared/types"
 	sdk "github.com/pokt-network/shannon-sdk"
+
+	"github.com/buildwithgrove/path/gateway"
+	"github.com/buildwithgrove/path/observation"
+	protocolobservations "github.com/buildwithgrove/path/observation/protocol"
+	"github.com/buildwithgrove/path/request"
 )
+
+var _ gateway.ProtocolRequestContext = &requestContext{}
 
 // GetWebsocketConnectionHeaders returns headers for the websocket connection:
 //   - Target-Service-Id: The service ID of the target service
 //   - App-Address: The address of the session's application
 //   - Rpc-Type: Always "websocket" for websocket connection requests
-func (rc *requestContext) GetWebsocketConnectionHeaders() http.Header {
-	headers := http.Header{}
+func (rc *requestContext) GetWebsocketConnectionHeaders() (http.Header, error) {
+	// Requests to fallback endpoints bypass the protocol so RelayMiner headers are not needed.
+	if rc.selectedEndpoint.IsFallback() {
+		return http.Header{}, nil
+	}
 
 	// If the selected endpoint is a protocol endpoint, add the headers
 	// that the RelayMiner requires to forward the request to the Endpoint.
-	//
-	// Requests to fallback endpoints bypass the protocol so RelayMiner headers are not needed.
-	if !rc.getSelectedEndpoint().IsFallback() {
-		headers = rc.getRelayMinerConnectionHeaders(rc.getSelectedEndpoint().Session().GetHeader())
-	}
-
-	return headers
+	return rc.getRelayMinerConnectionHeaders(rc.getSelectedEndpoint().Session().GetHeader())
 }
 
 // getRelayMinerConnectionHeaders returns headers for RelayMiner websocket connections:
 //   - Target-Service-Id: The service ID of the target service
 //   - App-Address: The address of the session's application
 //   - Rpc-Type: Always "websocket" for websocket connection requests
-func (rc *requestContext) getRelayMinerConnectionHeaders(sessionHeader *sessiontypes.SessionHeader) http.Header {
+func (rc *requestContext) getRelayMinerConnectionHeaders(sessionHeader *sessiontypes.SessionHeader) (http.Header, error) {
 	if sessionHeader == nil {
 		rc.logger.Error().Msg("❌ SHOULD NEVER HAPPEN: Error getting relay miner connection headers: session header is nil")
-		return http.Header{}
+		return http.Header{}, fmt.Errorf("session header is nil")
 	}
 
 	return http.Header{
 		request.HTTPHeaderTargetServiceID: {sessionHeader.ServiceId},
 		request.HTTPHeaderAppAddress:      {sessionHeader.ApplicationAddress},
 		proxy.RPCTypeHeader:               {strconv.Itoa(int(sharedtypes.RPCType_WEBSOCKET))},
-	}
+	}, nil
 }
 
 // GetWebsocketEndpointURL returns the websocket URL for the selected endpoint.
@@ -63,7 +64,32 @@ func (rc *requestContext) GetWebsocketEndpointURL() (string, error) {
 	return websocketURL, nil
 }
 
-func (rc *requestContext) SignClientWebsocketMessage(msgData []byte) ([]byte, error) {
+// ---------- Client Message Processing ----------
+
+// ProcessClientWebsocketMessage processes a message from the client.
+func (rc *requestContext) ProcessClientWebsocketMessage(msgData []byte) ([]byte, error) {
+	logger := rc.logger.With("method", "ProcessClientWebsocketMessage")
+
+	logger.Debug().Msgf("received message from client: %s", string(msgData))
+
+	// If the selected endpoint is a fallback endpoint, skip signing the message.
+	// Fallback endpoints bypass the protocol so the raw message is sent to the endpoint.
+	if rc.selectedEndpoint.IsFallback() {
+		return msgData, nil
+	}
+
+	// If the selected endpoint is a protocol endpoint, we need to sign the message.
+	signedRelayRequest, err := rc.signClientWebsocketMessage(msgData)
+	if err != nil {
+		logger.Error().Err(err).Msg("❌ failed to sign request")
+		return nil, err
+	}
+
+	return signedRelayRequest, nil
+}
+
+// signClientWebsocketMessage signs a message from the client using the Relay Request Signer.
+func (rc *requestContext) signClientWebsocketMessage(msgData []byte) ([]byte, error) {
 	unsignedRelayRequest := &servicetypes.RelayRequest{
 		Meta: servicetypes.RelayRequestMetadata{
 			SessionHeader:           rc.selectedEndpoint.Session().GetHeader(),
@@ -91,7 +117,32 @@ func (rc *requestContext) SignClientWebsocketMessage(msgData []byte) ([]byte, er
 	return relayRequestBz, nil
 }
 
-func (rc *requestContext) ValidateEndpointWebsocketMessage(msgData []byte) ([]byte, error) {
+// ---------- Endpoint Message Processing ----------
+
+// ProcessEndpointWebsocketMessage processes a message from the endpoint.
+func (rc *requestContext) ProcessEndpointWebsocketMessage(msgData []byte) ([]byte, error) {
+	logger := rc.logger.With("method", "ProcessEndpointWebsocketMessage")
+
+	logger.Debug().Msgf("received message from endpoint: %s", string(msgData))
+
+	// If the selected endpoint is a fallback endpoint, skip validation.
+	// Fallback endpoints bypass the protocol so the raw message is sent to the endpoint.
+	if rc.selectedEndpoint.IsFallback() {
+		return msgData, nil
+	}
+
+	// If the selected endpoint is a protocol endpoint, we need to validate the message.
+	validatedRelayResponse, err := rc.validateEndpointWebsocketMessage(msgData)
+	if err != nil {
+		logger.Error().Err(err).Msg("❌ failed to validate relay response")
+		return nil, err
+	}
+
+	return validatedRelayResponse, nil
+}
+
+// validateEndpointWebsocketMessage validates a message from the endpoint using the Shannon FullNode.
+func (rc *requestContext) validateEndpointWebsocketMessage(msgData []byte) ([]byte, error) {
 	// Validate the relay response using the Shannon FullNode
 	relayResponse, err := rc.fullNode.ValidateRelayResponse(sdk.SupplierAddress(rc.selectedEndpoint.Supplier()), msgData)
 	if err != nil {

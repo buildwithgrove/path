@@ -154,13 +154,15 @@ func (g Gateway) handleWebSocketRequest(
 
 	// Build a websocketRequestContext with components necessary to process websocket requests.
 	websocketRequestCtx := &websocketRequestContext{
-		logger:              g.Logger,
+		logger:              g.Logger.With("component", "websocket_request_context"),
 		context:             ctx,
 		gatewayObservations: getUserRequestGatewayObservations(httpReq),
 		protocol:            g.Protocol,
 		httpRequestParser:   g.HTTPRequestParser,
 		metricsReporter:     g.MetricsReporter,
 		dataReporter:        g.DataReporter,
+		messageSuccessChan:  make(chan struct{}, 100),
+		messageErrorChan:    make(chan error, 100),
 	}
 
 	// Initialize the websocket request context using the HTTP request.
