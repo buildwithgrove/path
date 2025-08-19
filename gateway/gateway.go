@@ -19,6 +19,7 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/buildwithgrove/path/observation"
 	"github.com/pokt-network/poktroll/pkg/polylog"
 )
 
@@ -106,10 +107,12 @@ func (g Gateway) handleHTTPServiceRequest(
 		return
 	}
 
-	defer func() { // Broadcast all observations, e.g. protocol-level, QoS-level, etc. contained in the gateway request context.
-		gatewayRequestCtx.BroadcastAllObservations()
-		// Write the user-facing HTTP response. This is deliberately not called for websocket requests as they do not return an HTTP response.
+	defer func() {
+		// Write the user-facing HTTP response.
 		gatewayRequestCtx.WriteHTTPUserResponse(responseWriter)
+
+		// Broadcast all observations, e.g. protocol-level, QoS-level, etc. contained in the gateway request context.
+		gatewayRequestCtx.BroadcastAllObservations()
 	}()
 
 	// TODO_TECHDEBT(@adshmh): Pass the context with deadline to QoS once it can handle deadlines.
@@ -154,15 +157,14 @@ func (g Gateway) handleWebSocketRequest(
 
 	// Build a websocketRequestContext with components necessary to process websocket requests.
 	websocketRequestCtx := &websocketRequestContext{
-		logger:              g.Logger.With("component", "websocket_request_context"),
-		context:             ctx,
-		gatewayObservations: getUserRequestGatewayObservations(httpReq),
-		protocol:            g.Protocol,
-		httpRequestParser:   g.HTTPRequestParser,
-		metricsReporter:     g.MetricsReporter,
-		dataReporter:        g.DataReporter,
-		messageSuccessChan:  make(chan struct{}, 100),
-		messageErrorChan:    make(chan error, 100),
+		logger:                  g.Logger.With("component", "websocket_request_context"),
+		context:                 ctx,
+		gatewayObservations:     getUserRequestGatewayObservations(httpReq),
+		protocol:                g.Protocol,
+		httpRequestParser:       g.HTTPRequestParser,
+		metricsReporter:         g.MetricsReporter,
+		dataReporter:            g.DataReporter,
+		messageObservationsChan: make(chan *observation.RequestResponseObservations, 100),
 	}
 
 	// Initialize the websocket request context using the HTTP request.

@@ -6,7 +6,6 @@ import (
 
 	"github.com/buildwithgrove/path/health"
 	"github.com/buildwithgrove/path/metrics/devtools"
-	"github.com/buildwithgrove/path/observation"
 	protocolobservations "github.com/buildwithgrove/path/observation/protocol"
 	"github.com/buildwithgrove/path/protocol"
 )
@@ -83,26 +82,6 @@ type ProtocolRequestContext interface {
 	// and receives and verifies the response.
 	HandleServiceRequest(protocol.Payload) (protocol.Response, error)
 
-	// GetWebsocketConnectionHeaders returns protocol-specific headers needed for websocket connections.
-	// These headers contain protocol-specific information like session data, service IDs, etc.
-	GetWebsocketConnectionHeaders() (http.Header, error)
-
-	// GetWebsocketEndpointURL returns the websocket URL for the selected endpoint.
-	// This URL is used to establish the websocket connection to the endpoint.
-	GetWebsocketEndpointURL() (string, error)
-
-	// ProcessClientWebsocketMessage processes the client message before sending it to the Endpoint on the network.
-	ProcessClientWebsocketMessage([]byte) ([]byte, error)
-
-	// ProcessEndpointWebsocketMessage processes the websocket message received from the Endpoint on the network.
-	ProcessEndpointWebsocketMessage([]byte) ([]byte, error)
-
-	// UpdateMessageObservationsFromSuccess updates the message observations from a successful message.
-	UpdateMessageObservationsFromSuccess(*observation.RequestResponseObservations) *protocolobservations.Observations
-
-	// UpdateMessageObservationsFromError updates the message observations from an error.
-	UpdateMessageObservationsFromError(*observation.RequestResponseObservations, error) *protocolobservations.Observations
-
 	// GetObservations builds and returns the set of protocol-specific observations using the current context.
 	//
 	// Hypothetical illustrative example.
@@ -115,4 +94,18 @@ type ProtocolRequestContext interface {
 	// Then the observation can be:
 	//  - `maxed-out endpoint` on `endpoint_101`.
 	GetObservations() protocolobservations.Observations
+
+	// GetWebsocketConnectionHeaders returns protocol-specific headers needed for websocket connections.
+	// These headers contain protocol-specific information like session data, service IDs, etc.
+	GetWebsocketConnectionHeaders() (http.Header, error)
+
+	// GetWebsocketEndpointURL returns the websocket URL for the selected endpoint.
+	// This URL is used to establish the websocket connection to the endpoint.
+	GetWebsocketEndpointURL() (string, error)
+
+	// ProcessProtocolClientWebsocketMessage processes a message from the client.
+	ProcessProtocolClientWebsocketMessage([]byte) ([]byte, error)
+
+	// ProcessProtocolEndpointWebsocketMessage processes a message from the endpoint.
+	ProcessProtocolEndpointWebsocketMessage([]byte) ([]byte, *protocolobservations.Observations, error)
 }

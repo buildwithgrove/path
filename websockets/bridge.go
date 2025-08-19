@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/buildwithgrove/path/observation"
 	"github.com/gorilla/websocket"
 	"github.com/pokt-network/poktroll/pkg/polylog"
 )
@@ -12,11 +13,11 @@ import (
 // WebSocketMessageHandler handles websocket messages.
 // It can, for example, transform the message data before forwarding it.
 type WebsocketMessageProcessor interface {
-	// ProcessClientMessage processes a message from the client.
-	ProcessClientMessage([]byte) ([]byte, error)
+	// ProcessClientWebsocketMessage processes a message from the client.
+	ProcessClientWebsocketMessage([]byte) ([]byte, error)
 
-	// ProcessEndpointMessage processes a message from the endpoint.
-	ProcessEndpointMessage([]byte) ([]byte, error)
+	// ProcessEndpointWebsocketMessage processes a message from the endpoint.
+	ProcessEndpointWebsocketMessage([]byte) ([]byte, *observation.RequestResponseObservations, error)
 }
 
 // bridge routes data between an Endpoint and a Client.
@@ -24,13 +25,13 @@ type WebsocketMessageProcessor interface {
 // between a Client and a WebSocket Endpoint.
 //
 // This is a generic websocket bridge that handles the websocket protocol
-// and message routing, while delegating protocol-specific logic to the
-// provided message handlers.
+// and message routing, while delegating Gateway-level message processing to the
+// provided message handler.
 //
 // Architecture:
 // - Protocol-agnostic: Works with any protocol (Shannon, future protocols)
-// - Message handlers: Protocol-specific logic for signing/validation
-// - Notification channels: Gateway observability without tight coupling
+// - Message handler: Gateway-level processing of messages. Orchestrates protocol and QoS-level message processing.
+// - Notification channels: Gateway-level notifications to trigger sending Observations.
 //
 // Full data flow: Client <---clientConn---> PATH bridge <---endpointConn---> Relay Miner bridge <------> Endpoint
 type bridge struct {
@@ -50,25 +51,21 @@ type bridge struct {
 	// websocketMessageProcessor processes messages from the client and endpoint.
 	websocketMessageProcessor WebsocketMessageProcessor
 
-	// messageSuccessChan signals successful message processing to the gateway.
-	// Used to notify the gateway about successful message processing for observations.
-	messageSuccessChan chan<- struct{}
-	// messageErrorChan sends error information when message processing fails.
-	// Used to notify the gateway about error message processing for observations.
-	messageErrorChan chan<- error
+	// messageObservationsChan receives message observations from the websocketMessageProcessor.
+	messageObservationsChan chan<- *observation.RequestResponseObservations
 }
 
-// NewBridge creates a new Bridge instance with connections to both client and endpoint.
-func NewBridge(
+// StartBridge creates a new Bridge instance with connections to both client and endpoint
+// and starts the bridge in a goroutine to avoid blocking the main thread.
+func StartBridge(
 	logger polylog.Logger,
 	req *http.Request,
 	w http.ResponseWriter,
 	websocketURL string,
 	headers http.Header,
 	websocketMessageProcessor WebsocketMessageProcessor,
-	messageSuccessChan chan<- struct{},
-	messageErrorChan chan<- error,
-) (*bridge, error) {
+	messageObservationsChan chan<- *observation.RequestResponseObservations,
+) error {
 	logger = logger.With("component", "websocket_bridge")
 
 	// Create a context that can be canceled from either connection
@@ -77,13 +74,13 @@ func NewBridge(
 	// Upgrade HTTP request from client to websocket connection.
 	clientConn, err := upgradeClientWebsocketConnection(logger, req, w)
 	if err != nil {
-		return nil, fmt.Errorf("createWebsocketBridge: %s", err.Error())
+		return fmt.Errorf("createWebsocketBridge: %s", err.Error())
 	}
 
 	// Connect to the Relay Miner endpoint
 	endpointConn, err := connectWebsocketEndpoint(logger, websocketURL, headers)
 	if err != nil {
-		return nil, fmt.Errorf("createWebsocketBridge: %s", err.Error())
+		return fmt.Errorf("createWebsocketBridge: %s", err.Error())
 	}
 
 	// Create a channel to pass messages between the Client and Endpoint
@@ -97,12 +94,11 @@ func NewBridge(
 		msgChan:                   msgChan,
 		websocketMessageProcessor: websocketMessageProcessor,
 
-		messageSuccessChan: messageSuccessChan,
-		messageErrorChan:   messageErrorChan,
+		messageObservationsChan: messageObservationsChan,
 	}
 	if err := b.validateComponents(); err != nil {
 		cancelCtx() // Cancel context to prevent leak
-		return nil, fmt.Errorf("❌ invalid bridge components: %w", err)
+		return fmt.Errorf("❌ invalid bridge components: %w", err)
 	}
 
 	// Initialize connections with context and cancel function
@@ -123,17 +119,17 @@ func NewBridge(
 		msgChan,
 	)
 
-	return b, nil
+	// Start the bridge in a goroutine to avoid blocking the main thread.
+	go b.start()
+	return nil
 }
 
 // validateComponents ensures the Bridge is not created with nil components.
 // This is done to avoid panics and to make the Bridge's behavior more predictable.
 func (b *bridge) validateComponents() error {
 	switch {
-	case b.messageSuccessChan == nil:
-		return fmt.Errorf("messageSuccessChan is nil")
-	case b.messageErrorChan == nil:
-		return fmt.Errorf("messageErrorChan is nil")
+	case b.messageObservationsChan == nil:
+		return fmt.Errorf("messageObservationsChan is nil")
 	case b.websocketMessageProcessor == nil:
 		return fmt.Errorf("websocketMessageProcessor is nil")
 	}
@@ -146,13 +142,13 @@ func (b *bridge) validateComponents() error {
 // This method implements the gateway.WebsocketsBridge interface.
 //
 // Full data flow: Client <---clientConn---> PATH Bridge <---endpointConn---> Relay Miner Bridge <------> Endpoint
-func (b *bridge) Start() {
+func (b *bridge) start() {
 	b.logger.Info().Msg("🏗️ Websocket bridge operation started successfully")
 
 	// Listen for the context to be canceled and shut down the bridge
 	go func() {
 		<-b.ctx.Done()
-		b.Shutdown(fmt.Errorf("context canceled"))
+		b.shutdown(fmt.Errorf("context canceled"))
 	}()
 
 	for msg := range b.msgChan {
@@ -173,7 +169,7 @@ func (b *bridge) Start() {
 //
 // This is important as it is expected that the RelayMiner connection will be closed on every session rollover
 // and it is critical that the closing of the connection propagates to the Client so they can reconnect.
-func (b *bridge) Shutdown(err error) {
+func (b *bridge) shutdown(err error) {
 	b.logger.Error().Err(err).Msg("🔌 ❌ Websocket bridge shutting down due to error!")
 
 	// Send close message to both connections and close the connections
@@ -203,7 +199,7 @@ func (b *bridge) Shutdown(err error) {
 // handleClientMessage processes a message from the Client and sends it to the endpoint.
 func (b *bridge) handleClientMessage(msg message) {
 	// Process the message through the client message handler
-	processedData, err := b.websocketMessageProcessor.ProcessClientMessage(msg.data)
+	processedData, err := b.websocketMessageProcessor.ProcessClientWebsocketMessage(msg.data)
 	if err != nil {
 		b.logger.Error().Err(err).Msg("❌ error processing client message, disconnecting client connection")
 
@@ -222,22 +218,27 @@ func (b *bridge) handleClientMessage(msg message) {
 	}
 }
 
+// TODO_IN_THIS_PR(@commoddity): Clean up message channel sending in the below method.
+
 // handleEndpointMessage processes a message from the Endpoint and sends it to the Client.
 // The bridge notifies the gateway about message processing results through channels,
 // allowing the gateway to handle observations without the bridge knowing about them.
 func (b *bridge) handleEndpointMessage(msg message) {
 	// Process the message through the endpoint message handler
-	processedData, err := b.websocketMessageProcessor.ProcessEndpointMessage(msg.data)
-	if err != nil {
-		b.logger.Error().Err(err).Msg("❌ error processing endpoint message, disconnecting endpoint connection")
+	processedData, msgObservations, err := b.websocketMessageProcessor.ProcessEndpointWebsocketMessage(msg.data)
 
-		// Notify gateway about the error
+	// Notify gateway about message processing results
+	defer func() {
 		select {
-		case b.messageErrorChan <- err:
+		case b.messageObservationsChan <- msgObservations:
 		default:
 			// Channel is full, log but don't block
-			b.logger.Warn().Msg("messageErrorChan is full, dropping error notification")
+			b.logger.Warn().Msg("messageObservationsChan is full, dropping message observations")
 		}
+	}()
+
+	if err != nil {
+		b.logger.Error().Err(err).Msg("❌ error processing endpoint message, disconnecting endpoint connection")
 		b.endpointConn.handleDisconnect(fmt.Errorf("handleEndpointMessage: %w", err))
 		return
 	}
@@ -247,26 +248,10 @@ func (b *bridge) handleEndpointMessage(msg message) {
 	// error. This is expected and the Client is expected to handle the reconnection in their connection logic.
 	if err := b.clientConn.WriteMessage(msg.messageType, processedData); err != nil {
 		b.logger.Error().Err(err).Msg("❌ error writing endpoint message to client, disconnecting client connection")
-
-		// Notify gateway about the write error
-		select {
-		case b.messageErrorChan <- fmt.Errorf("error writing to client: %w", err):
-		default:
-			// Channel is full, log but don't block
-			b.logger.Warn().Msg("messageErrorChan is full, dropping error notification")
-		}
 		b.clientConn.handleDisconnect(fmt.Errorf("handleEndpointMessage: error writing to client: %w", err))
 		return
 	}
 
 	b.logger.Debug().Msgf("🔗 endpoint message successfully processed, sending message to client: %s", string(processedData))
-
-	// Notify gateway about successful message processing
-	select {
-	case b.messageSuccessChan <- struct{}{}:
-	default:
-		// Channel is full, log but don't block
-		b.logger.Warn().Msg("messageSuccessChan is full, dropping success notification")
-	}
 
 }

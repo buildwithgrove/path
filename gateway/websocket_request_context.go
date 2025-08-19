@@ -10,7 +10,6 @@ import (
 
 	"github.com/buildwithgrove/path/observation"
 	protocolobservations "github.com/buildwithgrove/path/observation/protocol"
-	qosobservations "github.com/buildwithgrove/path/observation/qos"
 	"github.com/buildwithgrove/path/protocol"
 	"github.com/buildwithgrove/path/websockets"
 )
@@ -57,15 +56,12 @@ type websocketRequestContext struct {
 
 	// gatewayObservations stores gateway related observations.
 	gatewayObservations *observation.GatewayObservations
-	// Tracks protocol observations.
-	protocolObservations *protocolobservations.Observations
 
-	// Bridge and connection management
-	bridge WebsocketsBridge
+	// // Bridge and connection management
+	// bridge WebsocketsBridge
 
-	// Channels for receiving message processing notifications from the bridge
-	messageSuccessChan chan struct{}
-	messageErrorChan   chan error
+	// Channel for receiving message processing notifications from the bridge
+	messageObservationsChan chan *observation.RequestResponseObservations
 }
 
 // InitFromHTTPRequest builds the required context for serving a WebSocket request.
@@ -122,7 +118,7 @@ func (wrc *websocketRequestContext) BuildProtocolContextFromHTTPRequest(httpReq 
 	// Retrieve the list of available endpoints for the requested service.
 	availableEndpoints, endpointLookupObs, err := wrc.protocol.AvailableEndpoints(wrc.context, wrc.serviceID, httpReq)
 	if err != nil {
-		wrc.updateProtocolObservations(&endpointLookupObs)
+		wrc.broadcastWebsocketConnectionErrorObservation(err, &endpointLookupObs)
 		logger.Error().Err(err).Msg("no available endpoints could be found for websocket request")
 		return fmt.Errorf("no available endpoints for websocket request: %w", err)
 	}
@@ -130,7 +126,7 @@ func (wrc *websocketRequestContext) BuildProtocolContextFromHTTPRequest(httpReq 
 	// For websockets, select a single endpoint
 	selectedEndpoints, err := wrc.qosCtx.GetEndpointSelector().SelectMultiple(availableEndpoints, 1)
 	if err != nil || len(selectedEndpoints) == 0 {
-		wrc.updateProtocolObservations(&endpointLookupObs)
+		wrc.broadcastWebsocketConnectionErrorObservation(err, &endpointLookupObs)
 		logger.Error().Msgf("no endpoints could be selected for websocket request from %d available endpoints", len(availableEndpoints))
 		return fmt.Errorf("no endpoints could be selected for websocket request from %d available endpoints", len(availableEndpoints))
 	}
@@ -138,7 +134,7 @@ func (wrc *websocketRequestContext) BuildProtocolContextFromHTTPRequest(httpReq 
 	// Build protocol context for the selected endpoint
 	protocolCtx, protocolCtxSetupErrObs, err := wrc.protocol.BuildRequestContextForEndpoint(wrc.context, wrc.serviceID, selectedEndpoints[0], httpReq)
 	if err != nil {
-		wrc.updateProtocolObservations(&protocolCtxSetupErrObs)
+		wrc.broadcastWebsocketConnectionErrorObservation(err, &protocolCtxSetupErrObs)
 		logger.Error().Err(err).Str("endpoint_addr", string(selectedEndpoints[0])).Msg("Failed to build protocol context for websocket endpoint")
 		return fmt.Errorf("failed to build protocol context for websocket endpoint: %w", err)
 	}
@@ -150,62 +146,58 @@ func (wrc *websocketRequestContext) BuildProtocolContextFromHTTPRequest(httpReq 
 }
 
 // HandleWebsocketRequest establishes the websocket connection and starts the message handling loop.
-func (wrc *websocketRequestContext) HandleWebsocketRequest(request *http.Request, responseWriter http.ResponseWriter) error {
+func (wrc *websocketRequestContext) HandleWebsocketRequest(
+	httpRequest *http.Request,
+	httpResponseWriter http.ResponseWriter,
+) error {
 	// Create the websocket bridge in the gateway package and start the bridge asynchronously.
-	if err := wrc.initializeWebsocketBridge(request, responseWriter); err != nil {
+	if err := wrc.initializeWebsocketBridge(httpRequest, httpResponseWriter); err != nil {
 		wrc.logger.Error().Err(err).Msg("❌ Failed to create websocket bridge.")
 		return err
 	}
 
-	// Start the bridge with gateway observations and data reporter
-	// This should be handled asynchronously to avoid blocking as
-	// a websocket connection is long-lived and continuous.
-	go wrc.bridge.Start()
 	return nil
 }
 
 // createWebsocketBridge creates a websocket bridge using protocol-specific components.
 // This moves the bridge creation logic from Shannon to the gateway level.
 func (wrc *websocketRequestContext) initializeWebsocketBridge(
-	req *http.Request,
-	w http.ResponseWriter,
+	httpRequest *http.Request,
+	httpResponseWriter http.ResponseWriter,
 ) error {
 	// Get the websocket-specific URL from the selected endpoint.
-	websocketURL, err := wrc.protocolCtx.GetWebsocketEndpointURL()
+	websocketEndpointURL, err := wrc.protocolCtx.GetWebsocketEndpointURL()
 	if err != nil {
 		wrc.logger.Error().Err(err).Msg("❌ Selected endpoint does not support websocket RPC type")
 		return err
 	}
-	wrc.logger = wrc.logger.With("websocket_url", websocketURL)
+	wrc.logger = wrc.logger.With("websocket_url", websocketEndpointURL)
 
 	// Get the headers for the websocket connection that will be sent to the endpoint.
-	headers, err := wrc.protocolCtx.GetWebsocketConnectionHeaders()
+	endpointConnectionHeaders, err := wrc.protocolCtx.GetWebsocketConnectionHeaders()
 	if err != nil {
 		wrc.logger.Error().Err(err).Msg("❌ Failed to get websocket connection headers")
 		return err
 	}
 
-	// Create the generic websocket bridge with the websocket request context as the message processor.
-	bridge, err := websockets.NewBridge(
+	// Start the websockets bridge in a goroutine to avoid blocking the main thread.
+	// The bridge uses the websocket request context as the message processor to
+	// perform both protocol-level and QoS-level message processing.
+	if err := websockets.StartBridge(
 		wrc.logger,
-		req,
-		w,
-		websocketURL,
-		headers,
+		httpRequest,
+		httpResponseWriter,
+		websocketEndpointURL,
+		endpointConnectionHeaders,
 		wrc,
-		wrc.messageSuccessChan,
-		wrc.messageErrorChan,
-	)
-	if err != nil {
-		// TODO_IN_THIS_PR(@commoddity): Handle updating protocol observations on websocket connectionerror.
+		wrc.messageObservationsChan,
+	); err != nil {
+		// TODO_IN_THIS_PR(@commoddity): Handle updating protocol observations on websocket connection error.
 		return err
 	}
 
 	// Start listening for message processing notifications from the bridge.
 	go wrc.listenForMessageNotifications()
-
-	// Set the bridge for the websocket request context
-	wrc.bridge = bridge
 
 	return nil
 }
@@ -220,12 +212,9 @@ func (wrc *websocketRequestContext) initializeWebsocketBridge(
 func (wrc *websocketRequestContext) listenForMessageNotifications() {
 	for {
 		select {
-		case <-wrc.messageSuccessChan:
+		case messageObservations := <-wrc.messageObservationsChan:
 			// Message was processed successfully
-			wrc.BroadcastMessageObservations(nil)
-		case err := <-wrc.messageErrorChan:
-			// Message processing failed
-			wrc.BroadcastMessageObservations(err)
+			wrc.BroadcastMessageObservations(messageObservations)
 		case <-wrc.context.Done():
 			// Context cancelled, stop listening
 			wrc.logger.Debug().Msg("Message notification listener stopped due to context cancellation")
@@ -236,18 +225,18 @@ func (wrc *websocketRequestContext) listenForMessageNotifications() {
 
 // ---------- Websocket Message Processing ----------
 
-// ProcessClientMessage processes a message from the client.
+// ProcessClientWebsocketMessage processes a message from the client.
 // It performs both Protocol-level and QoS-level message processing.
 // If an error occurs, it is returned and the message is not forwarded to the endpoint.
-func (wrc *websocketRequestContext) ProcessClientMessage(msgData []byte) ([]byte, error) {
+func (wrc *websocketRequestContext) ProcessClientWebsocketMessage(msgData []byte) ([]byte, error) {
 	logger := wrc.logger.With("method", "ProcessClientWebsocketMessage")
 
 	logger.Debug().Msgf("received message from client: %s", string(msgData))
 
 	// Process the client message using the protocol context.
-	clientMessageBz, err := wrc.protocolCtx.ProcessClientWebsocketMessage(msgData)
+	clientMessageBz, err := wrc.protocolCtx.ProcessProtocolClientWebsocketMessage(msgData)
 	if err != nil {
-		logger.Error().Err(err).Msg("❌ failed to sign request")
+		logger.Error().Err(err).Msg("❌ failed to perform protocol-level client message processing")
 		return nil, err
 	}
 
@@ -257,59 +246,44 @@ func (wrc *websocketRequestContext) ProcessClientMessage(msgData []byte) ([]byte
 // ProcessEndpointMessage processes a message from the endpoint.
 // It performs both Protocol-level and QoS-level message processing.
 // If an error occurs, it is returned and the message is not forwarded to the client.
-func (wrc *websocketRequestContext) ProcessEndpointMessage(msgData []byte) ([]byte, error) {
-	logger := wrc.logger.With("method", "ProcessEndpointMessage")
+func (wrc *websocketRequestContext) ProcessEndpointWebsocketMessage(msgData []byte) ([]byte, *observation.RequestResponseObservations, error) {
+	logger := wrc.logger.With("method", "ProcessEndpointWebsocketMessage")
 
-	// Process the endpoint message using the protocol context.
-	validatedEndpointMessage, err := wrc.protocolCtx.ProcessEndpointWebsocketMessage(msgData)
+	messageObservations := wrc.initializeMessageObservations()
+
+	// Process the endpoint message using the protocol context and update the message observations.
+	endpointMessageBz, protocolObservations, err := wrc.protocolCtx.ProcessProtocolEndpointWebsocketMessage(msgData)
 	if err != nil {
-		logger.Error().Err(err).Msg("❌ failed to validate relay response")
-		return nil, err
+		logger.Error().Err(err).Msg("❌ failed to perform protocol-level endpoint message processing")
+		return nil, nil, err
 	}
+	messageObservations.Protocol = protocolObservations
 
-	return validatedEndpointMessage, nil
+	// TODO_IN_THIS_PR(@commoddity): process message using QoS context and update the message observations.
+	// messageObservations.Qos = wrc.qosCtx.ProcessProtocolEndpointWebsocketMessage(msgData)
+
+	return endpointMessageBz, messageObservations, nil
 }
 
 // ---------- Message Observations ----------
 
+// TODO_IN_THIS_PR(@commoddity): handle correctly updating message observations from protocol and QoS.
+
 // BroadcastAllObservations delivers the collected details regarding all aspects
 // of the websocket request to all the interested parties.
-func (wrc *websocketRequestContext) BroadcastMessageObservations(messageError error) {
+func (wrc *websocketRequestContext) BroadcastMessageObservations(messageObservations *observation.RequestResponseObservations) {
 	// observation-related tasks are called in Goroutines to avoid potentially blocking the handler.
 	go func() {
-		// Initialize per-message observations
-		messageObservations := wrc.initializeMessageObservations()
-
-		// Update protocol observations based on success/error
-		if messageError != nil {
-			// Update observations with error details
-			wrc.logger.Debug().Err(messageError).Msg("Processing message error for observations")
-			messageObservations.Protocol = wrc.protocolCtx.UpdateMessageObservationsFromError(
-				messageObservations,
-				messageError,
-			)
-		} else {
-			// update protocol-level observations: no errors encountered setting up the protocol context.
-			wrc.updateProtocolObservations(nil)
-		}
-
-		// update gateway-level observations: no request error encountered.
-		wrc.updateGatewayObservations(nil)
-		// update protocol-level observations: no errors encountered setting up the protocol context.
-		wrc.updateProtocolObservations(nil)
-
-		if wrc.protocolObservations != nil {
-			err := wrc.protocol.ApplyObservations(wrc.protocolObservations)
+		if protocolObservations := messageObservations.GetProtocol(); protocolObservations != nil {
+			err := wrc.protocol.ApplyObservations(protocolObservations)
 			if err != nil {
 				wrc.logger.Warn().Err(err).Msg("error applying protocol observations for websocket.")
 			}
 		}
 
 		// Apply QoS observations
-		var qosObservations qosobservations.Observations
-		if wrc.qosCtx != nil {
-			qosObservations = wrc.qosCtx.GetObservations()
-			if err := wrc.serviceQoS.ApplyObservations(&qosObservations); err != nil {
+		if qosObservations := messageObservations.GetQos(); qosObservations != nil {
+			if err := wrc.serviceQoS.ApplyObservations(qosObservations); err != nil {
 				wrc.logger.Warn().Err(err).Msg("error applying QoS observations for websocket.")
 			}
 		}
@@ -317,8 +291,8 @@ func (wrc *websocketRequestContext) BroadcastMessageObservations(messageError er
 		// Prepare and publish observations to both the metrics and data reporters.
 		observations := &observation.RequestResponseObservations{
 			Gateway:  wrc.gatewayObservations,
-			Protocol: wrc.protocolObservations,
-			Qos:      &qosObservations,
+			Protocol: messageObservations.Protocol,
+			Qos:      messageObservations.Qos,
 		}
 		if wrc.metricsReporter != nil {
 			wrc.metricsReporter.Publish(observations)
@@ -335,34 +309,34 @@ func (wrc *websocketRequestContext) initializeMessageObservations() *observation
 	return &observation.RequestResponseObservations{
 		ServiceId: string(wrc.serviceID),
 		Gateway:   wrc.gatewayObservations,
-		Protocol:  wrc.protocolObservations,
 	}
 }
 
-// updateProtocolObservations updates the stored protocol-level observations for websockets.
-func (wrc *websocketRequestContext) updateProtocolObservations(protocolContextSetupErrorObservation *protocolobservations.Observations) {
-	// protocol observation already set: skip.
-	if wrc.protocolObservations != nil {
-		return
+// broadcastWebsocketConnectionErrorObservation broadcasts the protocol-level observations for websocket connection errors.
+// This method is called only if a protocol-level error occurs during the websocket connection setup.
+func (wrc *websocketRequestContext) broadcastWebsocketConnectionErrorObservation(
+	err error,
+	protocolErrorObservations *protocolobservations.Observations,
+) {
+	wrc.updateGatewayObservations(err)
+
+	if protocolErrorObservations != nil {
+		err := wrc.protocol.ApplyObservations(protocolErrorObservations)
+		if err != nil {
+			wrc.logger.Warn().Err(err).Msg("error applying protocol observations for websocket.")
+		}
 	}
 
-	// protocol context setup error observation is set: use it.
-	if protocolContextSetupErrorObservation != nil {
-		wrc.protocolObservations = protocolContextSetupErrorObservation
-		return
+	observations := &observation.RequestResponseObservations{
+		Gateway:  wrc.gatewayObservations,
+		Protocol: protocolErrorObservations,
 	}
-
-	// Use protocol context observations if available
-	if wrc.protocolCtx != nil {
-		observations := wrc.protocolCtx.GetObservations()
-		wrc.protocolObservations = &observations
-		return
+	if wrc.metricsReporter != nil {
+		wrc.metricsReporter.Publish(observations)
 	}
-
-	wrc.logger.
-		With("service_id", wrc.serviceID).
-		Debug().
-		Msg("No protocol context available for websocket observations")
+	if wrc.dataReporter != nil {
+		wrc.dataReporter.Publish(observations)
+	}
 }
 
 // updateGatewayObservations updates the gateway-level observations in the websocket request context.

@@ -9,7 +9,8 @@ import (
 	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
 
-// TODO_IN_THIS_PR(@commoddity): Handle errors using QoS package - ie move JSON-RPC logic to the QoS package.
+// TODO_IN_THIS_PR(@commoddity): Handle errors using QoS package - ie move JSON-RPC logic to the QoS package/
+// This should be done as part of creating the QoS-level message processor.
 
 // ---------- Shannon Error Handling ----------
 
