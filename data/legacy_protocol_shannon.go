@@ -179,12 +179,8 @@ func setLegacyFieldsFromWebsocketMessageObservation(
 	legacyRecord.NodeQueryTimestamp = formatTimestampPbForBigQueryJSON(wsMessageObs.MessageTimestamp)
 	legacyRecord.NodeReceiveTimestamp = formatTimestampPbForBigQueryJSON(wsMessageObs.MessageTimestamp)
 
-	// TODO_INSPECT(@fredteumer): WebSocket messages have no request/response latency - using connection duration if available for analytics value
-	if wsMessageObs.ConnectionDurationMs != nil {
-		legacyRecord.endpointTripTime = float64(*wsMessageObs.ConnectionDurationMs) / 1000.0 // Convert ms to seconds
-	} else {
-		legacyRecord.endpointTripTime = 0
-	}
+	// TODO_INSPECT(@fredteumer): WebSocket messages have no request/response latency - using 0 as it does not apply
+	legacyRecord.endpointTripTime = 0
 
 	// Set endpoint address to the supplier address.
 	legacyRecord.NodeAddress = wsMessageObs.GetSupplier()
