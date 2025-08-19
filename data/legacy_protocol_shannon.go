@@ -137,7 +137,7 @@ func setLegacyFieldsFromWebsocketEndpointObservation(
 		// Calculate connection establishment time
 		legacyRecord.endpointTripTime = wsEndpointObs.ConnectionEstablishedTimestamp.AsTime().Sub(wsEndpointObs.ConnectionAttemptTimestamp.AsTime()).Seconds()
 	} else {
-		// TODO_INSPECT(@fredtumer): Failed connections have no response timestamp - using attempt timestamp maintains consistency with immediate HTTP failures
+		// TODO_INSPECT(@fredteumer): Failed connections have no response timestamp - using attempt timestamp maintains consistency with immediate HTTP failures
 		legacyRecord.NodeReceiveTimestamp = formatTimestampPbForBigQueryJSON(wsEndpointObs.ConnectionAttemptTimestamp)
 		legacyRecord.endpointTripTime = 0
 	}
@@ -155,7 +155,7 @@ func setLegacyFieldsFromWebsocketEndpointObservation(
 	// Set the endpoint domain field
 	legacyRecord.NodeDomain = endpointDomain
 
-	// TODO_INSPECT(@fredtumer): WebSocket connections lack HTTP-style methods - using identifier for analytics differentiation
+	// TODO_INSPECT(@fredteumer): WebSocket connections lack HTTP-style methods - using identifier for analytics differentiation
 	legacyRecord.ChainMethod = "websocket_connection"
 
 	return legacyRecord
@@ -175,11 +175,11 @@ func setLegacyFieldsFromWebsocketMessageObservation(
 	legacyRecord.ProtocolAppPublicKey = wsMessageObs.GetEndpointAppAddress()
 
 	// Set WebSocket message timestamp as both query and receive time
-	// TODO_INSPECT(@fredtumer): WebSocket messages lack separate request/response cycles - MessageTimestamp represents processing time
+	// TODO_INSPECT(@fredteumer): WebSocket messages lack separate request/response cycles - MessageTimestamp represents processing time
 	legacyRecord.NodeQueryTimestamp = formatTimestampPbForBigQueryJSON(wsMessageObs.MessageTimestamp)
 	legacyRecord.NodeReceiveTimestamp = formatTimestampPbForBigQueryJSON(wsMessageObs.MessageTimestamp)
 
-	// TODO_INSPECT(@fredtumer): WebSocket messages have no request/response latency - using connection duration if available for analytics value
+	// TODO_INSPECT(@fredteumer): WebSocket messages have no request/response latency - using connection duration if available for analytics value
 	if wsMessageObs.ConnectionDurationMs != nil {
 		legacyRecord.endpointTripTime = float64(*wsMessageObs.ConnectionDurationMs) / 1000.0 // Convert ms to seconds
 	} else {
@@ -199,10 +199,10 @@ func setLegacyFieldsFromWebsocketMessageObservation(
 	// Set the endpoint domain field
 	legacyRecord.NodeDomain = endpointDomain
 
-	// TODO_INSPECT(@fredtumer): WebSocket messages lack HTTP-style methods and JSON-RPC extraction is QoS-level - using identifier for analytics
+	// TODO_INSPECT(@fredteumer): WebSocket messages lack HTTP-style methods and JSON-RPC extraction is QoS-level - using identifier for analytics
 	legacyRecord.ChainMethod = "websocket_message"
 
-	// TODO_INSPECT(@fredtumer): Using MessagePayloadSize as closest equivalent to HTTP request size for bandwidth analytics
+	// TODO_INSPECT(@fredteumer): Using MessagePayloadSize as closest equivalent to HTTP request size for bandwidth analytics
 	legacyRecord.RequestDataSize = float64(wsMessageObs.GetMessagePayloadSize())
 
 	return legacyRecord
