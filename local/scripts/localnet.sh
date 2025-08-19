@@ -328,7 +328,7 @@ check_config_files() {
     if [ ! -f "./local/path/.config.yaml" ]; then
         echo -e "\n${RED}❌ Error: ./local/path/.config.yaml not found. Ensure you have a valid config YAML file at this location.${NC}\n"
         echo -e "  💡 For information about the PATH config YAML file, see the documentation at: "
-        echo -e "       ${CYAN}https://path.grove.city/develop/path/configurations_path${NC} "
+        echo -e "       ${CYAN}https://path.grove.city/develop/configs/gateway_config${NC} "
         echo -e "\n  🌿 Grove employees: you may find a valid ${BLUE}.config.yaml${NC} file on 1Password in the note called ${BLUE}\"PATH Localnet Config\"${NC}\n"
         exit 1
     fi
