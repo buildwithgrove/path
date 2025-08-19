@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -57,11 +58,12 @@ type websocketRequestContext struct {
 	// gatewayObservations stores gateway related observations.
 	gatewayObservations *observation.GatewayObservations
 
-	// // Bridge and connection management
-	// bridge WebsocketsBridge
-
 	// Channel for receiving message processing notifications from the bridge
 	messageObservationsChan chan *observation.RequestResponseObservations
+
+	// connectionStartTime tracks when the WebSocket connection was established
+	// Used to calculate ConnectionDurationMs in observations
+	connectionStartTime *time.Time
 }
 
 // InitFromHTTPRequest builds the required context for serving a WebSocket request.
@@ -197,6 +199,11 @@ func (wrc *websocketRequestContext) initializeWebsocketBridge(
 		return err
 	}
 
+	// Record the connection establishment time for duration tracking
+	now := time.Now()
+	wrc.connectionStartTime = &now
+	wrc.logger.Debug().Time("connection_start_time", now).Msg("WebSocket connection established successfully")
+
 	// Start listening for message processing notifications from the bridge.
 	go wrc.listenForMessageNotifications()
 
@@ -258,6 +265,10 @@ func (wrc *websocketRequestContext) ProcessEndpointWebsocketMessage(msgData []by
 		logger.Error().Err(err).Msg("❌ failed to perform protocol-level endpoint message processing")
 		return nil, nil, err
 	}
+
+	// Add connection duration to WebSocket message observations
+	wrc.updateWebsocketObservationsWithConnectionDuration(&protocolObservations)
+
 	messageObservations.Protocol = &protocolObservations
 
 	// TODO_IN_THIS_PR(@commoddity): process message using QoS context and update the message observations.
@@ -319,6 +330,11 @@ func (wrc *websocketRequestContext) initializeMessageObservations() *observation
 func (wrc *websocketRequestContext) BroadcastWebsocketConnectionRequestObservations(protocolObs *protocolobservations.Observations) {
 	wrc.updateGatewayObservations(nil)
 
+	// Add connection duration to WebSocket connection observations if available
+	if protocolObs != nil {
+		wrc.updateWebsocketObservationsWithConnectionDuration(protocolObs)
+	}
+
 	// Combine all observations into the standard RequestResponseObservations format
 	observations := &observation.RequestResponseObservations{
 		Gateway:  wrc.gatewayObservations,
@@ -332,6 +348,49 @@ func (wrc *websocketRequestContext) BroadcastWebsocketConnectionRequestObservati
 	}
 	if wrc.dataReporter != nil {
 		wrc.dataReporter.Publish(observations)
+	}
+}
+
+// getConnectionDurationMs calculates the WebSocket connection duration in milliseconds.
+// Returns nil if the connection start time hasn't been recorded yet.
+func (wrc *websocketRequestContext) getConnectionDurationMs() *int64 {
+	if wrc.connectionStartTime == nil {
+		return nil
+	}
+	durationMs := time.Since(*wrc.connectionStartTime).Milliseconds()
+	return &durationMs
+}
+
+// updateWebsocketObservationsWithConnectionDuration adds connection duration to WebSocket observations.
+// This updates both WebSocket endpoint and message observations with the calculated connection duration.
+func (wrc *websocketRequestContext) updateWebsocketObservationsWithConnectionDuration(protocolObs *protocolobservations.Observations) {
+	if protocolObs == nil || protocolObs.Shannon == nil {
+		return
+	}
+
+	connectionDurationMs := wrc.getConnectionDurationMs()
+	if connectionDurationMs == nil {
+		// Connection duration not available (e.g., connection not established yet)
+		return
+	}
+
+	// Update all Shannon observations with connection duration
+	for _, obs := range protocolObs.Shannon.Observations {
+		if obs == nil {
+			continue
+		}
+
+		// Update based on observation type
+		switch obsData := obs.ObservationData.(type) {
+		case *protocolobservations.ShannonRequestObservations_WebsocketEndpointObservation:
+			if obsData.WebsocketEndpointObservation != nil {
+				obsData.WebsocketEndpointObservation.ConnectionDurationMs = connectionDurationMs
+			}
+		case *protocolobservations.ShannonRequestObservations_WebsocketMessageObservation:
+			if obsData.WebsocketMessageObservation != nil {
+				obsData.WebsocketMessageObservation.ConnectionDurationMs = connectionDurationMs
+			}
+		}
 	}
 }
 
