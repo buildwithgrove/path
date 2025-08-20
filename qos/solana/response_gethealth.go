@@ -16,8 +16,8 @@ func responseUnmarshallerGetHealth(logger polylog.Logger, jsonrpcReq jsonrpc.Req
 	logger = logger.With("response_processor", "getHealth")
 
 	getHealthResponse := responseToGetHealth{
-		Logger:   logger,
-		Response: jsonrpcResp,
+		Logger:          logger,
+		jsonrpcResponse: jsonrpcResp,
 	}
 
 	// TODO_MVP(@adshmh): validate a `getHealth` request before sending it out to an endpoint.
@@ -58,7 +58,7 @@ type responseToGetHealth struct {
 	Logger polylog.Logger
 
 	// Response stores the JSONRPC response parsed from an endpoint's response bytes.
-	jsonrpc.Response
+	jsonrpcResponse jsonrpc.Response
 
 	// HealthResult stores the result field of a response to a `getHealth` request.
 	HealthResult string
@@ -69,7 +69,7 @@ type responseToGetHealth struct {
 func (r responseToGetHealth) GetObservation() qosobservations.SolanaEndpointObservation {
 	return qosobservations.SolanaEndpointObservation{
 		// Set the HTTP status code using the JSONRPC Response
-		HttpStatusCode: int32(r.Response.GetRecommendedHTTPStatusCode()),
+		HttpStatusCode: int32(r.jsonrpcResponse.GetRecommendedHTTPStatusCode()),
 		ResponseObservation: &qosobservations.SolanaEndpointObservation_GetHealthResponse{
 			GetHealthResponse: &qosobservations.SolanaGetHealthResponse{
 				Result: r.HealthResult,
@@ -86,5 +86,5 @@ func (r responseToGetHealth) GetObservation() qosobservations.SolanaEndpointObse
 //  3. An endpoint returns a valid JSONRPC response to a valid user request:
 //     This should be returned to the user as-is.
 func (r responseToGetHealth) GetJSONRPCResponse() jsonrpc.Response {
-	return r.Response
+	return r.jsonrpcResponse
 }

@@ -42,8 +42,8 @@ func responseUnmarshallerGeneric(
 	}
 
 	return responseGeneric{
-		Logger:   logger,
-		Response: response,
+		Logger:          logger,
+		jsonrpcResponse: response,
 	}
 }
 
@@ -51,7 +51,10 @@ func responseUnmarshallerGeneric(
 // Used when no validation/observation applies to the request's JSON-RPC method.
 type responseGeneric struct {
 	Logger polylog.Logger
-	jsonrpc.Response
+
+	// JSONRPC response parsed from endpoint payload.
+	jsonrpcResponse jsonrpc.Response
+
 	// jsonrpcResponseValidationError tracks JSON-RPC validation errors if response unmarshaling failed
 	jsonrpcResponseValidationError *qosobservations.JsonRpcResponseValidationError
 }
@@ -62,7 +65,7 @@ type responseGeneric struct {
 func (r responseGeneric) GetObservation() qosobservations.SolanaEndpointObservation {
 	// Build an observation from the stored JSONRPC response.
 	unrecognizedResponse := &qosobservations.SolanaUnrecognizedResponse{
-		JsonrpcResponse: r.Response.GetObservation(),
+		JsonrpcResponse: r.jsonrpcResponse.GetObservation(),
 	}
 
 	// Include validation error if present
@@ -72,7 +75,7 @@ func (r responseGeneric) GetObservation() qosobservations.SolanaEndpointObservat
 
 	return qosobservations.SolanaEndpointObservation{
 		// Set the HTTP status code using the JSONRPC Response
-		HttpStatusCode: int32(r.Response.GetRecommendedHTTPStatusCode()),
+		HttpStatusCode: int32(r.jsonrpcResponse.GetRecommendedHTTPStatusCode()),
 		ResponseObservation: &qosobservations.SolanaEndpointObservation_UnrecognizedResponse{
 			UnrecognizedResponse: unrecognizedResponse,
 		},
@@ -81,7 +84,7 @@ func (r responseGeneric) GetObservation() qosobservations.SolanaEndpointObservat
 
 // GetJSONRPCResponse returns response payload.
 func (r responseGeneric) GetJSONRPCResponse() jsonrpc.Response {
-	return r.Response
+	return r.jsonrpcResponse
 }
 
 // getGenericJSONRPCErrResponse returns generic response with JSON-RPC error and validation error observation.
@@ -104,7 +107,7 @@ func getGenericJSONRPCErrResponse(
 	}
 
 	return responseGeneric{
-		Response:                       jsonrpc.GetErrorResponse(id, errCodeUnmarshaling, errMsgUnmarshaling, errData),
+		jsonrpcResponse:                jsonrpc.GetErrorResponse(id, errCodeUnmarshaling, errMsgUnmarshaling, errData),
 		jsonrpcResponseValidationError: jsonrpcResponseValidationError,
 	}
 }
