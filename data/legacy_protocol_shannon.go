@@ -54,8 +54,8 @@ func setLegacyFieldsFromShannonProtocolObservations(
 	switch obsData := observations.GetObservationData().(type) {
 	case *protocolobservation.ShannonRequestObservations_HttpObservations:
 		return setLegacyFieldsFromHTTPObservations(logger, legacyRecord, obsData.HttpObservations)
-	case *protocolobservation.ShannonRequestObservations_WebsocketEndpointObservation:
-		return setLegacyFieldsFromWebsocketEndpointObservation(logger, legacyRecord, obsData.WebsocketEndpointObservation)
+	case *protocolobservation.ShannonRequestObservations_WebsocketConnectionObservation:
+		return setLegacyFieldsFromWebsocketConnectionObservation(logger, legacyRecord, obsData.WebsocketConnectionObservation)
 	case *protocolobservation.ShannonRequestObservations_WebsocketMessageObservation:
 		return setLegacyFieldsFromWebsocketMessageObservation(logger, legacyRecord, obsData.WebsocketMessageObservation)
 	default:
@@ -115,47 +115,40 @@ func setLegacyFieldsFromHTTPObservations(
 	return legacyRecord
 }
 
-// setLegacyFieldsFromWebsocketEndpointObservation populates legacy record with WebSocket connection observation data.
-// This handles WebSocket connection establishment (not individual messages).
-func setLegacyFieldsFromWebsocketEndpointObservation(
+// setLegacyFieldsFromWebsocketConnectionObservation populates legacy record with WebSocket connection observation data.
+// This handles WebSocket connection lifecycle (not individual messages).
+func setLegacyFieldsFromWebsocketConnectionObservation(
 	logger polylog.Logger,
 	legacyRecord *legacyRecord,
-	wsEndpointObs *protocolobservation.ShannonWebsocketEndpointObservation,
+	wsConnectionObs *protocolobservation.ShannonWebsocketConnectionObservation,
 ) *legacyRecord {
 	// Update error fields if a connection error has occurred.
-	legacyRecord = setLegacyErrFieldsFromWebsocketEndpointError(legacyRecord, wsEndpointObs)
+	legacyRecord = setLegacyErrFieldsFromWebsocketConnectionError(legacyRecord, wsConnectionObs)
 
 	// Set application address
-	legacyRecord.ProtocolAppPublicKey = wsEndpointObs.GetEndpointAppAddress()
+	legacyRecord.ProtocolAppPublicKey = wsConnectionObs.GetEndpointAppAddress()
 
-	// Set WebSocket connection timestamps
-	legacyRecord.NodeQueryTimestamp = formatTimestampPbForBigQueryJSON(wsEndpointObs.ConnectionAttemptTimestamp)
-
-	// Use connection established timestamp as "receive" time if available
-	if wsEndpointObs.ConnectionEstablishedTimestamp != nil {
-		legacyRecord.NodeReceiveTimestamp = formatTimestampPbForBigQueryJSON(wsEndpointObs.ConnectionEstablishedTimestamp)
-		// Calculate connection establishment time
-		legacyRecord.endpointTripTime = wsEndpointObs.ConnectionEstablishedTimestamp.AsTime().Sub(wsEndpointObs.ConnectionAttemptTimestamp.AsTime()).Seconds()
-	} else {
-		// TODO_INSPECT(@fredteumer): Failed connections have no response timestamp - using attempt timestamp maintains consistency with immediate HTTP failures
-		legacyRecord.NodeReceiveTimestamp = formatTimestampPbForBigQueryJSON(wsEndpointObs.ConnectionAttemptTimestamp)
-		legacyRecord.endpointTripTime = 0
-	}
+	// WebSocket connections don't have separate query/response timestamps at protocol level
+	// Connection timing is tracked at the gateway level instead
+	// Set both timestamps to empty strings to indicate they don't apply
+	legacyRecord.NodeQueryTimestamp = ""
+	legacyRecord.NodeReceiveTimestamp = ""
+	legacyRecord.endpointTripTime = 0
 
 	// Set endpoint address to the supplier address.
-	legacyRecord.NodeAddress = wsEndpointObs.GetSupplier()
+	legacyRecord.NodeAddress = wsConnectionObs.GetSupplier()
 
 	// Extract the endpoint's domain from its URL.
-	endpointDomain, err := shannonmetrics.ExtractDomainOrHost(wsEndpointObs.GetEndpointUrl())
+	endpointDomain, err := shannonmetrics.ExtractDomainOrHost(wsConnectionObs.GetEndpointUrl())
 	if err != nil {
-		logger.With("endpoint_url", wsEndpointObs.EndpointUrl).Warn().Err(err).Msg("Could not extract domain from WebSocket endpoint URL")
+		logger.With("endpoint_url", wsConnectionObs.EndpointUrl).Warn().Err(err).Msg("Could not extract domain from WebSocket endpoint URL")
 		return legacyRecord
 	}
 
 	// Set the endpoint domain field
 	legacyRecord.NodeDomain = endpointDomain
 
-	// TODO_INSPECT(@fredteumer): WebSocket connections lack HTTP-style methods - using identifier for analytics differentiation
+	// WebSocket connections lack HTTP-style methods - using identifier for analytics differentiation
 	legacyRecord.ChainMethod = "websocket_connection"
 
 	return legacyRecord
@@ -174,12 +167,12 @@ func setLegacyFieldsFromWebsocketMessageObservation(
 	// Set application address
 	legacyRecord.ProtocolAppPublicKey = wsMessageObs.GetEndpointAppAddress()
 
-	// Set WebSocket message timestamp as both query and receive time
-	// TODO_INSPECT(@fredteumer): WebSocket messages lack separate request/response cycles - MessageTimestamp represents processing time
-	legacyRecord.NodeQueryTimestamp = formatTimestampPbForBigQueryJSON(wsMessageObs.MessageTimestamp)
-	legacyRecord.NodeReceiveTimestamp = formatTimestampPbForBigQueryJSON(wsMessageObs.MessageTimestamp)
+	// WebSocket messages lack separate request/response cycles - timestamps don't apply
+	// Set both timestamps to empty strings as requested by @fredteumer
+	legacyRecord.NodeQueryTimestamp = ""
+	legacyRecord.NodeReceiveTimestamp = ""
 
-	// TODO_INSPECT(@fredteumer): WebSocket messages have no request/response latency - using 0 as it does not apply
+	// WebSocket messages have no request/response latency - set to 0 as it doesn't apply
 	legacyRecord.endpointTripTime = 0
 
 	// Set endpoint address to the supplier address.
@@ -195,21 +188,21 @@ func setLegacyFieldsFromWebsocketMessageObservation(
 	// Set the endpoint domain field
 	legacyRecord.NodeDomain = endpointDomain
 
-	// TODO_INSPECT(@fredteumer): WebSocket messages lack HTTP-style methods and JSON-RPC extraction is QoS-level - using identifier for analytics
+	// WebSocket messages lack HTTP-style methods and JSON-RPC extraction is QoS-level - using identifier for analytics
 	legacyRecord.ChainMethod = "websocket_message"
 
-	// TODO_INSPECT(@fredteumer): Using MessagePayloadSize as closest equivalent to HTTP request size for bandwidth analytics
+	// Using MessagePayloadSize as closest equivalent to HTTP request size for bandwidth analytics
 	legacyRecord.RequestDataSize = float64(wsMessageObs.GetMessagePayloadSize())
 
 	return legacyRecord
 }
 
-// setLegacyErrFieldsFromWebsocketEndpointError populates error fields in legacy record from WebSocket endpoint error data.
-func setLegacyErrFieldsFromWebsocketEndpointError(
+// setLegacyErrFieldsFromWebsocketConnectionError populates error fields in legacy record from WebSocket connection error data.
+func setLegacyErrFieldsFromWebsocketConnectionError(
 	legacyRecord *legacyRecord,
-	wsEndpointObs *protocolobservation.ShannonWebsocketEndpointObservation,
+	wsConnectionObs *protocolobservation.ShannonWebsocketConnectionObservation,
 ) *legacyRecord {
-	endpointErr := wsEndpointObs.ErrorType
+	endpointErr := wsConnectionObs.ErrorType
 	// No endpoint error has occurred: no error processing required.
 	if endpointErr == nil {
 		return legacyRecord
@@ -220,12 +213,12 @@ func setLegacyErrFieldsFromWebsocketEndpointError(
 
 	// Build the endpoint error details, including any sanctions.
 	var errMsg string
-	if errDetails := wsEndpointObs.GetErrorDetails(); errDetails != "" {
+	if errDetails := wsConnectionObs.GetErrorDetails(); errDetails != "" {
 		errMsg = fmt.Sprintf("error details: %s", errDetails)
 	}
 
 	// Add the sanction details to the error message.
-	if endpointSanction := wsEndpointObs.RecommendedSanction; endpointSanction != nil {
+	if endpointSanction := wsConnectionObs.RecommendedSanction; endpointSanction != nil {
 		errMsg = fmt.Sprintf("%s, sanction: %s", errMsg, endpointSanction.String())
 	}
 

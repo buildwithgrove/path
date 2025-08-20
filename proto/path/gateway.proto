@@ -51,9 +51,13 @@ message GatewayObservations {
   string service_id = 3;
 
   // received_time is when the request was initially received
+  //   - For HTTP requests: when the HTTP request was received
+  //   - For WebSocket requests: when the WebSocket connection was established
   google.protobuf.Timestamp received_time = 4;
 
   // completed_time is when request processing finished and response was returned
+  //   - For HTTP requests: when the HTTP response was sent
+  //   - For WebSocket requests: when the WebSocket connection was terminated
   google.protobuf.Timestamp completed_time = 5;
 
   // response_size is the size in bytes of the response payload

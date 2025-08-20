@@ -145,8 +145,8 @@ message ShannonRelayMinerError {
   string message = 3;
 }
 
-// ShannonWebsocketEndpointObservation stores observations from a WebSocket connection establishment
-message ShannonWebsocketEndpointObservation {
+// ShannonWebsocketConnectionObservation stores observations from a WebSocket connection lifecycle
+message ShannonWebsocketConnectionObservation {
   // Supplier of the endpoint handling the WebSocket connection
   string supplier = 1;
 
@@ -168,35 +168,20 @@ message ShannonWebsocketEndpointObservation {
   // session end height
   int64 session_end_height = 7;
 
-  // Timestamp marking the WebSocket connection establishment attempt
-  google.protobuf.Timestamp connection_attempt_timestamp = 8;
-
-  // Timestamp marking successful WebSocket connection establishment
-  // Only set if the connection was successful
-  optional google.protobuf.Timestamp connection_established_timestamp = 9;
-
-  // Timestamp marking WebSocket connection termination
-  // Only set if the connection was terminated during observation period
-  optional google.protobuf.Timestamp connection_terminated_timestamp = 10;
-
-  // Duration of the WebSocket connection in milliseconds
-  // Only set if connection was established and terminated during observation
-  optional int64 connection_duration_ms = 11;
-
-  // Error type if WebSocket connection establishment failed
-  optional ShannonEndpointErrorType error_type = 12;
+  // Error type if WebSocket connection establishment or operation failed
+  optional ShannonEndpointErrorType error_type = 8;
 
   // Additional error details when available
-  optional string error_details = 13;
+  optional string error_details = 9;
 
   // Recommended sanction type based on the error
-  optional ShannonSanctionType recommended_sanction = 14;
+  optional ShannonSanctionType recommended_sanction = 10;
 
-  // RelayMiner error details if the endpoint returned a RelayMinerError during connection
-  optional ShannonRelayMinerError relay_miner_error = 15;
+  // RelayMiner error details if the endpoint returned a RelayMinerError during connection lifecycle
+  optional ShannonRelayMinerError relay_miner_error = 11;
 
   // Tracks whether the endpoint is a fallback endpoint
-  bool is_fallback_endpoint = 16;
+  bool is_fallback_endpoint = 12;
 }
 
 // ShannonWebsocketMessageObservation stores observations from individual WebSocket messages
@@ -229,23 +214,20 @@ message ShannonWebsocketMessageObservation {
   // Size of the message payload in bytes
   int64 message_payload_size = 9;
 
-  // Duration of the WebSocket connection in milliseconds
-  optional int64 connection_duration_ms = 10;
-
   // Error type if message processing failed
-  optional ShannonEndpointErrorType error_type = 11;
+  optional ShannonEndpointErrorType error_type = 10;
 
   // Additional error details when available
-  optional string error_details = 12;
+  optional string error_details = 11;
 
   // Recommended sanction type based on the error
-  optional ShannonSanctionType recommended_sanction = 13;
+  optional ShannonSanctionType recommended_sanction = 12;
 
   // RelayMiner error details if the endpoint returned a RelayMinerError for this message
-  optional ShannonRelayMinerError relay_miner_error = 14;
+  optional ShannonRelayMinerError relay_miner_error = 13;
 
   // Tracks whether the endpoint is a fallback endpoint
-  bool is_fallback_endpoint = 15;
+  bool is_fallback_endpoint = 14;
 }
 
 // ShannonRequestObservations represents observations collected during the processing
@@ -262,8 +244,8 @@ message ShannonRequestObservations {
     // HTTP endpoint observations (multiple possible due to retries)
     ShannonHTTPEndpointObservations http_observations = 3;
     
-    // Single WebSocket connection establishment observation
-    ShannonWebsocketEndpointObservation websocket_endpoint_observation = 4;
+    // Single WebSocket connection lifecycle observation
+    ShannonWebsocketConnectionObservation websocket_connection_observation = 4;
     
     // Single WebSocket message observation
     ShannonWebsocketMessageObservation websocket_message_observation = 5;

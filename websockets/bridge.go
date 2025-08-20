@@ -70,7 +70,7 @@ type bridge struct {
 }
 
 // StartBridge creates a new Bridge instance with connections to both client and endpoint
-// and starts the bridge in a goroutine to avoid blocking the main thread.
+// and starts the bridge. Returns a channel that will be closed when the bridge shuts down.
 func StartBridge(
 	ctx context.Context,
 	logger polylog.Logger,
@@ -80,7 +80,7 @@ func StartBridge(
 	headers http.Header,
 	websocketMessageProcessor WebsocketMessageProcessor,
 	messageObservationsChan chan *observation.RequestResponseObservations,
-) error {
+) (<-chan struct{}, error) {
 	logger = logger.With("component", "websocket_bridge")
 
 	// Create a bridge-specific context that can be canceled from connections
@@ -92,7 +92,7 @@ func StartBridge(
 	if err != nil {
 		logger.Error().Err(err).Msg("❌ error upgrading client websocket connection")
 		cancelCtx() // Clean up context on error
-		return fmt.Errorf("createWebsocketBridge: %s", err.Error())
+		return nil, fmt.Errorf("createWebsocketBridge: %s", err.Error())
 	}
 
 	// Connect to the Relay Miner endpoint
@@ -100,11 +100,14 @@ func StartBridge(
 	if err != nil {
 		logger.Error().Err(err).Msg("❌ error connecting to websocket endpoint")
 		cancelCtx() // Clean up context on error
-		return fmt.Errorf("createWebsocketBridge: %s", err.Error())
+		return nil, fmt.Errorf("createWebsocketBridge: %s", err.Error())
 	}
 
 	// Create a channel to pass messages between the Client and Endpoint
 	msgChan := make(chan message)
+
+	// Create a completion channel that will be closed when the bridge shuts down
+	completionChan := make(chan struct{})
 
 	// Create bridge instance
 	b := &bridge{
@@ -118,7 +121,7 @@ func StartBridge(
 	}
 	if err := b.validateComponents(); err != nil {
 		cancelCtx() // Clean up context on error
-		return fmt.Errorf("❌ invalid bridge components: %w", err)
+		return nil, fmt.Errorf("❌ invalid bridge components: %w", err)
 	}
 
 	// Initialize connections with bridge context and cancel function
@@ -139,14 +142,14 @@ func StartBridge(
 		msgChan,
 	)
 
-	// Start the bridge in a goroutine to avoid blocking the main thread.
-	go b.start()
+	// Start the bridge in a goroutine
+	go func() {
+		defer close(completionChan) // Signal completion when bridge shuts down
+		b.start()
+	}()
 
-	// Note: We don't call cancelCtx() here because the bridge context should remain active
-	// until the bridge shuts down naturally (client disconnect, error, etc.)
-	// The context will be cancelled by the connections when they detect disconnection
-
-	return nil
+	// Return the completion channel so the caller can wait for bridge shutdown
+	return completionChan, nil
 }
 
 // validateComponents ensures the Bridge is not created with nil components.
