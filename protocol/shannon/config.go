@@ -208,9 +208,9 @@ func (c FullNodeConfig) Validate() error {
 	return nil
 }
 
-// getServiceFallbacks returns the fallback endpoint information for each
+// getServiceFallbackMap returns the fallback endpoint information for each
 // service ID from the YAML config, including the SendAllTraffic setting.
-func (gc GatewayConfig) getServiceFallbacks() map[protocol.ServiceID]serviceFallback {
+func (gc GatewayConfig) getServiceFallbackMap() map[protocol.ServiceID]serviceFallback {
 	configs := make(map[protocol.ServiceID]serviceFallback, len(gc.ServiceFallback))
 
 	for _, serviceFallbackConfig := range gc.ServiceFallback {
