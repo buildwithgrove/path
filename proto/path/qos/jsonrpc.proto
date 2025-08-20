@@ -22,11 +22,12 @@ message JsonRpcResponse {
   // Must match the id value from the corresponding request
   string id = 1;
 
-  // JSON-serializable response data
-  string result = 2;
+  // A preview of the JSONRPC response's `result` field.
+  // It may have been truncated to reduce message size.
+  string result_preview = 2;
 
   // Error details, if the request failed
-  optional JsonRpcResponseError err = 3;
+  optional JsonRpcResponseError error = 3;
 
   // Note: This message captures only essential JSON-RPC fields.
   // Add fields as needed.
