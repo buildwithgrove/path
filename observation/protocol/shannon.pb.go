@@ -472,8 +472,8 @@ func (x *ShannonRelayMinerError) GetMessage() string {
 	return ""
 }
 
-// ShannonWebsocketEndpointObservation stores observations from a WebSocket connection establishment
-type ShannonWebsocketEndpointObservation struct {
+// ShannonWebsocketConnectionObservation stores observations from a WebSocket connection lifecycle
+type ShannonWebsocketConnectionObservation struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Supplier of the endpoint handling the WebSocket connection
 	Supplier string `protobuf:"bytes,1,opt,name=supplier,proto3" json:"supplier,omitempty"`
@@ -489,45 +489,34 @@ type ShannonWebsocketEndpointObservation struct {
 	SessionStartHeight int64 `protobuf:"varint,6,opt,name=session_start_height,json=sessionStartHeight,proto3" json:"session_start_height,omitempty"`
 	// session end height
 	SessionEndHeight int64 `protobuf:"varint,7,opt,name=session_end_height,json=sessionEndHeight,proto3" json:"session_end_height,omitempty"`
-	// Timestamp marking the WebSocket connection establishment attempt
-	ConnectionAttemptTimestamp *timestamppb.Timestamp `protobuf:"bytes,8,opt,name=connection_attempt_timestamp,json=connectionAttemptTimestamp,proto3" json:"connection_attempt_timestamp,omitempty"`
-	// Timestamp marking successful WebSocket connection establishment
-	// Only set if the connection was successful
-	ConnectionEstablishedTimestamp *timestamppb.Timestamp `protobuf:"bytes,9,opt,name=connection_established_timestamp,json=connectionEstablishedTimestamp,proto3,oneof" json:"connection_established_timestamp,omitempty"`
-	// Timestamp marking WebSocket connection termination
-	// Only set if the connection was terminated during observation period
-	ConnectionTerminatedTimestamp *timestamppb.Timestamp `protobuf:"bytes,10,opt,name=connection_terminated_timestamp,json=connectionTerminatedTimestamp,proto3,oneof" json:"connection_terminated_timestamp,omitempty"`
-	// Duration of the WebSocket connection in milliseconds
-	// Only set if connection was established and terminated during observation
-	ConnectionDurationMs *int64 `protobuf:"varint,11,opt,name=connection_duration_ms,json=connectionDurationMs,proto3,oneof" json:"connection_duration_ms,omitempty"`
-	// Error type if WebSocket connection establishment failed
-	ErrorType *ShannonEndpointErrorType `protobuf:"varint,12,opt,name=error_type,json=errorType,proto3,enum=path.protocol.ShannonEndpointErrorType,oneof" json:"error_type,omitempty"`
+	// Error type if WebSocket connection establishment or operation failed
+	ErrorType *ShannonEndpointErrorType `protobuf:"varint,8,opt,name=error_type,json=errorType,proto3,enum=path.protocol.ShannonEndpointErrorType,oneof" json:"error_type,omitempty"`
 	// Additional error details when available
-	ErrorDetails *string `protobuf:"bytes,13,opt,name=error_details,json=errorDetails,proto3,oneof" json:"error_details,omitempty"`
+	ErrorDetails *string `protobuf:"bytes,9,opt,name=error_details,json=errorDetails,proto3,oneof" json:"error_details,omitempty"`
 	// Recommended sanction type based on the error
-	RecommendedSanction *ShannonSanctionType `protobuf:"varint,14,opt,name=recommended_sanction,json=recommendedSanction,proto3,enum=path.protocol.ShannonSanctionType,oneof" json:"recommended_sanction,omitempty"`
-	// RelayMiner error details if the endpoint returned a RelayMinerError during connection
-	RelayMinerError *ShannonRelayMinerError `protobuf:"bytes,15,opt,name=relay_miner_error,json=relayMinerError,proto3,oneof" json:"relay_miner_error,omitempty"`
+	RecommendedSanction *ShannonSanctionType `protobuf:"varint,10,opt,name=recommended_sanction,json=recommendedSanction,proto3,enum=path.protocol.ShannonSanctionType,oneof" json:"recommended_sanction,omitempty"`
+	// RelayMiner error details if the endpoint returned a RelayMinerError during connection lifecycle
+	RelayMinerError *ShannonRelayMinerError `protobuf:"bytes,11,opt,name=relay_miner_error,json=relayMinerError,proto3,oneof" json:"relay_miner_error,omitempty"`
 	// Tracks whether the endpoint is a fallback endpoint
-	IsFallbackEndpoint bool `protobuf:"varint,16,opt,name=is_fallback_endpoint,json=isFallbackEndpoint,proto3" json:"is_fallback_endpoint,omitempty"`
+	IsFallbackEndpoint bool `protobuf:"varint,12,opt,name=is_fallback_endpoint,json=isFallbackEndpoint,proto3" json:"is_fallback_endpoint,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
 
-func (x *ShannonWebsocketEndpointObservation) Reset() {
-	*x = ShannonWebsocketEndpointObservation{}
+func (x *ShannonWebsocketConnectionObservation) Reset() {
+	*x = ShannonWebsocketConnectionObservation{}
 	mi := &file_path_protocol_shannon_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *ShannonWebsocketEndpointObservation) String() string {
+func (x *ShannonWebsocketConnectionObservation) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*ShannonWebsocketEndpointObservation) ProtoMessage() {}
+func (*ShannonWebsocketConnectionObservation) ProtoMessage() {}
 
-func (x *ShannonWebsocketEndpointObservation) ProtoReflect() protoreflect.Message {
+func (x *ShannonWebsocketConnectionObservation) ProtoReflect() protoreflect.Message {
 	mi := &file_path_protocol_shannon_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -539,117 +528,89 @@ func (x *ShannonWebsocketEndpointObservation) ProtoReflect() protoreflect.Messag
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use ShannonWebsocketEndpointObservation.ProtoReflect.Descriptor instead.
-func (*ShannonWebsocketEndpointObservation) Descriptor() ([]byte, []int) {
+// Deprecated: Use ShannonWebsocketConnectionObservation.ProtoReflect.Descriptor instead.
+func (*ShannonWebsocketConnectionObservation) Descriptor() ([]byte, []int) {
 	return file_path_protocol_shannon_proto_rawDescGZIP(), []int{2}
 }
 
-func (x *ShannonWebsocketEndpointObservation) GetSupplier() string {
+func (x *ShannonWebsocketConnectionObservation) GetSupplier() string {
 	if x != nil {
 		return x.Supplier
 	}
 	return ""
 }
 
-func (x *ShannonWebsocketEndpointObservation) GetEndpointUrl() string {
+func (x *ShannonWebsocketConnectionObservation) GetEndpointUrl() string {
 	if x != nil {
 		return x.EndpointUrl
 	}
 	return ""
 }
 
-func (x *ShannonWebsocketEndpointObservation) GetEndpointAppAddress() string {
+func (x *ShannonWebsocketConnectionObservation) GetEndpointAppAddress() string {
 	if x != nil {
 		return x.EndpointAppAddress
 	}
 	return ""
 }
 
-func (x *ShannonWebsocketEndpointObservation) GetSessionServiceId() string {
+func (x *ShannonWebsocketConnectionObservation) GetSessionServiceId() string {
 	if x != nil {
 		return x.SessionServiceId
 	}
 	return ""
 }
 
-func (x *ShannonWebsocketEndpointObservation) GetSessionId() string {
+func (x *ShannonWebsocketConnectionObservation) GetSessionId() string {
 	if x != nil {
 		return x.SessionId
 	}
 	return ""
 }
 
-func (x *ShannonWebsocketEndpointObservation) GetSessionStartHeight() int64 {
+func (x *ShannonWebsocketConnectionObservation) GetSessionStartHeight() int64 {
 	if x != nil {
 		return x.SessionStartHeight
 	}
 	return 0
 }
 
-func (x *ShannonWebsocketEndpointObservation) GetSessionEndHeight() int64 {
+func (x *ShannonWebsocketConnectionObservation) GetSessionEndHeight() int64 {
 	if x != nil {
 		return x.SessionEndHeight
 	}
 	return 0
 }
 
-func (x *ShannonWebsocketEndpointObservation) GetConnectionAttemptTimestamp() *timestamppb.Timestamp {
-	if x != nil {
-		return x.ConnectionAttemptTimestamp
-	}
-	return nil
-}
-
-func (x *ShannonWebsocketEndpointObservation) GetConnectionEstablishedTimestamp() *timestamppb.Timestamp {
-	if x != nil {
-		return x.ConnectionEstablishedTimestamp
-	}
-	return nil
-}
-
-func (x *ShannonWebsocketEndpointObservation) GetConnectionTerminatedTimestamp() *timestamppb.Timestamp {
-	if x != nil {
-		return x.ConnectionTerminatedTimestamp
-	}
-	return nil
-}
-
-func (x *ShannonWebsocketEndpointObservation) GetConnectionDurationMs() int64 {
-	if x != nil && x.ConnectionDurationMs != nil {
-		return *x.ConnectionDurationMs
-	}
-	return 0
-}
-
-func (x *ShannonWebsocketEndpointObservation) GetErrorType() ShannonEndpointErrorType {
+func (x *ShannonWebsocketConnectionObservation) GetErrorType() ShannonEndpointErrorType {
 	if x != nil && x.ErrorType != nil {
 		return *x.ErrorType
 	}
 	return ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_UNSPECIFIED
 }
 
-func (x *ShannonWebsocketEndpointObservation) GetErrorDetails() string {
+func (x *ShannonWebsocketConnectionObservation) GetErrorDetails() string {
 	if x != nil && x.ErrorDetails != nil {
 		return *x.ErrorDetails
 	}
 	return ""
 }
 
-func (x *ShannonWebsocketEndpointObservation) GetRecommendedSanction() ShannonSanctionType {
+func (x *ShannonWebsocketConnectionObservation) GetRecommendedSanction() ShannonSanctionType {
 	if x != nil && x.RecommendedSanction != nil {
 		return *x.RecommendedSanction
 	}
 	return ShannonSanctionType_SHANNON_SANCTION_UNSPECIFIED
 }
 
-func (x *ShannonWebsocketEndpointObservation) GetRelayMinerError() *ShannonRelayMinerError {
+func (x *ShannonWebsocketConnectionObservation) GetRelayMinerError() *ShannonRelayMinerError {
 	if x != nil {
 		return x.RelayMinerError
 	}
 	return nil
 }
 
-func (x *ShannonWebsocketEndpointObservation) GetIsFallbackEndpoint() bool {
+func (x *ShannonWebsocketConnectionObservation) GetIsFallbackEndpoint() bool {
 	if x != nil {
 		return x.IsFallbackEndpoint
 	}
@@ -678,18 +639,16 @@ type ShannonWebsocketMessageObservation struct {
 	MessageTimestamp *timestamppb.Timestamp `protobuf:"bytes,8,opt,name=message_timestamp,json=messageTimestamp,proto3" json:"message_timestamp,omitempty"`
 	// Size of the message payload in bytes
 	MessagePayloadSize int64 `protobuf:"varint,9,opt,name=message_payload_size,json=messagePayloadSize,proto3" json:"message_payload_size,omitempty"`
-	// Duration of the WebSocket connection in milliseconds
-	ConnectionDurationMs *int64 `protobuf:"varint,10,opt,name=connection_duration_ms,json=connectionDurationMs,proto3,oneof" json:"connection_duration_ms,omitempty"`
 	// Error type if message processing failed
-	ErrorType *ShannonEndpointErrorType `protobuf:"varint,11,opt,name=error_type,json=errorType,proto3,enum=path.protocol.ShannonEndpointErrorType,oneof" json:"error_type,omitempty"`
+	ErrorType *ShannonEndpointErrorType `protobuf:"varint,10,opt,name=error_type,json=errorType,proto3,enum=path.protocol.ShannonEndpointErrorType,oneof" json:"error_type,omitempty"`
 	// Additional error details when available
-	ErrorDetails *string `protobuf:"bytes,12,opt,name=error_details,json=errorDetails,proto3,oneof" json:"error_details,omitempty"`
+	ErrorDetails *string `protobuf:"bytes,11,opt,name=error_details,json=errorDetails,proto3,oneof" json:"error_details,omitempty"`
 	// Recommended sanction type based on the error
-	RecommendedSanction *ShannonSanctionType `protobuf:"varint,13,opt,name=recommended_sanction,json=recommendedSanction,proto3,enum=path.protocol.ShannonSanctionType,oneof" json:"recommended_sanction,omitempty"`
+	RecommendedSanction *ShannonSanctionType `protobuf:"varint,12,opt,name=recommended_sanction,json=recommendedSanction,proto3,enum=path.protocol.ShannonSanctionType,oneof" json:"recommended_sanction,omitempty"`
 	// RelayMiner error details if the endpoint returned a RelayMinerError for this message
-	RelayMinerError *ShannonRelayMinerError `protobuf:"bytes,14,opt,name=relay_miner_error,json=relayMinerError,proto3,oneof" json:"relay_miner_error,omitempty"`
+	RelayMinerError *ShannonRelayMinerError `protobuf:"bytes,13,opt,name=relay_miner_error,json=relayMinerError,proto3,oneof" json:"relay_miner_error,omitempty"`
 	// Tracks whether the endpoint is a fallback endpoint
-	IsFallbackEndpoint bool `protobuf:"varint,15,opt,name=is_fallback_endpoint,json=isFallbackEndpoint,proto3" json:"is_fallback_endpoint,omitempty"`
+	IsFallbackEndpoint bool `protobuf:"varint,14,opt,name=is_fallback_endpoint,json=isFallbackEndpoint,proto3" json:"is_fallback_endpoint,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -787,13 +746,6 @@ func (x *ShannonWebsocketMessageObservation) GetMessagePayloadSize() int64 {
 	return 0
 }
 
-func (x *ShannonWebsocketMessageObservation) GetConnectionDurationMs() int64 {
-	if x != nil && x.ConnectionDurationMs != nil {
-		return *x.ConnectionDurationMs
-	}
-	return 0
-}
-
 func (x *ShannonWebsocketMessageObservation) GetErrorType() ShannonEndpointErrorType {
 	if x != nil && x.ErrorType != nil {
 		return *x.ErrorType
@@ -842,7 +794,7 @@ type ShannonRequestObservations struct {
 	// Types that are valid to be assigned to ObservationData:
 	//
 	//	*ShannonRequestObservations_HttpObservations
-	//	*ShannonRequestObservations_WebsocketEndpointObservation
+	//	*ShannonRequestObservations_WebsocketConnectionObservation
 	//	*ShannonRequestObservations_WebsocketMessageObservation
 	ObservationData isShannonRequestObservations_ObservationData `protobuf_oneof:"observation_data"`
 	unknownFields   protoimpl.UnknownFields
@@ -909,10 +861,10 @@ func (x *ShannonRequestObservations) GetHttpObservations() *ShannonHTTPEndpointO
 	return nil
 }
 
-func (x *ShannonRequestObservations) GetWebsocketEndpointObservation() *ShannonWebsocketEndpointObservation {
+func (x *ShannonRequestObservations) GetWebsocketConnectionObservation() *ShannonWebsocketConnectionObservation {
 	if x != nil {
-		if x, ok := x.ObservationData.(*ShannonRequestObservations_WebsocketEndpointObservation); ok {
-			return x.WebsocketEndpointObservation
+		if x, ok := x.ObservationData.(*ShannonRequestObservations_WebsocketConnectionObservation); ok {
+			return x.WebsocketConnectionObservation
 		}
 	}
 	return nil
@@ -936,9 +888,9 @@ type ShannonRequestObservations_HttpObservations struct {
 	HttpObservations *ShannonHTTPEndpointObservations `protobuf:"bytes,3,opt,name=http_observations,json=httpObservations,proto3,oneof"`
 }
 
-type ShannonRequestObservations_WebsocketEndpointObservation struct {
-	// Single WebSocket connection establishment observation
-	WebsocketEndpointObservation *ShannonWebsocketEndpointObservation `protobuf:"bytes,4,opt,name=websocket_endpoint_observation,json=websocketEndpointObservation,proto3,oneof"`
+type ShannonRequestObservations_WebsocketConnectionObservation struct {
+	// Single WebSocket connection lifecycle observation
+	WebsocketConnectionObservation *ShannonWebsocketConnectionObservation `protobuf:"bytes,4,opt,name=websocket_connection_observation,json=websocketConnectionObservation,proto3,oneof"`
 }
 
 type ShannonRequestObservations_WebsocketMessageObservation struct {
@@ -948,7 +900,7 @@ type ShannonRequestObservations_WebsocketMessageObservation struct {
 
 func (*ShannonRequestObservations_HttpObservations) isShannonRequestObservations_ObservationData() {}
 
-func (*ShannonRequestObservations_WebsocketEndpointObservation) isShannonRequestObservations_ObservationData() {
+func (*ShannonRequestObservations_WebsocketConnectionObservation) isShannonRequestObservations_ObservationData() {
 }
 
 func (*ShannonRequestObservations_WebsocketMessageObservation) isShannonRequestObservations_ObservationData() {
@@ -1244,8 +1196,8 @@ const file_path_protocol_shannon_proto_rawDesc = "" +
 	"\x16ShannonRelayMinerError\x12\x1c\n" +
 	"\tcodespace\x18\x01 \x01(\tR\tcodespace\x12\x12\n" +
 	"\x04code\x18\x02 \x01(\rR\x04code\x12\x18\n" +
-	"\amessage\x18\x03 \x01(\tR\amessage\"\xc1\t\n" +
-	"#ShannonWebsocketEndpointObservation\x12\x1a\n" +
+	"\amessage\x18\x03 \x01(\tR\amessage\"\xf2\x05\n" +
+	"%ShannonWebsocketConnectionObservation\x12\x1a\n" +
 	"\bsupplier\x18\x01 \x01(\tR\bsupplier\x12!\n" +
 	"\fendpoint_url\x18\x02 \x01(\tR\vendpointUrl\x120\n" +
 	"\x14endpoint_app_address\x18\x03 \x01(\tR\x12endpointAppAddress\x12,\n" +
@@ -1253,25 +1205,18 @@ const file_path_protocol_shannon_proto_rawDesc = "" +
 	"\n" +
 	"session_id\x18\x05 \x01(\tR\tsessionId\x120\n" +
 	"\x14session_start_height\x18\x06 \x01(\x03R\x12sessionStartHeight\x12,\n" +
-	"\x12session_end_height\x18\a \x01(\x03R\x10sessionEndHeight\x12\\\n" +
-	"\x1cconnection_attempt_timestamp\x18\b \x01(\v2\x1a.google.protobuf.TimestampR\x1aconnectionAttemptTimestamp\x12i\n" +
-	" connection_established_timestamp\x18\t \x01(\v2\x1a.google.protobuf.TimestampH\x00R\x1econnectionEstablishedTimestamp\x88\x01\x01\x12g\n" +
-	"\x1fconnection_terminated_timestamp\x18\n" +
-	" \x01(\v2\x1a.google.protobuf.TimestampH\x01R\x1dconnectionTerminatedTimestamp\x88\x01\x01\x129\n" +
-	"\x16connection_duration_ms\x18\v \x01(\x03H\x02R\x14connectionDurationMs\x88\x01\x01\x12K\n" +
+	"\x12session_end_height\x18\a \x01(\x03R\x10sessionEndHeight\x12K\n" +
 	"\n" +
-	"error_type\x18\f \x01(\x0e2'.path.protocol.ShannonEndpointErrorTypeH\x03R\terrorType\x88\x01\x01\x12(\n" +
-	"\rerror_details\x18\r \x01(\tH\x04R\ferrorDetails\x88\x01\x01\x12Z\n" +
-	"\x14recommended_sanction\x18\x0e \x01(\x0e2\".path.protocol.ShannonSanctionTypeH\x05R\x13recommendedSanction\x88\x01\x01\x12V\n" +
-	"\x11relay_miner_error\x18\x0f \x01(\v2%.path.protocol.ShannonRelayMinerErrorH\x06R\x0frelayMinerError\x88\x01\x01\x120\n" +
-	"\x14is_fallback_endpoint\x18\x10 \x01(\bR\x12isFallbackEndpointB#\n" +
-	"!_connection_established_timestampB\"\n" +
-	" _connection_terminated_timestampB\x19\n" +
-	"\x17_connection_duration_msB\r\n" +
+	"error_type\x18\b \x01(\x0e2'.path.protocol.ShannonEndpointErrorTypeH\x00R\terrorType\x88\x01\x01\x12(\n" +
+	"\rerror_details\x18\t \x01(\tH\x01R\ferrorDetails\x88\x01\x01\x12Z\n" +
+	"\x14recommended_sanction\x18\n" +
+	" \x01(\x0e2\".path.protocol.ShannonSanctionTypeH\x02R\x13recommendedSanction\x88\x01\x01\x12V\n" +
+	"\x11relay_miner_error\x18\v \x01(\v2%.path.protocol.ShannonRelayMinerErrorH\x03R\x0frelayMinerError\x88\x01\x01\x120\n" +
+	"\x14is_fallback_endpoint\x18\f \x01(\bR\x12isFallbackEndpointB\r\n" +
 	"\v_error_typeB\x10\n" +
 	"\x0e_error_detailsB\x17\n" +
 	"\x15_recommended_sanctionB\x14\n" +
-	"\x12_relay_miner_error\"\xc0\a\n" +
+	"\x12_relay_miner_error\"\xea\x06\n" +
 	"\"ShannonWebsocketMessageObservation\x12\x1a\n" +
 	"\bsupplier\x18\x01 \x01(\tR\bsupplier\x12!\n" +
 	"\fendpoint_url\x18\x02 \x01(\tR\vendpointUrl\x120\n" +
@@ -1282,26 +1227,24 @@ const file_path_protocol_shannon_proto_rawDesc = "" +
 	"\x14session_start_height\x18\x06 \x01(\x03R\x12sessionStartHeight\x12,\n" +
 	"\x12session_end_height\x18\a \x01(\x03R\x10sessionEndHeight\x12G\n" +
 	"\x11message_timestamp\x18\b \x01(\v2\x1a.google.protobuf.TimestampR\x10messageTimestamp\x120\n" +
-	"\x14message_payload_size\x18\t \x01(\x03R\x12messagePayloadSize\x129\n" +
-	"\x16connection_duration_ms\x18\n" +
-	" \x01(\x03H\x00R\x14connectionDurationMs\x88\x01\x01\x12K\n" +
+	"\x14message_payload_size\x18\t \x01(\x03R\x12messagePayloadSize\x12K\n" +
 	"\n" +
-	"error_type\x18\v \x01(\x0e2'.path.protocol.ShannonEndpointErrorTypeH\x01R\terrorType\x88\x01\x01\x12(\n" +
-	"\rerror_details\x18\f \x01(\tH\x02R\ferrorDetails\x88\x01\x01\x12Z\n" +
-	"\x14recommended_sanction\x18\r \x01(\x0e2\".path.protocol.ShannonSanctionTypeH\x03R\x13recommendedSanction\x88\x01\x01\x12V\n" +
-	"\x11relay_miner_error\x18\x0e \x01(\v2%.path.protocol.ShannonRelayMinerErrorH\x04R\x0frelayMinerError\x88\x01\x01\x120\n" +
-	"\x14is_fallback_endpoint\x18\x0f \x01(\bR\x12isFallbackEndpointB\x19\n" +
-	"\x17_connection_duration_msB\r\n" +
+	"error_type\x18\n" +
+	" \x01(\x0e2'.path.protocol.ShannonEndpointErrorTypeH\x00R\terrorType\x88\x01\x01\x12(\n" +
+	"\rerror_details\x18\v \x01(\tH\x01R\ferrorDetails\x88\x01\x01\x12Z\n" +
+	"\x14recommended_sanction\x18\f \x01(\x0e2\".path.protocol.ShannonSanctionTypeH\x02R\x13recommendedSanction\x88\x01\x01\x12V\n" +
+	"\x11relay_miner_error\x18\r \x01(\v2%.path.protocol.ShannonRelayMinerErrorH\x03R\x0frelayMinerError\x88\x01\x01\x120\n" +
+	"\x14is_fallback_endpoint\x18\x0e \x01(\bR\x12isFallbackEndpointB\r\n" +
 	"\v_error_typeB\x10\n" +
 	"\x0e_error_detailsB\x17\n" +
 	"\x15_recommended_sanctionB\x14\n" +
-	"\x12_relay_miner_error\"\x83\x04\n" +
+	"\x12_relay_miner_error\"\x8a\x04\n" +
 	"\x1aShannonRequestObservations\x12\x1d\n" +
 	"\n" +
 	"service_id\x18\x01 \x01(\tR\tserviceId\x12L\n" +
 	"\rrequest_error\x18\x02 \x01(\v2\".path.protocol.ShannonRequestErrorH\x01R\frequestError\x88\x01\x01\x12]\n" +
-	"\x11http_observations\x18\x03 \x01(\v2..path.protocol.ShannonHTTPEndpointObservationsH\x00R\x10httpObservations\x12z\n" +
-	"\x1ewebsocket_endpoint_observation\x18\x04 \x01(\v22.path.protocol.ShannonWebsocketEndpointObservationH\x00R\x1cwebsocketEndpointObservation\x12w\n" +
+	"\x11http_observations\x18\x03 \x01(\v2..path.protocol.ShannonHTTPEndpointObservationsH\x00R\x10httpObservations\x12\x80\x01\n" +
+	" websocket_connection_observation\x18\x04 \x01(\v24.path.protocol.ShannonWebsocketConnectionObservationH\x00R\x1ewebsocketConnectionObservation\x12w\n" +
 	"\x1dwebsocket_message_observation\x18\x05 \x01(\v21.path.protocol.ShannonWebsocketMessageObservationH\x00R\x1bwebsocketMessageObservationB\x12\n" +
 	"\x10observation_dataB\x10\n" +
 	"\x0e_request_error\"\x81\x01\n" +
@@ -1414,47 +1357,44 @@ func file_path_protocol_shannon_proto_rawDescGZIP() []byte {
 var file_path_protocol_shannon_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
 var file_path_protocol_shannon_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
 var file_path_protocol_shannon_proto_goTypes = []any{
-	(ShannonRequestErrorType)(0),                // 0: path.protocol.ShannonRequestErrorType
-	(ShannonEndpointErrorType)(0),               // 1: path.protocol.ShannonEndpointErrorType
-	(ShannonSanctionType)(0),                    // 2: path.protocol.ShannonSanctionType
-	(*ShannonRequestError)(nil),                 // 3: path.protocol.ShannonRequestError
-	(*ShannonRelayMinerError)(nil),              // 4: path.protocol.ShannonRelayMinerError
-	(*ShannonWebsocketEndpointObservation)(nil), // 5: path.protocol.ShannonWebsocketEndpointObservation
-	(*ShannonWebsocketMessageObservation)(nil),  // 6: path.protocol.ShannonWebsocketMessageObservation
-	(*ShannonRequestObservations)(nil),          // 7: path.protocol.ShannonRequestObservations
-	(*ShannonHTTPEndpointObservations)(nil),     // 8: path.protocol.ShannonHTTPEndpointObservations
-	(*ShannonEndpointObservation)(nil),          // 9: path.protocol.ShannonEndpointObservation
-	(*ShannonObservationsList)(nil),             // 10: path.protocol.ShannonObservationsList
-	(*timestamppb.Timestamp)(nil),               // 11: google.protobuf.Timestamp
+	(ShannonRequestErrorType)(0),                  // 0: path.protocol.ShannonRequestErrorType
+	(ShannonEndpointErrorType)(0),                 // 1: path.protocol.ShannonEndpointErrorType
+	(ShannonSanctionType)(0),                      // 2: path.protocol.ShannonSanctionType
+	(*ShannonRequestError)(nil),                   // 3: path.protocol.ShannonRequestError
+	(*ShannonRelayMinerError)(nil),                // 4: path.protocol.ShannonRelayMinerError
+	(*ShannonWebsocketConnectionObservation)(nil), // 5: path.protocol.ShannonWebsocketConnectionObservation
+	(*ShannonWebsocketMessageObservation)(nil),    // 6: path.protocol.ShannonWebsocketMessageObservation
+	(*ShannonRequestObservations)(nil),            // 7: path.protocol.ShannonRequestObservations
+	(*ShannonHTTPEndpointObservations)(nil),       // 8: path.protocol.ShannonHTTPEndpointObservations
+	(*ShannonEndpointObservation)(nil),            // 9: path.protocol.ShannonEndpointObservation
+	(*ShannonObservationsList)(nil),               // 10: path.protocol.ShannonObservationsList
+	(*timestamppb.Timestamp)(nil),                 // 11: google.protobuf.Timestamp
 }
 var file_path_protocol_shannon_proto_depIdxs = []int32{
 	0,  // 0: path.protocol.ShannonRequestError.error_type:type_name -> path.protocol.ShannonRequestErrorType
-	11, // 1: path.protocol.ShannonWebsocketEndpointObservation.connection_attempt_timestamp:type_name -> google.protobuf.Timestamp
-	11, // 2: path.protocol.ShannonWebsocketEndpointObservation.connection_established_timestamp:type_name -> google.protobuf.Timestamp
-	11, // 3: path.protocol.ShannonWebsocketEndpointObservation.connection_terminated_timestamp:type_name -> google.protobuf.Timestamp
-	1,  // 4: path.protocol.ShannonWebsocketEndpointObservation.error_type:type_name -> path.protocol.ShannonEndpointErrorType
-	2,  // 5: path.protocol.ShannonWebsocketEndpointObservation.recommended_sanction:type_name -> path.protocol.ShannonSanctionType
-	4,  // 6: path.protocol.ShannonWebsocketEndpointObservation.relay_miner_error:type_name -> path.protocol.ShannonRelayMinerError
-	11, // 7: path.protocol.ShannonWebsocketMessageObservation.message_timestamp:type_name -> google.protobuf.Timestamp
-	1,  // 8: path.protocol.ShannonWebsocketMessageObservation.error_type:type_name -> path.protocol.ShannonEndpointErrorType
-	2,  // 9: path.protocol.ShannonWebsocketMessageObservation.recommended_sanction:type_name -> path.protocol.ShannonSanctionType
-	4,  // 10: path.protocol.ShannonWebsocketMessageObservation.relay_miner_error:type_name -> path.protocol.ShannonRelayMinerError
-	3,  // 11: path.protocol.ShannonRequestObservations.request_error:type_name -> path.protocol.ShannonRequestError
-	8,  // 12: path.protocol.ShannonRequestObservations.http_observations:type_name -> path.protocol.ShannonHTTPEndpointObservations
-	5,  // 13: path.protocol.ShannonRequestObservations.websocket_endpoint_observation:type_name -> path.protocol.ShannonWebsocketEndpointObservation
-	6,  // 14: path.protocol.ShannonRequestObservations.websocket_message_observation:type_name -> path.protocol.ShannonWebsocketMessageObservation
-	9,  // 15: path.protocol.ShannonHTTPEndpointObservations.endpoint_observations:type_name -> path.protocol.ShannonEndpointObservation
-	11, // 16: path.protocol.ShannonEndpointObservation.endpoint_query_timestamp:type_name -> google.protobuf.Timestamp
-	11, // 17: path.protocol.ShannonEndpointObservation.endpoint_response_timestamp:type_name -> google.protobuf.Timestamp
-	1,  // 18: path.protocol.ShannonEndpointObservation.error_type:type_name -> path.protocol.ShannonEndpointErrorType
-	2,  // 19: path.protocol.ShannonEndpointObservation.recommended_sanction:type_name -> path.protocol.ShannonSanctionType
-	4,  // 20: path.protocol.ShannonEndpointObservation.relay_miner_error:type_name -> path.protocol.ShannonRelayMinerError
-	7,  // 21: path.protocol.ShannonObservationsList.observations:type_name -> path.protocol.ShannonRequestObservations
-	22, // [22:22] is the sub-list for method output_type
-	22, // [22:22] is the sub-list for method input_type
-	22, // [22:22] is the sub-list for extension type_name
-	22, // [22:22] is the sub-list for extension extendee
-	0,  // [0:22] is the sub-list for field type_name
+	1,  // 1: path.protocol.ShannonWebsocketConnectionObservation.error_type:type_name -> path.protocol.ShannonEndpointErrorType
+	2,  // 2: path.protocol.ShannonWebsocketConnectionObservation.recommended_sanction:type_name -> path.protocol.ShannonSanctionType
+	4,  // 3: path.protocol.ShannonWebsocketConnectionObservation.relay_miner_error:type_name -> path.protocol.ShannonRelayMinerError
+	11, // 4: path.protocol.ShannonWebsocketMessageObservation.message_timestamp:type_name -> google.protobuf.Timestamp
+	1,  // 5: path.protocol.ShannonWebsocketMessageObservation.error_type:type_name -> path.protocol.ShannonEndpointErrorType
+	2,  // 6: path.protocol.ShannonWebsocketMessageObservation.recommended_sanction:type_name -> path.protocol.ShannonSanctionType
+	4,  // 7: path.protocol.ShannonWebsocketMessageObservation.relay_miner_error:type_name -> path.protocol.ShannonRelayMinerError
+	3,  // 8: path.protocol.ShannonRequestObservations.request_error:type_name -> path.protocol.ShannonRequestError
+	8,  // 9: path.protocol.ShannonRequestObservations.http_observations:type_name -> path.protocol.ShannonHTTPEndpointObservations
+	5,  // 10: path.protocol.ShannonRequestObservations.websocket_connection_observation:type_name -> path.protocol.ShannonWebsocketConnectionObservation
+	6,  // 11: path.protocol.ShannonRequestObservations.websocket_message_observation:type_name -> path.protocol.ShannonWebsocketMessageObservation
+	9,  // 12: path.protocol.ShannonHTTPEndpointObservations.endpoint_observations:type_name -> path.protocol.ShannonEndpointObservation
+	11, // 13: path.protocol.ShannonEndpointObservation.endpoint_query_timestamp:type_name -> google.protobuf.Timestamp
+	11, // 14: path.protocol.ShannonEndpointObservation.endpoint_response_timestamp:type_name -> google.protobuf.Timestamp
+	1,  // 15: path.protocol.ShannonEndpointObservation.error_type:type_name -> path.protocol.ShannonEndpointErrorType
+	2,  // 16: path.protocol.ShannonEndpointObservation.recommended_sanction:type_name -> path.protocol.ShannonSanctionType
+	4,  // 17: path.protocol.ShannonEndpointObservation.relay_miner_error:type_name -> path.protocol.ShannonRelayMinerError
+	7,  // 18: path.protocol.ShannonObservationsList.observations:type_name -> path.protocol.ShannonRequestObservations
+	19, // [19:19] is the sub-list for method output_type
+	19, // [19:19] is the sub-list for method input_type
+	19, // [19:19] is the sub-list for extension type_name
+	19, // [19:19] is the sub-list for extension extendee
+	0,  // [0:19] is the sub-list for field type_name
 }
 
 func init() { file_path_protocol_shannon_proto_init() }
@@ -1466,7 +1406,7 @@ func file_path_protocol_shannon_proto_init() {
 	file_path_protocol_shannon_proto_msgTypes[3].OneofWrappers = []any{}
 	file_path_protocol_shannon_proto_msgTypes[4].OneofWrappers = []any{
 		(*ShannonRequestObservations_HttpObservations)(nil),
-		(*ShannonRequestObservations_WebsocketEndpointObservation)(nil),
+		(*ShannonRequestObservations_WebsocketConnectionObservation)(nil),
 		(*ShannonRequestObservations_WebsocketMessageObservation)(nil),
 	}
 	file_path_protocol_shannon_proto_msgTypes[6].OneofWrappers = []any{}

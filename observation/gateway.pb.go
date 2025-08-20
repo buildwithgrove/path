@@ -155,8 +155,12 @@ type GatewayObservations struct {
 	// As of PR #72, this can only be specified through a custom header on the HTTP request, extracted in `request/parser.go`.
 	ServiceId string `protobuf:"bytes,3,opt,name=service_id,json=serviceId,proto3" json:"service_id,omitempty"`
 	// received_time is when the request was initially received
+	//   - For HTTP requests: when the HTTP request was received
+	//   - For WebSocket requests: when the WebSocket connection was established
 	ReceivedTime *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=received_time,json=receivedTime,proto3" json:"received_time,omitempty"`
 	// completed_time is when request processing finished and response was returned
+	//   - For HTTP requests: when the HTTP response was sent
+	//   - For WebSocket requests: when the WebSocket connection was terminated
 	CompletedTime *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=completed_time,json=completedTime,proto3" json:"completed_time,omitempty"`
 	// response_size is the size in bytes of the response payload
 	ResponseSize uint64 `protobuf:"varint,6,opt,name=response_size,json=responseSize,proto3" json:"response_size,omitempty"`

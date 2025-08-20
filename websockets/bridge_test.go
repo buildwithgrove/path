@@ -53,7 +53,7 @@ func Test_Bridge_StartBridge(t *testing.T) {
 	// Create a test client connection
 	clientServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Start the bridge using the client request
-		err := StartBridge(
+		completionChan, err := StartBridge(
 			context.Background(), // Use background context for tests
 			polyzero.NewLogger(),
 			r,
@@ -64,6 +64,7 @@ func Test_Bridge_StartBridge(t *testing.T) {
 			observationsChan,
 		)
 		c.NoError(err)
+		c.NotNil(completionChan, "Should receive completion channel")
 	}))
 	defer clientServer.Close()
 
@@ -108,7 +109,7 @@ func Test_Bridge_StartBridge_ErrorCases(t *testing.T) {
 	clientRespWriter := httptest.NewRecorder()
 
 	// This should fail because the endpoint URL is invalid
-	err := StartBridge(
+	completionChan, err := StartBridge(
 		context.Background(), // Use background context for tests
 		polyzero.NewLogger(),
 		clientReq,
@@ -119,6 +120,7 @@ func Test_Bridge_StartBridge_ErrorCases(t *testing.T) {
 		observationsChan,
 	)
 	c.Error(err, "Should fail with invalid endpoint URL")
+	c.Nil(completionChan, "Should not receive completion channel on error")
 }
 
 // Mock implementations for testing

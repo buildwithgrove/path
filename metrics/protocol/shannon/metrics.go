@@ -344,17 +344,17 @@ func PublishMetrics(
 			// Process RelayMinerError occurrences separately
 			processRelayMinerErrors(logger, observationSet.GetServiceId(), httpObservations.GetEndpointObservations())
 
-		case *protocolobservations.ShannonRequestObservations_WebsocketEndpointObservation:
+		case *protocolobservations.ShannonRequestObservations_WebsocketConnectionObservation:
 			// WebSocket connection observation - new metrics processing
-			wsEndpointObs := obsData.WebsocketEndpointObservation
-			if wsEndpointObs == nil {
-				logger.Warn().Msg("❌ SHOULD NEVER HAPPEN: skipping processing: received empty WebSocket endpoint observation")
+			wsConnectionObs := obsData.WebsocketConnectionObservation
+			if wsConnectionObs == nil {
+				logger.Warn().Msg("❌ SHOULD NEVER HAPPEN: skipping processing: received empty WebSocket connection observation")
 				continue
 			}
 
 			// Record WebSocket connection metrics
 			recordWebsocketConnectionTotal(logger, observationSet)
-			processWebsocketConnectionErrors(logger, observationSet.GetServiceId(), wsEndpointObs)
+			processWebsocketConnectionErrors(logger, observationSet.GetServiceId(), wsConnectionObs)
 
 		case *protocolobservations.ShannonRequestObservations_WebsocketMessageObservation:
 			// WebSocket message observation - new metrics processing
@@ -426,11 +426,11 @@ func recordRelayTotal(
 		// Determine if any of the endpoints was a fallback
 		usedFallbackEndpoint = isFallbackEndpointUsed(endpointObservations)
 
-	case *protocolobservations.ShannonRequestObservations_WebsocketEndpointObservation:
-		wsEndpointObs := obsData.WebsocketEndpointObservation
-		endpointURL = wsEndpointObs.GetEndpointUrl()
-		success = wsEndpointObs.GetErrorType() == protocolobservations.ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_UNSPECIFIED
-		usedFallbackEndpoint = wsEndpointObs.GetIsFallbackEndpoint()
+	case *protocolobservations.ShannonRequestObservations_WebsocketConnectionObservation:
+		wsConnectionObs := obsData.WebsocketConnectionObservation
+		endpointURL = wsConnectionObs.GetEndpointUrl()
+		success = wsConnectionObs.GetErrorType() == protocolobservations.ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_UNSPECIFIED
+		usedFallbackEndpoint = wsConnectionObs.GetIsFallbackEndpoint()
 
 	case *protocolobservations.ShannonRequestObservations_WebsocketMessageObservation:
 		wsMessageObs := obsData.WebsocketMessageObservation
@@ -727,18 +727,18 @@ func recordWebsocketConnectionTotal(
 		return
 	}
 
-	wsEndpointObs := observations.GetWebsocketEndpointObservation()
-	if wsEndpointObs == nil {
-		hydratedLogger.Warn().Msg("WebSocket endpoint observation is nil")
+	wsConnectionObs := observations.GetWebsocketConnectionObservation()
+	if wsConnectionObs == nil {
+		hydratedLogger.Warn().Msg("WebSocket connection observation is nil")
 		return
 	}
 
 	// Determine success based on error type
-	success := wsEndpointObs.GetErrorType() == protocolobservations.ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_UNSPECIFIED
-	usedFallbackEndpoint := wsEndpointObs.GetIsFallbackEndpoint()
+	success := wsConnectionObs.GetErrorType() == protocolobservations.ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_UNSPECIFIED
+	usedFallbackEndpoint := wsConnectionObs.GetIsFallbackEndpoint()
 
 	// Extract endpoint URL for exemplars
-	endpointURL := wsEndpointObs.GetEndpointUrl()
+	endpointURL := wsConnectionObs.GetEndpointUrl()
 	exLabels := prometheus.Labels{
 		"endpoint_url": endpointURL[:min(len(endpointURL), 128)],
 	}
@@ -751,7 +751,7 @@ func recordWebsocketConnectionTotal(
 			"error_type":    "",
 			"used_fallback": fmt.Sprintf("%t", usedFallbackEndpoint),
 		},
-	).(prometheus.ExemplarAdder).AddWithExemplar(float64(1), exLabels)
+	).(prometheus.ExemplarAdder).AddWithExemplar(1, exLabels)
 }
 
 // recordWebsocketMessageTotal tracks WebSocket message counts.
@@ -800,25 +800,25 @@ func recordWebsocketMessageTotal(
 			"error_type":    "",
 			"used_fallback": fmt.Sprintf("%t", usedFallbackEndpoint),
 		},
-	).(prometheus.ExemplarAdder).AddWithExemplar(float64(1), exLabels)
+	).(prometheus.ExemplarAdder).AddWithExemplar(1, exLabels)
 }
 
 // processWebsocketConnectionErrors records WebSocket connection error metrics.
 func processWebsocketConnectionErrors(
 	logger polylog.Logger,
 	serviceID string,
-	wsEndpointObs *protocolobservations.ShannonWebsocketEndpointObservation,
+	wsConnectionObs *protocolobservations.ShannonWebsocketConnectionObservation,
 ) {
 	// Skip if there's no error
-	if wsEndpointObs.ErrorType == nil {
+	if wsConnectionObs.ErrorType == nil {
 		return
 	}
 
 	// Extract effective TLD+1 from endpoint URL
-	endpointDomain, err := ExtractDomainOrHost(wsEndpointObs.GetEndpointUrl())
+	endpointDomain, err := ExtractDomainOrHost(wsConnectionObs.GetEndpointUrl())
 	if err != nil {
 		logger.With(
-			"endpoint_url", wsEndpointObs.EndpointUrl,
+			"endpoint_url", wsConnectionObs.EndpointUrl,
 		).
 			ProbabilisticDebugInfo(polylog.ProbabilisticDebugInfoProb).
 			Err(err).Msg("Could not extract domain from WebSocket endpoint URL for connection errors metric")
@@ -826,14 +826,14 @@ func processWebsocketConnectionErrors(
 	}
 
 	// Extract error information
-	errorType := wsEndpointObs.ErrorType.String()
+	errorType := wsConnectionObs.ErrorType.String()
 	var sanctionType string
-	if wsEndpointObs.RecommendedSanction != nil {
-		sanctionType = wsEndpointObs.RecommendedSanction.String()
+	if wsConnectionObs.RecommendedSanction != nil {
+		sanctionType = wsConnectionObs.RecommendedSanction.String()
 	}
 
 	// Extract endpoint URL for exemplars
-	endpointURL := wsEndpointObs.EndpointUrl
+	endpointURL := wsConnectionObs.EndpointUrl
 	exLabels := prometheus.Labels{
 		"endpoint_url": endpointURL[:min(len(endpointURL), 128)],
 	}
@@ -849,7 +849,7 @@ func processWebsocketConnectionErrors(
 	).(prometheus.ExemplarAdder).AddWithExemplar(float64(1), exLabels)
 
 	// Record sanction if recommended
-	if wsEndpointObs.RecommendedSanction != nil {
+	if wsConnectionObs.RecommendedSanction != nil {
 		sanctionsByDomain.With(
 			prometheus.Labels{
 				"service_id":      serviceID,
@@ -861,9 +861,9 @@ func processWebsocketConnectionErrors(
 	}
 
 	// Record RelayMinerError if present
-	if wsEndpointObs.RelayMinerError != nil {
-		relayMinerCodespace := wsEndpointObs.RelayMinerError.GetCodespace()
-		relayMinerCode := fmt.Sprintf("%d", wsEndpointObs.RelayMinerError.GetCode())
+	if wsConnectionObs.RelayMinerError != nil {
+		relayMinerCodespace := wsConnectionObs.RelayMinerError.GetCodespace()
+		relayMinerCode := fmt.Sprintf("%d", wsConnectionObs.RelayMinerError.GetCode())
 
 		relayMinerErrorsTotal.With(
 			prometheus.Labels{
