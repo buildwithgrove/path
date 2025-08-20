@@ -71,6 +71,8 @@ type responseToGetEpochInfo struct {
 // Implements the response interface used by the requestContext struct.
 func (r responseToGetEpochInfo) GetObservation() qosobservations.SolanaEndpointObservation {
 	return qosobservations.SolanaEndpointObservation{
+		// Set the HTTP status code using the JSONRPC Response
+		HttpStatusCode: r.Response.GetRecommendedHTTPStatusCode(),
 		ResponseObservation: &qosobservations.SolanaEndpointObservation_GetEpochInfoResponse{
 			GetEpochInfoResponse: &qosobservations.SolanaGetEpochInfoResponse{
 				BlockHeight: r.epochInfo.BlockHeight,

@@ -68,6 +68,8 @@ type responseToGetHealth struct {
 // Implements the response interface used by the requestContext struct.
 func (r responseToGetHealth) GetObservation() qosobservations.SolanaEndpointObservation {
 	return qosobservations.SolanaEndpointObservation{
+		// Set the HTTP status code using the JSONRPC Response
+		HttpStatusCode: r.Response.GetRecommendedHTTPStatusCode(),
 		ResponseObservation: &qosobservations.SolanaEndpointObservation_GetHealthResponse{
 			GetHealthResponse: &qosobservations.SolanaGetHealthResponse{
 				Result: r.HealthResult,
