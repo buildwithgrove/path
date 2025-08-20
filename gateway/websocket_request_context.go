@@ -20,15 +20,15 @@ var _ websockets.WebsocketMessageProcessor = &websocketRequestContext{}
 
 // websocketRequestContext is responsible for orchestrating the flow of websocket messages
 // between client and endpoint. It handles:
-// - QoS validation and context building
-// - Protocol context setup (single endpoint selection vs HTTP's multiple endpoints)
-// - Message routing and observation (per-message vs HTTP's per-request)
-// - Bridge lifecycle management
+//   - QoS validation and context building
+//   - Protocol context setup (single endpoint selection vs HTTP's multiple endpoints)
+//   - Message routing and observation (per-message vs HTTP's per-request)
+//   - Bridge lifecycle management
 //
 // Key differences from HTTP requestContext:
-// - Single endpoint selection (websockets can't do parallel requests)
-// - Per-message observations instead of per-request observations
-// - Long-lived connection management vs one-shot request/response
+//   - Single endpoint selection (websockets can't do parallel requests)
+//   - Per-message observations instead of per-request observations
+//   - Long-lived connection management vs one-shot request/response
 type websocketRequestContext struct {
 	logger polylog.Logger
 
@@ -67,6 +67,8 @@ type websocketRequestContext struct {
 	connectionStartTime *time.Time
 }
 
+// ---------- Websocket Connection Establishment ----------
+
 // InitFromHTTPRequest builds the required context for serving a WebSocket request.
 // Similar to requestContext.InitFromHTTPRequest but for websockets.
 func (wrc *websocketRequestContext) InitFromHTTPRequest(httpReq *http.Request) error {
@@ -87,22 +89,20 @@ func (wrc *websocketRequestContext) InitFromHTTPRequest(httpReq *http.Request) e
 }
 
 // BuildQoSContextFromHTTP builds the QoS context instance using the supplied HTTP request.
-// For websockets, this replaces the previous BuildQoSContextFromWebsocket method.
-// Following the TODO comment: ParseHTTPRequest should be the single entry point to QoS.
 func (wrc *websocketRequestContext) BuildQoSContextFromHTTP(httpReq *http.Request) error {
-	// Use ParseHTTPRequest as the single entry point to QoS for websocket requests
-	// The QoS implementation should detect if this is a websocket subscription request
-	// and validate it accordingly
-
-	// TODO_TECHDEBT(@adshmh,@commoddity): Use ParseHTTPRequest as the single entry point to QoS, including for a WebSocket request.
-	// - The ParseHTTPRequest method in QoS should:
-	//   - Check the request payload
-	//   - Detect it is a subscription request.
-	//   - Validate the request, e.g. params field.
-	//   - Reject invalid WebSocket requests, similar to HTTP requests.
+	// TODO_TECHDEBT(@adshmh,@commoddity): ParseHTTPRequest (eg for EVM) currently
+	// assumes that the request is a JSON-RPC request, which is not the case for WebSocket
+	// connection requests, which is an HTTP request with no body and sepcialized headers.
+	//
+	// We should update QoS packages to either:
+	//   - Add a new method for parsing WebSocket connection requests.
+	//   - Update ParseHTTPRequest to handle WebSocket connection requests.
+	//
+	// TODO_TECHDEBT(@adshmh,@commoddity): Use ParseHTTPRequest as the single entry point to QoS for websocket requests.
 	qosCtx, isValid := wrc.serviceQoS.ParseHTTPRequest(wrc.context, httpReq)
 	wrc.qosCtx = qosCtx
 
+	// Reject invalid WebSocket requests.
 	if !isValid {
 		// Update gateway observations for websocket rejection
 		wrc.updateGatewayObservations(errWebsocketRequestRejectedByQoS)
@@ -150,13 +150,14 @@ func (wrc *websocketRequestContext) BuildProtocolContextFromHTTPRequest(
 	return &endpointLookupObs, nil
 }
 
-// HandleWebsocketRequest establishes the websocket connection and starts the message handling loop.
+// HandleWebsocketRequest establishes the websocket connection and starts the bridge,
+// which handles the message processing loop and sends message observations to the gateway.
 func (wrc *websocketRequestContext) HandleWebsocketRequest(
 	httpRequest *http.Request,
 	httpResponseWriter http.ResponseWriter,
 ) error {
-	// Create the websocket bridge in the gateway package and start the bridge asynchronously.
-	if err := wrc.initializeWebsocketBridge(httpRequest, httpResponseWriter); err != nil {
+	// Create the websocket bridge and start it asynchronously to avoid blocking the main thread.
+	if err := wrc.stateWebSocketBridge(httpRequest, httpResponseWriter); err != nil {
 		wrc.logger.Error().Err(err).Msg("❌ Failed to create websocket bridge.")
 		return err
 	}
@@ -164,9 +165,9 @@ func (wrc *websocketRequestContext) HandleWebsocketRequest(
 	return nil
 }
 
-// initializeWebsocketBridge creates a websocket bridge using protocol-specific components.
-// This moves the bridge creation logic from Shannon to the gateway level.
-func (wrc *websocketRequestContext) initializeWebsocketBridge(
+// stateWebSocketBridge creates a websocket bridge and starts it in a goroutine.
+// It also starts a goroutine to listen for message processing notifications from the bridge.
+func (wrc *websocketRequestContext) stateWebSocketBridge(
 	httpRequest *http.Request,
 	httpResponseWriter http.ResponseWriter,
 ) error {
@@ -222,8 +223,8 @@ func (wrc *websocketRequestContext) initializeWebsocketBridge(
 	return nil
 }
 
-// listenForMessageNotifications listens for message processing notifications from the bridge
-// and publishes observations for each message processed.
+// listenForMessageNotifications listens for message processing notifications from
+// the bridge and publishes observations for each message processed.
 //
 // This method runs in a goroutine and handles:
 //   - Success notifications: Broadcast successful message observations
@@ -285,12 +286,17 @@ func (wrc *websocketRequestContext) ProcessEndpointWebsocketMessage(msgData []by
 	messageObservations.Protocol = &protocolObservations
 
 	// TODO_TECHDEBT(@commoddity): process message using QoS context and update the message observations.
+	// For example, for JSON-RPC method send through WebSocket, the QoS context should:
+	//   - Check the request payload.
+	//   - Detect it is a subscription request.
+	//   - Validate the request, e.g. params field.
+	//   - Reject invalid WebSocket requests, similar to HTTP requests. (e.g. invalid params field)
 	// messageObservations.Qos = wrc.qosCtx.ProcessProtocolEndpointWebsocketMessage(msgData)
 
 	return endpointMessageBz, messageObservations, nil
 }
 
-// ---------- Message Observations ----------
+// ---------- WebSocket Message Observations ----------
 
 // BroadcastMessageObservations delivers the collected details regarding all aspects
 // of the websocket message to all the interested parties.
