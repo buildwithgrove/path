@@ -240,8 +240,7 @@ func (wrc *websocketRequestContext) startWebSocketBridge(
 // the bridge and publishes observations for each message processed.
 //
 // This method runs in a goroutine and handles:
-//   - Success notifications: Broadcast successful message observations
-//   - Error notifications: Broadcast error observations with details
+//   - Message observations: Received from the bridge and then broadcast to metrics and data reporters.
 //   - Channel closure: Clean shutdown when bridge closes the observation channel
 //   - Context cancellation: Clean shutdown when connection context is cancelled
 func (wrc *websocketRequestContext) listenForMessageNotifications() {
