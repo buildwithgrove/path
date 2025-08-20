@@ -92,17 +92,12 @@ func (wrc *websocketRequestContext) InitFromHTTPRequest(httpReq *http.Request) e
 
 // BuildQoSContextFromHTTP builds the QoS context instance using the supplied HTTP request.
 func (wrc *websocketRequestContext) BuildQoSContextFromHTTP(httpReq *http.Request) error {
-	// TODO_TECHDEBT(@adshmh,@commoddity): ParseHTTPRequest (eg for EVM) currently
-	// assumes that the request is a JSON-RPC request, which is not the case for WebSocket
-	// connection requests, which is an HTTP request with no body and sepcialized headers.
+	// TODO_TECHDEBT(@adshmh,@commoddity): Update ParseHTTPRequest to be the single entry point to QoS
+	// for both HTTP and WebSocket requests, then use it instead of ParseWebsocketRequest.
 	//
-	// We should update QoS packages to either:
-	//   - Add a new method for parsing WebSocket connection requests.
-	//   - Update ParseHTTPRequest to handle WebSocket connection requests.
-	//
-	// TODO_TECHDEBT(@adshmh,@commoddity): Use ParseHTTPRequest as the single entry point to QoS for websocket requests.
-	qosCtx, isValid := wrc.serviceQoS.ParseHTTPRequest(wrc.context, httpReq)
-	wrc.qosCtx = qosCtx
+	// It should perform basic validation of the HTTP handshake request in the case that it is a WebSocket request.
+	// eg. check that the request is a websocket request, check headers, etc.
+	qosCtx, isValid := wrc.serviceQoS.ParseWebsocketRequest(wrc.context)
 
 	// Reject invalid WebSocket requests.
 	if !isValid {
@@ -111,6 +106,9 @@ func (wrc *websocketRequestContext) BuildQoSContextFromHTTP(httpReq *http.Reques
 		wrc.logger.Info().Msg("WebSocket request rejected by QoS")
 		return errWebsocketRequestRejectedByQoS
 	}
+
+	// Set the QoS context in the websocket request context.
+	wrc.qosCtx = qosCtx
 
 	return nil
 }
