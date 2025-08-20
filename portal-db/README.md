@@ -19,6 +19,7 @@ Consider if this should be moved into `docusaurus/docs` so it is discoverable as
 - [Tools](#tools)
   - [`psql` (REQUIRED)](#psql-required)
   - [`dbeaver` (RECOMMENDED)](#dbeaver-recommended)
+  - [Claude Postgres MCP Server (EXPERIMENTAL)](#claude-postgres-mcp-server-experimental)
 
 ## Quickstart (for Grove Engineering)
 
@@ -129,3 +130,59 @@ sudo apt-get install dbeaver-ce
 - Connect to the database and explore
 
 ![dbeaver connection](../docusaurus/static/img/portal_db_connection.png)
+
+### Claude Postgres MCP Server (EXPERIMENTAL)
+
+::: warning EXPERIMENTAL
+
+Using a postgres MCP server is experimental but worth a shot!
+
+:::
+
+1. Install [postgres-mcp](https://github.com/crystaldba/postgres-mcp) using `pipx`.
+
+   ```bash
+   pipx install postgres-mcp
+   ```
+
+2. Update your [claude_desktop_config.json](claude_desktop_config.json) with the setting below. On macOS, you'll find it at `~/Library/Application Support/Claude/claude_desktop_config.json`.
+
+   ```json
+   {
+     "mcpServers": {
+       "postgres": {
+         "command": "/Users/olshansky/.local/bin/postgres-mcp",
+         "args": ["--access-mode=restricted"],
+         "env": {
+           "DATABASE_URI": "postgresql://portal_user:portal_password@localhost:5435/portal_db"
+         }
+       }
+     }
+   }
+   ```
+
+3. Restart Claude Desktop
+
+4. Create a Claude Project with the following system prompt:
+
+   ```text
+   You are a professional software engineer and database administrator specializing in SQL query design and PostgreSQL database navigation.
+
+   Your role is to:
+   - Analyze the provided database schema.
+   - Leverage the MCP server to validate schema details and explore available tables, columns, and relationships.
+   - Generate accurate, efficient, and secure SQL queries that align with the user’s request.
+   - Clearly explain your reasoning and the structure of the queries when helpful, but keep results concise and actionable.
+   - Assume all queries target a PostgreSQL database unless explicitly stated otherwise.
+
+   You must:
+   - Use the schema as the source of truth for query construction.
+   - Ask clarifying questions if user requests are ambiguous or under-specified.
+   - Favor correctness, readability, and performance best practices in all SQL you produce.
+   ```
+
+5. Upload [init/001_schema.sql](init/001_schema.sql) as one of the files to the Claude Project.
+
+6. Try using it by asking: `How many records are in my database?`
+
+![claude_desktop_postgres_mcp](../docusaurus/static/img/claude_desktop_postgres_mcp.png)
