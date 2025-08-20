@@ -148,9 +148,6 @@ func setLegacyFieldsFromWebsocketConnectionObservation(
 	// Set the endpoint domain field
 	legacyRecord.NodeDomain = endpointDomain
 
-	// WebSocket connections lack HTTP-style methods - using identifier for analytics differentiation
-	legacyRecord.ChainMethod = "websocket_connection"
-
 	return legacyRecord
 }
 
@@ -189,6 +186,7 @@ func setLegacyFieldsFromWebsocketMessageObservation(
 	legacyRecord.NodeDomain = endpointDomain
 
 	// WebSocket messages lack HTTP-style methods and JSON-RPC extraction is QoS-level - using identifier for analytics
+	// TODO_TECHDEBT(@adshmh,@commoddit): When QoS observations for WebSocket messages are added, use the method from the QoS observations and move this to a new method in the `legacy_qos.go` file.
 	legacyRecord.ChainMethod = "websocket_message"
 
 	// Using MessagePayloadSize as closest equivalent to HTTP request size for bandwidth analytics
