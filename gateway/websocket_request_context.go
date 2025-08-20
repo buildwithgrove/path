@@ -342,9 +342,7 @@ func (wrc *websocketRequestContext) BroadcastMessageObservations(messageObservat
 			Protocol: messageObservations.Protocol,
 			Qos:      messageObservations.Qos,
 		}
-		wrc.logger.Info().Msgf("Broadcasting observations: %+v", observations)
 		if wrc.metricsReporter != nil {
-			wrc.logger.Info().Msgf("Publishing observations to metrics reporter")
 			wrc.metricsReporter.Publish(observations)
 		}
 		if wrc.dataReporter != nil {
