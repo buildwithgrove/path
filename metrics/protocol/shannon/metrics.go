@@ -751,7 +751,7 @@ func recordWebsocketConnectionTotal(
 			"error_type":    "",
 			"used_fallback": fmt.Sprintf("%t", usedFallbackEndpoint),
 		},
-	).(prometheus.ExemplarAdder).AddWithExemplar(float64(1), exLabels)
+	).(prometheus.ExemplarAdder).AddWithExemplar(1, exLabels)
 }
 
 // recordWebsocketMessageTotal tracks WebSocket message counts.
@@ -800,7 +800,7 @@ func recordWebsocketMessageTotal(
 			"error_type":    "",
 			"used_fallback": fmt.Sprintf("%t", usedFallbackEndpoint),
 		},
-	).(prometheus.ExemplarAdder).AddWithExemplar(float64(1), exLabels)
+	).(prometheus.ExemplarAdder).AddWithExemplar(1, exLabels)
 }
 
 // processWebsocketConnectionErrors records WebSocket connection error metrics.
