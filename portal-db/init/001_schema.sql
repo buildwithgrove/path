@@ -114,8 +114,8 @@ COMMENT ON COLUMN portal_users.portal_user_email IS 'Unique email address for th
 COMMENT ON COLUMN portal_users.portal_admin IS 'Whether user has admin privileges across the portal';
 
 -- TODO_IMPROVE: Add user_authentication table for password management
--- TODO: Add support for MFA/2FA
--- TODO_ITERATE: Consider session management table
+-- TODO_CONSIDERATION: Add support for MFA/2FA
+-- TODO_CONSIDERATION: Consider session management table
 
 -- Contacts table
 -- Contacts are individuals that are members of an Organization. Can be attached to Portal Users
@@ -193,8 +193,8 @@ CREATE TABLE portal_applications (
 COMMENT ON TABLE portal_applications IS 'Applications created within portal accounts with their own rate limits and settings';
 COMMENT ON COLUMN portal_applications.secret_key_hash IS 'Hashed secret key for application authentication';
 
--- TODO_ITERATE: Add API key rotation history table
--- TODO: Add webhook configurations table
+-- TODO_IMPROVE: Add API key rotation history table
+-- TODO_CONSIDERATION: Add webhook configurations table
 
 -- Portal application RBAC table
 -- Sets the role and access controls for a user on a particular application.
@@ -243,7 +243,7 @@ CREATE TABLE gateways (
     stake_amount BIGINT NOT NULL,
     stake_denom VARCHAR(15) NOT NULL,
     network_id VARCHAR(42) NOT NULL,
-    gateway_private_key_hex VARCHAR(64), -- TODO_IMPROVE: CRITICAL - Never store private keys in plain text! Use encryption or KMS
+    gateway_private_key_hex VARCHAR(64), -- TODO_CONSIDERATION: Store private keys only in encrypted manner and not in plain text
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (network_id) REFERENCES networks(network_id)
@@ -320,7 +320,7 @@ CREATE TABLE applications (
     service_id VARCHAR(42) NOT NULL,
     stake_amount BIGINT,
     stake_denom VARCHAR(15),
-    application_private_key_hex VARCHAR(64), -- TODO_IMPROVE: CRITICAL - Never store private keys in plain text! Use encryption or KMS
+    application_private_key_hex VARCHAR(64), -- TODO_IMPROVE: Store private keys in encrypted manner and not in plain text.
     network_id VARCHAR(42) NOT NULL,
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
@@ -388,9 +388,9 @@ CREATE TABLE crypto_address_blocklist (
 
 COMMENT ON TABLE crypto_address_blocklist IS 'Blocked cryptocurrency addresses for compliance requirements';
 
--- TODO: Add audit_logs table for compliance tracking
--- TODO_TECHDEBT: Add rate limit buckets table for distributed rate limiting
--- TODO_ITERATE: Add usage metrics tables
+-- TODO_IMPROVE: Add audit_logs table for compliance tracking
+-- TODO_NEXT_UP: Add rate limit buckets table for global multi-region quota rate limiting
+-- TODO_CONSIDERATION: Add usage metrics tables
 
 -- ============================================================================
 -- INITIAL DATA
