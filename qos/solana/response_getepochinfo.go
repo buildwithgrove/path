@@ -72,7 +72,7 @@ type responseToGetEpochInfo struct {
 func (r responseToGetEpochInfo) GetObservation() qosobservations.SolanaEndpointObservation {
 	return qosobservations.SolanaEndpointObservation{
 		// Set the HTTP status code using the JSONRPC Response
-		HttpStatusCode: r.Response.GetRecommendedHTTPStatusCode(),
+		HttpStatusCode: int32(r.Response.GetRecommendedHTTPStatusCode()),
 		ResponseObservation: &qosobservations.SolanaEndpointObservation_GetEpochInfoResponse{
 			GetEpochInfoResponse: &qosobservations.SolanaGetEpochInfoResponse{
 				BlockHeight: r.epochInfo.BlockHeight,

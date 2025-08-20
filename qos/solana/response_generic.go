@@ -72,7 +72,7 @@ func (r responseGeneric) GetObservation() qosobservations.SolanaEndpointObservat
 
 	return qosobservations.SolanaEndpointObservation{
 		// Set the HTTP status code using the JSONRPC Response
-		HttpStatusCode: r.Response.GetRecommendedHTTPStatusCode(),
+		HttpStatusCode: int32(r.Response.GetRecommendedHTTPStatusCode()),
 		ResponseObservation: &qosobservations.SolanaEndpointObservation_UnrecognizedResponse{
 			UnrecognizedResponse: unrecognizedResponse,
 		},
