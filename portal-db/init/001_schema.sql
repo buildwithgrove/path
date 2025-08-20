@@ -16,7 +16,7 @@ CREATE TYPE plan_interval AS ENUM ('day', 'month', 'year');
 -- Service ID - Allow specified list of onchain services
 -- Contract - Allow specific smart contracts
 -- Origin - Allow specific IP addresses or URLs
-CREATE TYPE whitelist_type AS ENUM ('service_id', 'contract', 'origin');
+CREATE TYPE allowlist_type AS ENUM ('service_id', 'contract', 'origin');
 
 -- ============================================================================
 -- CORE ORGANIZATIONAL TABLES
@@ -336,12 +336,12 @@ COMMENT ON COLUMN applications.application_address IS 'Blockchain address of the
 -- ACCESS CONTROL AND SECURITY
 -- ============================================================================
 
--- Portal application whitelists table
--- Sets access controls to Portal Applications based on whitelist_type
-CREATE TABLE portal_application_whitelists (
+-- Portal application allowlists table
+-- Sets access controls to Portal Applications based on allowlist_type
+CREATE TABLE portal_application_allowlists (
     id SERIAL PRIMARY KEY,
     portal_application_id UUID NOT NULL,
-    type whitelist_type,
+    type allowlist_type,
     value VARCHAR(255),
     service_id VARCHAR(42),
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
@@ -350,7 +350,7 @@ CREATE TABLE portal_application_whitelists (
     FOREIGN KEY (service_id) REFERENCES services(service_id)
 );
 
-COMMENT ON TABLE portal_application_whitelists IS 'Access control lists for portal applications';
+COMMENT ON TABLE portal_application_allowlists IS 'Access control lists for portal applications';
 
 -- Supplier blocklist table
 -- Permanently block specific onchain suppliers from processing traffic
@@ -416,7 +416,7 @@ CREATE INDEX idx_applications_gateway ON applications(gateway_address);
 CREATE INDEX idx_applications_service ON applications(service_id);
 CREATE INDEX idx_applications_network ON applications(network_id);
 CREATE INDEX idx_portal_applications_account ON portal_applications(portal_account_id);
-CREATE INDEX idx_portal_application_whitelists_app ON portal_application_whitelists(portal_application_id);
+CREATE INDEX idx_portal_application_allowlists_app ON portal_application_allowlists(portal_application_id);
 CREATE INDEX idx_portal_account_rbac_account ON portal_account_rbac(portal_account_id);
 CREATE INDEX idx_portal_account_rbac_user ON portal_account_rbac(portal_user_id);
 CREATE INDEX idx_portal_application_rbac_app ON portal_application_rbac(portal_application_id);
