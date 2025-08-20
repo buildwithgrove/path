@@ -181,6 +181,10 @@ func (g Gateway) handleWebSocketRequest(
 	// Defined here to avoid needing to define protocol observations in the websocketRequestContext struct.
 	var protocolObs *protocolobservations.Observations
 
+	// TODO_IN_THIS_PR(@commoddity,@adshmh): should we hold off on broadcasting success observations until
+	// the websocket bridge/connection is shut down? This way we can send things like the WebSocket
+	// connection duration.
+	//
 	// Defer broadcasting connection observations to ensure they are sent even if errors occur
 	defer func() {
 		websocketRequestCtx.BroadcastWebsocketConnectionRequestObservations(protocolObs)

@@ -338,8 +338,12 @@ func (wrc *websocketRequestContext) BroadcastMessageObservations(messageObservat
 	}()
 }
 
-// initializeMessageObservations creates a copy of observations for each websocket message.
-// This ensures per-message observations as required.
+// initializeMessageObservations creates a copy of observations.
+//
+// Once the connection is established, gateway-level observations are shared
+// between all messages for a single websocket connection so we initialize
+// a copy of the `RequestResponseObservations` struct containing the gateway
+// observations and the service ID.
 func (wrc *websocketRequestContext) initializeMessageObservations() *observation.RequestResponseObservations {
 	return &observation.RequestResponseObservations{
 		ServiceId: string(wrc.serviceID),
