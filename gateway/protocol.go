@@ -98,14 +98,15 @@ type ProtocolRequestContext interface {
 	// TODO_TECHDEBT(@commodity, @adshmh): Revisit all the Websocket specific functions
 	// in ProtocolRequestContext.
 	// - Too many websocket specific functions are exposed explicitly implying a poor interface.
-	// - Consider a separate interface for websocket-specific functions.
 	// - Revisit the need for exposing these at all through a refactor?
 	//
 	// TODO_TECHDEBT(@commodity, @adshmh): Revisit casing of websocket vs Websocket vs WebSocket through.
-	//
-	// TODO_REFACTOR: Refactor ProtocolRequestContext interface
-	// Current: Too many WebSocket-specific methods exposed at the interface level
-	// Suggestion: Consider a separate WebSocketProtocolContext interface or use composition
+	ProtocolRequestContextWebsocket
+}
+
+// ProtocolRequestContextWebsocket defines the functionality expected by the gateway from the protocol,
+// specifically for websocket requests
+type ProtocolRequestContextWebsocket interface {
 
 	// GetWebsocketConnectionHeaders returns protocol-specific headers needed for websocket connections.
 	// These headers contain protocol-specific information like session data, service IDs, etc.

@@ -15,10 +15,10 @@ import (
 	"github.com/buildwithgrove/path/request"
 )
 
-// The requestContext implements the gateway.ProtocolRequestContext interface.
+// The requestContext implements the gateway.ProtocolRequestContextWebsocket interface.
 // It handles protocol-level WebSocket message processing for both client and endpoint messages.
 // For example, client messages are signed and endpoint messages are validated.
-var _ gateway.ProtocolRequestContext = &requestContext{}
+var _ gateway.ProtocolRequestContextWebsocket = &requestContext{}
 
 // ---------- Connection Establishment ----------
 
@@ -30,7 +30,7 @@ func (rc *requestContext) GetWebsocketConnectionHeaders() (http.Header, error) {
 	// Requests to fallback endpoints bypass the protocol so RelayMiner headers are not needed.
 	// TODO_IMPROVE(@commoddity,@adshmh): Cleanly separate fallback endpoint handling from the protocol package.
 	// TODO_ARCHITECTURE: Extract fallback endpoint handling from protocol package
-	// Current: Fallback logic is scattered with if rc.selectedEndpoint.IsFallback() checks  
+	// Current: Fallback logic is scattered with if rc.selectedEndpoint.IsFallback() checks
 	// Suggestion: Use strategy pattern or separate fallback handler to cleanly separate concerns
 	if rc.selectedEndpoint.IsFallback() {
 		return http.Header{}, nil
@@ -41,10 +41,7 @@ func (rc *requestContext) GetWebsocketConnectionHeaders() (http.Header, error) {
 	return rc.getRelayMinerConnectionHeaders()
 }
 
-// getRelayMinerConnectionHeaders returns headers for RelayMiner websocket connections:
-//   - Target-Service-Id: The service ID of the target service
-//   - App-Address: The address of the session's application
-//   - Rpc-Type: Always "websocket" for websocket connection requests
+// getRelayMinerConnectionHeaders returns headers for RelayMiner websocket connections.
 func (rc *requestContext) getRelayMinerConnectionHeaders() (http.Header, error) {
 	sessionHeader := rc.selectedEndpoint.Session().GetHeader()
 
