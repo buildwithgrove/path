@@ -29,6 +29,9 @@ var _ gateway.ProtocolRequestContext = &requestContext{}
 func (rc *requestContext) GetWebsocketConnectionHeaders() (http.Header, error) {
 	// Requests to fallback endpoints bypass the protocol so RelayMiner headers are not needed.
 	// TODO_IMPROVE(@commoddity,@adshmh): Cleanly separate fallback endpoint handling from the protocol package.
+	// TODO_ARCHITECTURE: Extract fallback endpoint handling from protocol package
+	// Current: Fallback logic is scattered with if rc.selectedEndpoint.IsFallback() checks  
+	// Suggestion: Use strategy pattern or separate fallback handler to cleanly separate concerns
 	if rc.selectedEndpoint.IsFallback() {
 		return http.Header{}, nil
 	}
@@ -112,12 +115,12 @@ func (rc *requestContext) signClientWebsocketMessage(msgData []byte) ([]byte, er
 
 	signedRelayRequest, err := rc.relayRequestSigner.SignRelayRequest(unsignedRelayRequest, *app)
 	if err != nil {
-		return nil, fmt.Errorf("%w: %s", errRelayRequestSigningFailed, err.Error())
+		return nil, fmt.Errorf("%w: %s", errRelayRequestWebsocketMessageSigningFailed, err.Error())
 	}
 
 	relayRequestBz, err := signedRelayRequest.Marshal()
 	if err != nil {
-		return nil, fmt.Errorf("%w: %s", errRelayRequestSigningFailed, err.Error())
+		return nil, fmt.Errorf("%w: %s", errRelayRequestWebsocketMessageSigningFailed, err.Error())
 	}
 
 	return relayRequestBz, nil
@@ -151,14 +154,15 @@ func (rc *requestContext) ProcessProtocolEndpointWebsocketMessage(
 }
 
 // validateEndpointWebsocketMessage validates a message from the endpoint using the Shannon FullNode.
+// TODO_IMPROVE(@adshmh): Compare this to 'validateAndProcessResponse' and align the two implementations
+// w.r.t design, error handling, etc...
 func (rc *requestContext) validateEndpointWebsocketMessage(msgData []byte) ([]byte, error) {
 	// Validate the relay response using the Shannon FullNode
 	relayResponse, err := rc.fullNode.ValidateRelayResponse(sdk.SupplierAddress(rc.selectedEndpoint.Supplier()), msgData)
 	if err != nil {
-		rc.logger.Error().Err(err).Msg("❌ failed to validate relay response")
-		return nil, fmt.Errorf("%w: %s", errRelayResponseValidationFailed, err.Error())
+		rc.logger.Error().Err(err).Msg("❌ failed to validate relay response in websocket message")
+		return nil, fmt.Errorf("%w: %s", errRelayResponseInWebsocketMessageValidationFailed, err.Error())
 	}
-
 	rc.logger.Debug().Msgf("received message from protocol endpoint: %s", string(relayResponse.Payload))
 
 	return relayResponse.Payload, nil

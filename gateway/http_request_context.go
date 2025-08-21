@@ -323,9 +323,11 @@ func (rc *requestContext) BroadcastAllObservations() {
 			Protocol:    rc.protocolObservations,
 			Qos:         &qosObservations,
 		}
+
 		if rc.metricsReporter != nil {
 			rc.metricsReporter.Publish(observations)
 		}
+
 		// Need to account for an empty `data_reporter_config` field in the YAML config file.
 		// E.g. This can happen when running the Gateway in a local environment.
 		if rc.dataReporter != nil {

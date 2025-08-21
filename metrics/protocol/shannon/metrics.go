@@ -12,6 +12,12 @@ import (
 
 // TODO_TECHDEBT: Replace 'endpoint_domain' in the metrics to align with 'endpoint_url'
 // used through the codebase or vice versa.
+//
+// TODO_METRICS: Add additional WebSocket-specific metrics
+// - Message latency distribution (time between request and response for each message)
+// - Connection duration histogram (time from connection establishment to termination)
+// - Message size percentiles (distribution of message payload sizes)
+// - Subscription event rates (frequency of subscription events per connection)
 
 const (
 	// The POSIX process that emits metrics
