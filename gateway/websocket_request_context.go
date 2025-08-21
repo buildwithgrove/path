@@ -2,7 +2,6 @@ package gateway
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -411,11 +410,6 @@ func (wrc *websocketRequestContext) BroadcastWebsocketConnectionRequestObservati
 		wrc.metricsReporter.Publish(observations)
 	}
 	if wrc.dataReporter != nil {
-		observationsJSONString, err := json.Marshal(observations)
-		if err != nil {
-			wrc.logger.Error().Err(err).Msg("Error marshalling observations to JSON")
-		}
-		wrc.logger.Info().Str("observations", string(observationsJSONString)).Msg("Broadcasting observations to data reporter")
 		wrc.dataReporter.Publish(observations)
 	}
 }
