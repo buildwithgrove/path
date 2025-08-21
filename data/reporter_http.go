@@ -42,8 +42,8 @@ type DataReporterHTTP struct {
 func (drh *DataReporterHTTP) Publish(observations *observation.RequestResponseObservations) {
 	logger := drh.hydrateLogger(observations)
 
-	// TODO_MVP(@adshmh): Replace this with the new DataRecord struct once the data pipeline is updated.
-	// convert to legacy-formatted data record
+	// TODO_MVP(@adshmh): Replace this with the new DataRecord struct once
+	// the data pipeline is updated. convert to legacy-formatted data record
 	legacyDataRecord := buildLegacyDataRecord(logger, observations)
 
 	// Marshal the data record.

@@ -15,10 +15,18 @@ import "path/auth.proto"; // import RequestAuth message.
 //  2. Synthetic: internal infrastructure generated the service request for simulation and data purposes.
 enum RequestType {
   REQUEST_TYPE_UNSPECIFIED = 0;
+
   // Organic: Service request sent by a user.
   REQUEST_TYPE_ORGANIC = 1;
+
   // Synthetic: Service request sent by the endpoint hydrator: see gateway/hydrator.go.
   REQUEST_TYPE_SYNTHETIC = 2;
+
+  // Parallel: Service request sent by PATH for internal purposes.
+  REQUEST_TYPE_PARALLEL = 4;
+
+  // Fallback: Service request sent by PATH for internal purposes.
+  REQUEST_TYPE_FALLBACK = 5;
 }
 
 enum GatewayRequestErrorKind {
