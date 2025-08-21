@@ -2,6 +2,7 @@ package gateway
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -382,6 +383,12 @@ func (wrc *websocketRequestContext) initializeMessageObservations() *observation
 
 // ---------- WebSocket Connection Observations ----------
 
+// TODO_TECHDEBT(@commoddity): This is a temporary method to log the observations.
+// The Websocket-specific connection observations are not being set in the protocol/shannon/protocol.go
+// file. We will need a refactor of the Shannon protocol code to handle websocket-specific logic
+// without overly burdening the existing single `requestContext` struct with logic that does
+// not apply to HTTP.
+//
 // BroadcastWebsocketConnectionRequestObservations broadcasts a single connection-level observation.
 // This method combines protocol observations with gateway observations and publishes them.
 // This method should be called from a defer in handleWebSocketRequest.
@@ -404,6 +411,11 @@ func (wrc *websocketRequestContext) BroadcastWebsocketConnectionRequestObservati
 		wrc.metricsReporter.Publish(observations)
 	}
 	if wrc.dataReporter != nil {
+		observationsJSONString, err := json.Marshal(observations)
+		if err != nil {
+			wrc.logger.Error().Err(err).Msg("Error marshalling observations to JSON")
+		}
+		wrc.logger.Info().Str("observations", string(observationsJSONString)).Msg("Broadcasting observations to data reporter")
 		wrc.dataReporter.Publish(observations)
 	}
 }
@@ -425,6 +437,7 @@ func (wrc *websocketRequestContext) updateProtocolObservations(
 
 	// protocol context setup error observation is set: use it.
 	if protocolConnectionObservations != nil {
+		wrc.logger.Info().Str("protocolConnectionObservations", protocolConnectionObservations.String()).Msg("Setting protocol connection observations")
 		wrc.protocolConnectionObservations = protocolConnectionObservations
 		return
 	}
