@@ -4,6 +4,10 @@ load("ext://helm_resource", "helm_resource", "helm_repo")
 load('ext://k8s_attach', 'k8s_attach')
 load("ext://configmap", "configmap_create")
 
+analytics_settings(
+    enabled=False,
+)
+
 # A list of directories where changes trigger a hot-reload of PATH.
 # IMPORTANT_DEV_NOTE: this list needs to be updated each time a new package is added to the repo.
 hot_reload_dirs = [
@@ -140,7 +144,7 @@ local_resource(
     'path-binary',
     '''
     echo "Building Go binary..."
-    CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -buildvcs=false -o bin/path ./cmd 
+    CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -buildvcs=false -o bin/path ./cmd
     ''',
     deps=hot_reload_dirs,
     ignore=['**/node_modules', '.git'],
