@@ -22,7 +22,6 @@ import (
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
 	"github.com/buildwithgrove/path/observation"
-	protocolobservations "github.com/buildwithgrove/path/observation/protocol"
 )
 
 // Gateway handles end-to-end service requests via HandleHTTPServiceRequest:
@@ -183,10 +182,6 @@ func (g Gateway) handleWebSocketRequest(
 		messageObservationsChan: make(chan *observation.RequestResponseObservations, 1_000),
 	}
 
-	// Variable to capture protocol observations for broadcasting
-	// Defined here to avoid needing to define protocol observations in the websocketRequestContext struct.
-	var protocolObs *protocolobservations.Observations
-
 	// Defer broadcasting connection observations to ensure they are sent ONLY when the connection terminates.
 	// This implements the TODO requirement to broadcast observations with complete connection duration.
 	//
@@ -197,7 +192,7 @@ func (g Gateway) handleWebSocketRequest(
 	// 	 - Accurate connection lifecycle observations (not immediate success observations)
 	defer func() {
 		logger.Info().Msg("🔍 Broadcasting WebSocket connection observations with complete duration")
-		websocketRequestCtx.BroadcastWebsocketConnectionRequestObservations(protocolObs)
+		websocketRequestCtx.BroadcastWebsocketConnectionRequestObservations()
 	}()
 
 	// Initialize the websocket request context using the HTTP request.
@@ -216,7 +211,7 @@ func (g Gateway) handleWebSocketRequest(
 	}
 
 	// Build the protocol context for the websocket request.
-	protocolObs, err = websocketRequestCtx.buildProtocolContextFromHTTPRequest(httpReq)
+	err = websocketRequestCtx.buildProtocolContextFromHTTPRequest(httpReq)
 	if err != nil {
 		logger.Error().Err(err).Msg("❌ Error building protocol context for websocket request")
 		return

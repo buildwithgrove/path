@@ -107,7 +107,6 @@ type ProtocolRequestContext interface {
 // ProtocolRequestContextWebsocket defines the functionality expected by the gateway from the protocol,
 // specifically for websocket requests
 type ProtocolRequestContextWebsocket interface {
-
 	// GetWebsocketConnectionHeaders returns protocol-specific headers needed for websocket connections.
 	// These headers contain protocol-specific information like session data, service IDs, etc.
 	GetWebsocketConnectionHeaders() (http.Header, error)
