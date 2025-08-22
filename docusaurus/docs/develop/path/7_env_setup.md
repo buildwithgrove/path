@@ -25,6 +25,7 @@ We use [Kind](https://kind.sigs.k8s.io/) (Kubernetes in Docker) for running the 
 
 **Optional development tools** (`make install_optional_tools`):
 
+- [**Websocket Load Test**](https://github.com/commoddity/websocket-load-test): Websocket load testing tool
 - [**Relay Util**](https://github.com/commoddity/relay-util): Load testing tool for sending configurable batches of relays concurrently
 - [**Graphviz**](https://graphviz.org): Required for generating profiling & debugging performance
 - [**Uber Mockgen**](https://github.com/uber-go/mock): Mock interface generator for testing
