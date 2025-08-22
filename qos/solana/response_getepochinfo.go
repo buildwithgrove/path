@@ -19,8 +19,8 @@ func responseUnmarshallerGetEpochInfo(
 	logger = logger.With("response_processor", "getEpochInfo")
 
 	getEpochInfoResponse := responseToGetEpochInfo{
-		Logger:   logger,
-		Response: jsonrpcResp,
+		Logger:          logger,
+		jsonrpcResponse: jsonrpcResp,
 	}
 
 	// The endpoint returned an error: no need to do further processing of the response.
@@ -60,8 +60,9 @@ type epochInfo struct {
 // response to a `getEpochInfo` request.
 type responseToGetEpochInfo struct {
 	Logger polylog.Logger
+
 	// Response stores the JSONRPC response parsed from an endpoint's response bytes.
-	jsonrpc.Response
+	jsonrpcResponse jsonrpc.Response
 
 	// epochInfo stores the epochInfo struct that is parsed from the response to a `getEpochInfo` request.
 	epochInfo epochInfo
@@ -71,6 +72,8 @@ type responseToGetEpochInfo struct {
 // Implements the response interface used by the requestContext struct.
 func (r responseToGetEpochInfo) GetObservation() qosobservations.SolanaEndpointObservation {
 	return qosobservations.SolanaEndpointObservation{
+		// Set the HTTP status code using the JSONRPC Response
+		HttpStatusCode: int32(r.jsonrpcResponse.GetRecommendedHTTPStatusCode()),
 		ResponseObservation: &qosobservations.SolanaEndpointObservation_GetEpochInfoResponse{
 			GetEpochInfoResponse: &qosobservations.SolanaGetEpochInfoResponse{
 				BlockHeight: r.epochInfo.BlockHeight,
@@ -88,5 +91,5 @@ func (r responseToGetEpochInfo) GetObservation() qosobservations.SolanaEndpointO
 //  3. An endpoint returns a valid JSONRPC response to a valid user request:
 //     This should be returned to the user as-is.
 func (r responseToGetEpochInfo) GetJSONRPCResponse() jsonrpc.Response {
-	return r.Response
+	return r.jsonrpcResponse
 }
