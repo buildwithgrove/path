@@ -336,7 +336,7 @@ func (rc *requestContext) sendProtocolRelay(payload protocol.Payload) (protocol.
 	// This can happen during session rollover when sendRelayWithFallback spawns
 	// a goroutine that calls sendProtocolRelay with a fallback endpoint selected
 	if selectedEndpoint.IsFallback() {
-		rc.logger.Debug().Msg("Fallback endpoint detected in sendProtocolRelay, redirecting to sendFallbackRelay")
+		rc.logger.Error().Msg("SHOULD NEVER HAPPEN: Select endpoint should not be a fallback endpoint in this code path.")
 		return rc.sendFallbackRelay(selectedEndpoint, payload)
 	}
 
