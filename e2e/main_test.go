@@ -79,8 +79,9 @@ func init() {
 // -------------------- Test Function --------------------
 
 func Test_PATH_E2E(t *testing.T) {
-	// Initialize test context
-	ctx, cancel := context.WithCancel(context.Background())
+	// Initialize test context with a reasonable timeout to prevent hanging
+	// Each method gets maxDuration which is typically ~10-20 seconds, so 5 minutes should be plenty
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 	setupSIGINTHandler(cancel)
 

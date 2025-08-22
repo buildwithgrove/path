@@ -250,7 +250,21 @@ func runAttack(
 	runVegetaAttackLoop(ctx, attackCh, resultsChan)
 
 	close(resultsChan)
-	resultsWg.Wait()
+
+	// Wait for results processing with a timeout to prevent hanging
+	done := make(chan struct{})
+	go func() {
+		resultsWg.Wait()
+		close(done)
+	}()
+
+	select {
+	case <-done:
+		// Results processing completed normally
+	case <-ctx.Done():
+		// Context was cancelled, results processing may not be complete
+		// This is acceptable as we're shutting down
+	}
 
 	calculateAllSuccessRates(metrics)
 	calculatePercentiles(metrics)
@@ -363,7 +377,14 @@ attackLoop:
 			if !ok {
 				break attackLoop
 			}
-			resultsChan <- res
+			// Use a select to avoid blocking on resultsChan send
+			select {
+			case resultsChan <- res:
+				// Successfully sent result
+			case <-ctx.Done():
+				// Context cancelled while trying to send
+				break attackLoop
+			}
 		}
 	}
 }
