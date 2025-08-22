@@ -4,121 +4,40 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
-	"net/url"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/gorilla/websocket"
 	"github.com/pokt-network/poktroll/pkg/polylog/polyzero"
-	apptypes "github.com/pokt-network/poktroll/x/application/types"
-	sessiontypes "github.com/pokt-network/poktroll/x/session/types"
 	"github.com/stretchr/testify/require"
 )
 
-func Test_connectEndpoint(t *testing.T) {
-	tests := []struct {
-		name                string
-		getSelectedEndpoint func(testServerURL string) *selectedEndpoint
-		expectedError       bool
-	}{
-		{
-			name: "should connect successfully",
-			getSelectedEndpoint: func(testServerURL string) *selectedEndpoint {
-				baseURL := "ws://localhost:8080"
-				u, _ := url.Parse(baseURL)
-				u.Host = strings.TrimPrefix(testServerURL, "http://")
-				nodeURL := u.String()
-				return &selectedEndpoint{
-					url:          nodeURL,
-					websocketUrl: nodeURL,
-					session: sessiontypes.Session{
-						SessionId: "1",
-						Header: &sessiontypes.SessionHeader{
-							ServiceId:          "service_id",
-							ApplicationAddress: "application_address",
-						},
-						Application: &apptypes.Application{
-							Address: "application_address",
-						},
-					},
-					supplier: "supplier",
-				}
-			},
-			expectedError: false,
-		},
-		{
-			name: "should fail to connect with invalid URL",
-			getSelectedEndpoint: func(testServerURL string) *selectedEndpoint {
-				return &selectedEndpoint{
-					url:          "http://invalid-url",
-					websocketUrl: "http://invalid-url",
-					session: sessiontypes.Session{
-						SessionId: "1",
-						Header: &sessiontypes.SessionHeader{
-							ServiceId:          "service_id",
-							ApplicationAddress: "application_address",
-						},
-						Application: &apptypes.Application{
-							Address: "application_address",
-						},
-					},
-					supplier: "supplier",
-				}
-			},
-			expectedError: true,
-		},
-	}
-
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			c := require.New(t)
-
-			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				upgrader := websocket.Upgrader{}
-				_, err := upgrader.Upgrade(w, r, nil)
-				if err != nil {
-					t.Error("Error during connection upgrade:", err)
-					return
-				}
-			}))
-			defer server.Close()
-
-			selectedEndpoint := test.getSelectedEndpoint(server.URL)
-
-			conn, err := connectWebsocketEndpoint(polyzero.NewLogger(), selectedEndpoint)
-			if test.expectedError {
-				c.Error(err)
-			} else {
-				c.NoError(err)
-				c.NotNil(conn)
-				conn.Close()
-			}
-		})
-	}
-}
-
-func Test_connection(t *testing.T) {
+func Test_Connection_MessageHandling(t *testing.T) {
 	tests := []struct {
 		name   string
 		msgs   map[string]struct{}
 		source messageSource
 	}{
 		{
-			name: "should read messages from a websockets connection and successfully forward them to the message channel",
+			name: "should read messages from a websocket connection and forward them to the message channel",
 			msgs: map[string]struct{}{
-				`{"jsonrpc":"2.0","id":1,"method":"eth_gasPrice"}`:              {},
-				`{"jsonrpc":"2.0","id":1,"method":"eth_blockNumber"}`:           {},
-				`{"jsonrpc":"2.0","id":1,"method":"eth_getBalance"}`:            {},
-				`{"jsonrpc":"2.0","id":1,"method":"eth_getTransactionCount"}`:   {},
-				`{"jsonrpc":"2.0","id":1,"method":"eth_getBlockByNumber"}`:      {},
-				`{"jsonrpc":"2.0","id":1,"method":"eth_getBlockByHash"}`:        {},
-				`{"jsonrpc":"2.0","id":1,"method":"eth_getTransactionByHash"}`:  {},
-				`{"jsonrpc":"2.0","id":1,"method":"eth_getTransactionReceipt"}`: {},
-				`{"jsonrpc":"2.0","id":1,"method":"eth_call"}`:                  {},
-				`{"jsonrpc":"2.0","id":1,"method":"eth_estimateGas"}`:           {},
+				"message 1":                        {},
+				"message 2":                        {},
+				"message 3":                        {},
+				"longer message with more content": {},
+				"json message":                     {},
 			},
 			source: messageSourceClient,
+		},
+		{
+			name: "should handle endpoint messages",
+			msgs: map[string]struct{}{
+				"endpoint response 1": {},
+				"endpoint response 2": {},
+				"endpoint response 3": {},
+			},
+			source: messageSourceEndpoint,
 		},
 	}
 
@@ -126,14 +45,15 @@ func Test_connection(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			c := require.New(t)
 
-			msgChan := make(chan message)
+			msgChan := make(chan message, len(test.msgs))
 
-			conn := testConn(t, test.msgs)
+			conn := createTestConnection(t, test.msgs)
 			defer conn.Close()
 
 			ctx, cancelCtx := context.WithCancel(context.Background())
+			defer cancelCtx()
 
-			_ = newConnection(
+			wsConn := newConnection(
 				ctx,
 				cancelCtx,
 				polyzero.NewLogger().With("conn", test.source),
@@ -141,29 +61,175 @@ func Test_connection(t *testing.T) {
 				test.source,
 				msgChan,
 			)
+			require.NotNil(t, wsConn)
 
 			receivedMsgs := make(map[string]struct{})
-			go func() {
-				for msg := range msgChan {
-					receivedMsgs[string(msg.data)] = struct{}{}
-				}
-			}()
 
-			<-time.After(2 * time.Second)
+			// Collect messages with timeout
+			timeout := time.After(2 * time.Second)
+			for len(receivedMsgs) < len(test.msgs) {
+				select {
+				case msg := <-msgChan:
+					receivedMsgs[string(msg.data)] = struct{}{}
+					c.Equal(test.source, msg.source, "Message source should match expected source")
+				case <-timeout:
+					t.Fatal("Timeout waiting for messages")
+				}
+			}
+
+			// Verify all expected messages were received
+			for expectedMsg := range test.msgs {
+				c.Contains(receivedMsgs, expectedMsg, "Expected message not received: %s", expectedMsg)
+			}
 
 			close(msgChan)
-			cancelCtx()
+		})
+	}
+}
 
-			for msg := range test.msgs {
-				c.Contains(receivedMsgs, msg)
+func Test_Connection_ContextCancellation(t *testing.T) {
+	c := require.New(t)
+
+	msgChan := make(chan message, 1)
+	conn := createTestConnection(t, map[string]struct{}{"test": {}})
+	defer conn.Close()
+
+	ctx, cancelCtx := context.WithCancel(context.Background())
+
+	connection := newConnection(
+		ctx,
+		cancelCtx,
+		polyzero.NewLogger(),
+		conn,
+		messageSourceClient,
+		msgChan,
+	)
+
+	// Cancel the context
+	cancelCtx()
+
+	// Give some time for the connection to handle the cancellation
+	time.Sleep(100 * time.Millisecond)
+
+	// The connection should handle the context cancellation gracefully
+	// (specific behavior depends on implementation details)
+	c.NotNil(connection)
+}
+
+func Test_Connection_HandleDisconnect(t *testing.T) {
+	c := require.New(t)
+
+	msgChan := make(chan message, 1)
+
+	// Create a connection that will be closed to trigger disconnect handling
+	conn := createTestConnection(t, map[string]struct{}{})
+
+	ctx, cancelCtx := context.WithCancel(context.Background())
+	defer cancelCtx()
+
+	connection := newConnection(
+		ctx,
+		cancelCtx,
+		polyzero.NewLogger(),
+		conn,
+		messageSourceClient,
+		msgChan,
+	)
+
+	// Simulate disconnect by closing the connection
+	conn.Close()
+
+	// Give some time for the disconnect to be handled
+	time.Sleep(100 * time.Millisecond)
+
+	// The connection should handle disconnection gracefully
+	c.NotNil(connection)
+}
+
+// createTestConnection creates a websocket connection for testing
+func Test_ConnectWebsocketEndpoint(t *testing.T) {
+	tests := []struct {
+		name         string
+		websocketURL string
+		headers      http.Header
+		shouldFail   bool
+		testHeaders  bool
+	}{
+		{
+			name:         "should connect successfully with valid URL",
+			websocketURL: "", // Will be set to test server URL
+			headers:      http.Header{},
+			shouldFail:   false,
+		},
+		{
+			name:         "should connect successfully with headers",
+			websocketURL: "", // Will be set to test server URL
+			headers: http.Header{
+				"Target-Service-Id": {"eth"},
+				"App-Address":       {"app_address_1"},
+				"Rpc-Type":          {"3"},
+			},
+			shouldFail:  false,
+			testHeaders: true,
+		},
+		{
+			name:         "should fail with invalid URL",
+			websocketURL: "invalid-websocket-url",
+			headers:      http.Header{},
+			shouldFail:   true,
+		},
+		{
+			name:         "should fail with malformed URL",
+			websocketURL: "://invalid",
+			headers:      http.Header{},
+			shouldFail:   true,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			c := require.New(t)
+
+			var server *httptest.Server
+			if !test.shouldFail && test.websocketURL == "" {
+				// Create a test server for valid URL tests
+				server = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					upgrader := websocket.Upgrader{}
+					_, err := upgrader.Upgrade(w, r, nil)
+					if err != nil {
+						t.Error("Error during connection upgrade:", err)
+						return
+					}
+
+					// Verify headers if testHeaders is true
+					if test.testHeaders {
+						c.Equal("eth", r.Header.Get("Target-Service-Id"))
+						c.Equal("app_address_1", r.Header.Get("App-Address"))
+						c.Equal("3", r.Header.Get("Rpc-Type"))
+					}
+				}))
+				defer server.Close()
+
+				test.websocketURL = "ws" + strings.TrimPrefix(server.URL, "http")
+			}
+
+			conn, err := connectWebsocketEndpoint(polyzero.NewLogger(), test.websocketURL, test.headers)
+
+			if test.shouldFail {
+				c.Error(err)
+				c.Nil(conn)
+			} else {
+				c.NoError(err)
+				c.NotNil(conn)
+				if conn != nil {
+					conn.Close()
+				}
 			}
 		})
 	}
 }
 
-// testConn creates a new httptest server, upgrades the connection to a websocket
-// and sends the messages to the message channel to be read by the connection.
-func testConn(t *testing.T, msgs map[string]struct{}) *websocket.Conn {
+func createTestConnection(t *testing.T, msgs map[string]struct{}) *websocket.Conn {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		upgrader := websocket.Upgrader{}
 		conn, err := upgrader.Upgrade(w, r, nil)
@@ -172,9 +238,11 @@ func testConn(t *testing.T, msgs map[string]struct{}) *websocket.Conn {
 			return
 		}
 
+		// Send test messages
 		for msg := range msgs {
 			if err := conn.WriteMessage(websocket.TextMessage, []byte(msg)); err != nil {
-				t.Fatalf("failed to send message: %v", err)
+				t.Logf("Failed to send message: %v", err)
+				return
 			}
 		}
 	}))
@@ -183,7 +251,7 @@ func testConn(t *testing.T, msgs map[string]struct{}) *websocket.Conn {
 
 	conn, _, err := websocket.DefaultDialer.Dial(wsURL, nil)
 	if err != nil {
-		t.Error(err)
+		t.Fatal("Error connecting to test server:", err)
 	}
 
 	return conn

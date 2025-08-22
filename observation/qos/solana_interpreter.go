@@ -73,18 +73,26 @@ func (i *SolanaObservationInterpreter) GetRequestErrorType() string {
 	return i.Observations.RequestError.ErrorKind.String()
 }
 
-// GetRequestHTTPStatus returns the HTTP status code from the request error.
-// Returns 200 if request was successful, 0 if observations are nil.
+// GetRequestHTTPStatus returns the HTTP status code from the last endpoint observation.
+// Returns 0 if observations are nil or no endpoint observations exist.
 func (i *SolanaObservationInterpreter) GetRequestHTTPStatus() int32 {
 	if i.Observations == nil {
 		i.Logger.ProbabilisticDebugInfo(polylog.ProbabilisticDebugInfoProb).Msg("SHOULD RARELY HAPPEN: Cannot get HTTP status: nil observations")
 		return 0 // Return 0 to indicate observation issues to metrics
 	}
 
-	// RequestError being nil is normal for successful requests
-	if i.Observations.RequestError == nil {
-		return 200 // OK status for successful requests
+	// If there's a request error, return its HTTP status code
+	if i.Observations.RequestError != nil {
+		return i.Observations.RequestError.HttpStatusCode
 	}
 
-	return i.Observations.RequestError.HttpStatusCode
+	// Loop through endpoint observations and return the HTTP status code from the last one
+	if len(i.Observations.EndpointObservations) > 0 {
+		lastObservation := i.Observations.EndpointObservations[len(i.Observations.EndpointObservations)-1]
+		return lastObservation.HttpStatusCode
+	}
+
+	// No endpoint observations available
+	i.Logger.ProbabilisticDebugInfo(polylog.ProbabilisticDebugInfoProb).Msg("SHOULD RARELY HAPPEN: Cannot get HTTP status: no endpoint observations available")
+	return 0
 }

@@ -125,7 +125,9 @@ func Test_handleHTTPServiceRequest(t *testing.T) {
 					}
 					if test.expectedStatus == http.StatusOK {
 						w.WriteHeader(http.StatusOK)
-						_, _ = w.Write(test.expectedBytes)
+						numBytesWritten, err := w.Write(test.expectedBytes)
+						require.NoError(t, err)
+						require.Equal(t, len(test.expectedBytes), numBytesWritten)
 						return nil
 					} else {
 						http.Error(w, "failed to send service request: some error", http.StatusInternalServerError)

@@ -6,12 +6,10 @@ import (
 	"fmt"
 	"maps"
 	"math/rand"
-	"net/http"
 	"strconv"
 	"sync"
 	"time"
 
-	"github.com/gorilla/websocket"
 	"github.com/pokt-network/poktroll/pkg/polylog"
 	"github.com/pokt-network/poktroll/pkg/relayer/proxy"
 	apptypes "github.com/pokt-network/poktroll/x/application/types"
@@ -22,9 +20,16 @@ import (
 	"github.com/buildwithgrove/path/gateway"
 	protocolobservations "github.com/buildwithgrove/path/observation/protocol"
 	"github.com/buildwithgrove/path/protocol"
-	"github.com/buildwithgrove/path/websockets"
 )
 
+// TODO_IMPROVE(@commoddity): Re-evaluate how much of this code should live in the shannon-sdk package.
+
+// TODO_TECHDEBT(@olshansk): Cleanup the code in this file by:
+// - Renaming this to request_context.go
+// - Moving HTTP request code to a dedicated file
+
+// TODO_TECHDEBT(@adshmh): Make this threshold configurable.
+//
 // Maximum time to wait before using a fallback endpoint.
 // TODO_TECHDEBT(@adshmh): Make this threshold configurable.
 const maxWaitBeforeFallbackMillisecond = 1_000
@@ -119,50 +124,6 @@ func (rc *requestContext) HandleServiceRequest(payload protocol.Payload) (protoc
 	return relayResponse, err
 }
 
-// HandleWebsocketRequest:
-//   - Opens a persistent websocket connection to the selected endpoint.
-//   - Satisfies gateway.ProtocolRequestContext interface.
-func (rc *requestContext) HandleWebsocketRequest(req *http.Request, w http.ResponseWriter) error {
-	selectedEndpoint := rc.getSelectedEndpoint()
-	if selectedEndpoint == nil {
-		return fmt.Errorf("handleWebsocketRequest: no endpoint has been selected on service %s", rc.serviceID)
-	}
-
-	rc.logger = rc.logger.With(
-		"endpoint_url", selectedEndpoint.PublicURL(),
-		"endpoint_addr", selectedEndpoint.Addr(),
-		"service_id", rc.serviceID,
-	)
-
-	// Upgrade HTTP request from client to websocket connection.
-	// - Connection is passed to websocket bridge for Client <-> Gateway communication.
-	upgrader := websocket.Upgrader{CheckOrigin: func(r *http.Request) bool { return true }}
-	clientConn, err := upgrader.Upgrade(w, req, nil)
-	if err != nil {
-		rc.logger.Error().Err(err).Msg("Error upgrading websocket connection request")
-		return err
-	}
-
-	bridge, err := websockets.NewBridge(
-		rc.logger,
-		clientConn,
-		selectedEndpoint,
-		rc.relayRequestSigner,
-		rc.fullNode,
-	)
-	if err != nil {
-		rc.logger.Error().Err(err).Msg("Error creating websocket bridge")
-		return err
-	}
-
-	// Run bridge in goroutine to avoid blocking main thread.
-	go bridge.Run()
-
-	rc.logger.Info().Msg("websocket connection established")
-
-	return nil
-}
-
 // GetObservations:
 // - Returns Shannon protocol-level observations for the current request context.
 // - Enhanced observations include detailed error classification for metrics generation.
@@ -177,9 +138,13 @@ func (rc *requestContext) GetObservations() protocolobservations.Observations {
 		Shannon: &protocolobservations.ShannonObservationsList{
 			Observations: []*protocolobservations.ShannonRequestObservations{
 				{
-					ServiceId:            string(rc.serviceID),
-					RequestError:         rc.requestErrorObservation,
-					EndpointObservations: rc.endpointObservations,
+					ServiceId:    string(rc.serviceID),
+					RequestError: rc.requestErrorObservation,
+					ObservationData: &protocolobservations.ShannonRequestObservations_HttpObservations{
+						HttpObservations: &protocolobservations.ShannonHTTPEndpointObservations{
+							EndpointObservations: rc.endpointObservations,
+						},
+					},
 				},
 			},
 		},

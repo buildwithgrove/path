@@ -71,8 +71,14 @@ func (ses *sanctionedEndpointsStore) ApplyObservations(shannonObservations []*pr
 
 	// For each observation set:
 	for _, observationSet := range shannonObservations {
+		httpObservations := observationSet.GetHttpObservations()
+		if httpObservations == nil {
+			logger.Warn().Msg("❌ SHOULD NEVER HAPPEN: skipping processing: received empty HTTP observations")
+			continue
+		}
+
 		// For each endpoint observation in the set:
-		for _, endpointObservation := range observationSet.GetEndpointObservations() {
+		for _, endpointObservation := range httpObservations.GetEndpointObservations() {
 			// Build endpoint from observation
 			endpoint := buildEndpointFromObservation(endpointObservation)
 
