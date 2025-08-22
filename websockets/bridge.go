@@ -45,6 +45,11 @@ type WebsocketMessageProcessor interface {
 // - All error paths eventually lead to bridge.shutdown() for complete resource cleanup
 //
 // Full data flow: Client <---clientConn---> PATH bridge <---endpointConn---> Relay Miner bridge <------> Endpoint
+//
+// TODO_DOCS: Create WebSocket architecture diagram
+// - Document the full flow from client through bridge to endpoint
+// - Include observation flow and error handling paths
+// - Show interaction between gateway, protocol, and QoS layers for WebSocket messages
 type bridge struct {
 	// ctx is used to stop the bridge when the context is canceled from either connection
 	ctx    context.Context
@@ -176,7 +181,7 @@ func (b *bridge) start() {
 	// Listen for the context to be canceled and shut down the bridge
 	go func() {
 		<-b.ctx.Done()
-		b.shutdown(ErrBridgeContextCancelled)
+		b.shutdown(ErrBridgeContextCanceled)
 	}()
 
 	for msg := range b.msgChan {
@@ -253,7 +258,7 @@ func (b *bridge) shutdown(err error) {
 func (b *bridge) determineCloseCodeAndMessage(err error) (int, string) {
 	// Check for specific error types using errors.Is for proper error chain handling
 	switch {
-	case errors.Is(err, ErrBridgeContextCancelled):
+	case errors.Is(err, ErrBridgeContextCanceled):
 		// Expected shutdown - encourage reconnection
 		return websocket.CloseServiceRestart, "service restarting, please reconnect"
 

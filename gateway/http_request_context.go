@@ -323,6 +323,7 @@ func (rc *requestContext) BroadcastAllObservations() {
 			Protocol:    rc.protocolObservations,
 			Qos:         &qosObservations,
 		}
+
 		if rc.metricsReporter != nil {
 			rc.metricsReporter.Publish(observations)
 		}

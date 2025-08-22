@@ -4,9 +4,9 @@ import "errors"
 
 // Bridge shutdown error types used to determine appropriate WebSocket close codes
 var (
-	// ErrBridgeContextCancelled indicates the bridge was shut down due to context cancellation
-	// This typically happens during graceful shutdown or when the gateway context is cancelled
-	ErrBridgeContextCancelled = errors.New("bridge context cancelled")
+	// ErrBridgeContextCanceled indicates the bridge was shut down due to context cancellation
+	// This typically happens during graceful shutdown or when the gateway context is canceled
+	ErrBridgeContextCanceled = errors.New("bridge context canceled")
 
 	// ErrBridgeMessageProcessingFailed indicates the bridge was shut down due to message processing errors
 	// This includes protocol errors, QoS validation failures, or message transformation failures

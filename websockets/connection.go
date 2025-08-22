@@ -12,6 +12,9 @@ import (
 )
 
 // TODO_IMPROVE(@commoddity): Make all of these configurable
+// TODO_CONFIG: Make WebSocket timeouts configurable
+// Current: Hardcoded timeouts in websockets/connection.go:15-24
+// Suggestion: Move to configuration file with sensible defaults
 const (
 	// Time allowed to write a message to the peer over the websocket connection
 	writeWaitDuration = 10 * time.Second
@@ -180,6 +183,7 @@ func (c *websocketConnection) connLoop() {
 // 3. This provides async, coordinated shutdown signaling between connections and bridge
 //
 // Note: This is for network transport failures, not application-level message processing errors.
+// TODO_FUTURE(#408): Revisit how we handle connection failures.
 func (c *websocketConnection) handleDisconnect(err error) {
 	c.logger.Warn().Err(err).Msgf("🔌 Handling websocket disconnection")
 	c.cancelCtx() // Cancel the context to signal the bridge to handle shutdown

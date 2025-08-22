@@ -95,6 +95,18 @@ type ProtocolRequestContext interface {
 	//  - `maxed-out endpoint` on `endpoint_101`.
 	GetObservations() protocolobservations.Observations
 
+	// TODO_TECHDEBT(@commodity, @adshmh): Revisit all the Websocket specific functions
+	// in ProtocolRequestContext.
+	// - Too many websocket specific functions are exposed explicitly implying a poor interface.
+	// - Revisit the need for exposing these at all through a refactor?
+	//
+	// TODO_TECHDEBT(@commodity, @adshmh): Revisit casing of websocket vs Websocket vs WebSocket through.
+	ProtocolRequestContextWebsocket
+}
+
+// ProtocolRequestContextWebsocket defines the functionality expected by the gateway from the protocol,
+// specifically for websocket requests
+type ProtocolRequestContextWebsocket interface {
 	// GetWebsocketConnectionHeaders returns protocol-specific headers needed for websocket connections.
 	// These headers contain protocol-specific information like session data, service IDs, etc.
 	GetWebsocketConnectionHeaders() (http.Header, error)

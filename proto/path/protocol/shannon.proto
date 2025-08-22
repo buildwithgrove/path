@@ -232,6 +232,7 @@ message ShannonWebsocketMessageObservation {
 
 // ShannonRequestObservations represents observations collected during the processing
 // of a single Shannon protocol relay request.
+// Next free field: 6
 message ShannonRequestObservations {
   // Service ID (i.e. chain ID) for which the observation was made
   string service_id = 1;
@@ -243,10 +244,10 @@ message ShannonRequestObservations {
   oneof observation_data {
     // HTTP endpoint observations (multiple possible due to retries)
     ShannonHTTPEndpointObservations http_observations = 3;
-    
+
     // Single WebSocket connection lifecycle observation
     ShannonWebsocketConnectionObservation websocket_connection_observation = 4;
-    
+
     // Single WebSocket message observation
     ShannonWebsocketMessageObservation websocket_message_observation = 5;
   }

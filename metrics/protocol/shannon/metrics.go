@@ -12,6 +12,12 @@ import (
 
 // TODO_TECHDEBT: Replace 'endpoint_domain' in the metrics to align with 'endpoint_url'
 // used through the codebase or vice versa.
+//
+// TODO_METRICS: Add additional WebSocket-specific metrics
+// - Message latency distribution (time between request and response for each message)
+// - Connection duration histogram (time from connection establishment to termination)
+// - Message size percentiles (distribution of message payload sizes)
+// - Subscription event rates (frequency of subscription events per connection)
 
 const (
 	// The POSIX process that emits metrics
@@ -375,6 +381,10 @@ func PublishMetrics(
 }
 
 // recordRelayTotal tracks relay counts with exemplars for high-cardinality data.
+// Success determination varies by observation type:
+// - HTTP observations: Success if ANY endpoint observation has ErrorType = UNSPECIFIED (supports parallel requests)
+// - WebSocket connection observations: Success if ErrorType = UNSPECIFIED (single connection establishment)
+// - WebSocket message observations: Success if ErrorType = UNSPECIFIED (individual message processing)
 func recordRelayTotal(
 	logger polylog.Logger,
 	observations *protocolobservations.ShannonRequestObservations,
@@ -409,6 +419,9 @@ func recordRelayTotal(
 
 	switch obsData := observations.GetObservationData().(type) {
 	case *protocolobservations.ShannonRequestObservations_HttpObservations:
+		// HTTP observations can contain multiple endpoint attempts due to parallel requests or retries.
+		// Success is determined by checking if ANY endpoint observation succeeded (ErrorType = UNSPECIFIED).
+		// This supports the HTTP protocol's ability to try multiple endpoints for a single request.
 		endpointObservations := obsData.HttpObservations.GetEndpointObservations()
 		// Skip if there are no endpoint observations
 		if len(endpointObservations) == 0 {
@@ -420,22 +433,28 @@ func recordRelayTotal(
 		lastObs := endpointObservations[len(endpointObservations)-1]
 		endpointURL = lastObs.GetEndpointUrl()
 
-		// Determine if any of the observations were successful.
+		// Determine if any of the observations were successful using explicit helper function
 		success = isAnyObservationSuccessful(endpointObservations)
 
 		// Determine if any of the endpoints was a fallback
 		usedFallbackEndpoint = isFallbackEndpointUsed(endpointObservations)
 
 	case *protocolobservations.ShannonRequestObservations_WebsocketConnectionObservation:
+		// WebSocket connection observations track the establishment/termination of a single WebSocket connection.
+		// Success is determined by whether the connection was established successfully (no ErrorType set).
+		// This represents the initial handshake and connection setup phase, not individual message processing.
 		wsConnectionObs := obsData.WebsocketConnectionObservation
 		endpointURL = wsConnectionObs.GetEndpointUrl()
-		success = wsConnectionObs.GetErrorType() == protocolobservations.ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_UNSPECIFIED
+		success = isWebsocketConnectionSuccessful(wsConnectionObs)
 		usedFallbackEndpoint = wsConnectionObs.GetIsFallbackEndpoint()
 
 	case *protocolobservations.ShannonRequestObservations_WebsocketMessageObservation:
+		// WebSocket message observations track individual message processing within an established connection.
+		// Success is determined by whether the specific message was processed without errors.
+		// This represents the processing of a single request/response or subscription event within the connection.
 		wsMessageObs := obsData.WebsocketMessageObservation
 		endpointURL = wsMessageObs.GetEndpointUrl()
-		success = wsMessageObs.GetErrorType() == protocolobservations.ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_UNSPECIFIED
+		success = isWebsocketMessageSuccessful(wsMessageObs)
 		usedFallbackEndpoint = wsMessageObs.GetIsFallbackEndpoint()
 
 	default:
@@ -478,7 +497,8 @@ func extractRequestError(observations *protocolobservations.ShannonRequestObserv
 	return true, requestErr.GetErrorType().String()
 }
 
-// isAnyObservationSuccessful returns true if any endpoint observation indicates a success.
+// isAnyObservationSuccessful returns true if any HTTP endpoint observation indicates a success.
+// Success is determined by checking if ErrorType is UNSPECIFIED (meaning no error occurred).
 func isAnyObservationSuccessful(observations []*protocolobservations.ShannonEndpointObservation) bool {
 	for _, obs := range observations {
 		if obs.GetErrorType() == protocolobservations.ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_UNSPECIFIED {
@@ -488,7 +508,23 @@ func isAnyObservationSuccessful(observations []*protocolobservations.ShannonEndp
 	return false
 }
 
-// isFallbackEndpointUsed returns true if any endpoint was a fallback endpoint.
+// isWebsocketConnectionSuccessful returns true if the WebSocket connection observation indicates success.
+// For WebSocket connections, success is determined by checking if ErrorType is UNSPECIFIED.
+// Unlike HTTP observations which can have multiple endpoint attempts, WebSocket connections
+// use a single endpoint and have a single success/failure status.
+func isWebsocketConnectionSuccessful(wsConnectionObs *protocolobservations.ShannonWebsocketConnectionObservation) bool {
+	return wsConnectionObs.GetErrorType() == protocolobservations.ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_UNSPECIFIED
+}
+
+// isWebsocketMessageSuccessful returns true if the WebSocket message observation indicates success.
+// For WebSocket messages, success is determined by checking if ErrorType is UNSPECIFIED.
+// Each WebSocket message is processed individually and has its own success/failure status.
+func isWebsocketMessageSuccessful(wsMessageObs *protocolobservations.ShannonWebsocketMessageObservation) bool {
+	return wsMessageObs.GetErrorType() == protocolobservations.ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_UNSPECIFIED
+}
+
+// isFallbackEndpointUsed returns true if any HTTP endpoint observation indicates a fallback endpoint was used.
+// This function is specific to HTTP observations which can have multiple endpoint attempts.
 func isFallbackEndpointUsed(observations []*protocolobservations.ShannonEndpointObservation) bool {
 	for _, obs := range observations {
 		if obs.GetIsFallbackEndpoint() {
@@ -733,8 +769,8 @@ func recordWebsocketConnectionTotal(
 		return
 	}
 
-	// Determine success based on error type
-	success := wsConnectionObs.GetErrorType() == protocolobservations.ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_UNSPECIFIED
+	// Determine success based on error type using explicit helper function
+	success := isWebsocketConnectionSuccessful(wsConnectionObs)
 	usedFallbackEndpoint := wsConnectionObs.GetIsFallbackEndpoint()
 
 	// Extract endpoint URL for exemplars
@@ -782,8 +818,8 @@ func recordWebsocketMessageTotal(
 		return
 	}
 
-	// Determine success based on error type
-	success := wsMessageObs.GetErrorType() == protocolobservations.ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_UNSPECIFIED
+	// Determine success based on error type using explicit helper function
+	success := isWebsocketMessageSuccessful(wsMessageObs)
 	usedFallbackEndpoint := wsMessageObs.GetIsFallbackEndpoint()
 
 	// Extract endpoint URL for exemplars
