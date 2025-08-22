@@ -1,8 +1,16 @@
 ---
-sidebar_position: 2
-title: Relay Util
-description: Simple Load Testing Tool
+sidebar_position: 3
+title: Websocket Utils
+description: Websocket Load Testing Tools
 ---
+
+## Installation
+
+```bash
+make install_optional_tools
+```
+
+## Relay Util
 
 :::tip
 
@@ -11,7 +19,13 @@ Easy to use make targets are provided in the [test requests Makefile](https://gi
 You can run the following commands if you have a local PATH instance running pointing to Pocket Network.
 
 ```bash
-make test_request__shannon_relay_util_100
+relay-util \
+    -u http://localhost:3070/v1 \
+    -H "target-service-id: $${SERVICE_ID:-anvil}" \
+    -H "authorization: test_api_key" \
+		-d '{"jsonrpc":"2.0","method":"eth_blockNumber","id":1}' \
+		-x 100 \
+		-b
 ```
 
 :::

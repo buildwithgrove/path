@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
 
-
-
 set -e
 
 # Terminal colors
@@ -62,6 +60,23 @@ detect_system() {
     log "INFO" "Detected system: $OS $ARCH (System type: $SYSTEM)"
 }
 
+install_pocketd() {
+    if command_exists pocketd; then
+        log "INFO" "Pocketd already installed."
+        pocketd version
+        return
+    fi
+
+    log "INFO" "Installing Pocketd..."
+
+    curl -sSL https://raw.githubusercontent.com/pokt-network/poktroll/main/tools/scripts/pocketd-install.sh | bash
+
+    log "SUCCESS" "Pocketd installed successfully."
+    pocketd version
+
+    log "Fore more information, see https://dev.poktroll.com/explore/account_management/pocketd_cli"
+}
+
 # Function to install Docker if not present
 install_docker() {
     if command_exists docker; then
@@ -109,92 +124,6 @@ install_docker() {
     docker --version
 }
 
-# Function to install Kind if not present
-install_kind() {
-    if command_exists kind; then
-        log "INFO" "🌀 Kind already installed."
-        kind --version
-        return
-    fi
-
-    log "INFO" "🌀 Installing Kind..."
-
-    # Try to get the latest version
-    KIND_VERSION=$(curl -s https://api.github.com/repos/kubernetes-sigs/kind/releases/latest | grep tag_name | cut -d '"' -f4)
-    if [ -z "$KIND_VERSION" ]; then
-        KIND_VERSION="v0.27.0"  # Fallback to a known version
-    fi
-
-    # Create the binary name based on OS and architecture
-    BINARY_NAME="kind-${OS}-${ARCH}"
-    KIND_URL="https://kind.sigs.k8s.io/dl/${KIND_VERSION}/${BINARY_NAME}"
-
-    curl -Lo /tmp/kind "$KIND_URL"
-    chmod +x /tmp/kind
-    sudo mv /tmp/kind /usr/local/bin/kind
-
-    log "SUCCESS" "✅ Kind installed successfully."
-    kind --version
-}
-
-# Function to install kubectl if not present
-install_kubectl() {
-    if command_exists kubectl; then
-        log "INFO" "🔧 kubectl already installed."
-        kubectl version --client
-        return
-    fi
-
-    log "INFO" "🔧 Installing kubectl..."
-
-    # Get stable kubectl version
-    KUBECTL_VERSION=$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)
-    if [ -z "$KUBECTL_VERSION" ]; then
-        KUBECTL_VERSION="latest"
-    fi
-
-    curl -LO "https://storage.googleapis.com/kubernetes-release/release/${KUBECTL_VERSION}/bin/${OS}/${ARCH}/kubectl"
-    chmod +x kubectl
-    sudo mv kubectl /usr/local/bin/kubectl
-
-    log "SUCCESS" "✅ kubectl installed successfully."
-    kubectl version --client
-}
-
-# Function to install Helm if not present
-install_helm() {
-    if command_exists helm; then
-        log "INFO" "⛵ Helm already installed."
-        helm version --short
-        return
-    fi
-
-    log "INFO" "⛵ Installing Helm..."
-
-    curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash
-
-    log "SUCCESS" "✅ Helm installed successfully."
-    helm version --short
-}
-
-# Function to install Tilt if not present
-install_tilt() {
-    if command_exists tilt; then
-        log "INFO" "🚀 Tilt already installed."
-        tilt version
-        return
-    fi
-
-    log "INFO" "🚀 Installing Tilt..."
-
-    # Create ~/.local/bin if it doesn't exist
-    mkdir -p "$HOME/.local/bin"
-
-    curl -fsSL https://raw.githubusercontent.com/tilt-dev/tilt/master/scripts/install.sh | bash
-
-    log "SUCCESS" "✅ Tilt installed successfully."
-    tilt version
-}
 
 # Function to prompt user for confirmation
 prompt_user() {
@@ -250,9 +179,6 @@ fi
 
 # Install missing dependencies
 install_docker
-install_kind
-install_kubectl
-install_helm
-install_tilt
+install_pocketd
 
 log "SUCCESS" "✅ Installation script completed."

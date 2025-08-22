@@ -60,6 +60,7 @@ include ./makefiles/localnet.mk
 include ./makefiles/portal-db.mk
 include ./makefiles/test.mk
 include ./makefiles/test_requests.mk
+include ./makefiles/test_load.mk
 include ./makefiles/proto.mk
 include ./makefiles/debug.mk
 include ./makefiles/claude.mk

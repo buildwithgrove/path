@@ -199,12 +199,15 @@ detect_system
 # Check for missing dependencies
 MISSING_DEPS=()
 
-for cmd in relay-util dot mockgen; do
+REQUIRED_DEPS=("relay-util" "dot" "mockgen" "websocket-load-test")
+
+for cmd in "${REQUIRED_DEPS[@]}"; do
     if ! command_exists "$cmd"; then
         case "$cmd" in
             relay-util) MISSING_DEPS+=("🚚 Relay Util: Simple load-testing tool for relays") ;;
             dot) MISSING_DEPS+=("📊 Graphviz (dot): Required for generating profiling & debugging performance") ;;
             mockgen) MISSING_DEPS+=("🧪 Uber Mockgen: Mock interface generator for testing") ;;
+            websocket-load-test) MISSING_DEPS+=("🧪 Websocket Load Test: Load testing tool for websockets") ;;
         esac
     fi
 done

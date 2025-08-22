@@ -29,29 +29,6 @@ debug_view_results_links:
 	@echo "##########################################################################################################"
 	@echo ""
 
-.PHONY: check_path_up
-# Internal helper: Checks if PATH is running at localhost:3070
-check_path_up:
-	@if ! nc -z localhost 3070 2>/dev/null; then \
-		echo "########################################################################"; \
-		echo "ERROR: PATH is not running on port 3070"; \
-		echo "Please start it with:"; \
-		echo "  make path_up"; \
-		echo "########################################################################"; \
-		exit 1; \
-	fi
-
-.PHONY: check_relay_util
-# Internal helper: Checks if relay-util is installed locally
-check_relay_util:
-	@if ! command -v relay-util &> /dev/null; then \
-		echo "####################################################################################################"; \
-		echo "Relay Util is not installed." \
-		echo "To use any Relay Util make targets to send load testing requests please install Relay Util with:"; \
-		echo "go install github.com/commoddity/relay-util/v2@latest"; \
-		echo "####################################################################################################"; \
-	fi
-
 ####################################
 #### PATH + GUARD Test Requests ####
 ####################################
