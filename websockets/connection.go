@@ -3,22 +3,28 @@ package websockets
 import (
 	"context"
 	"fmt"
+	"net/http"
+	"net/url"
 	"time"
 
 	"github.com/gorilla/websocket"
 	"github.com/pokt-network/poktroll/pkg/polylog"
 )
 
+// TODO_IMPROVE(@commoddity): Make all of these configurable
+// TODO_CONFIG: Make WebSocket timeouts configurable
+// Current: Hardcoded timeouts in websockets/connection.go:15-24
+// Suggestion: Move to configuration file with sensible defaults
 const (
-	// Time allowed (in seconds) to write a message to the peer.
-	writeWait = 10 * time.Second
+	// Time allowed to write a message to the peer over the websocket connection
+	writeWaitDuration = 10 * time.Second
 
-	// Time allowed (in seconds) to read the next pong message from the peer.
-	pongWait = 30 * time.Second
+	// Time allowed to read the next pong message from the peer over the websocket connection
+	pongWaitDuration = 30 * time.Second
 
-	// Send pings to peer with this period (in seconds).
-	// Must be less than pongWait.
-	pingPeriod = (pongWait * 9) / 10
+	// Send pings to peer with this period over the websocket connection
+	// Must be greater than pongWaitDuration
+	pingPeriodDuration = (pongWaitDuration * 9) / 10
 )
 
 // messageSource is used to identify the source of a message in a bidirectional websocket connection.
@@ -62,7 +68,64 @@ type websocketConnection struct {
 	msgChan chan<- message
 }
 
-// connectClient initiates a websocket connection to the client.
+// upgradeClientWebsocketConnection upgrades an HTTP connection to a WebSocket.
+// Used to upgrade a Client's HTTP request to a WebSocket connection.
+//
+// DEV_NOTE: This function uses a permissive CheckOrigin policy (always returns true),
+// eliminating origin-based rejections as a potential cause of upgrade failures.
+//
+// See: https://pkg.go.dev/github.com/gorilla/websocket#hdr-Overview
+func upgradeClientWebsocketConnection(
+	wsLogger polylog.Logger,
+	req *http.Request,
+	w http.ResponseWriter,
+) (*websocket.Conn, error) {
+	upgrader := websocket.Upgrader{
+		// Allow all origins.
+		CheckOrigin: func(r *http.Request) bool { return true },
+	}
+
+	// Upgrade the HTTP connection to a WebSocket connection.
+	clientConn, err := upgrader.Upgrade(w, req, nil)
+	if err != nil {
+		// Upgrade errors are often client-side protocol violations.
+		// But, they can also indicate server resource issues or network problems.
+		// The specific error message will help distinguish between client and server-side causes.
+		wsLogger.Error().Err(err).Msg("Error upgrading websocket connection request")
+		return nil, err
+	}
+
+	return clientConn, nil
+}
+
+// connectWebsocketEndpoint makes a websocket connection to the websocket Endpoint.
+func connectWebsocketEndpoint(
+	wsLogger polylog.Logger,
+	websocketURL string,
+	headers http.Header,
+) (*websocket.Conn, error) {
+	wsLogger.Info().Msgf("🔗 Connecting to websocket endpoint: %s", websocketURL)
+
+	// Ensure the websocket URL is valid.
+	url, err := url.Parse(websocketURL)
+	if err != nil {
+		wsLogger.Error().Err(err).Msgf("❌ Error parsing endpoint URL: %s", websocketURL)
+		return nil, err
+	}
+
+	// Connect to the websocket endpoint using the default websocket dialer.
+	conn, _, err := websocket.DefaultDialer.Dial(url.String(), headers)
+	if err != nil {
+		wsLogger.Error().Err(err).Msgf("❌ Error connecting to endpoint: %s", url.String())
+		return nil, err
+	}
+
+	wsLogger.Debug().Msgf("🔗 Connected to websocket endpoint: %s", websocketURL)
+
+	return conn, nil
+}
+
+// newConnection creates a new websocket connection wrapper.
 func newConnection(
 	ctx context.Context,
 	cancelCtx context.CancelFunc,
@@ -89,12 +152,13 @@ func newConnection(
 	return c
 }
 
-// connLoop reads messages from the websocket connection and sends them to the bridge's msgChan
+// connLoop reads messages from the websocket connection and sends them to the bridge's msgChan.
+// Network-level read errors trigger handleDisconnect() for coordinated bridge shutdown.
 func (c *websocketConnection) connLoop() {
 	for {
 		messageType, msg, err := c.ReadMessage()
 		if err != nil {
-			c.handleDisconnect(err)
+			c.handleDisconnect(err) // Network read failure → async bridge shutdown
 			return
 		}
 
@@ -106,12 +170,20 @@ func (c *websocketConnection) connLoop() {
 	}
 }
 
-// handleDisconnect handles any disconnection issues from the websocket connection.
-// This includes both:
-// - Expected disconnections (e.g. when the RelayMiner disconnects on session rollover)
-// - Unexpected disconnections (e.g. when the connection is lost due to network issues)
+// handleDisconnect handles network-level connection failures.
 //
-// This function will cancel the context to signal the bridge to handle shutdown.
+// Usage:
+// - Network-level errors: Connection drops, read failures, ping/pong timeouts
+// - External disconnections: When remote peer closes the connection
+// - Health check failures: When ping messages fail to send
+//
+// Mechanism:
+// 1. Cancels the context (cancelCtx) shared with the bridge
+// 2. Bridge's context listener detects cancellation and calls bridge.shutdown()
+// 3. This provides async, coordinated shutdown signaling between connections and bridge
+//
+// Note: This is for network transport failures, not application-level message processing errors.
+// TODO_FUTURE(#408): Revisit how we handle connection failures.
 func (c *websocketConnection) handleDisconnect(err error) {
 	c.logger.Warn().Err(err).Msgf("🔌 Handling websocket disconnection")
 	c.cancelCtx() // Cancel the context to signal the bridge to handle shutdown
@@ -123,15 +195,15 @@ func (c *websocketConnection) handleDisconnect(err error) {
 // the connection is considered dead and the stopChan is closed.
 // See: https://pkg.go.dev/github.com/gorilla/websocket#hdr-Control_Messages
 func (c *websocketConnection) pingLoop() {
-	ticker := time.NewTicker(pingPeriod)
+	ticker := time.NewTicker(pingPeriodDuration)
 	defer ticker.Stop()
 
-	if err := c.SetReadDeadline(time.Now().Add(pongWait)); err != nil {
+	if err := c.SetReadDeadline(time.Now().Add(pongWaitDuration)); err != nil {
 		c.logger.Error().Err(err).Msg("failed to set initial read deadline")
 	}
 
 	c.SetPongHandler(func(string) error {
-		if err := c.SetReadDeadline(time.Now().Add(pongWait)); err != nil {
+		if err := c.SetReadDeadline(time.Now().Add(pongWaitDuration)); err != nil {
 			c.logger.Error().Err(err).Msg("failed to set pong handler read deadline")
 		}
 		return nil
@@ -140,9 +212,9 @@ func (c *websocketConnection) pingLoop() {
 	for {
 		select {
 		case <-ticker.C:
-			if err := c.WriteControl(websocket.PingMessage, nil, time.Now().Add(writeWait)); err != nil {
+			if err := c.WriteControl(websocket.PingMessage, nil, time.Now().Add(writeWaitDuration)); err != nil {
 				c.logger.Error().Err(err).Msg("failed to send ping to connection")
-				c.handleDisconnect(fmt.Errorf("failed to send ping: %w", err))
+				c.handleDisconnect(fmt.Errorf("failed to send ping: %w", err)) // Health check failure → async bridge shutdown
 				return
 			}
 

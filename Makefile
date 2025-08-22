@@ -57,6 +57,7 @@ include ./makefiles/deps.mk
 include ./makefiles/devtools.mk
 include ./makefiles/docs.mk
 include ./makefiles/localnet.mk
+include ./makefiles/portal-db.mk
 include ./makefiles/test.mk
 include ./makefiles/test_requests.mk
 include ./makefiles/proto.mk
