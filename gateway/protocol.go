@@ -82,9 +82,6 @@ type ProtocolRequestContext interface {
 	// and receives and verifies the response.
 	HandleServiceRequest(protocol.Payload) (protocol.Response, error)
 
-	// HandleWebsocketRequest handles a WebSocket connection request.
-	HandleWebsocketRequest(*http.Request, http.ResponseWriter) error
-
 	// GetObservations builds and returns the set of protocol-specific observations using the current context.
 	//
 	// Hypothetical illustrative example.
@@ -97,4 +94,30 @@ type ProtocolRequestContext interface {
 	// Then the observation can be:
 	//  - `maxed-out endpoint` on `endpoint_101`.
 	GetObservations() protocolobservations.Observations
+
+	// TODO_TECHDEBT(@commodity, @adshmh): Revisit all the Websocket specific functions
+	// in ProtocolRequestContext.
+	// - Too many websocket specific functions are exposed explicitly implying a poor interface.
+	// - Revisit the need for exposing these at all through a refactor?
+	//
+	// TODO_TECHDEBT(@commodity, @adshmh): Revisit casing of websocket vs Websocket vs WebSocket through.
+	ProtocolRequestContextWebsocket
+}
+
+// ProtocolRequestContextWebsocket defines the functionality expected by the gateway from the protocol,
+// specifically for websocket requests
+type ProtocolRequestContextWebsocket interface {
+	// GetWebsocketConnectionHeaders returns protocol-specific headers needed for websocket connections.
+	// These headers contain protocol-specific information like session data, service IDs, etc.
+	GetWebsocketConnectionHeaders() (http.Header, error)
+
+	// GetWebsocketEndpointURL returns the websocket URL for the selected endpoint.
+	// This URL is used to establish the websocket connection to the endpoint.
+	GetWebsocketEndpointURL() (string, error)
+
+	// ProcessProtocolClientWebsocketMessage processes a message from the client.
+	ProcessProtocolClientWebsocketMessage([]byte) ([]byte, error)
+
+	// ProcessProtocolEndpointWebsocketMessage processes a message from the endpoint.
+	ProcessProtocolEndpointWebsocketMessage([]byte) ([]byte, protocolobservations.Observations, error)
 }

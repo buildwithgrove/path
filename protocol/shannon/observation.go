@@ -156,7 +156,7 @@ func buildEndpointErrorObservation(
 	return endpointObs
 }
 
-// builds a Shannon endpoint observation to include:
+// BuildEndpointObservation builds a Shannon endpoint observation to include:
 // endpoint: supplier, URL
 // session: app, service ID, session ID, session start and end heights (using `buildEndpointObservationFromSession`).
 func buildEndpointObservation(
@@ -252,5 +252,74 @@ func buildInternalRequestProcessingErrorObservation(internalErr error) *protocol
 		ErrorType: protocolobservations.ShannonRequestErrorType_SHANNON_REQUEST_ERROR_INTERNAL,
 		// Use the error message as the request error details.
 		ErrorDetails: internalErr.Error(),
+	}
+}
+
+// buildWebsocketMessageSuccessObservation creates a Shannon websocket message observation for successful message processing.
+// It includes endpoint details, session information, and message-specific data.
+// Used when websocket message handling succeeds.
+func buildWebsocketMessageSuccessObservation(
+	logger polylog.Logger,
+	endpoint endpoint,
+	msgSize int64,
+) *protocolobservations.ShannonWebsocketMessageObservation {
+	session := *endpoint.Session()
+	sessionHeader := session.GetHeader()
+
+	return &protocolobservations.ShannonWebsocketMessageObservation{
+		// Endpoint information
+		Supplier:           endpoint.Supplier(),
+		EndpointUrl:        endpoint.PublicURL(),
+		EndpointAppAddress: sessionHeader.ApplicationAddress,
+		IsFallbackEndpoint: endpoint.IsFallback(),
+
+		// Session information
+		SessionServiceId:   sessionHeader.ServiceId,
+		SessionId:          sessionHeader.SessionId,
+		SessionStartHeight: sessionHeader.SessionStartBlockHeight,
+		SessionEndHeight:   sessionHeader.SessionEndBlockHeight,
+
+		// Message information
+		MessageTimestamp:   timestamppb.New(time.Now()),
+		MessagePayloadSize: msgSize,
+	}
+}
+
+// buildWebsocketMessageErrorObservation creates a Shannon websocket message observation for failed message processing.
+// It includes endpoint details, session information, message data, and error details.
+// Used when websocket message handling fails.
+func buildWebsocketMessageErrorObservation(
+	endpoint endpoint,
+	msgSize int64,
+	errorType protocolobservations.ShannonEndpointErrorType,
+	errorDetails string,
+	sanctionType protocolobservations.ShannonSanctionType,
+	relayMinerError *protocolobservations.ShannonRelayMinerError,
+) *protocolobservations.ShannonWebsocketMessageObservation {
+	session := *endpoint.Session()
+	sessionHeader := session.GetHeader()
+
+	return &protocolobservations.ShannonWebsocketMessageObservation{
+		// Endpoint information
+		Supplier:           endpoint.Supplier(),
+		EndpointUrl:        endpoint.PublicURL(),
+		EndpointAppAddress: sessionHeader.ApplicationAddress,
+		IsFallbackEndpoint: endpoint.IsFallback(),
+
+		// Session information
+		SessionServiceId:   sessionHeader.ServiceId,
+		SessionId:          sessionHeader.SessionId,
+		SessionStartHeight: sessionHeader.SessionStartBlockHeight,
+		SessionEndHeight:   sessionHeader.SessionEndBlockHeight,
+
+		// Message information
+		MessageTimestamp:   timestamppb.New(time.Now()),
+		MessagePayloadSize: msgSize,
+
+		// Error information
+		ErrorType:           &errorType,
+		ErrorDetails:        &errorDetails,
+		RecommendedSanction: &sanctionType,
+		RelayMinerError:     relayMinerError,
 	}
 }
