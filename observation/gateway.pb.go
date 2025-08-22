@@ -89,6 +89,12 @@ const (
 	// QoS rejected the request.
 	// e.g. malformed payload could not be unmarshaled into JSONRPC
 	GatewayRequestErrorKind_GATEWAY_REQUEST_ERROR_KIND_REJECTED_BY_QOS GatewayRequestErrorKind = 2
+	// WebSocket request was rejected by QoS instance.
+	// e.g. WebSocket subscription request validation failed.
+	GatewayRequestErrorKind_GATEWAY_REQUEST_ERROR_KIND_WEBSOCKET_REJECTED_BY_QOS GatewayRequestErrorKind = 3
+	// WebSocket connection establishment failed.
+	// e.g. Failed to upgrade HTTP connection to WebSocket or connect to endpoint.
+	GatewayRequestErrorKind_GATEWAY_REQUEST_ERROR_KIND_WEBSOCKET_CONNECTION_FAILED GatewayRequestErrorKind = 4
 )
 
 // Enum value maps for GatewayRequestErrorKind.
@@ -97,11 +103,15 @@ var (
 		0: "GATEWAY_REQUEST_ERROR_KIND_UNSPECIFIED",
 		1: "GATEWAY_REQUEST_ERROR_KIND_MISSING_SERVICE_ID",
 		2: "GATEWAY_REQUEST_ERROR_KIND_REJECTED_BY_QOS",
+		3: "GATEWAY_REQUEST_ERROR_KIND_WEBSOCKET_REJECTED_BY_QOS",
+		4: "GATEWAY_REQUEST_ERROR_KIND_WEBSOCKET_CONNECTION_FAILED",
 	}
 	GatewayRequestErrorKind_value = map[string]int32{
-		"GATEWAY_REQUEST_ERROR_KIND_UNSPECIFIED":        0,
-		"GATEWAY_REQUEST_ERROR_KIND_MISSING_SERVICE_ID": 1,
-		"GATEWAY_REQUEST_ERROR_KIND_REJECTED_BY_QOS":    2,
+		"GATEWAY_REQUEST_ERROR_KIND_UNSPECIFIED":                 0,
+		"GATEWAY_REQUEST_ERROR_KIND_MISSING_SERVICE_ID":          1,
+		"GATEWAY_REQUEST_ERROR_KIND_REJECTED_BY_QOS":             2,
+		"GATEWAY_REQUEST_ERROR_KIND_WEBSOCKET_REJECTED_BY_QOS":   3,
+		"GATEWAY_REQUEST_ERROR_KIND_WEBSOCKET_CONNECTION_FAILED": 4,
 	}
 )
 
@@ -145,8 +155,12 @@ type GatewayObservations struct {
 	// As of PR #72, this can only be specified through a custom header on the HTTP request, extracted in `request/parser.go`.
 	ServiceId string `protobuf:"bytes,3,opt,name=service_id,json=serviceId,proto3" json:"service_id,omitempty"`
 	// received_time is when the request was initially received
+	//   - For HTTP requests: when the HTTP request was received
+	//   - For WebSocket requests: when the WebSocket connection was established
 	ReceivedTime *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=received_time,json=receivedTime,proto3" json:"received_time,omitempty"`
 	// completed_time is when request processing finished and response was returned
+	//   - For HTTP requests: when the HTTP response was sent
+	//   - For WebSocket requests: when the WebSocket connection was terminated
 	CompletedTime *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=completed_time,json=completedTime,proto3" json:"completed_time,omitempty"`
 	// response_size is the size in bytes of the response payload
 	ResponseSize uint64 `protobuf:"varint,6,opt,name=response_size,json=responseSize,proto3" json:"response_size,omitempty"`
@@ -404,11 +418,13 @@ const file_path_gateway_proto_rawDesc = "" +
 	"\vRequestType\x12\x1c\n" +
 	"\x18REQUEST_TYPE_UNSPECIFIED\x10\x00\x12\x18\n" +
 	"\x14REQUEST_TYPE_ORGANIC\x10\x01\x12\x1a\n" +
-	"\x16REQUEST_TYPE_SYNTHETIC\x10\x02*\xa8\x01\n" +
+	"\x16REQUEST_TYPE_SYNTHETIC\x10\x02*\x9e\x02\n" +
 	"\x17GatewayRequestErrorKind\x12*\n" +
 	"&GATEWAY_REQUEST_ERROR_KIND_UNSPECIFIED\x10\x00\x121\n" +
 	"-GATEWAY_REQUEST_ERROR_KIND_MISSING_SERVICE_ID\x10\x01\x12.\n" +
-	"*GATEWAY_REQUEST_ERROR_KIND_REJECTED_BY_QOS\x10\x02B,Z*github.com/buildwithgrove/path/observationb\x06proto3"
+	"*GATEWAY_REQUEST_ERROR_KIND_REJECTED_BY_QOS\x10\x02\x128\n" +
+	"4GATEWAY_REQUEST_ERROR_KIND_WEBSOCKET_REJECTED_BY_QOS\x10\x03\x12:\n" +
+	"6GATEWAY_REQUEST_ERROR_KIND_WEBSOCKET_CONNECTION_FAILED\x10\x04B,Z*github.com/buildwithgrove/path/observationb\x06proto3"
 
 var (
 	file_path_gateway_proto_rawDescOnce sync.Once

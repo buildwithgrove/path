@@ -22,7 +22,7 @@ var (
 	errRelayEndpointTimeout = errors.New("timeout waiting for endpoint response")
 	// PATH manually canceled the context for the request.
 	// E.g. Parallel requests were made and one succeeded so the other was canceled.
-	errContextCancelled = errors.New("context canceled manually")
+	errContextCanceled = errors.New("context canceled manually")
 
 	// HTTP relay request failed - wraps net/http package errors
 	errSendHTTPRelay = errors.New("HTTP relay request failed")
@@ -67,6 +67,17 @@ var (
 	// The endpoint returned a malformed payload.
 	// Helps track more fine-grained metrics on endpoint errors.
 	errMalformedEndpointPayload = errors.New("endpoint returned malformed payload")
+
+	// ** WebSocket errors **
+
+	// Error creating a WebSocket connection.
+	errCreatingWebSocketConnection = errors.New("error creating WebSocket connection")
+
+	// Error signing the relay request in a websocket message.
+	errRelayRequestWebsocketMessageSigningFailed = errors.New("error signing relay request in websocket message")
+
+	// Error validating the relay response in a websocket message.
+	errRelayResponseInWebsocketMessageValidationFailed = errors.New("error validating relay response in websocket message")
 )
 
 // extractErrFromRelayError:
@@ -99,7 +110,7 @@ func extractErrFromRelayError(err error) error {
 	}
 	// context canceled manually
 	if strings.Contains(err.Error(), "context canceled") {
-		return errContextCancelled
+		return errContextCanceled
 	}
 
 	// No known patterns matched.

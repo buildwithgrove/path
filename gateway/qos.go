@@ -69,6 +69,10 @@ type QoSContextBuilder interface {
 	// - Ensures a WebSocket request is valid for the target service.
 	// - WebSocket connection requests have no body, so no parsing needed.
 	// - If service supports WebSocket, returns a valid RequestQoSContext.
+	//
+	// TODO_TECHDEBT(@adshmh,@commoddity): Remove ParseWebsocketRequest and update ParseHTTPRequest to be the single entry point to QoS.
+	// It should perform basic validation of the HTTP handshake request in the case that it is a WebSocket request.
+	// eg. check that the request is a websocket request, check headers, etc.
 	ParseWebsocketRequest(context.Context) (RequestQoSContext, bool)
 }
 
