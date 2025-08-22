@@ -2,8 +2,6 @@
 ### Makefile Helpers ###
 ########################
 
-# TODO(@olshansk): Remove "Shannon" and just use "Pocket".
-
 .PHONY: list
 list: ## List all make targets
 	@${MAKE} -pRrn : -f $(MAKEFILE_LIST) 2>/dev/null | awk -v RS= -F: '/^# File/,/^# Finished Make data base/ {if ($$1 !~ "^[#.]") {print $$1}}' | egrep -v -e '^[^[:alnum:]]' -e '^$@$$' | sort
@@ -46,6 +44,22 @@ check_path_config:
 .PHONY: path_run
 path_run: path_build check_path_config ## Run the path binary as a standalone binary
 	(cd bin; ./path -config ../${CONFIG_PATH})
+
+################################
+### Development Convenience ###
+################################
+
+.PHONY: dev
+dev: path_build test_unit ## Quick development cycle: build + test
+
+.PHONY: check
+check: go_lint test_unit ## Comprehensive quality checks (linting + tests)
+
+.PHONY: ci
+ci: go_lint test_unit ## Run full CI pipeline locally
+
+.PHONY: pre_commit
+pre_commit: go_lint test_unit ## Run pre-commit checks
 
 ###############################
 ###    Makefile imports     ###

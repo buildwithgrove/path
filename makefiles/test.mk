@@ -5,6 +5,10 @@
 ### Test Make Targets ###
 #########################
 
+###################
+### Unit & Lint ###
+###################
+
 .PHONY: test_all ## Run all unit tests and E2E test a subset of key services.
 test_all: test_unit
 	@$(MAKE) e2e_test eth,poly,xrplevm-testnet,oasys
@@ -17,16 +21,16 @@ test_unit: ## Run all unit tests
 go_lint: ## Run all go linters
 	golangci-lint run --timeout 5m --build-tags test
 
-#################
+##################
 ### E2E Tests ###
-#################
+##################
 
 .PHONY: e2e_test_all
-e2e_test_all: shannon_e2e_config_warning ## Run an E2E Shannon relay test for all service IDs
+e2e_test_all: path_build shannon_e2e_config_warning ## Run an E2E Shannon relay test for all service IDs
 	(cd e2e && TEST_MODE=e2e TEST_PROTOCOL=shannon go test -v -tags=e2e -count=1 -run Test_PATH_E2E)
 
 .PHONY: e2e_test
-e2e_test: shannon_e2e_config_warning ## Run an E2E Shannon relay test with specified service IDs (e.g. make shannon_test_e2e eth,xrplevm)
+e2e_test: path_build shannon_e2e_config_warning ## Run an E2E Shannon relay test with specified service IDs (e.g. make shannon_test_e2e eth,xrplevm)
 	@if [ "$(filter-out $@,$(MAKECMDGOALS))" = "" ]; then \
 		echo "❌ Error: Service IDs are required (comma-separated list)"; \
 		echo "  👀 Example: make test_e2e_evm_shannon eth,xrplevm"; \
@@ -36,7 +40,7 @@ e2e_test: shannon_e2e_config_warning ## Run an E2E Shannon relay test with speci
 	(cd e2e && TEST_MODE=e2e TEST_PROTOCOL=shannon TEST_SERVICE_IDS=$(filter-out $@,$(MAKECMDGOALS)) go test -v -tags=e2e -count=1 -run Test_PATH_E2E)
 
 .PHONY: e2e_test_eth_fallback
-e2e_test_eth_fallback: shannon_e2e_config_warning ## Run an E2E Shannon relay test with ETH fallback enabled (requires FALLBACK_URL)
+e2e_test_eth_fallback: path_build shannon_e2e_config_warning ## Run an E2E Shannon relay test with ETH fallback enabled (requires FALLBACK_URL)
 	@if [ "$(filter-out $@,$(MAKECMDGOALS))" = "" ]; then \
 		echo "❌ Error: ETH fallback URL is required"; \
 		echo "  👀 Example: make e2e_test_eth_fallback https://eth.rpc.backup.io"; \
@@ -51,11 +55,11 @@ e2e_test_eth_fallback: shannon_e2e_config_warning ## Run an E2E Shannon relay te
 ##################
 
 .PHONY: load_test_all
-load_test_all: ## Run a Shannon load test for all service IDs
+load_test_all: path_build ## Run a Shannon load test for all service IDs
 	(cd e2e && TEST_MODE=load TEST_PROTOCOL=shannon go test -v -tags=e2e -count=1 -run Test_PATH_E2E)
 
 .PHONY: load_test
-load_test: ## Run a Shannon load test with specified service IDs (e.g. make load_test eth,xrplevm)
+load_test: path_build ## Run a Shannon load test with specified service IDs (e.g. make load_test eth,xrplevm)
 	@if [ "$(filter-out $@,$(MAKECMDGOALS))" = "" ]; then \
 		echo "❌ Error: Service IDs are required (comma-separated list)"; \
 		echo "  👀 Example: make load_test eth,xrplevm"; \

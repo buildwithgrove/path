@@ -15,12 +15,12 @@
 
 # Brings up local Tilt environment with remote helm charts
 .PHONY: path_up
-path_up: check_docker ## Brings up local Tilt development environment in Docker 
+path_up: path_build check_docker ## Brings up local Tilt development environment in Docker 
 	@./local/scripts/localnet.sh up 
 
 # Brings up local Tilt environment with local helm charts
 .PHONY: path_up_local_helm
-path_up_local_helm: check_docker ## Brings up local Tilt environment with local helm charts
+path_up_local_helm: path_build check_docker ## Brings up local Tilt environment with local helm charts
 	@./local/scripts/localnet.sh up --use-local-helm
 	
 .PHONY: check_docker
