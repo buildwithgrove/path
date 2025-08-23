@@ -783,6 +783,7 @@ func (x *ShannonWebsocketMessageObservation) GetIsFallbackEndpoint() bool {
 
 // ShannonRequestObservations represents observations collected during the processing
 // of a single Shannon protocol relay request.
+// Next free field: 6
 type ShannonRequestObservations struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Service ID (i.e. chain ID) for which the observation was made

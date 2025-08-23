@@ -23,15 +23,11 @@ enum RequestType {
   // Synthetic: Service request sent by the endpoint hydrator: see gateway/hydrator.go.
   REQUEST_TYPE_SYNTHETIC = 2;
 
-  // Reserved for future use
-  reserved 3;
-  reserved "REQUEST_TYPE_RESERVED_3";
-
   // Parallel: Service request sent by PATH for internal purposes.
-  REQUEST_TYPE_PARALLEL = 4;
+  REQUEST_TYPE_PARALLEL = 3;
 
   // Fallback: Service request sent by PATH for internal purposes.
-  REQUEST_TYPE_FALLBACK = 5;
+  REQUEST_TYPE_FALLBACK = 4;
 }
 
 enum GatewayRequestErrorKind {

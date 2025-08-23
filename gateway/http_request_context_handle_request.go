@@ -10,6 +10,7 @@ import (
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
 	shannonmetrics "github.com/buildwithgrove/path/metrics/protocol/shannon"
+	"github.com/buildwithgrove/path/observation"
 	"github.com/buildwithgrove/path/protocol"
 )
 
@@ -60,6 +61,8 @@ func (rc *requestContext) HandleRelayRequest() error {
 	// If we have multiple protocol contexts, send parallel requests
 	if isParallel {
 		logger.Debug().Msgf("Handling %d parallel relay requests", len(rc.protocolContexts))
+		// Update request type to PARALLEL for parallel requests
+		rc.gatewayObservations.RequestType = observation.RequestType_REQUEST_TYPE_PARALLEL
 		return rc.handleParallelRelayRequests()
 	}
 
