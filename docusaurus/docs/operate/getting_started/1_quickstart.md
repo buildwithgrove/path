@@ -20,7 +20,7 @@ See [PATH Guard documentation](https://path.grove.city/operate/helm/guard) for d
 
 ## 1. Prepare Your Configuration
 
-First, prepare your configuration file by following [the PATH Config File instructions](https://path.grove.city/develop/path/configurations_path).
+First, prepare your configuration file by following [the PATH Config File instructions](https://path.grove.city/develop/configs/config_intro).
 
 After you have your configuration file, you can proceed with the following steps:
 
