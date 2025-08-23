@@ -60,6 +60,8 @@ func (rc *requestContext) HandleRelayRequest() error {
 
 	// If we have multiple protocol contexts, send parallel requests
 	if isParallel {
+		// TODO_CONSIDERATION: Should only organic requests ever have the option to be parallelized?
+		// This will require a reconsideration of this feature, how observation are managed, etc...
 		logger.Debug().Msgf("Handling %d parallel relay requests", len(rc.protocolContexts))
 		return rc.handleParallelRelayRequests()
 	}
@@ -71,9 +73,11 @@ func (rc *requestContext) HandleRelayRequest() error {
 
 // handleSingleRelayRequest handles a single relay request (original behavior)
 func (rc *requestContext) handleSingleRelayRequest() error {
-	// Send the service request payload, through the protocol context, to the selected endpoint.
 	// In this code path, we are always guaranteed to have exactly one protocol context.
-	endpointResponse, err := rc.protocolContexts[0].HandleServiceRequest(rc.qosCtx.GetServicePayload())
+	protocolRequestContext := rc.protocolContexts[0]
+
+	// Send the service request payload, through the protocol context, to the selected endpoint.
+	endpointResponse, err := protocolRequestContext.HandleServiceRequest(rc.qosCtx.GetServicePayload())
 	if err != nil {
 		rc.logger.Warn().Err(err).Msg("Failed to send a single relay request.")
 		return err
@@ -139,13 +143,13 @@ func (rc *requestContext) launchParallelRequests(ctx context.Context, logger pol
 func (rc *requestContext) executeOneOfParallelRequests(
 	ctx context.Context,
 	logger polylog.Logger,
-	protocolCtx ProtocolRequestContext,
+	protocolRequestCtx ProtocolRequestContext,
 	index int,
 	resultChan chan<- parallelRelayResult,
 	qosContextMutex *sync.Mutex,
 ) {
 	startTime := time.Now()
-	endpointResponse, err := protocolCtx.HandleServiceRequest(rc.qosCtx.GetServicePayload())
+	endpointResponse, err := protocolRequestCtx.HandleServiceRequest(rc.qosCtx.GetServicePayload())
 	duration := time.Since(startTime)
 
 	result := parallelRelayResult{
