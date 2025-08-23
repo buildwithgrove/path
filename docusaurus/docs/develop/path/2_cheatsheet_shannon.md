@@ -353,6 +353,8 @@ SERVICE_ID=eth make test_request__shannon_relay_util_100
 
 ### Load Testing WebSockets with `websocket-load-test`
 
+TODO_IN_THIS_PR: Update to have this point at LocalNet.
+
 1. Make sure you install optional tools first:
 
    ```bash
