@@ -10,12 +10,13 @@
 package observation
 
 import (
-	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
-	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
-	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
+
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
+	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 )
 
 const (
@@ -30,7 +31,7 @@ const (
 //  1. Organic: a real user sent a service request to a PATH instance
 //  2. Synthetic: internal infrastructure generated the service request for simulation and data purposes.
 //
-// Next free index: 6
+// Next free index: 5
 type RequestType int32
 
 const (

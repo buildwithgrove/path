@@ -61,8 +61,6 @@ func (rc *requestContext) HandleRelayRequest() error {
 	// If we have multiple protocol contexts, send parallel requests
 	if isParallel {
 		logger.Debug().Msgf("Handling %d parallel relay requests", len(rc.protocolContexts))
-		// Update request type to PARALLEL for parallel requests
-		rc.gatewayObservations.RequestType = observation.RequestType_REQUEST_TYPE_PARALLEL
 		return rc.handleParallelRelayRequests()
 	}
 
@@ -87,6 +85,10 @@ func (rc *requestContext) handleSingleRelayRequest() error {
 
 // handleParallelRelayRequests orchestrates parallel relay requests and returns the first successful response.
 func (rc *requestContext) handleParallelRelayRequests() error {
+	// Only the gateway context can trigger parallel requests.
+	// We update the request type accordingly here.
+	rc.gatewayObservations.RequestType = observation.RequestType_REQUEST_TYPE_PARALLEL
+
 	metrics := &parallelRequestMetrics{
 		numRequestsToAttempt: len(rc.protocolContexts),
 		overallStartTime:     time.Now(),

@@ -67,7 +67,7 @@ const (
 	// regionEuropeNorth1      = "europe-north1"           // Europe North region
 )
 
-// ---------- User Requests ----------
+// ---------- User (i.e. Organic) Requests ----------
 
 // getUserRequestGatewayObservations returns gateway-level observations for an organic, i.e. from a user, request.
 func getUserRequestGatewayObservations(httpReq *http.Request) *observation.GatewayObservations {

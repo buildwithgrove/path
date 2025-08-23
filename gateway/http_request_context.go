@@ -375,23 +375,6 @@ func (rc *requestContext) updateProtocolObservations(protocolContextSetupErrorOb
 		rc.logger.Debug().Msgf("%d protocol contexts were built for the request, but only using the first one for observations", len(rc.protocolContexts))
 		observations := rc.protocolContexts[0].GetObservations()
 		rc.protocolObservations = &observations
-		
-		// Check if a fallback endpoint was used and update request type accordingly
-		// Only update if not already set as PARALLEL (which takes precedence)
-		if rc.gatewayObservations.RequestType != observation.RequestType_REQUEST_TYPE_PARALLEL {
-			if shannonObs := observations.GetShannon(); shannonObs != nil {
-				for _, reqObs := range shannonObs.GetObservations() {
-					if httpObs := reqObs.GetHttpObservations(); httpObs != nil {
-						for _, obs := range httpObs.GetEndpointObservations() {
-							if obs.GetIsFallbackEndpoint() {
-								rc.gatewayObservations.RequestType = observation.RequestType_REQUEST_TYPE_FALLBACK
-								break
-							}
-						}
-					}
-				}
-			}
-		}
 		return
 	}
 
