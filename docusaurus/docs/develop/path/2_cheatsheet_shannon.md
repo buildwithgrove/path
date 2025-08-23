@@ -20,13 +20,36 @@ Skip to [2.1 Generate Shannon Config](#21-generate-shannon-config).
 
 <summary>Download your configs here</summary>
 
-1. Download the preferred config file from 1Password:
-   - **[Shannon MainNet](https://start.1password.com/open/i?a=4PU7ZENUCRCRTNSQWQ7PWCV2RM&v=kudw25ob4zcynmzmv2gv4qpkuq&i=4ifsnkuifvaggwgptns6xyglsa&h=buildwithgrove.1password.com)**
-   - **[Shannon Beta TestNet](https://start.1password.com/open/i?a=4PU7ZENUCRCRTNSQWQ7PWCV2RM&v=kudw25ob4zcynmzmv2gv4qpkuq&i=3treknedz5q47rgwdbreluwffu&h=buildwithgrove.1password.com)**
-2. Copy to `local/path/.config.yaml` **in your PATH repository**
-3. Comment out the `data_reporter_config` section
-4. Comment out the `owned_apps_private_keys_hex` you're not using for testing
-5. Skip to [section 3: Run PATH](#3-run-the-full-path-stack-locally)
+### 1. Download your configs
+
+For MainNet:
+
+```bash
+op item get 4ifsnkuifvaggwgptns6xyglsa --fields notesPlain --format json | jq -r '.value' > ./local/path/.config.yaml
+```
+
+For Beta TestNet:
+
+```bash
+op item get 3treknedz5q47rgwdbreluwffu --fields notesPlain --format json | jq -r '.value' > ./local/path/.config.yaml
+```
+
+### 2. Comment out unused config sections
+
+Comment out the `owned_apps_private_keys_hex` you're not using for testing.
+
+And comment out the `data_reporter_config` section:
+
+```bash
+sed -i '' \
+  -e 's/^[[:space:]]*data_reporter_config:/# data_reporter_config:/' \
+  -e 's/^[[:space:]]*"target_url":/#   "target_url":/' \
+  local/path/.config.yaml
+```
+
+### 3. Skip to Section 3
+
+Skip to [section 3: Run PATH](#3-run-the-full-path-stack-locally)
 
 </details>
 

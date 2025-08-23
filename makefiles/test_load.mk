@@ -31,3 +31,13 @@ test_load__relay_util__local: check_path_up check_relay_util debug_view_results_
 		-d '{"jsonrpc":"2.0","method":"eth_blockNumber","id":1}' \
 		-x 100 \
 		-b
+
+.PHONY: test_load__websocket_load_test__local
+test_load__websocket_load_test__local: check_path_up check_websocket_load_test debug_view_results_links  ## Test anvil PATH behind GUARD with 10 eth_blockNumber requests using relay-util. Override service by running: SERVICE_ID=eth make test_request__shannon_relay_util_100
+	websocket-load-test \
+		-u ws://localhost:3070/v1 \
+		-H "target-service-id: $${SERVICE_ID:-anvil}" \
+		-H "authorization: test_api_key" \
+		-d '{"jsonrpc":"2.0","method":"eth_blockNumber","id":1}' \
+		-x 100 \
+		-b
