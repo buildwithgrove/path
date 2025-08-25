@@ -29,29 +29,6 @@ debug_view_results_links:
 	@echo "##########################################################################################################"
 	@echo ""
 
-.PHONY: check_path_up
-# Internal helper: Checks if PATH is running at localhost:3070
-check_path_up:
-	@if ! nc -z localhost 3070 2>/dev/null; then \
-		echo "########################################################################"; \
-		echo "ERROR: PATH is not running on port 3070"; \
-		echo "Please start it with:"; \
-		echo "  make path_up"; \
-		echo "########################################################################"; \
-		exit 1; \
-	fi
-
-.PHONY: check_relay_util
-# Internal helper: Checks if relay-util is installed locally
-check_relay_util:
-	@if ! command -v relay-util &> /dev/null; then \
-		echo "####################################################################################################"; \
-		echo "Relay Util is not installed." \
-		echo "To use any Relay Util make targets to send load testing requests please install Relay Util with:"; \
-		echo "go install github.com/commoddity/relay-util/v2@latest"; \
-		echo "####################################################################################################"; \
-	fi
-
 ####################################
 #### PATH + GUARD Test Requests ####
 ####################################
@@ -80,17 +57,3 @@ test_request__shannon_service_id_header: check_path_up debug_relayminer_supplier
 		-H "Target-Service-Id: anvil" \
 		-H "Authorization: test_api_key" \
 		-d '{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }'
-
-##################################
-#### Relay Util Test Requests ####
-##################################
-
-.PHONY: test_request__shannon_relay_util_100
-test_request__shannon_relay_util_100: check_path_up check_relay_util debug_view_results_links  ## Test anvil PATH behind GUARD with 10 eth_blockNumber requests using relay-util. Override service by running: SERVICE_ID=eth make test_request__shannon_relay_util_100
-	relay-util \
-		-u http://localhost:3070/v1 \
-		-H "target-service-id: $${SERVICE_ID:-anvil}" \
-		-H "authorization: test_api_key" \
-		-d '{"jsonrpc":"2.0","method":"eth_blockNumber","id":1}' \
-		-x 100 \
-		-b

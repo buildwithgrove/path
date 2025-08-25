@@ -20,13 +20,36 @@ Skip to [2.1 Generate Shannon Config](#21-generate-shannon-config).
 
 <summary>Download your configs here</summary>
 
-1. Download the preferred config file from 1Password:
-   - **[Shannon MainNet](https://start.1password.com/open/i?a=4PU7ZENUCRCRTNSQWQ7PWCV2RM&v=kudw25ob4zcynmzmv2gv4qpkuq&i=4ifsnkuifvaggwgptns6xyglsa&h=buildwithgrove.1password.com)**
-   - **[Shannon Beta TestNet](https://start.1password.com/open/i?a=4PU7ZENUCRCRTNSQWQ7PWCV2RM&v=kudw25ob4zcynmzmv2gv4qpkuq&i=3treknedz5q47rgwdbreluwffu&h=buildwithgrove.1password.com)**
-2. Copy to `local/path/.config.yaml` **in your PATH repository**
-3. Comment out the `data_reporter_config` section
-4. Comment out the `owned_apps_private_keys_hex` you're not using for testing
-5. Skip to [section 3: Run PATH](#3-run-the-full-path-stack-locally)
+### 1. Download your configs
+
+For MainNet:
+
+```bash
+op item get 4ifsnkuifvaggwgptns6xyglsa --fields notesPlain --format json | jq -r '.value' > ./local/path/.config.yaml
+```
+
+For Beta TestNet:
+
+```bash
+op item get 3treknedz5q47rgwdbreluwffu --fields notesPlain --format json | jq -r '.value' > ./local/path/.config.yaml
+```
+
+### 2. Comment out unused config sections
+
+Comment out the `owned_apps_private_keys_hex` you're not using for testing.
+
+And comment out the `data_reporter_config` section:
+
+```bash
+sed -i '' \
+  -e 's/^[[:space:]]*data_reporter_config:/# data_reporter_config:/' \
+  -e 's/^[[:space:]]*"target_url":/#   "target_url":/' \
+  local/path/.config.yaml
+```
+
+### 3. Skip to Section 3
+
+Skip to [section 3: Run PATH](#3-run-the-full-path-stack-locally)
 
 </details>
 
@@ -48,7 +71,8 @@ Skip to [2.1 Generate Shannon Config](#21-generate-shannon-config).
 - [4. Test Relays](#4-test-relays)
   - [Test Relay with `curl`](#test-relay-with-curl)
   - [Test WebSockets with `wscat`](#test-websockets-with-wscat)
-  - [Load Testing with `relay-util`](#load-testing-with-relay-util)
+  - [Load Testing Relays with `relay-util`](#load-testing-relays-with-relay-util)
+  - [Load Testing WebSockets with `websocket-load-test`](#load-testing-websockets-with-websocket-load-test)
 - [5. Stop PATH](#5-stop-path)
 
 ## 0. Prerequisites
@@ -290,14 +314,17 @@ Connected (press CTRL+C to quit)
 >
 ```
 
-Sample WebSocket request/response:
+And subscribe to events:
 
 ```bash
-> {"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }
-< {"id":1,"jsonrpc":"2.0","result":"0x17cbc3"}
+> {"jsonrpc":"2.0", "id": 1, "method": "eth_subscribe", "params": ["newHeads"]}
+< {"jsonrpc":"2.0","result":"0x2dc4edb4ba815232ef2d144b5818c540","id":1}
+```
 
-> {"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }
-< {"id":1,"jsonrpc":"2.0","result":"0x17cbc4"}
+Which will start sending events like so:
+
+```bash
+< {"jsonrpc":"2.0","method":"eth_subscription","params":{"subscription":"0x2dc4edb4ba815232ef2d144b5818c540","result":{"parentHash":"0xaf1ebef9181d53a61a05b328646e747b5100eaa7ea301e21f2b5b1772beda053", ...
 ```
 
 :::info
@@ -310,13 +337,43 @@ In production environments, you should implement reconnection logic and handle e
 
 :::
 
-### Load Testing with `relay-util`
+### Load Testing Relays with `relay-util`
+
+Make sure you install optional tools first:
+
+```bash
+make install_optional_tools
+```
 
 Send 100 requests with performance metrics:
 
 ```bash
 SERVICE_ID=eth make test_request__shannon_relay_util_100
 ```
+
+### Load Testing WebSockets with `websocket-load-test`
+
+TODO_IN_THIS_PR: Update to have this point at LocalNet.
+
+1. Make sure you install optional tools first:
+
+   ```bash
+   make install_optional_tools
+   ```
+
+2. Get your `GROVE_PORTAL_APP_ID` and `GROVE_PORTAL_API_KEY` from the [Grove's Portal](https://portal.grove.city).
+
+3. Subscribe to events:
+
+   ```bash
+   websocket-load-test \
+   --service "xrplevm" \
+   --app-id $GROVE_PORTAL_APP_ID \
+   --api-key $GROVE_PORTAL_API_KEY \
+   --subs "newHeads,newPendingTransactions" \
+   --count 10 \
+   --log
+   ```
 
 ## 5. Stop PATH
 

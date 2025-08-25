@@ -41,3 +41,17 @@ guard:
         # - api_key_123
         # - api_key_456
         # etc..
+
+  ###########################################################################
+  # ------------------------- GUARD Helm Configurations --------------------- #
+  ###########################################################################
+  gateway-helm:
+    global:
+      images:
+        ratelimit:
+          image: "envoyproxy/ratelimit:38f01982"
+          pullPolicy: Always
+    config:
+      envoyGateway:
+        extensionApis: null
+        extensionManager: null
