@@ -46,6 +46,7 @@ check_path_up:
 # TODO_TECHDEBT(@olshansk, @okdas):
 # 1. Revert the changes that deploy Tilt in a docker container
 # 2. Enable development with a fully dockerized environment and a native k8s environments
+# 3. Re-enable true hot reloading of .config and .values files
 .PHONY: path_up
 path_up: check_docker ## Brings up local Tilt development environment in Docker
 	@./local/scripts/localnet.sh up
