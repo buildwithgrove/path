@@ -82,5 +82,5 @@ func unmarshalResponse(
 	}
 
 	// Default to a generic response if no method-specific response is found.
-	return responseUnmarshallerGeneric(logger, jsonrpcReq, data)
+	return responseUnmarshallerGeneric(logger, jsonrpcReq, jsonrpcResponse)
 }
