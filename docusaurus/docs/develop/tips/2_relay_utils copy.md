@@ -7,7 +7,7 @@ description: Relay Load Testing Tools
 ## Installation
 
 ```bash
-make install_optional_tools
+make install_tools_optional
 ```
 
 ## Relay Util

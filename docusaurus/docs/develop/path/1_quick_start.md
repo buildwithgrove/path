@@ -32,8 +32,16 @@ cd ./path
 
 **2. Install all dependencies**:
 
+Required tools:
+
 ```bash
 make install_tools
+```
+
+Optional but highly recommended tools:
+
+```bash
+make install_tools_optional
 ```
 
 ### What's Next?

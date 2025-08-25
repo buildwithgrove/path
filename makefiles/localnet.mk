@@ -18,15 +18,15 @@
 # Internal helper: Check if Docker is installed locally
 check_docker:
 	@if ! command -v docker >/dev/null 2>&1; then \
-		echo "Docker is not installed. Please install Docker and try again."; \
+		echo "${RED}Docker is not installed. Please install Docker and try again.${RESET}"; \
 		exit 1; \
 	fi;
 	@if ! docker info >/dev/null 2>&1; then \
-		echo "Docker daemon is not running. Please start Docker and try again."; \
-		echo "You can start Docker by doing one of the following:"; \
+		echo "${RED}Docker daemon is not running. Please start Docker and try again.${RESET}"; \
+		echo "You can start Docker by doing ONE OF the following:"; \
 		echo "  - Opening Docker Desktop application"; \
-		echo "  - Running 'sudo systemctl start docker' on Linux"; \
-		echo "  - Running 'open /Applications/Docker.app' on macOS"; \
+		echo "  - Running ${CYAN}'sudo systemctl start docker' on Linux${RESET}"; \
+		echo "  - Running ${CYAN}'open /Applications/Docker.app' on macOS${RESET}"; \
 		exit 1; \
 	fi;
 

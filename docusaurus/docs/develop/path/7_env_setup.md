@@ -19,7 +19,7 @@ We use [Kind](https://kind.sigs.k8s.io/) (Kubernetes in Docker) for running the 
 - [**pocketd CLI**](https://dev.poktroll.com/category/pocketd-cli): CLI for interacting with Pocket Network's Shannon protocol
 - [**Docker**](https://docs.docker.com/get-docker/): Container runtime
 
-**Optional development tools** (`make install_optional_tools`):
+**Optional development tools** (`make install_tools_optional`):
 
 - [**Websocket Load Test**](https://github.com/commoddity/websocket-load-test): Websocket load testing tool
 - [**Relay Util**](https://github.com/commoddity/relay-util): Load testing tool for sending configurable batches of relays concurrently

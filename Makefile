@@ -51,6 +51,7 @@ path_run: path_build check_path_config ## Run the path binary as a standalone bi
 ###    Makefile imports     ###
 ###############################
 
+include ./makefiles/colors.mk
 include ./makefiles/configs.mk
 include ./makefiles/configs_shannon.mk
 include ./makefiles/deps.mk

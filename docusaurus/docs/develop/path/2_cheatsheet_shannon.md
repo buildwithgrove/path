@@ -342,7 +342,7 @@ In production environments, you should implement reconnection logic and handle e
 Make sure you install optional tools first:
 
 ```bash
-make install_optional_tools
+make install_tools_optional
 ```
 
 Send 100 requests with performance metrics:
@@ -358,7 +358,7 @@ TODO_IN_THIS_PR: Update to have this point at LocalNet.
 1. Make sure you install optional tools first:
 
    ```bash
-   make install_optional_tools
+   make install_tools_optional
    ```
 
 2. Get your `GROVE_PORTAL_APP_ID` and `GROVE_PORTAL_API_KEY` from the [Grove's Portal](https://portal.grove.city).
