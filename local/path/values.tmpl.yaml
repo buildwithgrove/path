@@ -3,6 +3,7 @@
 
 # See the PATH Helm Chart `values.yaml` file for the full set of available customizations.
 # https://github.com/buildwithgrove/helm-charts/blob/main/charts/path/values.yaml
+# https://github.com/buildwithgrove/helm-charts/blob/main/charts/guard/values.yaml#L202
 
 # 🚨 IMPORTANT: To use this file 🚨
 # 1. Run `make configs_copy_values_yaml` to create the .gitignored `.values.yaml` file if not already present.

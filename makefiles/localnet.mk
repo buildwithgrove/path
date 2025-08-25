@@ -43,6 +43,9 @@ check_path_up:
 	fi
 
 # Brings up local Tilt environment with remote helm charts
+# TODO_TECHDEBT(@olshansk, @okdas):
+# 1. Revert the changes that deploy Tilt in a docker container
+# 2. Enable development with a fully dockerized environment and a native k8s environments
 .PHONY: path_up
 path_up: check_docker ## Brings up local Tilt development environment in Docker
 	@./local/scripts/localnet.sh up

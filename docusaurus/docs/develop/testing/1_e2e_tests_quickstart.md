@@ -4,13 +4,13 @@ title: E2E Tests Quickstart (< 10min)
 description: End-to-End Tests for PATH
 ---
 
-:::warning TODO
+**_tl;dr Fully featured E2E Tests to verify PATH works correctly._**
 
-Add a gif of load tests running locally.
+:::warning TODO(@olshansky): Add gif
+
+Add a gif of load tests running locally to show what and how this works
 
 :::
-
-_tl;dr Fully featured E2E Tests to verify PATH works correctly._
 
 - [Quickstart](#quickstart)
 - [E2E Test Config Files](#e2e-test-config-files)
@@ -18,21 +18,21 @@ _tl;dr Fully featured E2E Tests to verify PATH works correctly._
 
 ## Quickstart
 
-⚠️ **Prerequisites**: Complete the [Getting Started](../path/1_getting_started.md) and [Shannon Cheat Sheet](../path/2_cheatsheet_shannon.md) guides.
+⚠️ **Prerequisites**: Complete the [Getting Started](../path/1_getting_started.md) and [Shannon Cheat Sheet](../path/2_cheatsheet_shannon.md) guides ⚠️
 
-First, prepare the Shannon E2E test config file:
+First, prepare the Shannon E2E test config file at `./e2e/config/.shannon.config.yaml` by running:
 
 ```bash
 make config_copy_path_local_config_shannon_e2e
 ```
 
-Then, run E2E tests for specific service IDs:
+Then, run E2E tests for specific service IDs. For example:
 
 ```bash
 make e2e_test eth,xrplevm
 ```
 
-Or, run E2E tests for all service IDs:
+Alternatively, run E2E tests for all service IDs:
 
 ```bash
 make e2e_test_all

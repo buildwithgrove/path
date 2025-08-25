@@ -44,6 +44,8 @@ In `./local/path/.config.yaml`:
 
 ### 3. Download the guard `.values.yaml`
 
+op item get fkltz2wb7fegpumntqyo3w5qau --fields notesPlain --format json | jq -r '.value' > ./local/path/.values.yaml
+
 ### 4. Skip to Section 4
 
 Skip to [Section 4: Run PATH](#4-run-path-stack-locally)
@@ -272,7 +274,7 @@ cat local/path/.values.yaml
 
 ### 3.2 Update the services
 
-Update this section with the services you want to support:
+Update this section with the services you want to support. For example:
 
 ```yaml
 guard:
@@ -281,6 +283,11 @@ guard:
     - serviceId: svc1
     - serviceId: sv2
 ```
+
+Make sure this reflects both of the following:
+
+1. What your onchain application is configured to support.
+2. What your gateway `.config.yaml` is configured for
 
 ## 4. Run PATH Stack Locally
 
