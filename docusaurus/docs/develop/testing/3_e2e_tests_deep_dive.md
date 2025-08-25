@@ -1,12 +1,12 @@
 ---
-sidebar_position: 4
-title: E2E Tests - Deep Dive
+sidebar_position: 3
+title: E2E Tests Deep Dive (20+ min)
 description: Deep dive into End-to-End Tests for PATH
 ---
 
 :::tip Quickstart
 
-⚠️ Make sure to visit the [E2E Tests Quickstart](3_e2e_tests_quickstart.md) to get started quickly.
+⚠️ Make sure to visit the [E2E Tests Quickstart](1_e2e_tests_quickstart.md) to get started quickly.
 
 :::
 

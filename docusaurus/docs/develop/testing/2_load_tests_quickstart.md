@@ -1,6 +1,6 @@
 ---
-sidebar_position: 5
-title: Load Tests Quickstart
+sidebar_position: 2
+title: Load Tests Quickstart (< 10min)
 description: Load Tests for PATH
 ---
 
@@ -18,7 +18,7 @@ _tl;dr Fully featured Load Tests to verify PATH works correctly._
 
 ## Load Testing using Local PATH
 
-⚠️ **Prerequisites**: Complete the [Quick Start](1_quick_start.md) and [Shannon Cheat Sheet](2_cheatsheet_shannon.md) guides.
+⚠️ **Prerequisites**: Complete the [Getting Started](../path/1_getting_started.md) and [Shannon Cheat Sheet](../path/2_cheatsheet_shannon.md) guides.
 
 First, prepare the Shannon E2E test config file:
 

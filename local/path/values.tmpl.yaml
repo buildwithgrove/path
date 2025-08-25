@@ -18,17 +18,16 @@ guard:
   #
   # 1. Each service must have a unique service ID.
   # 2. Each service can have a list of aliases that can be used to route requests to the service.
-  # TODO_MIGRATION(@commoddity): once GUARD is updated, remove `shannonServiceId` and use `serviceId` instead.
   services:
+    - serviceId: anvil
+    - serviceId: pocket
     - serviceId: eth
       aliases:
         - ethereum
-    - serviceId: anvil
-    - serviceId: xrplevm
-    - serviceId: pocket
     - serviceId: poly
       aliases:
         - polygon
+    - serviceId: xrplevm
 
   # The auth section allows configuring the API key authentication for the PATH service.
   auth:
@@ -45,6 +44,11 @@ guard:
   ###########################################################################
   # ------------------------- GUARD Helm Configurations --------------------- #
   ###########################################################################
+  # TODO_TECHDEBT: This is a temporary fix to use the pre-release version of the ratelimit image.
+  # Can remove 'global' and all child keys once the release version of ratelimit is available
+  # PR reference: https://github.com/envoyproxy/ratelimit/pull/941#issuecomment-3186314121
+  # Discord discussion: https://discord.com/channels/824324475256438814/1404887238562545786/1405564826717130893
+  # Dockerhub image: https://hub.docker.com/layers/envoyproxy/ratelimit/38f01982/images/sha256-3bdd0399d31e72332823ca618b4f9ea7cfa9ad8ed27b793fa5d7ef7882ea2057
   gateway-helm:
     global:
       images:

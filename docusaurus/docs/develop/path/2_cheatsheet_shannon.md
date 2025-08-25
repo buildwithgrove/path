@@ -4,31 +4,25 @@ title: Shannon Cheat Sheet (30-60 min)
 description: Introductory guide for setting up PATH w/ Shannon
 ---
 
-_tl;dr Set up `PATH` with Pocket Network's **Shannon** protocol_
+<!-- TODO_TECHDEBT(@olshansk): Remove all instances of Shannon -->
 
-:::tip TIP: Coming from `dev.poktroll.com`?
+**_tl;dr Set up `PATH` with Pocket Network's Shannon protocol_**
 
-Coming from the [App & PATH Gateway Cheat Sheet](https://dev.poktroll.com/operate/cheat_sheets/gateway_cheatsheet)?
-
-Skip to [2.1 Generate Shannon Config](#21-generate-shannon-config).
-
-:::
-
-:::note NOTE: Are you a Grove 🌿 employee?
+:::note 🌿 Are you a Grove employee 🌿?
 
 <details>
 
 <summary>Download your configs here</summary>
 
-### 1. Download your configs
+### 1. Download the shannon `.config.yaml`
 
-For MainNet:
+For **MainNet**:
 
 ```bash
 op item get 4ifsnkuifvaggwgptns6xyglsa --fields notesPlain --format json | jq -r '.value' > ./local/path/.config.yaml
 ```
 
-For Beta TestNet:
+For **Beta TestNet**:
 
 ```bash
 op item get 3treknedz5q47rgwdbreluwffu --fields notesPlain --format json | jq -r '.value' > ./local/path/.config.yaml
@@ -36,57 +30,71 @@ op item get 3treknedz5q47rgwdbreluwffu --fields notesPlain --format json | jq -r
 
 ### 2. Comment out unused config sections
 
-Comment out the `owned_apps_private_keys_hex` you're not using for testing.
+In `./local/path/.config.yaml`:
 
-And comment out the `data_reporter_config` section:
+1. Comment out the `owned_apps_private_keys_hex` you're not using for testing.
+2. Comment out the `data_reporter_config` section:
 
-```bash
-sed -i '' \
-  -e 's/^[[:space:]]*data_reporter_config:/# data_reporter_config:/' \
-  -e 's/^[[:space:]]*"target_url":/#   "target_url":/' \
-  local/path/.config.yaml
-```
+   ```bash
+   sed -i '' \
+     -e 's/^[[:space:]]*data_reporter_config:/# data_reporter_config:/' \
+     -e 's/^[[:space:]]*"target_url":/#   "target_url":/' \
+     local/path/.config.yaml
+   ```
 
-### 3. Skip to Section 3
+### 3. Download the guard `.values.yaml`
 
-Skip to [section 3: Run PATH](#3-run-the-full-path-stack-locally)
+### 4. Skip to Section 4
+
+Skip to [Section 4: Run PATH](#4-run-path-stack-locally)
 
 </details>
+
+:::
+
+:::tip Are you coming from `dev.poktroll.com`?
+
+Coming from the [App & PATH Gateway Cheat Sheet](https://dev.poktroll.com/operate/cheat_sheets/gateway_cheatsheet)?
+
+Skip to [2.1 Generate Shannon Config](#21-generate-shannon-config).
 
 :::
 
 ## Table of Contents <!-- omit in toc -->
 
 - [0. Prerequisites](#0-prerequisites)
-- [1. Setup Shannon Protocol Accounts (Gateway \& Application)](#1-setup-shannon-protocol-accounts-gateway--application)
-  - [1.1 Gateway and Application Account Creation](#11-gateway-and-application-account-creation)
+- [1. Protocol Account Setup (Applications \& Gateway)](#1-protocol-account-setup-applications--gateway)
+  - [1.1 Account Creation](#11-account-creation)
   - [1.2 Account Validation](#12-account-validation)
-- [2. Configure PATH for Shannon](#2-configure-path-for-shannon)
+- [2. PATH Protocol Configuration (`.config.yaml`)](#2-path-protocol-configuration-configyaml)
   - [2.1 Generate Shannon Config](#21-generate-shannon-config)
-  - [2.2 Manual Configuration Verification](#22-manual-configuration-verification)
-  - [2.3 Ensure onchain configuration matches](#23-ensure-onchain-configuration-matches)
-- [3. Run the full PATH stack locally](#3-run-the-full-path-stack-locally)
-  - [3.1 Run \& Monitor PATH](#31-run--monitor-path)
-  - [3.2 Check configured services](#32-check-configured-services)
-- [4. Test Relays](#4-test-relays)
+  - [2.2 Verify Shannon Configuration](#22-verify-shannon-configuration)
+  - [2.3 Verify onchain configuration matches](#23-verify-onchain-configuration-matches)
+- [3. PATH Envoy Configuration (`.values.yaml`)](#3-path-envoy-configuration-valuesyaml)
+  - [3.1 Copy the template config](#31-copy-the-template-config)
+  - [3.2 Update the services](#32-update-the-services)
+- [4. Run PATH Stack Locally](#4-run-path-stack-locally)
+  - [4.1 Run \& Monitor PATH](#41-run--monitor-path)
+  - [4.2 Check configured services](#42-check-configured-services)
+- [5. Test Relays](#5-test-relays)
   - [Test Relay with `curl`](#test-relay-with-curl)
   - [Test WebSockets with `wscat`](#test-websockets-with-wscat)
   - [Load Testing Relays with `relay-util`](#load-testing-relays-with-relay-util)
   - [Load Testing WebSockets with `websocket-load-test`](#load-testing-websockets-with-websocket-load-test)
-- [5. Stop PATH](#5-stop-path)
+- [6. Stop PATH](#6-stop-path)
 
 ## 0. Prerequisites
 
-⚠️ Complete the [**Quick Start**](1_quick_start.md) guide.
+⚠️ Complete the [**Getting Started**](1_getting_started.md) guide.
 
-## 1. Setup Shannon Protocol Accounts (Gateway & Application)
+## 1. Protocol Account Setup (Applications & Gateway)
 
 You will need:
 
 1. **[Gateway](https://docs.pokt.network/pokt-protocol/the-shannon-upgrade/shannon-actors/gateways)**: Facilitates relays and ensures QoS
 2. **[Application](https://docs.pokt.network/pokt-protocol/the-shannon-upgrade/shannon-actors/sovereign-applications)**: Sends and pays for relays
 
-### 1.1 Gateway and Application Account Creation
+### 1.1 Account Creation
 
 Choose one of the following flows to setup your accounts:
 
@@ -184,7 +192,7 @@ pocketd keys show -a gateway --keyring-backend=test
 pocketd keys show -a application --keyring-backend=test
 ```
 
-## 2. Configure PATH for Shannon
+## 2. PATH Protocol Configuration (`.config.yaml`)
 
 ### 2.1 Generate Shannon Config
 
@@ -203,7 +211,7 @@ Override defaults if needed:
 
 :::
 
-### 2.2 Manual Configuration Verification
+### 2.2 Verify Shannon Configuration
 
 Check config:
 
@@ -228,7 +236,7 @@ shannon_config:
       - "0x..." # Your application private key
 ```
 
-### 2.3 Ensure onchain configuration matches
+### 2.3 Verify onchain configuration matches
 
 Verify service configuration for each application:
 
@@ -240,9 +248,43 @@ pocketd query application show-application \
 
 :::
 
-## 3. Run the full PATH stack locally
+## 3. PATH Envoy Configuration (`.values.yaml`)
 
-### 3.1 Run & Monitor PATH
+:::tip More details about configs
+
+You can learn more about various configurations at [Auth Configs](../configs/3_auth_config.md) or [Helm Docs](./../../operate/helm/). It covers auth, rate limiting, etc...
+
+:::
+
+### 3.1 Copy the template config
+
+Run the following command to create `local/path/.values.yaml`:
+
+```bash
+make configs_copy_values_yaml
+```
+
+And check the contents of `local/path/.values.yaml`:
+
+```bash
+cat local/path/.values.yaml
+```
+
+### 3.2 Update the services
+
+Update this section with the services you want to support:
+
+```yaml
+guard:
+  services:
+    - serviceId: eth
+    - serviceId: svc1
+    - serviceId: sv2
+```
+
+## 4. Run PATH Stack Locally
+
+### 4.1 Run & Monitor PATH
 
 Run the following command and wait 1-2 minutes:
 
@@ -258,13 +300,13 @@ Visit the **Tilt dashboard** at [localhost:10350](<http://localhost:10350/r/(all
 
 ![Tilt Dashboard](../../../static/img/path-in-tilt.png)
 
-### 3.2 Check configured services
+### 4.2 Check configured services
 
 ```bash
 curl http://localhost:3070/healthz | jq
 ```
 
-## 4. Test Relays
+## 5. Test Relays
 
 ### Test Relay with `curl`
 
@@ -375,7 +417,7 @@ TODO_IN_THIS_PR: Update to have this point at LocalNet.
    --log
    ```
 
-## 5. Stop PATH
+## 6. Stop PATH
 
 When you're finished testing:
 

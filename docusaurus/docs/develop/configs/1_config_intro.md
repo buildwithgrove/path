@@ -10,3 +10,11 @@ A `PATH` stack is configured via two files:
 | -------------- | -------- | ---------------------------------------------------------- | --------------------------- |
 | `.config.yaml` | ✅       | PATH **Gateway & Service** configurations                  | `./local/path/.config.yaml` |
 | `.values.yaml` | ❌       | PATH **Request Authorization & Deployment** configurations | `./local/path/.values.yaml` |
+
+<!-- TODO_IMPROVE(@olshansk):
+
+Rename:
+- `.config.yaml` -> `.app.yaml` or `protocol.yaml`
+- `.values.yaml` -> `.guard.yaml` or `auth.yaml` or `gateway.yaml`
+
+-->

@@ -1,6 +1,6 @@
 ---
-sidebar_position: 7
-title: Local Development Environment Setup
+sidebar_position: 3
+title: Developer Environment
 description: Technical details and background information
 ---
 
