@@ -13,7 +13,7 @@ config_shannon_populate: ## Populates the shannon config file with the correct v
 	./local/scripts/shannon_populate_config.sh
 
 .PHONY: config_copy_e2e_load_test
-config_copy_e2e_load_test: ## Copy the e2e_load_test.config.tmpl.yaml to e2e_load_test.config.yaml and configure Portal credentials
+config_copy_e2e_load_test: ## Copy the e2e_load_test.config.default.yaml to e2e_load_test.config.yaml and configure Portal credentials
 	@./e2e/scripts/copy_e2e_load_test_config.sh
 
 .PHONY: config_prepare_shannon_e2e

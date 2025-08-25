@@ -67,10 +67,10 @@ You will need one of the following:
 
 **Configuration files used:**
 
-| Configuration File                              | Local PATH | Grove Portal |             Default Available?              |
-| ----------------------------------------------- | :--------: | :----------: | :-----------------------------------------: |
-| `./e2e/config/.grove.e2e_load_test.config.yaml` |     ❌     |      ✅      |                     ❌                      |
-| `./e2e/config/.e2e_load_test.config.yaml`       |     ✅     |      ✅      | `e2e/config/e2e_load_test.config.tmpl.yaml` |
+| Configuration File                              | Local PATH | Grove Portal |               Default Available?               |
+| ----------------------------------------------- | :--------: | :----------: | :--------------------------------------------: |
+| `./e2e/config/.grove.e2e_load_test.config.yaml` |     ❌     |      ✅      |                       ❌                       |
+| `./e2e/config/.e2e_load_test.config.yaml`       |     ✅     |      ✅      | `e2e/config/e2e_load_test.config.default.yaml` |
 
 :::tip Populate Configs
 
@@ -104,7 +104,7 @@ Enable it by ensuring the following annotation is present at the top of your con
 
 :::tip
 
-To see the list of supported services for the tests, see the `test_cases` array in the [Load Test Config](https://github.com/buildwithgrove/path/blob/main/e2e/config/e2e_load_test.config.tmpl.yaml) file.
+To see the list of supported services for the tests, see the `test_cases` array in the [Load Test Config](https://github.com/buildwithgrove/path/blob/main/e2e/config/e2e_load_test.config.default.yaml) file.
 
 :::
 
