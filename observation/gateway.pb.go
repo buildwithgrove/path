@@ -10,13 +10,12 @@
 package observation
 
 import (
-	reflect "reflect"
-	sync "sync"
-	unsafe "unsafe"
-
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
+	reflect "reflect"
+	sync "sync"
+	unsafe "unsafe"
 )
 
 const (
@@ -27,22 +26,20 @@ const (
 )
 
 // RequestType captures the origin of the request.
-// As of PR #72, it is one of:
-//  1. Organic: a real user sent a service request to a PATH instance
-//  2. Synthetic: internal infrastructure generated the service request for simulation and data purposes.
-//
 // Next free index: 5
 type RequestType int32
 
 const (
 	RequestType_REQUEST_TYPE_UNSPECIFIED RequestType = 0
-	// Organic: Service request sent by a user.
+	// Organic: A real user sent a service request to a PATH instance
 	RequestType_REQUEST_TYPE_ORGANIC RequestType = 1
-	// Synthetic: Service request sent by the endpoint hydrator: see gateway/hydrator.go.
+	// Synthetic: Internal infrastructure generated the service request for simulation and data purposes.
 	RequestType_REQUEST_TYPE_SYNTHETIC RequestType = 2
-	// Parallel: Service request sent by PATH for internal purposes.
+	// Parallel: PATH sent the service request for higher redundancy
 	RequestType_REQUEST_TYPE_PARALLEL RequestType = 3
-	// Fallback: Service request sent by PATH for internal purposes.
+	// Fallback: PATH sent the service request for higher redundancy
+	// TODO_TECHDEBT(@adshmh): Use this when fallback endpoints are part of the gateway context.
+	// DUe to the current structure of the code, there is not clean way to apply this type to the RPC observations..
 	RequestType_REQUEST_TYPE_FALLBACK RequestType = 4
 )
 

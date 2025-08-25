@@ -18,7 +18,6 @@ import (
 	sdk "github.com/pokt-network/shannon-sdk"
 
 	"github.com/buildwithgrove/path/gateway"
-	"github.com/buildwithgrove/path/observation"
 	protocolobservations "github.com/buildwithgrove/path/observation/protocol"
 	"github.com/buildwithgrove/path/protocol"
 )
@@ -185,8 +184,7 @@ func (rc *requestContext) executeRelayRequest(payload protocol.Payload) (protoco
 	// - Used when endpoint is explicitly configured as a fallback endpoint
 	case selectedEndpoint.IsFallback():
 		rc.logger.Debug().Msg("Executing fallback relay")
-		// Update request type to PARALLEL for parallel requests
-		rc.gatewayObservations.RequestType = observation.RequestType_REQUEST_TYPE_PARALLEL
+		// TODO_TECHDEBT(@adshmh): Find a place to ensure fallback RPC type is set.
 
 		return rc.sendFallbackRelay(selectedEndpoint, payload)
 
