@@ -78,4 +78,4 @@ shannon_config:
 logger_config:
   # Valid values are: debug, info, warn, error
   # Defaults to info if not specified
-  level: "info"
+  level: "error"

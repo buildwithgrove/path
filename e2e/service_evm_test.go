@@ -116,7 +116,6 @@ func createEVMJsonRPCParams(method jsonrpc.Method, sp ServiceParams) jsonrpc.Par
 
 func getEVMVegetaTargets(
 	ts *TestService,
-	methods []string,
 	gatewayURL string,
 ) (map[string]vegeta.Target, error) {
 	headers := getRequestHeaders(ts.ServiceID)
@@ -128,7 +127,7 @@ func getEVMVegetaTargets(
 	ts.ServiceParams.blockNumber = blockNumber
 
 	targets := make(map[string]vegeta.Target)
-	for _, method := range methods {
+	for _, method := range getEVMTestMethods() {
 		// Create JSON-RPC request with appropriate parameters
 		jsonrpcReq := jsonrpc.Request{
 			JSONRPC: jsonrpc.Version2,
