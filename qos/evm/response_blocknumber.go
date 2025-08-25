@@ -17,7 +17,7 @@ var _ response = responseToBlockNumber{}
 // to the returned struct.
 func responseUnmarshallerBlockNumber(
 	logger polylog.Logger,
-	jsonrpcReq jsonrpc.Request,
+	_ jsonrpc.Request,
 	jsonrpcResp jsonrpc.Response,
 ) (response, error) {
 	// The endpoint returned an error: no need to do further processing of the response.
@@ -121,4 +121,10 @@ func (r responseToBlockNumber) getResponsePayload() []byte {
 // DEV_NOTE: This is an opinionated mapping following best practice but not enforced by any specifications or standards.
 func (r responseToBlockNumber) getHTTPStatusCode() int {
 	return r.jsonRPCResponse.GetRecommendedHTTPStatusCode()
+}
+
+// GetJSONRPCID returns the JSONRPC ID of the response.
+// Implements the response interface.
+func (r responseToBlockNumber) GetJSONRPCID() jsonrpc.ID {
+	return r.jsonRPCResponse.ID
 }
