@@ -3,6 +3,7 @@ package shannon
 import (
 	"fmt"
 
+	apptypes "github.com/pokt-network/poktroll/x/application/types"
 	sessiontypes "github.com/pokt-network/poktroll/x/session/types"
 	sharedtypes "github.com/pokt-network/poktroll/x/shared/types"
 	sdk "github.com/pokt-network/shannon-sdk"
@@ -10,15 +11,116 @@ import (
 	"github.com/buildwithgrove/path/protocol"
 )
 
-// By fulfilling the protocol package Endpoint interface, the endpoint struct below allows
-// all code outside this package to refer to a specific Shannon SupplierEndpoint as a uniquely identifiable entity
-// that can serve relays.
-var _ protocol.Endpoint = endpoint{}
+// TODO_TECHDEBT(@adshmh): Refactor this:
+// - Review the implementation of the endpoint interface.
+// - Avoid the need for a shannon specific implementation of Endpoint
+// - Example: Make endpoint an interface, implemented by:
+//   - A Shannon endpoint
+//   - A "fallback" URL with configurable fields: e.g. the Supplier set as "fallback"
+// - PR Review Reference: https://github.com/buildwithgrove/path/pull/395#discussion_r2261426190
 
-// endpoint is used to fulfill a protocol package Endpoint using a Shannon SupplierEndpoint.
-// An endpoint is identified by combining its supplier address and its URL, because
-// in Shannon a supplier can have multiple endpoints for a service.
-type endpoint struct {
+// endpoint defines the interface for Shannon endpoints, allowing for
+// different implementations (e.g., protocol vs fallback endpoints).
+type endpoint interface {
+	protocol.Endpoint
+
+	Session() *sessiontypes.Session
+	Supplier() string
+
+	// TODO_HACK(@adshmh): Remove this after refactoring this interface
+	FallbackURL(sharedtypes.RPCType) string
+	IsFallback() bool
+}
+
+// -------------------- Fallback Endpoint --------------------
+
+var _ endpoint = fallbackEndpoint{}
+var _ protocol.Endpoint = fallbackEndpoint{}
+
+// fallbackEndpoint is a fallback endpoint for a service.
+//   - It is defined in the PATH config YAML file.
+//   - It is identified by the `fallbackSupplierString` and its default URL.
+type fallbackEndpoint struct {
+	defaultURL  string
+	rpcTypeURLs map[sharedtypes.RPCType]string
+}
+
+// `fallbackSupplierString` is a const value used as placeholder
+// for the supplier address of fallback endpoints.
+const fallbackSupplierString = "fallback"
+
+// IsFallback returns true for fallback endpoints.
+func (e fallbackEndpoint) IsFallback() bool {
+	return true
+}
+
+// Addr returns the address of the fallback endpoint.
+// Fallback endpoints do not exist on the Shannon protocol and so do not have a supplier address.
+// Instead, they are identified by the `fallbackSupplierString` const value and the default URL.
+func (e fallbackEndpoint) Addr() protocol.EndpointAddr {
+	return protocol.EndpointAddr(fmt.Sprintf("%s-%s", fallbackSupplierString, e.defaultURL))
+}
+
+// PublicURL is a no-op for fallback endpoints.
+// Fallback endpoints use `FallbackURL` to return the
+// RPC type-specific URL for the endpoint.
+func (e fallbackEndpoint) PublicURL() string {
+	return ""
+}
+
+// FallbackURL returns the URL of the fallback endpoint.
+// It is defined separately from `PublicURL` due to the requirement
+// to take an RPC type as an argument, which `PublicURL` does not.
+func (e fallbackEndpoint) FallbackURL(rpcType sharedtypes.RPCType) string {
+	// If the RPC type is unknown, return the default URL.
+	if rpcType == sharedtypes.RPCType_UNKNOWN_RPC {
+		return e.defaultURL
+	}
+
+	url, ok := e.rpcTypeURLs[rpcType]
+	// If the RPC type is not configured for the
+	// fallback endpoint, return the default URL.
+	if !ok {
+		return e.defaultURL
+	}
+
+	// Return the URL for the configured RPC type.
+	return url
+}
+
+func (e fallbackEndpoint) WebsocketURL() (string, error) {
+	websocketURL, ok := e.rpcTypeURLs[sharedtypes.RPCType_WEBSOCKET]
+	if !ok {
+		return "", fmt.Errorf("websocket URL is not set")
+	}
+	return websocketURL, nil
+}
+
+// Session is a no-op for fallback endpoints.
+func (e fallbackEndpoint) Session() *sessiontypes.Session {
+	return &sessiontypes.Session{
+		// TODO_TECHDEBT(@adshmh): Refactor to separate Shannon and Fallback endpoints.
+		// This will allow removing the empty structs below, used to ensure non-nil values under Session field of any endpoint.
+		//
+		Header:      &sessiontypes.SessionHeader{},
+		Application: &apptypes.Application{},
+	}
+}
+
+// Supplier returns `fallbackSupplierString` as the supplier address.
+func (e fallbackEndpoint) Supplier() string {
+	return fallbackSupplierString
+}
+
+// -------------------- Shannon Protocol Endpoint --------------------
+
+var _ endpoint = protocolEndpoint{}
+var _ protocol.Endpoint = protocolEndpoint{}
+
+// protocolEndpoint is a single endpoint present on the Shannon protocol.
+//   - It is obtained from a Session returned by a Shannon Full Node.
+//   - It is identified by its Supplier address and Relay MinerURL.
+type protocolEndpoint struct {
 	supplier string
 	url      string
 	// TODO_TECHDEBT(@commoddity): Investigate if we should allow supporting additional RPC type endpoints.
@@ -31,20 +133,30 @@ type endpoint struct {
 	session sessiontypes.Session
 }
 
+// IsFallback returns false for protocol endpoints.
+func (e protocolEndpoint) IsFallback() bool {
+	return false
+}
+
 // TODO_MVP(@adshmh): replace EndpointAddr with a URL; a single URL should be treated the same regardless of the app to which it is attached.
 // For protocol-level concerns: the (app/session, URL) should be taken into account; e.g. a healthy endpoint may have been maxed out for a particular app.
 // For QoS-level concerns: only the URL of the endpoint matters; e.g. an unhealthy endpoint should be skipped regardless of the app/session to which it is attached.
-func (e endpoint) Addr() protocol.EndpointAddr {
+func (e protocolEndpoint) Addr() protocol.EndpointAddr {
 	return protocol.EndpointAddr(fmt.Sprintf("%s-%s", e.supplier, e.url))
 }
 
 // PublicURL returns the URL of the endpoint.
-func (e endpoint) PublicURL() string {
+func (e protocolEndpoint) PublicURL() string {
 	return e.url
 }
 
+// FallbackURL is a no-op for protocol endpoints.
+func (e protocolEndpoint) FallbackURL(_ sharedtypes.RPCType) string {
+	return ""
+}
+
 // WebsocketURL returns the URL of the endpoint.
-func (e endpoint) WebsocketURL() (string, error) {
+func (e protocolEndpoint) WebsocketURL() (string, error) {
 	if e.websocketUrl == "" {
 		return "", fmt.Errorf("websocket URL is not set")
 	}
@@ -52,12 +164,12 @@ func (e endpoint) WebsocketURL() (string, error) {
 }
 
 // Session returns a pointer to the session associated with the endpoint.
-func (e endpoint) Session() *sessiontypes.Session {
+func (e protocolEndpoint) Session() *sessiontypes.Session {
 	return &e.session
 }
 
 // Supplier returns the supplier address of the endpoint.
-func (e endpoint) Supplier() string {
+func (e protocolEndpoint) Supplier() string {
 	return e.supplier
 }
 
@@ -82,7 +194,7 @@ func endpointsFromSession(session sessiontypes.Session) (map[protocol.EndpointAd
 	for _, supplierEndpoints := range allEndpoints {
 		// All endpoints for a supplier will have the same supplier address & session,
 		// so we can use the first item to set the supplier address & session.
-		endpoint := endpoint{
+		endpoint := protocolEndpoint{
 			supplier: string(supplierEndpoints[0].Supplier()),
 			// Set the session field on the endpoint for efficient lookup when sending relays.
 			session: session,

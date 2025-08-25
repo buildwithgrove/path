@@ -69,6 +69,26 @@ func classifyRelayError(logger polylog.Logger, err error) (protocolobservations.
 	case errors.Is(err, sdk.ErrRelayResponseValidationSignatureError):
 		return protocolobservations.ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_RESPONSE_SIGNATURE_VALIDATION_ERR,
 			protocolobservations.ShannonSanctionType_SHANNON_SANCTION_SESSION
+
+	// TODO_NEXT(@commoddity): Introduce correct error classification for WebSocket errors.
+	//   - Error creating a WebSocket connection.
+	//   - Error signing the relay request.
+	//   - Error validating the relay response.
+
+	// WebSocket connection failed.
+	case errors.Is(err, errCreatingWebSocketConnection):
+		return protocolobservations.ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_WEBSOCKET_CONNECTION_FAILED,
+			protocolobservations.ShannonSanctionType_SHANNON_SANCTION_UNSPECIFIED
+
+	// Error signing the relay request.
+	case errors.Is(err, errRelayRequestWebsocketMessageSigningFailed):
+		return protocolobservations.ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_WEBSOCKET_REQUEST_SIGNING_FAILED,
+			protocolobservations.ShannonSanctionType_SHANNON_SANCTION_UNSPECIFIED
+
+	// Error validating the relay response in a websocket message.
+	case errors.Is(err, errRelayResponseInWebsocketMessageValidationFailed):
+		return protocolobservations.ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_WEBSOCKET_RELAY_RESPONSE_VALIDATION_FAILED,
+			protocolobservations.ShannonSanctionType_SHANNON_SANCTION_UNSPECIFIED
 	}
 
 	// Fallback to error matching using the error string.
@@ -95,7 +115,7 @@ func classifyRelayError(logger polylog.Logger, err error) (protocolobservations.
 		return protocolobservations.ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_HTTP_BAD_RESPONSE,
 			protocolobservations.ShannonSanctionType_SHANNON_SANCTION_UNSPECIFIED
 
-	case errContextCancelled:
+	case errContextCanceled:
 		return protocolobservations.ShannonEndpointErrorType_SHANNON_ENDPOINT_REQUEST_CANCELED_BY_PATH,
 			protocolobservations.ShannonSanctionType_SHANNON_SANCTION_DO_NOT_SANCTION
 

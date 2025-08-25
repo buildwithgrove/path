@@ -2,56 +2,57 @@ package websockets
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
-	"net/url"
-	"strconv"
+	"sync"
+	"time"
 
 	"github.com/gorilla/websocket"
 	"github.com/pokt-network/poktroll/pkg/polylog"
-	"github.com/pokt-network/poktroll/pkg/relayer/proxy"
-	apptypes "github.com/pokt-network/poktroll/x/application/types"
-	servicetypes "github.com/pokt-network/poktroll/x/service/types"
-	sessiontypes "github.com/pokt-network/poktroll/x/session/types"
-	sharedtypes "github.com/pokt-network/poktroll/x/shared/types"
-	sdk "github.com/pokt-network/shannon-sdk"
 
-	"github.com/buildwithgrove/path/protocol"
-	"github.com/buildwithgrove/path/request"
+	"github.com/buildwithgrove/path/observation"
 )
 
-// FullNode represents a Shannon FullNode as only Shannon supports websocket connections.
-// It is used only to validate the relay responses returned by the Endpoint.
-type FullNode interface {
-	// ValidateRelayResponse validates the raw bytes returned from an endpoint (in response to a relay request) and returns the parsed response.
-	ValidateRelayResponse(supplierAddr sdk.SupplierAddress, responseBz []byte) (*servicetypes.RelayResponse, error)
-}
+// A WebsocketMessageProcessor processes websocket messages.
+// For example, the Gateway package's websocketRequestContext implements this interface.
+// It then, in turn, performs both protocol-level and QoS-level message processing
+// on the message data
+type WebsocketMessageProcessor interface {
+	// ProcessClientWebsocketMessage processes a message from the client.
+	ProcessClientWebsocketMessage([]byte) ([]byte, error)
 
-// RelayRequestSigner is used by the request context to sign the relay request.
-// It takes an unsigned relay request and an application, and returns a relay request signed either by the gateway that has delegation from the app.
-// If/when the Permissionless Gateway Mode is supported by the Shannon integration, the app's own private key may also be used for signing the relay request.
-type RelayRequestSigner interface {
-	SignRelayRequest(req *servicetypes.RelayRequest, app apptypes.Application) (*servicetypes.RelayRequest, error)
-}
-
-// SelectedEndpoint represents a Shannon Endpoint that has been selected to service a persistent websocket connection.
-type SelectedEndpoint interface {
-	Addr() protocol.EndpointAddr
-	PublicURL() string
-	WebsocketURL() (string, error)
-	Supplier() string
-	Session() *sessiontypes.Session
+	// ProcessEndpointWebsocketMessage processes a message from the endpoint.
+	ProcessEndpointWebsocketMessage([]byte) ([]byte, *observation.RequestResponseObservations, error)
 }
 
 // bridge routes data between an Endpoint and a Client.
-// One bridge represents a single WebSocket connection between
-// a Client and a WebSocket Endpoint.
+// One bridge represents a single WebSocket connection
+// between a Client and a WebSocket Endpoint.
 //
-// Full data flow: Client <---clientConn---> PATH Bridge <---endpointConn---> Relay Miner Bridge <------> Endpoint
+// This is a generic websocket bridge that handles the websocket protocol
+// and message routing, while delegating Gateway-level message processing to the
+// provided message handler.
+//
+// Architecture:
+// - Protocol-agnostic: Works with any protocol (Shannon, future protocols)
+// - Message handler: Gateway-level processing of messages. Orchestrates protocol and QoS-level message processing.
+// - Notification channels: Gateway-level notifications to trigger sending Observations.
+//
+// Error Handling Strategy:
+// - Network-level errors (connection drops, ping failures): handleDisconnect() → cancelCtx() → async shutdown
+// - Application-level errors (message processing, write failures): bridge.shutdown() → immediate cleanup
+// - All error paths eventually lead to bridge.shutdown() for complete resource cleanup
+//
+// Full data flow: Client <---clientConn---> PATH bridge <---endpointConn---> Relay Miner bridge <------> Endpoint
+//
+// TODO_DOCS: Create WebSocket architecture diagram
+// - Document the full flow from client through bridge to endpoint
+// - Include observation flow and error handling paths
+// - Show interaction between gateway, protocol, and QoS layers for WebSocket messages
 type bridge struct {
 	// ctx is used to stop the bridge when the context is canceled from either connection
-	ctx context.Context
-
+	ctx    context.Context
 	logger polylog.Logger
 
 	// endpointConn is the connection to the WebSocket Endpoint
@@ -60,57 +61,80 @@ type bridge struct {
 	clientConn *websocketConnection
 
 	// msgChan receives messages from the Client and Endpoint and passes them to the other side of the bridge.
+	// It is an internal channel used only by the bridge and not exposed to any other package.
 	msgChan chan message
 
-	// selectedEndpoint is the Endpoint that the bridge is connected to
-	selectedEndpoint SelectedEndpoint
-	// relayRequestSigner is the RelayRequestSigner that the bridge uses to sign relay requests
-	relayRequestSigner RelayRequestSigner
-	// fullNode is the FullNode that the bridge uses to validate relay responses
-	fullNode FullNode
+	// websocketMessageProcessor processes messages from the client and endpoint.
+	websocketMessageProcessor WebsocketMessageProcessor
+
+	// messageObservationsChan receives message observations from the websocketMessageProcessor.
+	messageObservationsChan chan *observation.RequestResponseObservations
+
+	// shutdownOnce ensures shutdown() is only called once to prevent panics from double-closing channels
+	shutdownOnce sync.Once
 }
 
-// NewBridge creates a new Bridge instance and a new connection to the Endpoint from the Endpoint URL
-func NewBridge(
+// StartBridge creates a new Bridge instance with connections to both client and endpoint
+// and starts the bridge. Returns a channel that will be closed when the bridge shuts down.
+func StartBridge(
+	ctx context.Context,
 	logger polylog.Logger,
-	clientWSSConn *websocket.Conn,
-	selectedEndpoint SelectedEndpoint,
-	relayRequestSigner RelayRequestSigner,
-	fullNode FullNode,
-) (*bridge, error) {
-	logger = logger.With(
-		"component", "bridge",
-		"endpoint_url", selectedEndpoint.PublicURL(),
-	)
+	req *http.Request,
+	w http.ResponseWriter,
+	websocketURL string,
+	headers http.Header,
+	websocketMessageProcessor WebsocketMessageProcessor,
+	messageObservationsChan chan *observation.RequestResponseObservations,
+) (<-chan struct{}, error) {
+	logger = logger.With("component", "websocket_bridge")
 
-	// Connect to the Endpoint
-	endpointWSSConn, err := connectWebsocketEndpoint(logger, selectedEndpoint)
+	// Create a bridge-specific context that can be canceled from connections
+	// This is a child of the shared WebSocket context
+	bridgeCtx, cancelCtx := context.WithCancel(ctx)
+
+	// Upgrade HTTP request from client to websocket connection.
+	clientConn, err := upgradeClientWebsocketConnection(logger, req, w)
 	if err != nil {
-		return nil, fmt.Errorf("NewBridge: %s", err.Error())
+		logger.Error().Err(err).Msg("❌ error upgrading client websocket connection")
+		cancelCtx() // Clean up context on error
+		return nil, fmt.Errorf("createWebsocketBridge: %s", err.Error())
 	}
 
-	// Create a context that can be canceled from either connection
-	ctx, cancelCtx := context.WithCancel(context.Background())
+	// Connect to the Relay Miner endpoint
+	endpointConn, err := connectWebsocketEndpoint(logger, websocketURL, headers)
+	if err != nil {
+		logger.Error().Err(err).Msg("❌ error connecting to websocket endpoint")
+		cancelCtx() // Clean up context on error
+		return nil, fmt.Errorf("createWebsocketBridge: %s", err.Error())
+	}
 
 	// Create a channel to pass messages between the Client and Endpoint
 	msgChan := make(chan message)
 
-	// Create bridge instance without connections first
+	// Create a completion channel that will be closed when the bridge shuts down
+	completionChan := make(chan struct{})
+
+	// Create bridge instance
 	b := &bridge{
-		logger:             logger,
-		msgChan:            msgChan,
-		selectedEndpoint:   selectedEndpoint,
-		relayRequestSigner: relayRequestSigner,
-		fullNode:           fullNode,
-		ctx:                ctx,
+		logger: logger,
+		ctx:    bridgeCtx, // Use the bridge-specific context
+
+		msgChan:                   msgChan,
+		websocketMessageProcessor: websocketMessageProcessor,
+
+		messageObservationsChan: messageObservationsChan,
+	}
+	if err := b.validateComponents(); err != nil {
+		cancelCtx() // Clean up context on error
+		return nil, fmt.Errorf("❌ invalid bridge components: %w", err)
 	}
 
-	// Initialize connections with context and cancel function
+	// Initialize connections with bridge context and cancel function
 	b.endpointConn = newConnection(
 		b.ctx,
 		cancelCtx,
 		logger.With("conn", "endpoint"),
-		endpointWSSConn,
+		endpointConn,
 		messageSourceEndpoint,
 		msgChan,
 	)
@@ -118,72 +142,46 @@ func NewBridge(
 		b.ctx,
 		cancelCtx,
 		logger.With("conn", "client"),
-		clientWSSConn,
+		clientConn,
 		messageSourceClient,
 		msgChan,
 	)
 
-	return b, nil
+	// Start the bridge in a goroutine
+	go func() {
+		defer close(completionChan) // Signal completion when bridge shuts down
+		b.start()
+	}()
+
+	// Return the completion channel so the caller can wait for bridge shutdown
+	return completionChan, nil
 }
 
-// connectWebsocketEndpoint makes a websocket connection to the websocket Endpoint.
-func connectWebsocketEndpoint(logger polylog.Logger, selectedEndpoint SelectedEndpoint) (*websocket.Conn, error) {
-	logger.Info().Msgf("🔗 Connecting to endpoint: %s", selectedEndpoint.PublicURL())
-
-	websocketURL, err := selectedEndpoint.WebsocketURL()
-	if err != nil {
-		logger.Error().Err(err).Msgf("❌ Selected endpoint does not support websocket RPC type: %s", selectedEndpoint.Addr())
-		return nil, err
+// validateComponents ensures the Bridge is not created with nil components.
+// This is done to avoid panics and to make the Bridge's behavior more predictable.
+func (b *bridge) validateComponents() error {
+	switch {
+	case b.messageObservationsChan == nil:
+		return fmt.Errorf("messageObservationsChan is nil")
+	case b.websocketMessageProcessor == nil:
+		return fmt.Errorf("websocketMessageProcessor is nil")
 	}
-
-	u, err := url.Parse(websocketURL)
-	if err != nil {
-		logger.Error().Err(err).Msgf("❌ Error parsing endpoint URL: %s", selectedEndpoint.PublicURL())
-		return nil, err
-	}
-
-	headers := getBridgeRequestHeaders(selectedEndpoint.Session())
-
-	conn, _, err := websocket.DefaultDialer.Dial(u.String(), headers)
-	if err != nil {
-		logger.Error().Err(err).Msgf("❌ Error connecting to endpoint: %s", u.String())
-		return nil, err
-	}
-
-	return conn, nil
+	return nil
 }
 
-// TODO_DOCUMENT(@commoddity): Document these headers and how bridge connections work in more detail.
-//
-// getBridgeRequestHeaders returns the headers that should be sent to the RelayMiner
-// when establishing a new websocket connection to the Endpoint.
-//
-// The headers are:
-//   - `Target-Service-Id`: The service ID of the target service.
-//   - `App-Address:` The address of the session's application.
-//   - `Rpc-Type`: The type of RPC request. Always "websocket" for websocket connection requests.
-func getBridgeRequestHeaders(session *sessiontypes.Session) http.Header {
-	headers := http.Header{}
-	headers.Add(request.HTTPHeaderTargetServiceID, session.Header.ServiceId)
-	headers.Add(request.HTTPHeaderAppAddress, session.Header.ApplicationAddress)
+// ---------- Bridge Lifecycle ----------
 
-	// Get the "WEBSOCKET" RPC type enum value and add it to the headers.
-	rpcTypeWebsocket := strconv.Itoa(int(sharedtypes.RPCType_WEBSOCKET))
-	headers.Add(proxy.RPCTypeHeader, rpcTypeWebsocket)
-	return headers
-}
-
-// Run starts the bridge and establishes a bidirectional communication
+// Start starts the bridge and establishes a bidirectional communication
 // through PATH between the Client and the selected websocket endpoint.
 //
 // Full data flow: Client <---clientConn---> PATH Bridge <---endpointConn---> Relay Miner Bridge <------> Endpoint
-func (b *bridge) Run() {
-	b.logger.Info().Msg("bridge operation started successfully")
+func (b *bridge) start() {
+	b.logger.Info().Msg("🏗️ Websocket bridge operation started successfully")
 
 	// Listen for the context to be canceled and shut down the bridge
 	go func() {
 		<-b.ctx.Done()
-		b.Shutdown(fmt.Errorf("context canceled"))
+		b.shutdown(ErrBridgeContextCanceled)
 	}()
 
 	for msg := range b.msgChan {
@@ -197,99 +195,176 @@ func (b *bridge) Run() {
 	}
 }
 
-// Shutdown stops the bridge and closes both connections.
-// This method is passed to each connection and is called when an error is encountered.
+// shutdown performs immediate and complete bridge cleanup.
 //
-// It ensures that both Client and Endpoint connections are closed and the message channel is closed.
+// Usage:
+// - Application-level errors: Call shutdown() directly for immediate cleanup
+// - Message processing failures, protocol errors, write failures to connections
+// - Ensures proper WebSocket close frames are sent before terminating connections
 //
-// This is important as it is expected that the RelayMiner connection will be closed on every session rollover
-// and it is critical that the closing of the connection propagates to the Client so they can reconnect.
-func (b *bridge) Shutdown(err error) {
-	b.logger.Error().Err(err).Msg("🔌 ❌ Websocket bridge shutting down due to error!")
+// Cleanup sequence:
+// 1. Sends WebSocket close frames to both client and endpoint with appropriate close codes
+// 2. Closes both WebSocket connections
+// 3. Closes message channel to stop the message processing loop
+//
+// Close Codes:
+// - CloseServiceRestart (1012): For expected service interruptions (encourages reconnection)
+// - CloseInternalServerErr (1011): For unexpected server errors
+//
+// This method ensures all resources are cleaned up immediately and deterministically.
+func (b *bridge) shutdown(err error) {
+	// Use sync.Once to ensure shutdown is only called once, preventing panics from double-closing channels
+	b.shutdownOnce.Do(func() {
+		b.logger.Warn().Err(err).Msg("🔌👋 Websocket bridge shutting down.")
 
-	// Send close message to both connections and close the connections
-	errMsg := fmt.Sprintf("bridge shutting down: %s", err.Error())
-	closeMsg := websocket.FormatCloseMessage(websocket.CloseNormalClosure, errMsg)
+		// Determine appropriate close code and message for client reconnection guidance
+		closeCode, errMsg := b.determineCloseCodeAndMessage(err)
+		closeMsg := websocket.FormatCloseMessage(closeCode, errMsg)
 
-	if b.clientConn != nil {
-		if err := b.clientConn.WriteMessage(websocket.CloseMessage, closeMsg); err != nil {
-			b.logger.Error().Err(err).Msg("error writing close message to client connection")
+		// Write close messages with timeout to prevent hanging on broken connections
+		closeTimeout := time.Now().Add(1 * time.Second)
+
+		if b.clientConn != nil {
+			if err := b.clientConn.WriteControl(websocket.CloseMessage, closeMsg, closeTimeout); err != nil {
+				b.logger.Warn().Err(err).Msg("⚠️ could not write close message to client connection")
+			}
+			b.clientConn.Close()
 		}
-		b.clientConn.Close()
-	}
-	if b.endpointConn != nil {
-		if err := b.endpointConn.WriteMessage(websocket.CloseMessage, closeMsg); err != nil {
-			b.logger.Error().Err(err).Msg("error writing close message to endpoint connection")
+		if b.endpointConn != nil {
+			if err := b.endpointConn.WriteControl(websocket.CloseMessage, closeMsg, closeTimeout); err != nil {
+				b.logger.Warn().Err(err).Msg("⚠️ could not write close message to endpoint connection")
+			}
+			b.endpointConn.Close()
 		}
-		b.endpointConn.Close()
-	}
 
-	// Close the message channel to stop the message loop
-	close(b.msgChan)
+		// Close the message channel to stop the message loop
+		close(b.msgChan)
+
+		// Close the observation channel to signal the gateway that no more observations will be sent
+		if b.messageObservationsChan != nil {
+			close(b.messageObservationsChan)
+		}
+	})
 }
 
-// handleClientMessage processes a message from the Client and sends it to the Endpoint
-// It signs the request using the RelayRequestSigner and sends the signed request to the Endpoint
+// determineCloseCodeAndMessage determines the appropriate WebSocket close code and message
+// based on the error that caused the bridge shutdown. This guides client reconnection behavior.
+//
+// Close Code Guidelines (RFC 6455):
+// - 1012 (Service Restart): Server is restarting; client should attempt reconnection
+// - 1011 (Internal Error): Server encountered an unexpected condition; reconnection may help
+// - 1002 (Protocol Error): Protocol violation; client should not reconnect automatically
+// - 1003 (Unsupported Data): Data type cannot be accepted; client should not reconnect
+func (b *bridge) determineCloseCodeAndMessage(err error) (int, string) {
+	// Check for specific error types using errors.Is for proper error chain handling
+	switch {
+	case errors.Is(err, ErrBridgeContextCanceled):
+		// Expected shutdown - encourage reconnection
+		return websocket.CloseServiceRestart, "service restarting, please reconnect"
+
+	case errors.Is(err, ErrBridgeEndpointUnavailable):
+		// Endpoint issues - encourage reconnection (may be temporary)
+		return websocket.CloseServiceRestart, "endpoint temporarily unavailable, please reconnect"
+
+	case errors.Is(err, ErrBridgeMessageProcessingFailed):
+		// Message processing errors - could be transient or client issue
+		return websocket.CloseInternalServerErr, "message processing error occurred"
+
+	case errors.Is(err, ErrBridgeConnectionFailed):
+		// Connection-level errors - likely network issues
+		return websocket.CloseInternalServerErr, "connection error occurred"
+
+	default:
+		// Handle context.Canceled specifically (from context package)
+		if err.Error() == "context canceled" {
+			return websocket.CloseServiceRestart, "service restarting, please reconnect"
+		}
+
+		// Unknown errors - use internal error code
+		return websocket.CloseInternalServerErr, fmt.Sprintf("bridge error: %s", err.Error())
+	}
+}
+
+// ---------- Client Message Handling ----------
+
+// handleClientMessage processes a message from the Client and sends it to the endpoint.
+//
+// Error Handling:
+// - Message processing errors: shutdown() immediately (application-level failure)
+// - Write errors to endpoint: shutdown() immediately (communication failure)
 func (b *bridge) handleClientMessage(msg message) {
-	b.logger.Debug().Msgf("received message from client: %s", string(msg.data))
-
-	// Sign the client message before sending it to the Endpoint
-	signedClientMessageBz, err := b.signClientMessage(msg)
+	// Process the message through the client message handler
+	processedData, err := b.websocketMessageProcessor.ProcessClientWebsocketMessage(msg.data)
 	if err != nil {
-		b.clientConn.handleDisconnect(fmt.Errorf("handleClientMessage: error signing client message: %w", err))
+		b.logger.Error().Err(err).Msg("❌ error processing client message, shutting down bridge")
+
+		b.shutdown(fmt.Errorf("%w: client message processing failed: %w", ErrBridgeMessageProcessingFailed, err))
 		return
 	}
 
-	// Send the signed request to the RelayMiner, which will forward it to the Endpoint
-	if err := b.endpointConn.WriteMessage(msg.messageType, signedClientMessageBz); err != nil {
-		b.endpointConn.handleDisconnect(fmt.Errorf("handleClientMessage: error writing client message to endpoint: %w", err))
+	b.logger.Debug().Msgf("🔗 client message successfully processed, sending message to endpoint: %s", string(processedData))
+
+	// Send the processed message to the endpoint
+	if err := b.endpointConn.WriteMessage(msg.messageType, processedData); err != nil {
+		b.logger.Error().Err(err).Msg("❌ error writing client message to endpoint, shutting down bridge")
+
+		b.shutdown(fmt.Errorf("%w: failed to write client message to endpoint: %w", ErrBridgeConnectionFailed, err))
 		return
 	}
 }
 
-// signClientMessage signs the client message in order to send it to the Endpoint
-// It uses the RelayRequestSigner to sign the request and returns the signed request
-func (b *bridge) signClientMessage(msg message) ([]byte, error) {
-	unsignedRelayRequest := &servicetypes.RelayRequest{
-		Meta: servicetypes.RelayRequestMetadata{
-			SessionHeader:           b.selectedEndpoint.Session().GetHeader(),
-			SupplierOperatorAddress: b.selectedEndpoint.Supplier(),
-		},
-		Payload: msg.data,
-	}
+// ---------- Endpoint Message Handling ----------
 
-	app := b.selectedEndpoint.Session().GetApplication()
-	signedRelayRequest, err := b.relayRequestSigner.SignRelayRequest(unsignedRelayRequest, *app)
-	if err != nil {
-		return nil, fmt.Errorf("error signing client message: %s", err.Error())
-	}
-
-	relayRequestBz, err := signedRelayRequest.Marshal()
-	if err != nil {
-		return nil, fmt.Errorf("error marshalling signed client message: %s", err.Error())
-	}
-
-	return relayRequestBz, nil
-}
-
-// handleEndpointMessage processes a message from the Endpoint and sends it to the Client
-// It validates the relay response using the Shannon FullNode and sends the relay response to the Client
-// Subscription events pushed from the Endpoint to the Client will be handled here as well.
+// handleEndpointMessage processes a message from the Endpoint and sends it to the Client.
+// The bridge notifies the gateway about message processing results through channels,
+// allowing the gateway to handle observations without the bridge knowing about them.
+//
+// Error Handling:
+// - Message processing errors: shutdown() immediately (application-level failure)
+// - Write errors to client: shutdown() immediately (communication failure)
+//
+// Note: Session rollover disconnections from endpoints are expected and handled gracefully.
 func (b *bridge) handleEndpointMessage(msg message) {
-	b.logger.Debug().Msgf("received message from endpoint: %s", string(msg.data))
+	// Process the message through the endpoint message handler
+	processedData, msgObservations, err := b.websocketMessageProcessor.ProcessEndpointWebsocketMessage(msg.data)
 
-	// Validate the relay response using the Shannon FullNode
-	relayResponse, err := b.fullNode.ValidateRelayResponse(sdk.SupplierAddress(b.selectedEndpoint.Supplier()), msg.data)
+	// Notify gateway about message processing results (only if observations were created)
+	defer func() {
+		if msgObservations != nil {
+			b.sendMessageObservations(msgObservations)
+		}
+	}()
+
 	if err != nil {
-		b.endpointConn.handleDisconnect(fmt.Errorf("handleEndpointMessage: error validating relay response: %w", err))
+		b.logger.Error().Err(err).Msg("❌ error processing endpoint message, shutting down bridge")
+		b.shutdown(fmt.Errorf("%w: endpoint message processing failed: %w", ErrBridgeMessageProcessingFailed, err))
 		return
 	}
 
-	// Send the relay response or subscription push event to the Client
-	if err := b.clientConn.WriteMessage(msg.messageType, relayResponse.Payload); err != nil {
-		// NOTE: On session rollover, the RelayMiner will disconnect the Endpoint connection, which will trigger this
-		// error. This is expected and the Client is expected to handle the reconnection in their connection logic.
-		b.clientConn.handleDisconnect(fmt.Errorf("handleEndpointMessage: error writing endpoint message to client: %w", err))
+	// Send the processed message to the client
+	// NOTE: On session rollover, the Endpoint will disconnect the Endpoint connection, which will trigger this
+	// error. This is expected and the Client is expected to handle the reconnection in their connection logic.
+	if err := b.clientConn.WriteMessage(msg.messageType, processedData); err != nil {
+		b.logger.Error().Err(err).Msg("❌ error writing endpoint message to client, shutting down bridge")
+		b.shutdown(fmt.Errorf("%w: failed to write endpoint message to client: %w", ErrBridgeConnectionFailed, err))
 		return
+	}
+
+	b.logger.Debug().Msgf("🔗 endpoint message successfully processed, sending message to client: %s", string(processedData))
+
+}
+
+// ---------- Message Observation Sending ----------
+
+// sendMessageObservations sends message observations to the gateway.
+// If the channel is full or closed, the message observations are dropped.
+// This is done to avoid blocking the main thread.
+func (b *bridge) sendMessageObservations(msgObservations *observation.RequestResponseObservations) {
+	select {
+	case b.messageObservationsChan <- msgObservations:
+		// Successfully sent
+	default:
+		// Channel is full, log but don't block
+		b.logger.Warn().Msg("messageObservationsChan is full, dropping message observations")
 	}
 }

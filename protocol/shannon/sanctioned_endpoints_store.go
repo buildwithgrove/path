@@ -71,8 +71,14 @@ func (ses *sanctionedEndpointsStore) ApplyObservations(shannonObservations []*pr
 
 	// For each observation set:
 	for _, observationSet := range shannonObservations {
+		httpObservations := observationSet.GetHttpObservations()
+		if httpObservations == nil {
+			logger.Warn().Msg("❌ SHOULD NEVER HAPPEN: skipping processing: received empty HTTP observations")
+			continue
+		}
+
 		// For each endpoint observation in the set:
-		for _, endpointObservation := range observationSet.GetEndpointObservations() {
+		for _, endpointObservation := range httpObservations.GetEndpointObservations() {
 			// Build endpoint from observation
 			endpoint := buildEndpointFromObservation(endpointObservation)
 
@@ -123,10 +129,10 @@ func (ses *sanctionedEndpointsStore) FilterSanctionedEndpoints(
 	filteredEndpoints := make(map[protocol.EndpointAddr]endpoint)
 
 	for endpointAddr, endpoint := range allEndpoints {
-		sanctioned, reason := ses.isSanctioned(&endpoint)
+		sanctioned, reason := ses.isSanctioned(endpoint)
 		if sanctioned {
 			// Log and skip sanctioned endpoints
-			hydratedLogger := hydrateLoggerWithEndpoint(ses.logger, &endpoint)
+			hydratedLogger := hydrateLoggerWithEndpoint(ses.logger, endpoint)
 			hydratedLogger.With("sanction_reason", reason).Debug().Msg("Filtering out sanctioned endpoint")
 			continue
 		}
@@ -154,7 +160,7 @@ func (ses *sanctionedEndpointsStore) addPermanentSanction(
 //   - Sanction expires after defaultSessionSanctionExpiration
 //   - Used for temporary issues (e.g., timeouts, connection problems)
 func (ses *sanctionedEndpointsStore) addSessionSanction(
-	endpoint *endpoint,
+	endpoint endpoint,
 	sanction sanction,
 ) {
 	sessionSanctionKey := buildSessionSanctionKey(endpoint)
@@ -163,7 +169,7 @@ func (ses *sanctionedEndpointsStore) addSessionSanction(
 }
 
 // isSanctioned checks if an endpoint has any active sanction (permanent or session-based)
-func (ses *sanctionedEndpointsStore) isSanctioned(endpoint *endpoint) (bool, string) {
+func (ses *sanctionedEndpointsStore) isSanctioned(endpoint endpoint) (bool, string) {
 	// Check permanent sanctions first - these apply regardless of session
 	ses.permanentSanctionsMutex.RLock()
 	defer ses.permanentSanctionsMutex.RUnlock()
@@ -207,9 +213,9 @@ func (s sessionSanctionKey) string() string {
 //   - Session ID: "1234567890"
 //
 // The key is used to store and retrieve session-based sanctions from the cache.
-func buildSessionSanctionKey(endpoint *endpoint) sessionSanctionKey {
+func buildSessionSanctionKey(endpoint endpoint) sessionSanctionKey {
 	endpointAddr := endpoint.Addr()
-	sessionID := endpoint.session.Header.SessionId
+	sessionID := endpoint.Session().Header.SessionId
 	return sessionSanctionKey{
 		endpointAddr: endpointAddr,
 		sessionID:    sessionID,

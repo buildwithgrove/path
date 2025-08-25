@@ -9,6 +9,8 @@ import (
 	"strings"
 	"time"
 
+	sharedtypes "github.com/pokt-network/poktroll/x/shared/types"
+
 	"github.com/buildwithgrove/path/protocol"
 )
 
@@ -20,6 +22,9 @@ const (
 	// secp256k1 keys are 20 bytes, but are then bech32 encoded -> 43 bytes
 	// Ref: https://docs.cosmos.network/main/build/spec/addresses/bech32
 	shannonAddressLengthBech32 = 43
+
+	// Default session rollover blocks is the default value for the session rollover blocks config.
+	defaultSessionRolloverBlocks = 10
 )
 
 var (
@@ -30,6 +35,8 @@ var (
 	ErrShannonUnsupportedGatewayMode                  = errors.New("invalid shannon gateway mode")
 	ErrShannonCentralizedGatewayModeRequiresOwnedApps = errors.New("shannon Centralized gateway mode requires at-least 1 owned app")
 	ErrShannonCacheConfigSetForLazyMode               = errors.New("cache config cannot be set for lazy mode")
+	ErrShannonInvalidServiceFallback                  = errors.New("invalid service fallback configuration")
+	ErrShannonInvalidSessionRolloverBlocks            = errors.New("session_rollover_blocks must be positive")
 )
 
 type (
@@ -43,6 +50,10 @@ type (
 
 		// Configuration options for the cache when LazyMode is false
 		CacheConfig CacheConfig `yaml:"cache_config"`
+
+		// SessionRolloverBlocks is a temporary fix to handle session rollover issues.
+		// TODO_TECHDEBT(@commoddity): Should be removed when the rollover issue is solved at the protocol level.
+		SessionRolloverBlocks int64 `yaml:"session_rollover_blocks"`
 	}
 
 	// TODO_TECHDEBT(@adshmh): Move this and related helpers into a new `grpc` package.
@@ -65,8 +76,29 @@ type (
 		GatewayAddress          string               `yaml:"gateway_address"`
 		GatewayPrivateKeyHex    string               `yaml:"gateway_private_key_hex"`
 		OwnedAppsPrivateKeysHex []string             `yaml:"owned_apps_private_keys_hex"`
+		ServiceFallback         []ServiceFallback    `yaml:"service_fallback"`
+	}
+
+	// TODO_TECHDEBT(@adshmh): Make configuration and implementation explicit:
+	// - Criteria to decide whether the "fallback" URL should be used at all.
+	// - Criteria to decide the order in which a Shannon endpoint vs. a fallback URL should be used.
+	// - Support "weighted" distribution to Shannon endpoints vs. "fallback" URLs.
+	//
+	// ServiceFallback is a configuration struct for specifying fallback endpoints for a service.
+	ServiceFallback struct {
+		ServiceID         protocol.ServiceID  `yaml:"service_id"`
+		FallbackEndpoints []map[string]string `yaml:"fallback_endpoints"`
+		// If true, all traffic will be sent to the fallback endpoints for the service,
+		// regardless of the health of the protocol endpoints.
+		SendAllTraffic bool `yaml:"send_all_traffic"`
 	}
 )
+
+// defaultURLKey is the key for the default URL in the fallback endpoints map.
+//   - If a service only supports one RPC type, the default URL is used for all requests.
+//   - If a service supports multiple RPC types, the default URL is not used for requests.
+//   - In all cases, the default URL is used as an identifier in the EndpointAddr.
+const defaultURLKey = "default_url"
 
 func (gc GatewayConfig) Validate() error {
 	if len(gc.GatewayPrivateKeyHex) != shannonPrivateKeyLengthHex {
@@ -93,6 +125,70 @@ func (gc GatewayConfig) Validate() error {
 		}
 	}
 
+	if err := gc.validateServiceFallback(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// validateServiceFallback validates the service fallback configuration.
+// It checks for duplicate service IDs, at-least one fallback URL, and valid fallback URLs.
+func (gc GatewayConfig) validateServiceFallback() error {
+	seenServiceIDs := make(map[protocol.ServiceID]struct{})
+
+	for _, serviceFallback := range gc.ServiceFallback {
+		if serviceFallback.ServiceID == "" {
+			return fmt.Errorf("%w: service ID is required", ErrShannonInvalidServiceFallback)
+		}
+
+		// Check for duplicate service IDs
+		if _, exists := seenServiceIDs[serviceFallback.ServiceID]; exists {
+			return fmt.Errorf("%w: duplicate service ID '%s' found in service_fallback configuration",
+				ErrShannonInvalidServiceFallback, serviceFallback.ServiceID)
+		}
+		seenServiceIDs[serviceFallback.ServiceID] = struct{}{}
+
+		// Check that at least one fallback endpoint is defined
+		if len(serviceFallback.FallbackEndpoints) == 0 {
+			return fmt.Errorf("%w: at-least one fallback endpoint is required for service '%s'", ErrShannonInvalidServiceFallback, serviceFallback.ServiceID)
+		}
+
+		// Validate all fallback endpoints
+		for i, endpointMap := range serviceFallback.FallbackEndpoints {
+			if len(endpointMap) == 0 {
+				return fmt.Errorf("%w: fallback endpoint %d is empty for service '%s'", ErrShannonInvalidServiceFallback, i, serviceFallback.ServiceID)
+			}
+
+			for rpcType, url := range endpointMap {
+				// Skip default_url as it's not an RPC type
+				if rpcType == defaultURLKey {
+					if url == "" {
+						return fmt.Errorf("%w: default_url is required for service '%s' fallback endpoint %d",
+							ErrShannonInvalidServiceFallback, serviceFallback.ServiceID, i)
+					}
+					if !isValidURL(url) {
+						return fmt.Errorf("%w: invalid default_url '%s' for service '%s' fallback endpoint %d",
+							ErrShannonInvalidServiceFallback, url, serviceFallback.ServiceID, i)
+					}
+					continue
+				}
+
+				// Validate RPC type
+				_, err := sharedtypes.GetRPCTypeFromConfig(rpcType)
+				if err != nil {
+					return fmt.Errorf("%w: invalid RPC type '%s' for service '%s' fallback endpoint %d",
+						ErrShannonInvalidServiceFallback, rpcType, serviceFallback.ServiceID, i)
+				}
+
+				// Validate URL
+				if !isValidURL(url) {
+					return fmt.Errorf("%w: invalid %s fallback endpoint URL '%s' for service '%s' fallback endpoint %d",
+						ErrShannonInvalidServiceFallback, rpcType, url, serviceFallback.ServiceID, i)
+				}
+			}
+		}
+	}
 	return nil
 }
 
@@ -103,10 +199,53 @@ func (c FullNodeConfig) Validate() error {
 	if !isValidHostPort(c.GRPCConfig.HostPort) {
 		return ErrShannonInvalidGrpcHostPort
 	}
+	if c.SessionRolloverBlocks <= 0 {
+		return ErrShannonInvalidSessionRolloverBlocks
+	}
 	if err := c.CacheConfig.validate(c.LazyMode); err != nil {
 		return err
 	}
 	return nil
+}
+
+// getServiceFallbackMap returns the fallback endpoint information for each
+// service ID from the YAML config, including the SendAllTraffic setting.
+func (gc GatewayConfig) getServiceFallbackMap() map[protocol.ServiceID]serviceFallback {
+	configs := make(map[protocol.ServiceID]serviceFallback, len(gc.ServiceFallback))
+
+	for _, serviceFallbackConfig := range gc.ServiceFallback {
+		endpoints := make(map[protocol.EndpointAddr]endpoint, len(serviceFallbackConfig.FallbackEndpoints))
+
+		// Create fallback endpoints from the configuration
+		for _, endpointMap := range serviceFallbackConfig.FallbackEndpoints {
+			rpcTypeURLs := make(map[sharedtypes.RPCType]string, len(endpointMap))
+
+			for rpcTypeStr, url := range endpointMap {
+				// Convert string keys to RPC types
+				rpcType, err := sharedtypes.GetRPCTypeFromConfig(rpcTypeStr)
+				if err != nil {
+					// This should not happen if validation passed, but skip invalid RPC types
+					continue
+				}
+				rpcTypeURLs[rpcType] = url
+			}
+
+			// Create fallback endpoint struct from the configuration and add
+			// it to the map of endpoints for the service by its EndpointAddr.
+			fallbackEndpoint := fallbackEndpoint{
+				defaultURL:  endpointMap[defaultURLKey],
+				rpcTypeURLs: rpcTypeURLs,
+			}
+			endpoints[fallbackEndpoint.Addr()] = fallbackEndpoint
+		}
+
+		configs[serviceFallbackConfig.ServiceID] = serviceFallback{
+			SendAllTraffic: serviceFallbackConfig.SendAllTraffic,
+			Endpoints:      endpoints,
+		}
+	}
+
+	return configs
 }
 
 // TODO_TECHDEBT(@adshmh): add a new `grpc` package to handle all GRPC related functionality and configuration.
@@ -192,8 +331,11 @@ func isValidHostPort(hostPort string) bool {
 	return true
 }
 
-// hydrateDefaults applies default values to FullNodeConfig
-func (fnc *FullNodeConfig) hydrateDefaults() {
+// HydrateDefaults applies default values to FullNodeConfig
+func (fnc *FullNodeConfig) HydrateDefaults() {
 	fnc.GRPCConfig = fnc.GRPCConfig.hydrateDefaults()
 	fnc.CacheConfig = fnc.CacheConfig.hydrateDefaults()
+	if fnc.SessionRolloverBlocks == 0 {
+		fnc.SessionRolloverBlocks = defaultSessionRolloverBlocks
+	}
 }

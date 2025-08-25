@@ -21,7 +21,6 @@ var (
 	errHTTPRequestRejectedByParser   = errors.New("HTTP request rejected by the HTTP parser")
 	errHTTPRequestRejectedByQoS      = errors.New("HTTP request rejected by service QoS instance")
 	errHTTPRequestRejectedByProtocol = errors.New("HTTP request rejected by protocol instance")
-	errWebsocketRequestRejectedByQoS = errors.New("websocket request rejected by service QoS instance")
 )
 
 const (
@@ -157,25 +156,6 @@ func (rc *requestContext) BuildQoSContextFromHTTP(httpReq *http.Request) error {
 	return nil
 }
 
-// BuildQoSContextFromWebsocket builds the QoS context instance using the supplied WebSocket request.
-// This method does not need to parse the HTTP request's payload as the WebSocket request does not have a body,
-// so it will only return an error if called for a service that does not support WebSocket connections.
-func (rc *requestContext) BuildQoSContextFromWebsocket(wsReq *http.Request) error {
-	// Create the QoS request context using the WebSocket request.
-	// This method will reject the request if it is for a service that does not support WebSocket connections.
-	qosCtx, isValid := rc.serviceQoS.ParseWebsocketRequest(rc.context)
-	rc.qosCtx = qosCtx
-
-	// Only reject the request if the service QoS does not support WebSocket connections.
-	// All other WebSocket requests will have `isValid` set to true.
-	if !isValid {
-		rc.logger.Info().Msg(errWebsocketRequestRejectedByQoS.Error())
-		return errWebsocketRequestRejectedByQoS
-	}
-
-	return nil
-}
-
 // BuildProtocolContextsFromHTTPRequest builds multiple Protocol contexts using the supplied HTTP request.
 //
 // Steps:
@@ -241,18 +221,6 @@ func (rc *requestContext) BuildProtocolContextsFromHTTPRequest(httpReq *http.Req
 	}
 
 	logger.Info().Msgf("Successfully built %d protocol contexts for the request with %d selected endpoints", len(rc.protocolContexts), numSelectedEndpoints)
-
-	return nil
-}
-
-// HandleWebsocketRequest handles a websocket request.
-func (rc *requestContext) HandleWebsocketRequest(request *http.Request, responseWriter http.ResponseWriter) error {
-	// Establish a websocket connection with the selected endpoint and handle the request.
-	// In this code path, we are always guaranteed to have exactly one protocol context.
-	if err := rc.protocolContexts[0].HandleWebsocketRequest(rc.logger, request, responseWriter); err != nil {
-		rc.logger.Warn().Err(err).Msg("Failed to establish a websocket connection.")
-		return err
-	}
 
 	return nil
 }
@@ -355,9 +323,13 @@ func (rc *requestContext) BroadcastAllObservations() {
 			Protocol:    rc.protocolObservations,
 			Qos:         &qosObservations,
 		}
+
 		if rc.metricsReporter != nil {
 			rc.metricsReporter.Publish(observations)
 		}
+
+		// Need to account for an empty `data_reporter_config` field in the YAML config file.
+		// E.g. This can happen when running the Gateway in a local environment.
 		if rc.dataReporter != nil {
 			rc.dataReporter.Publish(observations)
 		}

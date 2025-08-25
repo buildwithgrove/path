@@ -15,19 +15,31 @@ import "path/auth.proto"; // import RequestAuth message.
 //  2. Synthetic: internal infrastructure generated the service request for simulation and data purposes.
 enum RequestType {
   REQUEST_TYPE_UNSPECIFIED = 0;
+
   // Organic: Service request sent by a user.
   REQUEST_TYPE_ORGANIC = 1;
+
   // Synthetic: Service request sent by the endpoint hydrator: see gateway/hydrator.go.
   REQUEST_TYPE_SYNTHETIC = 2;
 }
 
 enum GatewayRequestErrorKind {
   GATEWAY_REQUEST_ERROR_KIND_UNSPECIFIED = 0;
+
   // Service ID not specified.
   GATEWAY_REQUEST_ERROR_KIND_MISSING_SERVICE_ID = 1;
+
   // QoS rejected the request.
   // e.g. malformed payload could not be unmarshaled into JSONRPC
   GATEWAY_REQUEST_ERROR_KIND_REJECTED_BY_QOS = 2;
+
+  // WebSocket request was rejected by QoS instance.
+  // e.g. WebSocket subscription request validation failed.
+  GATEWAY_REQUEST_ERROR_KIND_WEBSOCKET_REJECTED_BY_QOS = 3;
+
+  // WebSocket connection establishment failed.
+  // e.g. Failed to upgrade HTTP connection to WebSocket or connect to endpoint.
+  GATEWAY_REQUEST_ERROR_KIND_WEBSOCKET_CONNECTION_FAILED = 4;
 }
 
 // GatewayObservations is the set of observations on a service request, made from the perspective of a gateway.
@@ -45,9 +57,13 @@ message GatewayObservations {
   string service_id = 3;
 
   // received_time is when the request was initially received
+  //   - For HTTP requests: when the HTTP request was received
+  //   - For WebSocket requests: when the WebSocket connection was established
   google.protobuf.Timestamp received_time = 4;
 
   // completed_time is when request processing finished and response was returned
+  //   - For HTTP requests: when the HTTP response was sent
+  //   - For WebSocket requests: when the WebSocket connection was terminated
   google.protobuf.Timestamp completed_time = 5;
 
   // response_size is the size in bytes of the response payload

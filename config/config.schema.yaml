@@ -69,6 +69,10 @@ properties:
             description: "Indicates if lazy mode is enabled for full node connections."
             type: boolean
             default: true
+          session_rollover_blocks:
+            description: "Grace period after session end where rollover issues may occur (in blocks)."
+            type: integer
+            minimum: 1
           cache_config:
             description: "Configuration for the cache."
             type: object
@@ -110,7 +114,41 @@ properties:
             items:
               type: string
               pattern: "^[0-9a-fA-F]{64}$"
-
+          # TODO_CONSIDERATION(@adshmh): Consider renaming this to gateway_owned_endpoints to enable other use-cases.
+          # E.g. A gateway that uses Shannon as a fallback rather than its own URLs as a fallback.
+          # Note that this would require renaming all instances of fallback in the codebase.
+          service_fallback:
+            description: "Fallback endpoints for the Shannon gateway. An array of service fallback configurations. Each service_id must be unique within the array."
+            type: array
+            uniqueItems: true
+            items:
+              type: object
+              additionalProperties: false
+              required:
+                - service_id
+                - fallback_endpoints
+              properties:
+                service_id:
+                  description: "The service ID for this fallback configuration. Must be unique within the service_fallback array."
+                  type: string
+                fallback_endpoints:
+                  description: "Array of fallback endpoint configurations for this service. Each endpoint can define URLs for different RPC types."
+                  type: array
+                  items:
+                    type: object
+                    additionalProperties: false
+                    required:
+                      - default_url
+                    patternProperties:
+                      "^(default_url|json_rpc|rest|comet_bft|websocket)$":
+                        type: string
+                        anyOf:
+                          - pattern: "^(http|https)://.*$"
+                          - pattern: "^(http|https|ws|wss)://.*$"
+                send_all_traffic:
+                  description: "Whether to send all traffic to fallback endpoints for this service, regardless of protocol endpoint health."
+                  type: boolean
+                  default: false
   # Logger Configuration (optional)
   logger_config:
     description: "Optional configuration for the logger. If not specified, info level will be used."

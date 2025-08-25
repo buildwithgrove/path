@@ -15,7 +15,6 @@ import (
 	"time"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
-	servicetypes "github.com/pokt-network/poktroll/x/service/types"
 )
 
 // Maximum length of an HTTP response's body.
@@ -120,13 +119,16 @@ func newDefaultHTTPClientWithDebugMetrics() *httpClientWithDebugMetrics {
 // SendHTTPRelay sends an HTTP POST request with the relay data to the specified URL.
 // Uses the provided context for timeout and cancellation control.
 // Logs detailed metrics and debugging information on failure for debugging.
+//
+// Returns: response body, HTTP status code, error
 func (h *httpClientWithDebugMetrics) SendHTTPRelay(
 	ctx context.Context,
 	logger polylog.Logger,
 	endpointURL string,
-	relayRequest *servicetypes.RelayRequest,
+	method string,
+	relayRequestBz []byte,
 	headers map[string]string,
-) ([]byte, error) {
+) ([]byte, int, error) {
 	// Set up debugging context and logging function
 	debugCtx, requestRecorder := h.setupRequestDebugging(ctx, logger, endpointURL)
 
@@ -139,25 +141,18 @@ func (h *httpClientWithDebugMetrics) SendHTTPRelay(
 	_, err := url.Parse(endpointURL)
 	if err != nil {
 		requestErr = fmt.Errorf("SHOULD NEVER HAPPEN: invalid URL: %w", err)
-		return nil, requestErr
-	}
-
-	// Marshal relay request to bytes
-	relayRequestBz, err := relayRequest.Marshal()
-	if err != nil {
-		requestErr = fmt.Errorf("SHOULD NEVER HAPPEN: failed to marshal relay request: %w", err)
-		return nil, requestErr
+		return nil, 0, requestErr
 	}
 
 	req, err := http.NewRequestWithContext(
 		debugCtx,
-		http.MethodPost,
+		method,
 		endpointURL,
 		bytes.NewReader(relayRequestBz),
 	)
 	if err != nil {
 		requestErr = fmt.Errorf("failed to create HTTP request: %w", err)
-		return nil, requestErr
+		return nil, 0, requestErr
 	}
 
 	// TODO_TECHDEBT(@adshmh): Content-Type HTTP header should be set by the QoS.
@@ -172,7 +167,7 @@ func (h *httpClientWithDebugMetrics) SendHTTPRelay(
 	resp, err := h.httpClient.Do(req)
 	if err != nil {
 		requestErr = h.categorizeError(debugCtx, err)
-		return nil, requestErr
+		return nil, 0, requestErr
 	}
 	defer resp.Body.Close()
 
@@ -180,10 +175,10 @@ func (h *httpClientWithDebugMetrics) SendHTTPRelay(
 	responseBody, err := h.readAndValidateResponse(resp)
 	if err != nil {
 		requestErr = err
-		return nil, requestErr
+		return nil, resp.StatusCode, requestErr
 	}
 
-	return responseBody, nil
+	return responseBody, resp.StatusCode, nil
 }
 
 // setupRequestDebugging initializes request metrics, HTTP debugging context, and atomic counters.

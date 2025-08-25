@@ -55,9 +55,8 @@ func (r responseGeneric) GetObservation() qosobservations.EVMEndpointObservation
 	return qosobservations.EVMEndpointObservation{
 		ResponseObservation: &qosobservations.EVMEndpointObservation_UnrecognizedResponse{
 			UnrecognizedResponse: &qosobservations.EVMUnrecognizedResponse{
-				JsonrpcResponse: &qosobservations.JsonRpcResponse{
-					Id: r.jsonRPCResponse.ID.String(),
-				},
+				// Include JSONRPC response's details in the observation.
+				JsonrpcResponse:         r.jsonRPCResponse.GetObservation(),
 				ResponseValidationError: r.validationError,
 				HttpStatusCode:          int32(r.getHTTPStatusCode()),
 			},

@@ -156,7 +156,7 @@ func buildEndpointErrorObservation(
 	return endpointObs
 }
 
-// builds a Shannon endpoint observation to include:
+// BuildEndpointObservation builds a Shannon endpoint observation to include:
 // endpoint: supplier, URL
 // session: app, service ID, session ID, session start and end heights (using `buildEndpointObservationFromSession`).
 func buildEndpointObservation(
@@ -166,11 +166,12 @@ func buildEndpointObservation(
 ) *protocolobservations.ShannonEndpointObservation {
 	// Add session fields to the observation:
 	// app, serviceID, session ID, session start and end heights
-	observation := buildEndpointObservationFromSession(logger, endpoint.session)
+	observation := buildEndpointObservationFromSession(logger, *endpoint.Session())
 
-	// Add endpoint-level details: supplier, URL.
-	observation.Supplier = endpoint.supplier
-	observation.EndpointUrl = endpoint.url
+	// Add endpoint-level details: supplier, URL, isFallback.
+	observation.Supplier = endpoint.Supplier()
+	observation.EndpointUrl = endpoint.PublicURL()
+	observation.IsFallbackEndpoint = endpoint.IsFallback()
 
 	// Add endpoint response details if not nil (i.e. success)
 	if endpointResponse != nil {
@@ -219,9 +220,9 @@ func buildEndpointObservationFromSession(
 // Used to identify an endpoint for applying sanctions.
 func buildEndpointFromObservation(
 	observation *protocolobservations.ShannonEndpointObservation,
-) *endpoint {
+) endpoint {
 	session := buildSessionFromObservation(observation)
-	return &endpoint{
+	return &protocolEndpoint{
 		session:  session,
 		supplier: observation.GetSupplier(),
 		url:      observation.GetEndpointUrl(),
@@ -251,5 +252,74 @@ func buildInternalRequestProcessingErrorObservation(internalErr error) *protocol
 		ErrorType: protocolobservations.ShannonRequestErrorType_SHANNON_REQUEST_ERROR_INTERNAL,
 		// Use the error message as the request error details.
 		ErrorDetails: internalErr.Error(),
+	}
+}
+
+// buildWebsocketMessageSuccessObservation creates a Shannon websocket message observation for successful message processing.
+// It includes endpoint details, session information, and message-specific data.
+// Used when websocket message handling succeeds.
+func buildWebsocketMessageSuccessObservation(
+	logger polylog.Logger,
+	endpoint endpoint,
+	msgSize int64,
+) *protocolobservations.ShannonWebsocketMessageObservation {
+	session := *endpoint.Session()
+	sessionHeader := session.GetHeader()
+
+	return &protocolobservations.ShannonWebsocketMessageObservation{
+		// Endpoint information
+		Supplier:           endpoint.Supplier(),
+		EndpointUrl:        endpoint.PublicURL(),
+		EndpointAppAddress: sessionHeader.ApplicationAddress,
+		IsFallbackEndpoint: endpoint.IsFallback(),
+
+		// Session information
+		SessionServiceId:   sessionHeader.ServiceId,
+		SessionId:          sessionHeader.SessionId,
+		SessionStartHeight: sessionHeader.SessionStartBlockHeight,
+		SessionEndHeight:   sessionHeader.SessionEndBlockHeight,
+
+		// Message information
+		MessageTimestamp:   timestamppb.New(time.Now()),
+		MessagePayloadSize: msgSize,
+	}
+}
+
+// buildWebsocketMessageErrorObservation creates a Shannon websocket message observation for failed message processing.
+// It includes endpoint details, session information, message data, and error details.
+// Used when websocket message handling fails.
+func buildWebsocketMessageErrorObservation(
+	endpoint endpoint,
+	msgSize int64,
+	errorType protocolobservations.ShannonEndpointErrorType,
+	errorDetails string,
+	sanctionType protocolobservations.ShannonSanctionType,
+	relayMinerError *protocolobservations.ShannonRelayMinerError,
+) *protocolobservations.ShannonWebsocketMessageObservation {
+	session := *endpoint.Session()
+	sessionHeader := session.GetHeader()
+
+	return &protocolobservations.ShannonWebsocketMessageObservation{
+		// Endpoint information
+		Supplier:           endpoint.Supplier(),
+		EndpointUrl:        endpoint.PublicURL(),
+		EndpointAppAddress: sessionHeader.ApplicationAddress,
+		IsFallbackEndpoint: endpoint.IsFallback(),
+
+		// Session information
+		SessionServiceId:   sessionHeader.ServiceId,
+		SessionId:          sessionHeader.SessionId,
+		SessionStartHeight: sessionHeader.SessionStartBlockHeight,
+		SessionEndHeight:   sessionHeader.SessionEndBlockHeight,
+
+		// Message information
+		MessageTimestamp:   timestamppb.New(time.Now()),
+		MessagePayloadSize: msgSize,
+
+		// Error information
+		ErrorType:           &errorType,
+		ErrorDetails:        &errorDetails,
+		RecommendedSanction: &sanctionType,
+		RelayMinerError:     relayMinerError,
 	}
 }

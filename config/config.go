@@ -56,6 +56,7 @@ func (c *GatewayConfig) hydrateDefaults() {
 	c.Router.hydrateRouterDefaults()
 	c.Logger.hydrateLoggerDefaults()
 	c.HydratorConfig.hydrateHydratorDefaults()
+	c.ShannonConfig.FullNodeConfig.HydrateDefaults()
 }
 
 /* --------------------------------- Gateway Config Validation Helpers -------------------------------- */

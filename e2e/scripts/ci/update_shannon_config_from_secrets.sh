@@ -2,12 +2,18 @@
 set -e
 set -o nounset
 
+# CI-ONLY: Modifies e2e_load_test.config.tmpl.yaml for CI environments
+# KEY FUNCTIONS:
+# • Sets Docker log configuration for CI
+# • Enables Docker logging to stdout  
+# • Captures Docker logs for CI debugging
+# WARNING: Never run locally
 # This script updates the Shannon E2E config file from environment variables.
 # It is used in GitHub actions to run the CI, and the environment variables
 # are populated from repo's secrets.
 
 # Set the current working directory to e2e/config directory.
-cd "$(dirname "$0")/../config" || exit 1
+cd "$(dirname "$0")/../../config" || exit 1
 
 update_shannon_config_from_env() {
     check_env_vars "SHANNON_GATEWAY_ADDRESS" "SHANNON_GATEWAY_PRIVATE_KEY" "SHANNON_OWNED_APPS_PRIVATE_KEYS"

@@ -3,6 +3,7 @@ package shannon
 import (
 	"context"
 	"fmt"
+	"maps"
 	"net/http"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
@@ -55,6 +56,25 @@ type Protocol struct {
 
 	// HTTP client used for sending relay requests to endpoints while also capturing & publishing various debug metrics.
 	httpClient *httpClientWithDebugMetrics
+
+	// serviceFallbackMap contains the service fallback config per service.
+	//
+	// The fallback endpoints are used when no endpoints are available for the
+	// requested service from the onchain protocol.
+	//
+	// For example, if all protocol endpoints are sanctioned, the fallback
+	// endpoints will be used to populate the list of endpoints.
+	//
+	// Each service can have a SendAllTraffic flag to send all traffic to
+	// fallback endpoints, regardless of the health of the protocol endpoints.
+	serviceFallbackMap map[protocol.ServiceID]serviceFallback
+}
+
+// serviceFallback holds the fallback information for a service,
+// including the endpoints and whether to send all traffic to fallback.
+type serviceFallback struct {
+	SendAllTraffic bool
+	Endpoints      map[protocol.EndpointAddr]endpoint
 }
 
 // NewProtocol instantiates an instance of the Shannon protocol integration.
@@ -90,6 +110,9 @@ func NewProtocol(
 
 		// HTTP client with embedded tracking of debug metrics.
 		httpClient: newDefaultHTTPClientWithDebugMetrics(),
+
+		// serviceFallbacks contains the fallback information for each service.
+		serviceFallbackMap: config.getServiceFallbackMap(),
 	}
 
 	return protocolInstance, nil
@@ -130,10 +153,15 @@ func (p *Protocol) AvailableEndpoints(
 	logger = logger.With("number_of_valid_sessions", len(activeSessions))
 	logger.Debug().Msg("fetched the set of active sessions.")
 
-	// Retrieve a list of all unique endpoints for the given service ID filtered by the list of apps this gateway/application
-	// owns and can send relays on behalf of.
+	// Retrieve a list of all unique endpoints for the given service ID filtered by
+	// the list of apps this gateway/application owns and can send relays on behalf of.
+	//
+	// This includes fallback logic: if all session endpoints are sanctioned and the
+	// requested service is configured with at least one fallback URL, the fallback
+	// endpoints will be used to populate the list of endpoints.
+	//
 	// The final boolean parameter sets whether to filter out sanctioned endpoints.
-	endpoints, err := p.getSessionsUniqueEndpoints(ctx, serviceID, activeSessions, true)
+	endpoints, err := p.getUniqueEndpoints(ctx, serviceID, activeSessions, true)
 	if err != nil {
 		logger.Error().Err(err).Msg(err.Error())
 		return nil, buildProtocolContextSetupErrorObservation(serviceID, err), err
@@ -189,8 +217,9 @@ func (p *Protocol) BuildRequestContextForEndpoint(
 
 	// Retrieve the list of endpoints (i.e. backend service URLs by external operators)
 	// that can service RPC requests for the given service ID for the given apps.
+	// This includes fallback logic if session endpoints are unavailable.
 	// The final boolean parameter sets whether to filter out sanctioned endpoints.
-	endpoints, err := p.getSessionsUniqueEndpoints(ctx, serviceID, activeSessions, true)
+	endpoints, err := p.getUniqueEndpoints(ctx, serviceID, activeSessions, true)
 	if err != nil {
 		logger.Error().Err(err).Msg(err.Error())
 		return nil, buildProtocolContextSetupErrorObservation(serviceID, err), err
@@ -216,15 +245,24 @@ func (p *Protocol) BuildRequestContextForEndpoint(
 		return nil, buildProtocolContextSetupErrorObservation(serviceID, err), err
 	}
 
+	// TODO_TECHDEBT: Need to propagate the SendAllTraffic bool to the requestContext.
+	// Example use-case:
+	// Gateway uses PATH in the opposite way as Grove w/ the goal of:
+	// 	1. Primary source: their own infra
+	// 	2. Secondary source: fallback to network
+	// This would require the requestContext to be aware of _SendAllTraffic in this context.
+	fallbackEndpoints, _ := p.getServiceFallbackEndpoints(serviceID)
+
 	// Return new request context for the pre-selected endpoint
 	return &requestContext{
 		logger:             p.logger,
 		context:            ctx,
 		fullNode:           p.FullNode,
-		selectedEndpoint:   &selectedEndpoint,
+		selectedEndpoint:   selectedEndpoint,
 		serviceID:          serviceID,
 		relayRequestSigner: permittedSigner,
 		httpClient:         p.httpClient,
+		fallbackEndpoints:  fallbackEndpoints,
 	}, protocolobservations.Observations{}, nil
 }
 
@@ -274,29 +312,88 @@ func (p *Protocol) IsAlive() bool {
 	return p.IsHealthy()
 }
 
+// TODO_TECHDEBT(@adshmh): Refactor to split the fallback logic from Shannon endpoints handling.
+// Example:
+// - Make a `fallback` component to handle all aspects of fallback: when to use a fallback, distribution among multiple fallback URLs, etc.
+//
 // TODO_FUTURE(@adshmh): If multiple apps (across different sessions) are delegating
 // to this gateway, optimize how the endpoints are managed/organized/cached.
 //
-// getAppsUniqueEndpoints returns a map of all endpoints matching serviceID and passing appFilter.
-// If an endpoint matches a serviceID across multiple apps/sessions, only a single entry
-// matching one of the apps/sessions is returned.
+// getUniqueEndpoints returns a map of all endpoints for a service ID with fallback logic.
+// This function coordinates between session endpoints and fallback endpoints:
+//   - If configured to send all traffic to fallback, returns fallback endpoints only
+//   - Otherwise, attempts to get session endpoints and falls back to fallback endpoints if needed
+func (p *Protocol) getUniqueEndpoints(
+	ctx context.Context,
+	serviceID protocol.ServiceID,
+	activeSessions []sessiontypes.Session,
+	filterSanctioned bool,
+) (map[protocol.EndpointAddr]endpoint, error) {
+	logger := p.logger.With(
+		"method", "getUniqueEndpoints",
+		"service", serviceID,
+		"num_valid_sessions", len(activeSessions),
+	)
+
+	// Get fallback configuration for the service ID.
+	fallbackEndpoints, shouldSendAllTrafficToFallback := p.getServiceFallbackEndpoints(serviceID)
+
+	// If the service is configured to send all traffic to fallback endpoints,
+	// return only the fallback endpoints and skip session endpoint logic.
+	if shouldSendAllTrafficToFallback && len(fallbackEndpoints) > 0 {
+		logger.Info().Msgf("🔀 Sending all traffic to fallback endpoints for service %s.", serviceID)
+		return fallbackEndpoints, nil
+	}
+
+	// Try to get session endpoints first.
+	sessionEndpoints, err := p.getSessionsUniqueEndpoints(ctx, serviceID, activeSessions, filterSanctioned)
+	if err != nil {
+		logger.Error().Err(err).Msgf("Error getting session endpoints for service %s: %v", serviceID, err)
+	}
+
+	// Session endpoints are available, use them.
+	// This is the happy path where we have unsanctioned session endpoints available.
+	if len(sessionEndpoints) > 0 {
+		return sessionEndpoints, nil
+	}
+
+	// Handle the case where no session endpoints are available.
+	// If fallback endpoints are available for the service ID, use them.
+	if len(fallbackEndpoints) > 0 {
+		return fallbackEndpoints, nil
+	}
+
+	// If no unsanctioned session endpoints are available and no fallback
+	// endpoints are available for the service ID, return an error.
+	// Wrap the context setup error. Used for generating observations.
+	err = fmt.Errorf("%w: service %s", errProtocolContextSetupNoEndpoints, serviceID)
+	logger.Warn().Err(err).Msg("No endpoints or fallback available after filtering sanctioned endpoints: relay request will fail.")
+	return nil, err
+}
+
+// getSessionsUniqueEndpoints returns a map of all endpoints matching service ID from active sessions.
+// This function focuses solely on retrieving and filtering session endpoints.
+//
+// If an endpoint matches a serviceID across multiple apps/sessions, only a single
+// entry matching one of the apps/sessions is returned.
 func (p *Protocol) getSessionsUniqueEndpoints(
 	_ context.Context,
 	serviceID protocol.ServiceID,
 	activeSessions []sessiontypes.Session,
-	filterSanctioned bool, // will be true for calls to getAppsUniqueEndpoints made by service request handling.
+	filterSanctioned bool, // will be true for calls made by service request handling.
 ) (map[protocol.EndpointAddr]endpoint, error) {
 	logger := p.logger.With(
-		"method", "getAppsUniqueEndpoints",
+		"method", "getSessionsUniqueEndpoints",
 		"service", serviceID,
 		"num_valid_sessions", len(activeSessions),
 	)
 	logger.Info().Msgf(
-		"About to fetch all unique endpoints for service %s given %d active sessions.",
+		"About to fetch all unique session endpoints for service %s given %d active sessions.",
 		serviceID, len(activeSessions),
 	)
 
 	endpoints := make(map[protocol.EndpointAddr]endpoint)
+
 	// Iterate over all active sessions for the service ID.
 	for _, session := range activeSessions {
 		app := session.Application
@@ -316,7 +413,7 @@ func (p *Protocol) getSessionsUniqueEndpoints(
 		}
 
 		qualifiedEndpoints := sessionEndpoints
-		// In calls to getAppsUniqueEndpoints made by service request handling, we filter out sanctioned endpoints.
+		// Filter out sanctioned endpoints if requested.
 		if filterSanctioned {
 			logger.Debug().Msgf(
 				"app %s has %d endpoints before filtering sanctioned endpoints.",
@@ -341,9 +438,7 @@ func (p *Protocol) getSessionsUniqueEndpoints(
 		// Log the number of endpoints before and after filtering
 		logger.Info().Msgf("Filtered session endpoints for app %s from %d to %d.", app.Address, len(sessionEndpoints), len(qualifiedEndpoints))
 
-		for endpointAddr, endpoint := range qualifiedEndpoints {
-			endpoints[endpointAddr] = endpoint
-		}
+		maps.Copy(endpoints, qualifiedEndpoints)
 
 		logger.Info().Msgf(
 			"Successfully fetched %d endpoints for session %s for application %s for service %s.",
@@ -351,20 +446,34 @@ func (p *Protocol) getSessionsUniqueEndpoints(
 		)
 	}
 
-	// Ensure at least one endpoint is available for the requested service.
-	if len(endpoints) == 0 {
-		// Wrap the context setup error. Used for generating observations.
-		err := fmt.Errorf("%w: service %s", errProtocolContextSetupNoEndpoints, serviceID)
-		logger.Warn().Err(err).Msg("No endpoints available after filtering sanctioned endpoints: relay request will fail.")
-		return nil, err
+	// Return session endpoints if available.
+	if len(endpoints) > 0 {
+		logger.Info().Msgf("Successfully fetched %d session endpoints for active sessions.", len(endpoints))
+		return endpoints, nil
 	}
 
-	logger.Info().Msgf("Successfully fetched %d endpoints for active sessions.", len(endpoints))
-
-	return endpoints, nil
+	// No session endpoints are available.
+	err := fmt.Errorf("%w: service %s", errProtocolContextSetupNoEndpoints, serviceID)
+	logger.Warn().Err(err).Msg("No session endpoints available after filtering.")
+	return nil, err
 }
 
-// GetTotalProtocolEndpointsCount returns the count of all unique endpoints for a service ID
+// ** Fallback Endpoint Handling **
+
+// getServiceFallbackEndpoints returns the fallback endpoints and SendAllTraffic flag for a given service ID.
+// Returns (endpoints, sendAllTraffic) where endpoints is empty if no fallback is configured.
+func (p *Protocol) getServiceFallbackEndpoints(serviceID protocol.ServiceID) (map[protocol.EndpointAddr]endpoint, bool) {
+	fallbackConfig, exists := p.serviceFallbackMap[serviceID]
+	if !exists {
+		return make(map[protocol.EndpointAddr]endpoint), false
+	}
+
+	return fallbackConfig.Endpoints, fallbackConfig.SendAllTraffic
+}
+
+// ** Disqualified Endpoint Reporting **
+
+// GetTotalServiceEndpointsCount returns the count of all unique endpoints for a service ID
 // without filtering sanctioned endpoints.
 func (p *Protocol) GetTotalServiceEndpointsCount(serviceID protocol.ServiceID, httpReq *http.Request) (int, error) {
 	ctx := context.Background()
