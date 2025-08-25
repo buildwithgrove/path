@@ -148,14 +148,14 @@ func (ss *serviceState) updateFromEndpoints(updatedEndpoints map[protocol.Endpoi
 
 		// Do not update the perceived block number if the chain ID is invalid.
 		if err := ss.isChainIDValid(endpoint.checkChainID); err != nil {
-			logger.Error().Err(err).Msgf("❌ Skipping endpoint because it has an invalid chain id: %s", endpointAddr)
+			logger.Warn().Err(err).Msgf("⚠️ SKIPPING endpoint because it has an invalid chain id: %s", endpointAddr)
 			continue
 		}
 
 		// Retrieve the block number from the endpoint.
 		blockNumber, err := endpoint.checkBlockNumber.getBlockNumber()
 		if err != nil {
-			logger.Error().Err(err).Msgf("❌ Skipping endpoint because it has an invalid block number: %s", endpointAddr)
+			logger.Warn().Err(err).Msgf("⚠️ SKIPPING endpoint because it has an invalid block number: %s", endpointAddr)
 			continue
 		}
 

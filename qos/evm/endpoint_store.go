@@ -45,7 +45,7 @@ func (es *endpointStore) updateEndpointsFromObservations(
 	updatedEndpoints := make(map[protocol.EndpointAddr]endpoint)
 	for _, observation := range endpointObservations {
 		if observation == nil {
-			logger.Info().Msg("EVM EndpointStore received a nil observation. Skipping...")
+			logger.Info().Msg("💡 EVM EndpointStore received a nil observation. SKIPPING...")
 			continue
 		}
 
@@ -66,7 +66,7 @@ func (es *endpointStore) updateEndpointsFromObservations(
 
 		// If the observation did not mutate the endpoint, there is no need to update the stored endpoint entry.
 		if !isEndpointMutatedByObservation {
-			logger.Info().Msg("endpoint was not mutated by observations. Skipping update of internal endpoint store.")
+			logger.Info().Msg("💡 Endpoint was not mutated by observations. SKIPPING update of internal endpoint store.")
 			continue
 		}
 

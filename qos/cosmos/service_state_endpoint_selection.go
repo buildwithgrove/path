@@ -105,7 +105,7 @@ func (ss *serviceState) filterValidEndpoints(availableEndpoints protocol.Endpoin
 		}
 
 		if err := ss.basicEndpointValidation(endpoint); err != nil {
-			logger.Error().Err(err).Msgf("❌ SKIPPING %s endpoint because it failed basic validation: %v", availableEndpointAddr, err)
+			logger.Warn().Err(err).Msgf("⚠️ SKIPPING %s endpoint because it failed basic validation: %v", availableEndpointAddr, err)
 			continue
 		}
 
