@@ -22,7 +22,8 @@ curl http://localhost:3069/disqualified_endpoints \
   -H "Target-Service-Id: base" | jq
 ```
 
-:::tip 🌿 GROVE EMPLOYEES ONLY
+:::tip 🌿 Grove Employees Only 🌿
+
 To see data on Grove's Portal, you can use the following command:
 
 ```bash
