@@ -262,7 +262,7 @@ func runAttack(
 	case <-done:
 		// Results processing completed normally
 	case <-ctx.Done():
-		// Context was cancelled, results processing may not be complete
+		// Context was canceled, results processing may not be complete
 		// This is acceptable as we're shutting down
 	}
 
@@ -382,7 +382,7 @@ attackLoop:
 			case resultsChan <- res:
 				// Successfully sent result
 			case <-ctx.Done():
-				// Context cancelled while trying to send
+				// Context canceled while trying to send
 				break attackLoop
 			}
 		}
