@@ -26,17 +26,21 @@ const (
 )
 
 // RequestType captures the origin of the request.
-// As of PR #72, it is one of:
-//  1. Organic: a real user sent a service request to a PATH instance
-//  2. Synthetic: internal infrastructure generated the service request for simulation and data purposes.
+// Next free index: 5
 type RequestType int32
 
 const (
 	RequestType_REQUEST_TYPE_UNSPECIFIED RequestType = 0
-	// Organic: Service request sent by a user.
+	// Organic: A real user sent a service request to a PATH instance
 	RequestType_REQUEST_TYPE_ORGANIC RequestType = 1
-	// Synthetic: Service request sent by the endpoint hydrator: see gateway/hydrator.go.
+	// Synthetic: Internal infrastructure generated the service request for simulation and data purposes.
 	RequestType_REQUEST_TYPE_SYNTHETIC RequestType = 2
+	// Parallel: PATH sent the service request for higher redundancy
+	RequestType_REQUEST_TYPE_PARALLEL RequestType = 3
+	// Fallback: PATH sent the service request for higher redundancy
+	// TODO_TECHDEBT(@adshmh): Use this when fallback endpoints are part of the gateway context.
+	// DUe to the current structure of the code, there is not clean way to apply this type to the RPC observations..
+	RequestType_REQUEST_TYPE_FALLBACK RequestType = 4
 )
 
 // Enum value maps for RequestType.
@@ -45,11 +49,15 @@ var (
 		0: "REQUEST_TYPE_UNSPECIFIED",
 		1: "REQUEST_TYPE_ORGANIC",
 		2: "REQUEST_TYPE_SYNTHETIC",
+		3: "REQUEST_TYPE_PARALLEL",
+		4: "REQUEST_TYPE_FALLBACK",
 	}
 	RequestType_value = map[string]int32{
 		"REQUEST_TYPE_UNSPECIFIED": 0,
 		"REQUEST_TYPE_ORGANIC":     1,
 		"REQUEST_TYPE_SYNTHETIC":   2,
+		"REQUEST_TYPE_PARALLEL":    3,
+		"REQUEST_TYPE_FALLBACK":    4,
 	}
 )
 
@@ -414,11 +422,13 @@ const file_path_gateway_proto_rawDesc = "" +
 	"\x0enum_successful\x18\x02 \x01(\x05R\rnumSuccessful\x12\x1d\n" +
 	"\n" +
 	"num_failed\x18\x03 \x01(\x05R\tnumFailed\x12!\n" +
-	"\fnum_canceled\x18\x04 \x01(\x05R\vnumCanceled*a\n" +
+	"\fnum_canceled\x18\x04 \x01(\x05R\vnumCanceled*\x97\x01\n" +
 	"\vRequestType\x12\x1c\n" +
 	"\x18REQUEST_TYPE_UNSPECIFIED\x10\x00\x12\x18\n" +
 	"\x14REQUEST_TYPE_ORGANIC\x10\x01\x12\x1a\n" +
-	"\x16REQUEST_TYPE_SYNTHETIC\x10\x02*\x9e\x02\n" +
+	"\x16REQUEST_TYPE_SYNTHETIC\x10\x02\x12\x19\n" +
+	"\x15REQUEST_TYPE_PARALLEL\x10\x03\x12\x19\n" +
+	"\x15REQUEST_TYPE_FALLBACK\x10\x04*\x9e\x02\n" +
 	"\x17GatewayRequestErrorKind\x12*\n" +
 	"&GATEWAY_REQUEST_ERROR_KIND_UNSPECIFIED\x10\x00\x121\n" +
 	"-GATEWAY_REQUEST_ERROR_KIND_MISSING_SERVICE_ID\x10\x01\x12.\n" +
