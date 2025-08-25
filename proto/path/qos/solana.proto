@@ -48,17 +48,23 @@ message SolanaEndpointObservation {
   // Address of the endpoint handling the request
   string endpoint_addr = 1;
 
+  // HTTP status code returned to the user.
+  // It is derived from either:
+  //   - The endpoint payload parsed as a JSONRPC response.
+  //   - A generic JSONRPC error response if the endpoint payload fails to parse.
+  int32 http_status_code = 2;
+
   oneof response_observation {
     // Response from getEpochInfo
     // Docs: https://solana.com/docs/rpc/http/getepochinfo
-    SolanaGetEpochInfoResponse get_epoch_info_response = 2;
+    SolanaGetEpochInfoResponse get_epoch_info_response = 3;
 
     // Response from getHealth
     // Docs: https://solana.com/docs/rpc/http/gethealth
-    SolanaGetHealthResponse get_health_response = 3;
+    SolanaGetHealthResponse get_health_response = 4;
 
     // Responses not used in endpoint validation (e.g., getAccountInfo)
-    SolanaUnrecognizedResponse unrecognized_response = 4;
+    SolanaUnrecognizedResponse unrecognized_response = 5;
   }
 }
 

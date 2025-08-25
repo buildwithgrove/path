@@ -93,7 +93,7 @@ if ! ajv validate -s /tmp/config.schema.json -d ./local/path/.config.yaml --stri
     echo "❌ Error: ./local/path/.config.yaml failed schema validation. Please fix the errors above before continuing."
     echo ""
     echo "  💡 For information about the PATH config YAML file and schema, see the documentation at: "
-    echo "       https://path.grove.city/develop/path/configurations_path "
+    echo "       https://path.grove.city/develop/configs/gateway_config "
     echo ""
     echo "  🌿 Grove employees: you may find a valid .config.yaml file on 1Password in the note called 'PATH Localnet Config' "
     echo ""

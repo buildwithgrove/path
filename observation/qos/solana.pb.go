@@ -137,6 +137,11 @@ type SolanaEndpointObservation struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Address of the endpoint handling the request
 	EndpointAddr string `protobuf:"bytes,1,opt,name=endpoint_addr,json=endpointAddr,proto3" json:"endpoint_addr,omitempty"`
+	// HTTP status code returned to the user.
+	// It is derived from either:
+	//   - The endpoint payload parsed as a JSONRPC response.
+	//   - A generic JSONRPC error response if the endpoint payload fails to parse.
+	HttpStatusCode int32 `protobuf:"varint,2,opt,name=http_status_code,json=httpStatusCode,proto3" json:"http_status_code,omitempty"`
 	// Types that are valid to be assigned to ResponseObservation:
 	//
 	//	*SolanaEndpointObservation_GetEpochInfoResponse
@@ -184,6 +189,13 @@ func (x *SolanaEndpointObservation) GetEndpointAddr() string {
 	return ""
 }
 
+func (x *SolanaEndpointObservation) GetHttpStatusCode() int32 {
+	if x != nil {
+		return x.HttpStatusCode
+	}
+	return 0
+}
+
 func (x *SolanaEndpointObservation) GetResponseObservation() isSolanaEndpointObservation_ResponseObservation {
 	if x != nil {
 		return x.ResponseObservation
@@ -225,18 +237,18 @@ type isSolanaEndpointObservation_ResponseObservation interface {
 type SolanaEndpointObservation_GetEpochInfoResponse struct {
 	// Response from getEpochInfo
 	// Docs: https://solana.com/docs/rpc/http/getepochinfo
-	GetEpochInfoResponse *SolanaGetEpochInfoResponse `protobuf:"bytes,2,opt,name=get_epoch_info_response,json=getEpochInfoResponse,proto3,oneof"`
+	GetEpochInfoResponse *SolanaGetEpochInfoResponse `protobuf:"bytes,3,opt,name=get_epoch_info_response,json=getEpochInfoResponse,proto3,oneof"`
 }
 
 type SolanaEndpointObservation_GetHealthResponse struct {
 	// Response from getHealth
 	// Docs: https://solana.com/docs/rpc/http/gethealth
-	GetHealthResponse *SolanaGetHealthResponse `protobuf:"bytes,3,opt,name=get_health_response,json=getHealthResponse,proto3,oneof"`
+	GetHealthResponse *SolanaGetHealthResponse `protobuf:"bytes,4,opt,name=get_health_response,json=getHealthResponse,proto3,oneof"`
 }
 
 type SolanaEndpointObservation_UnrecognizedResponse struct {
 	// Responses not used in endpoint validation (e.g., getAccountInfo)
-	UnrecognizedResponse *SolanaUnrecognizedResponse `protobuf:"bytes,4,opt,name=unrecognized_response,json=unrecognizedResponse,proto3,oneof"`
+	UnrecognizedResponse *SolanaUnrecognizedResponse `protobuf:"bytes,5,opt,name=unrecognized_response,json=unrecognizedResponse,proto3,oneof"`
 }
 
 func (*SolanaEndpointObservation_GetEpochInfoResponse) isSolanaEndpointObservation_ResponseObservation() {
@@ -419,12 +431,13 @@ const file_path_qos_solana_proto_rawDesc = "" +
 	"\x0fjsonrpc_request\x18\x06 \x01(\v2\x18.path.qos.JsonRpcRequestH\x01R\x0ejsonrpcRequest\x88\x01\x01\x12X\n" +
 	"\x15endpoint_observations\x18\a \x03(\v2#.path.qos.SolanaEndpointObservationR\x14endpointObservationsB\x10\n" +
 	"\x0e_request_errorB\x12\n" +
-	"\x10_jsonrpc_request\"\xe9\x02\n" +
+	"\x10_jsonrpc_request\"\x93\x03\n" +
 	"\x19SolanaEndpointObservation\x12#\n" +
-	"\rendpoint_addr\x18\x01 \x01(\tR\fendpointAddr\x12]\n" +
-	"\x17get_epoch_info_response\x18\x02 \x01(\v2$.path.qos.SolanaGetEpochInfoResponseH\x00R\x14getEpochInfoResponse\x12S\n" +
-	"\x13get_health_response\x18\x03 \x01(\v2!.path.qos.SolanaGetHealthResponseH\x00R\x11getHealthResponse\x12[\n" +
-	"\x15unrecognized_response\x18\x04 \x01(\v2$.path.qos.SolanaUnrecognizedResponseH\x00R\x14unrecognizedResponseB\x16\n" +
+	"\rendpoint_addr\x18\x01 \x01(\tR\fendpointAddr\x12(\n" +
+	"\x10http_status_code\x18\x02 \x01(\x05R\x0ehttpStatusCode\x12]\n" +
+	"\x17get_epoch_info_response\x18\x03 \x01(\v2$.path.qos.SolanaGetEpochInfoResponseH\x00R\x14getEpochInfoResponse\x12S\n" +
+	"\x13get_health_response\x18\x04 \x01(\v2!.path.qos.SolanaGetHealthResponseH\x00R\x11getHealthResponse\x12[\n" +
+	"\x15unrecognized_response\x18\x05 \x01(\v2$.path.qos.SolanaUnrecognizedResponseH\x00R\x14unrecognizedResponseB\x16\n" +
 	"\x14response_observation\"U\n" +
 	"\x1aSolanaGetEpochInfoResponse\x12!\n" +
 	"\fblock_height\x18\x01 \x01(\x04R\vblockHeight\x12\x14\n" +
