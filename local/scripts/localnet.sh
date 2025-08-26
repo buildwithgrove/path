@@ -277,6 +277,9 @@ start_localnet() {
         if run_spinner 300 "http://localhost:3070/healthz" "Waiting for PATH API to be ready..." "PATH API is ready!"; then
             echo -e "\n${GREEN}🌿 PATH Localnet started successfully.${NC}"
             echo -e "  ${WHITE}🚀 Send relay requests to: ${CYAN}http://localhost:3070/v1${NC}"
+            echo -e "\n${WHITE}🛠️  Development tools:${NC}"
+            echo -e "  ${WHITE}🔧 Open container shell: ${CYAN}make localnet_exec${NC}"
+            echo -e "  ${WHITE}🔍 Launch k9s for debugging: ${CYAN}make localnet_k9s${NC}"
             exit 0
         else
             echo -e "  ${YELLOW}Check logs with: docker logs path-localnet${NC}"
