@@ -20,7 +20,7 @@ Add a gif of load tests running locally to show what and how this works
 
 ⚠️ **Prerequisites**: Complete the [Getting Started](../path/1_getting_started.md) and [Shannon Cheat Sheet](../path/2_cheatsheet_shannon.md) guides ⚠️
 
-First, prepare the Shannon E2E test config file at `./e2e/config/.shannon.config.yaml` by running:
+First, prepare the Shannon test config file at `./e2e/config/.shannon.config.yaml` by running:
 
 ```bash
 make config_copy_path_local_config_shannon_e2e
@@ -40,10 +40,7 @@ make e2e_test_all
 
 ## E2E Test Config Files
 
-| Configuration File                        | Custom Config Required? |               Default available?               | Description                            | Command to create or customize                                                     |
-| ----------------------------------------- | :---------------------: | :--------------------------------------------: | :------------------------------------- | :--------------------------------------------------------------------------------- |
-| `./e2e/config/.shannon.config.yaml`       |           ✅            |                       ❌                       | Gateway service configuration for PATH | `make config_copy_path_local_config_shannon_e2e` OR `make config_shannon_populate` |
-| `./e2e/config/.e2e_load_test.config.yaml` |           ❌            | `e2e/config/e2e_load_test.config.default.yaml` | Custom configuration for E2E tests     | `make config_prepare_shannon_e2e`                                                  |
+You can view the default E2E test configuration file in `e2e/config/e2e_load_test.config.default.yaml` or visit [E2E Tests: Deep Dive](./3_e2e_tests_deep_dive.md) for more details.
 
 ## Supported Services in E2E Tests
 
