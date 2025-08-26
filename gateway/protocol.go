@@ -33,7 +33,9 @@ type Protocol interface {
 	//
 	// (Shannon only: in Delegated mode, the staked application is passed in the request header, which
 	// filters the list of available endpoints. In all other modes, *http.Request will be nil.)
+	//
 	// Context may contain a deadline that protocol should respect on best-effort basis.
+	//
 	// Return observation if the context setup fails.
 	// Used as protocol observation for the request when no protocol context exists.
 	BuildHTTPRequestContextForEndpoint(
@@ -44,8 +46,13 @@ type Protocol interface {
 	) (ProtocolRequestContext, protocolobservations.Observations, error)
 
 	// BuildWebsocketRequestContextForEndpoint builds and returns a ProtocolRequestContextWebsocket containing a single selected endpoint.
-	// This method is used to build a websocket request context for a specified service and endpoint.
-	// It is used to build a websocket request context for a specified service and endpoint.
+	// One `ProtocolRequestContextWebsocket` corresponds to a single long-lived websocket connection to a single endpoint.
+	//
+	// (Shannon only: in Delegated mode, the staked application is passed in the request header, which
+	// filters the list of available endpoints. In all other modes, *http.Request will be nil.)
+	//
+	// Return observation if the context setup fails.
+	// Used as protocol observation for the connection when no protocol context exists.
 	BuildWebsocketRequestContextForEndpoint(
 		context.Context,
 		protocol.ServiceID,
