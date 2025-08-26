@@ -42,6 +42,33 @@ Optional but highly recommended tools:
 make install_tools_optional
 ```
 
-### What's Next?
+### 3. Configure your PATH Gateway for Pocket Network
 
-**[Shannon Cheat Sheet](2_cheatsheet_shannon.md)** - Configure PATH for the Shannon protocol
+**[Pocket Network Cheat Sheet](2_cheatsheet_pocket.md)** - Configure PATH for the Shannon protocol
+
+### 4. [Optional] Developer Environment Details
+
+<details>
+<summary>Technical details for developers who want to understand PATH's development environment.</summary>
+
+## Development Environment Architecture
+
+**PATH**'s development mode uses a Kubernetes-based local development environment with [Tilt](https://tilt.dev/).
+
+We use [Kind](https://kind.sigs.k8s.io/) (Kubernetes in Docker) for running the local Kubernetes cluster, as it provides better compatibility with Tilt's image building process compared to Docker Desktop's Kubernetes cluster.
+
+## Installed Tools
+
+**Tools installed by `make install_tools`**:
+
+- [**pocketd CLI**](https://dev.poktroll.com/category/pocketd-cli): CLI for interacting with Pocket Network's Shannon protocol
+- [**Docker**](https://docs.docker.com/get-docker/): Container runtime
+
+**Optional development tools** (`make install_tools_optional`):
+
+- [**Websocket Load Test**](https://github.com/commoddity/websocket-load-test): Websocket load testing tool
+- [**Relay Util**](https://github.com/commoddity/relay-util): Load testing tool for sending configurable batches of relays concurrently
+- [**Graphviz**](https://graphviz.org): Required for generating profiling & debugging performance
+- [**Uber Mockgen**](https://github.com/uber-go/mock): Mock interface generator for testing
+
+</details>

@@ -1,5 +1,6 @@
 # Examples of running load tests against PATH & Portal
 
+
 .PHONY: check_relay_util
 # Internal helper: Checks if relay-util is installed locally
 check_relay_util:
@@ -26,13 +27,20 @@ check_websocket_load_test:
 test_load__relay_util__local: check_path_up check_relay_util debug_view_results_links  ## Load test an anvil endpoint with PATH behind GUARD with 10 eth_blockNumber requests. Override service by running: SERVICE_ID=eth make test_load__relay_util__local
 	relay-util \
 		-u http://localhost:3070/v1 \
-		-H "target-service-id: $${SERVICE_ID:-anvil}" \
-		-H "authorization: test_api_key" \
+		-H "target-service-id: $${SERVICE_ID:-eth}" \
+		$${GROVE_PORTAL_APP_ID:+-H "Portal-Application-ID: $${GROVE_PORTAL_APP_ID}"} \
+		-H "authorization: $${GROVE_PORTAL_API_KEY:-test_api_key}" \
 		-d '{"jsonrpc":"2.0","method":"eth_blockNumber","id":1}' \
 		-x 100 \
 		-b
 
-# TODO_IN_THIS_PR: Finish this.
-# .PHONY: test_load__websocket_load_test__local
-# test_load__websocket_load_test__local: check_path_up check_websocket_load_test debug_view_results_links  ## Load test a websocket connection.
-# websocket-load-test \
+.PHONY: test_load__websocket_load_test__local
+test_load__websocket_load_test__local: check_path_up check_websocket_load_test debug_view_results_links  ## Load test a websocket connection with subscriptions to newHeads and newPendingTransactions.
+	websocket-load-test \
+	   --service "$${SERVICE_ID:-xrplevm}" \
+	   --app-id $$GROVE_PORTAL_APP_ID \
+	   --api-key $$GROVE_PORTAL_API_KEY \
+	   --subs "newHeads,newPendingTransactions" \
+	   --count 10 \
+	   --log
+

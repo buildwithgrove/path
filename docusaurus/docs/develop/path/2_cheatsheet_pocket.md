@@ -1,7 +1,7 @@
 ---
 sidebar_position: 2
-title: Shannon Cheat Sheet (30-60 min)
-description: Introductory guide for setting up PATH w/ Shannon
+title: Pocket Network Guide (30-60 min)
+description: Introductory guide for setting up PATH w/ Pocket
 ---
 
 <!-- TODO_TECHDEBT(@olshansk): Remove all instances of Shannon -->
@@ -78,12 +78,8 @@ Skip to [2.1 Generate Shannon Config](#21-generate-shannon-config).
 - [4. Run PATH Stack Locally](#4-run-path-stack-locally)
   - [4.1 Run \& Monitor PATH](#41-run--monitor-path)
   - [4.2 Check configured services](#42-check-configured-services)
-- [5. Test Relays](#5-test-relays)
-  - [Test Relay with `curl`](#test-relay-with-curl)
-  - [Test WebSockets with `wscat`](#test-websockets-with-wscat)
-  - [Load Testing Relays with `relay-util`](#load-testing-relays-with-relay-util)
-  - [Load Testing WebSockets with `websocket-load-test`](#load-testing-websockets-with-websocket-load-test)
-- [6. Stop PATH](#6-stop-path)
+  - [4.3 Example Relays](#43-example-relays)
+- [5. Stop PATH](#5-stop-path)
 
 ## 0. Prerequisites
 
@@ -254,7 +250,7 @@ pocketd query application show-application \
 
 :::tip More details about configs
 
-You can learn more about various configurations at [Auth Configs](../configs/3_auth_config.md) or [Helm Docs](./../../operate/helm/). It covers auth, rate limiting, etc...
+You can learn more about various configurations at [Auth Configs](../configs/3_auth_config.md) or [Helm Docs](../../operate/helm). It covers auth, rate limiting, etc...
 
 :::
 
@@ -313,118 +309,11 @@ Visit the **Tilt dashboard** at [localhost:10350](<http://localhost:10350/r/(all
 curl http://localhost:3070/healthz | jq
 ```
 
-## 5. Test Relays
+### 4.3 Example Relays
 
-### Test Relay with `curl`
+See [Example Relays](3_example_requests.md).
 
-Assuming you have an app staked for `eth`, you can query `eth_blockNumber`.
-
-By specifying the `Target-Service-Id` header:
-
-```bash
-curl http://localhost:3070/v1 \
- -H "Target-Service-Id: eth" \
- -H "Authorization: test_api_key" \
- -d '{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }'
-```
-
-Or by using the `eth` subdomain:
-
-```bash
-curl http://eth.localhost:3070/v1 \
- -H "Authorization: test_api_key" \
- -d '{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }'
-```
-
-Expected response:
-
-```json
-{ "id": 1, "jsonrpc": "2.0", "result": "0x2f01a" }
-```
-
-### Test WebSockets with `wscat`
-
-:::tip
-
-For `wscat` installation instructions, see [here](https://github.com/ArtiomL/wscat?tab=readme-ov-file#installation).
-
-:::
-
-```bash
-wscat -c ws://localhost:3070/v1 \
- -H "Authorization: test_api_key" \
- -H "Target-Service-Id: xrplevm"
-```
-
-Expected terminal prompt:
-
-```bash
-Connected (press CTRL+C to quit)
->
-```
-
-And subscribe to events:
-
-```bash
-> {"jsonrpc":"2.0", "id": 1, "method": "eth_subscribe", "params": ["newHeads"]}
-< {"jsonrpc":"2.0","result":"0x2dc4edb4ba815232ef2d144b5818c540","id":1}
-```
-
-Which will start sending events like so:
-
-```bash
-< {"jsonrpc":"2.0","method":"eth_subscription","params":{"subscription":"0x2dc4edb4ba815232ef2d144b5818c540","result":{"parentHash":"0xaf1ebef9181d53a61a05b328646e747b5100eaa7ea301e21f2b5b1772beda053", ...
-```
-
-:::info
-
-This is a simple terminal-based WebSocket example and does not contain reconnection logic.
-
-Connections will drop on session rollover, which is expected behavior.
-
-In production environments, you should implement reconnection logic and handle errors gracefully.
-
-:::
-
-### Load Testing Relays with `relay-util`
-
-Make sure you install optional tools first:
-
-```bash
-make install_tools_optional
-```
-
-Send 100 requests with performance metrics:
-
-```bash
-SERVICE_ID=eth make test_request__shannon_relay_util_100
-```
-
-### Load Testing WebSockets with `websocket-load-test`
-
-TODO_IN_THIS_PR: Update to have this point at LocalNet.
-
-1. Make sure you install optional tools first:
-
-   ```bash
-   make install_tools_optional
-   ```
-
-2. Get your `GROVE_PORTAL_APP_ID` and `GROVE_PORTAL_API_KEY` from the [Grove's Portal](https://portal.grove.city).
-
-3. Subscribe to events:
-
-   ```bash
-   websocket-load-test \
-   --service "xrplevm" \
-   --app-id $GROVE_PORTAL_APP_ID \
-   --api-key $GROVE_PORTAL_API_KEY \
-   --subs "newHeads,newPendingTransactions" \
-   --count 10 \
-   --log
-   ```
-
-## 6. Stop PATH
+## 5. Stop PATH
 
 When you're finished testing:
 

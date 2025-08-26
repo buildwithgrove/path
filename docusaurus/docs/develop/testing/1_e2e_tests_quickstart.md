@@ -18,7 +18,7 @@ Add a gif of load tests running locally to show what and how this works
 
 ## Quickstart
 
-⚠️ **Prerequisites**: Complete the [Getting Started](../path/1_getting_started.md) and [Shannon Cheat Sheet](../path/2_cheatsheet_shannon.md) guides ⚠️
+⚠️ **Prerequisites**: Complete the [Getting Started](../path/1_getting_started.md) and [Shannon Cheat Sheet](../path/2_cheatsheet_pocket.md) guides ⚠️
 
 First, prepare the Shannon test config file at `./e2e/config/.shannon.config.yaml` by running:
 
