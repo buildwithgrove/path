@@ -178,7 +178,7 @@ func (eph *EndpointHydrator) performChecks(serviceID protocol.ServiceID, service
 					// which means there is no need for specifying a specific app.
 					// TODO_FUTURE(@adshmh): support specifying the app(s) used for sending/signing synthetic relay requests by the hydrator.
 					// TODO_FUTURE(@adshmh): consider publishing observations here.
-					hydratorRequestCtx, _, err := eph.BuildRequestContextForEndpoint(context.TODO(), serviceID, endpointAddr, nil)
+					hydratorRequestCtx, _, err := eph.BuildHTTPRequestContextForEndpoint(context.TODO(), serviceID, endpointAddr, nil)
 					if err != nil {
 						logger.Error().Err(err).Msg("Failed to build a protocol request context for the endpoint")
 						continue

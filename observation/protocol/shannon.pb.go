@@ -495,10 +495,8 @@ type ShannonWebsocketConnectionObservation struct {
 	ErrorDetails *string `protobuf:"bytes,9,opt,name=error_details,json=errorDetails,proto3,oneof" json:"error_details,omitempty"`
 	// Recommended sanction type based on the error
 	RecommendedSanction *ShannonSanctionType `protobuf:"varint,10,opt,name=recommended_sanction,json=recommendedSanction,proto3,enum=path.protocol.ShannonSanctionType,oneof" json:"recommended_sanction,omitempty"`
-	// RelayMiner error details if the endpoint returned a RelayMinerError during connection lifecycle
-	RelayMinerError *ShannonRelayMinerError `protobuf:"bytes,11,opt,name=relay_miner_error,json=relayMinerError,proto3,oneof" json:"relay_miner_error,omitempty"`
 	// Tracks whether the endpoint is a fallback endpoint
-	IsFallbackEndpoint bool `protobuf:"varint,12,opt,name=is_fallback_endpoint,json=isFallbackEndpoint,proto3" json:"is_fallback_endpoint,omitempty"`
+	IsFallbackEndpoint bool `protobuf:"varint,11,opt,name=is_fallback_endpoint,json=isFallbackEndpoint,proto3" json:"is_fallback_endpoint,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -601,13 +599,6 @@ func (x *ShannonWebsocketConnectionObservation) GetRecommendedSanction() Shannon
 		return *x.RecommendedSanction
 	}
 	return ShannonSanctionType_SHANNON_SANCTION_UNSPECIFIED
-}
-
-func (x *ShannonWebsocketConnectionObservation) GetRelayMinerError() *ShannonRelayMinerError {
-	if x != nil {
-		return x.RelayMinerError
-	}
-	return nil
 }
 
 func (x *ShannonWebsocketConnectionObservation) GetIsFallbackEndpoint() bool {
@@ -783,6 +774,7 @@ func (x *ShannonWebsocketMessageObservation) GetIsFallbackEndpoint() bool {
 
 // ShannonRequestObservations represents observations collected during the processing
 // of a single Shannon protocol relay request.
+// Next free field: 6
 type ShannonRequestObservations struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Service ID (i.e. chain ID) for which the observation was made
@@ -1196,7 +1188,7 @@ const file_path_protocol_shannon_proto_rawDesc = "" +
 	"\x16ShannonRelayMinerError\x12\x1c\n" +
 	"\tcodespace\x18\x01 \x01(\tR\tcodespace\x12\x12\n" +
 	"\x04code\x18\x02 \x01(\rR\x04code\x12\x18\n" +
-	"\amessage\x18\x03 \x01(\tR\amessage\"\xf2\x05\n" +
+	"\amessage\x18\x03 \x01(\tR\amessage\"\x84\x05\n" +
 	"%ShannonWebsocketConnectionObservation\x12\x1a\n" +
 	"\bsupplier\x18\x01 \x01(\tR\bsupplier\x12!\n" +
 	"\fendpoint_url\x18\x02 \x01(\tR\vendpointUrl\x120\n" +
@@ -1210,13 +1202,11 @@ const file_path_protocol_shannon_proto_rawDesc = "" +
 	"error_type\x18\b \x01(\x0e2'.path.protocol.ShannonEndpointErrorTypeH\x00R\terrorType\x88\x01\x01\x12(\n" +
 	"\rerror_details\x18\t \x01(\tH\x01R\ferrorDetails\x88\x01\x01\x12Z\n" +
 	"\x14recommended_sanction\x18\n" +
-	" \x01(\x0e2\".path.protocol.ShannonSanctionTypeH\x02R\x13recommendedSanction\x88\x01\x01\x12V\n" +
-	"\x11relay_miner_error\x18\v \x01(\v2%.path.protocol.ShannonRelayMinerErrorH\x03R\x0frelayMinerError\x88\x01\x01\x120\n" +
-	"\x14is_fallback_endpoint\x18\f \x01(\bR\x12isFallbackEndpointB\r\n" +
+	" \x01(\x0e2\".path.protocol.ShannonSanctionTypeH\x02R\x13recommendedSanction\x88\x01\x01\x120\n" +
+	"\x14is_fallback_endpoint\x18\v \x01(\bR\x12isFallbackEndpointB\r\n" +
 	"\v_error_typeB\x10\n" +
 	"\x0e_error_detailsB\x17\n" +
-	"\x15_recommended_sanctionB\x14\n" +
-	"\x12_relay_miner_error\"\xea\x06\n" +
+	"\x15_recommended_sanction\"\xea\x06\n" +
 	"\"ShannonWebsocketMessageObservation\x12\x1a\n" +
 	"\bsupplier\x18\x01 \x01(\tR\bsupplier\x12!\n" +
 	"\fendpoint_url\x18\x02 \x01(\tR\vendpointUrl\x120\n" +
@@ -1374,27 +1364,26 @@ var file_path_protocol_shannon_proto_depIdxs = []int32{
 	0,  // 0: path.protocol.ShannonRequestError.error_type:type_name -> path.protocol.ShannonRequestErrorType
 	1,  // 1: path.protocol.ShannonWebsocketConnectionObservation.error_type:type_name -> path.protocol.ShannonEndpointErrorType
 	2,  // 2: path.protocol.ShannonWebsocketConnectionObservation.recommended_sanction:type_name -> path.protocol.ShannonSanctionType
-	4,  // 3: path.protocol.ShannonWebsocketConnectionObservation.relay_miner_error:type_name -> path.protocol.ShannonRelayMinerError
-	11, // 4: path.protocol.ShannonWebsocketMessageObservation.message_timestamp:type_name -> google.protobuf.Timestamp
-	1,  // 5: path.protocol.ShannonWebsocketMessageObservation.error_type:type_name -> path.protocol.ShannonEndpointErrorType
-	2,  // 6: path.protocol.ShannonWebsocketMessageObservation.recommended_sanction:type_name -> path.protocol.ShannonSanctionType
-	4,  // 7: path.protocol.ShannonWebsocketMessageObservation.relay_miner_error:type_name -> path.protocol.ShannonRelayMinerError
-	3,  // 8: path.protocol.ShannonRequestObservations.request_error:type_name -> path.protocol.ShannonRequestError
-	8,  // 9: path.protocol.ShannonRequestObservations.http_observations:type_name -> path.protocol.ShannonHTTPEndpointObservations
-	5,  // 10: path.protocol.ShannonRequestObservations.websocket_connection_observation:type_name -> path.protocol.ShannonWebsocketConnectionObservation
-	6,  // 11: path.protocol.ShannonRequestObservations.websocket_message_observation:type_name -> path.protocol.ShannonWebsocketMessageObservation
-	9,  // 12: path.protocol.ShannonHTTPEndpointObservations.endpoint_observations:type_name -> path.protocol.ShannonEndpointObservation
-	11, // 13: path.protocol.ShannonEndpointObservation.endpoint_query_timestamp:type_name -> google.protobuf.Timestamp
-	11, // 14: path.protocol.ShannonEndpointObservation.endpoint_response_timestamp:type_name -> google.protobuf.Timestamp
-	1,  // 15: path.protocol.ShannonEndpointObservation.error_type:type_name -> path.protocol.ShannonEndpointErrorType
-	2,  // 16: path.protocol.ShannonEndpointObservation.recommended_sanction:type_name -> path.protocol.ShannonSanctionType
-	4,  // 17: path.protocol.ShannonEndpointObservation.relay_miner_error:type_name -> path.protocol.ShannonRelayMinerError
-	7,  // 18: path.protocol.ShannonObservationsList.observations:type_name -> path.protocol.ShannonRequestObservations
-	19, // [19:19] is the sub-list for method output_type
-	19, // [19:19] is the sub-list for method input_type
-	19, // [19:19] is the sub-list for extension type_name
-	19, // [19:19] is the sub-list for extension extendee
-	0,  // [0:19] is the sub-list for field type_name
+	11, // 3: path.protocol.ShannonWebsocketMessageObservation.message_timestamp:type_name -> google.protobuf.Timestamp
+	1,  // 4: path.protocol.ShannonWebsocketMessageObservation.error_type:type_name -> path.protocol.ShannonEndpointErrorType
+	2,  // 5: path.protocol.ShannonWebsocketMessageObservation.recommended_sanction:type_name -> path.protocol.ShannonSanctionType
+	4,  // 6: path.protocol.ShannonWebsocketMessageObservation.relay_miner_error:type_name -> path.protocol.ShannonRelayMinerError
+	3,  // 7: path.protocol.ShannonRequestObservations.request_error:type_name -> path.protocol.ShannonRequestError
+	8,  // 8: path.protocol.ShannonRequestObservations.http_observations:type_name -> path.protocol.ShannonHTTPEndpointObservations
+	5,  // 9: path.protocol.ShannonRequestObservations.websocket_connection_observation:type_name -> path.protocol.ShannonWebsocketConnectionObservation
+	6,  // 10: path.protocol.ShannonRequestObservations.websocket_message_observation:type_name -> path.protocol.ShannonWebsocketMessageObservation
+	9,  // 11: path.protocol.ShannonHTTPEndpointObservations.endpoint_observations:type_name -> path.protocol.ShannonEndpointObservation
+	11, // 12: path.protocol.ShannonEndpointObservation.endpoint_query_timestamp:type_name -> google.protobuf.Timestamp
+	11, // 13: path.protocol.ShannonEndpointObservation.endpoint_response_timestamp:type_name -> google.protobuf.Timestamp
+	1,  // 14: path.protocol.ShannonEndpointObservation.error_type:type_name -> path.protocol.ShannonEndpointErrorType
+	2,  // 15: path.protocol.ShannonEndpointObservation.recommended_sanction:type_name -> path.protocol.ShannonSanctionType
+	4,  // 16: path.protocol.ShannonEndpointObservation.relay_miner_error:type_name -> path.protocol.ShannonRelayMinerError
+	7,  // 17: path.protocol.ShannonObservationsList.observations:type_name -> path.protocol.ShannonRequestObservations
+	18, // [18:18] is the sub-list for method output_type
+	18, // [18:18] is the sub-list for method input_type
+	18, // [18:18] is the sub-list for extension type_name
+	18, // [18:18] is the sub-list for extension extendee
+	0,  // [0:18] is the sub-list for field type_name
 }
 
 func init() { file_path_protocol_shannon_proto_init() }

@@ -179,60 +179,36 @@ func (p *Protocol) AvailableEndpoints(
 	return endpointAddrs, buildSuccessfulEndpointLookupObservation(serviceID), nil
 }
 
-// BuildRequestContextForEndpoint creates a new protocol request context for a specified service and endpoint.
+// BuildHTTPRequestContextForEndpoint creates a new HTTP protocol request context for a specified service and endpoint.
 //
 // Parameters:
 //   - ctx: Context for cancellation, deadlines, and logging.
 //   - serviceID: The unique identifier of the target service.
 //   - selectedEndpointAddr: The address of the endpoint to use for the request.
 //   - httpReq: ONLY used in Delegated mode to extract the selected app from headers.
-//   - TODO_TECHDEBT: Decouple context building for different gateway modes.
 //
 // Behavior:
-//   - Retrieves active sessions for the given service ID from the full node.
-//   - Retrieves unique endpoints available across all active sessions
-//   - Filtering out sanctioned endpoints from list of unique endpoints.
+//   - Selects the endpoint that matches the pre-selected address.
 //   - Obtains the relay request signer appropriate for the current gateway mode.
-//   - Returns a fully initialized request context for use in downstream protocol operations.
+//   - Returns a fully initialized HTTP request context for use in downstream protocol operations.
 //   - On failure, logs the error, returns a context setup observation, and a non-nil error.
-//
-// Implements the gateway.Protocol interface.
-func (p *Protocol) BuildRequestContextForEndpoint(
+func (p *Protocol) BuildHTTPRequestContextForEndpoint(
 	ctx context.Context,
 	serviceID protocol.ServiceID,
 	selectedEndpointAddr protocol.EndpointAddr,
 	httpReq *http.Request,
 ) (gateway.ProtocolRequestContext, protocolobservations.Observations, error) {
 	logger := p.logger.With(
-		"method", "BuildRequestContextForEndpoint",
+		"method", "BuildHTTPRequestContextForEndpoint",
 		"service_id", serviceID,
 		"endpoint_addr", selectedEndpointAddr,
 	)
 
-	activeSessions, err := p.getActiveGatewaySessions(ctx, serviceID, httpReq)
-	if err != nil {
-		logger.Error().Err(err).Msgf("Relay request will fail due to error retrieving active sessions for service %s", serviceID)
-		return nil, buildProtocolContextSetupErrorObservation(serviceID, err), err
-	}
-
-	// Retrieve the list of endpoints (i.e. backend service URLs by external operators)
-	// that can service RPC requests for the given service ID for the given apps.
-	// This includes fallback logic if session endpoints are unavailable.
-	// The final boolean parameter sets whether to filter out sanctioned endpoints.
-	endpoints, err := p.getUniqueEndpoints(ctx, serviceID, activeSessions, true)
-	if err != nil {
-		logger.Error().Err(err).Msg(err.Error())
-		return nil, buildProtocolContextSetupErrorObservation(serviceID, err), err
-	}
-
 	// Select the endpoint that matches the pre-selected address.
-	// This ensures QoS checks are performed on the selected endpoint.
-	selectedEndpoint, ok := endpoints[selectedEndpointAddr]
-	if !ok {
-		// Wrap the context setup error.
-		// Used to generate the observation.
-		err := fmt.Errorf("%w: service %s endpoint %s", errRequestContextSetupInvalidEndpointSelected, serviceID, selectedEndpointAddr)
-		logger.Error().Err(err).Msg("Selected endpoint is not available.")
+	selectedEndpoint, err := p.getSelectedEndpoint(
+		ctx, logger, httpReq, serviceID, selectedEndpointAddr,
+	)
+	if err != nil {
 		return nil, buildProtocolContextSetupErrorObservation(serviceID, err), err
 	}
 
@@ -253,7 +229,7 @@ func (p *Protocol) BuildRequestContextForEndpoint(
 	// This would require the requestContext to be aware of _SendAllTraffic in this context.
 	fallbackEndpoints, _ := p.getServiceFallbackEndpoints(serviceID)
 
-	// Return new request context for the pre-selected endpoint
+	// Return new HTTP request context for the pre-selected endpoint
 	return &requestContext{
 		logger:             p.logger,
 		context:            ctx,
@@ -264,6 +240,66 @@ func (p *Protocol) BuildRequestContextForEndpoint(
 		httpClient:         p.httpClient,
 		fallbackEndpoints:  fallbackEndpoints,
 	}, protocolobservations.Observations{}, nil
+}
+
+// BuildWebsocketRequestContextForEndpoint creates a new WebSocket protocol request context for a specified service and endpoint.
+//
+// Parameters:
+//   - ctx: Context for cancellation, deadlines, and logging.
+//   - serviceID: The unique identifier of the target service.
+//   - selectedEndpointAddr: The address of the endpoint to use for the request.
+//   - httpReq: ONLY used in Delegated mode to extract the selected app from headers.
+//
+// Behavior:
+//   - Selects the endpoint that matches the pre-selected address.
+//   - Obtains the relay request signer appropriate for the current gateway mode.
+//   - Returns a fully initialized WebSocket request context for use in downstream protocol operations.
+//   - On failure, logs the error, returns a context setup observation, and a non-nil error.
+func (p *Protocol) BuildWebsocketRequestContextForEndpoint(
+	ctx context.Context,
+	serviceID protocol.ServiceID,
+	selectedEndpointAddr protocol.EndpointAddr,
+	httpReq *http.Request,
+) (gateway.ProtocolRequestContextWebsocket, protocolobservations.Observations, error) {
+	logger := p.logger.With(
+		"method", "BuildWebsocketRequestContextForEndpoint",
+		"service_id", serviceID,
+		"endpoint_addr", selectedEndpointAddr,
+	)
+
+	// Get the selected endpoint for the service ID and endpoint address.
+	selectedEndpoint, err := p.getSelectedEndpoint(
+		ctx, logger, httpReq, serviceID, selectedEndpointAddr,
+	)
+	if err != nil {
+		return nil, buildProtocolContextSetupErrorObservation(serviceID, err), err
+	}
+
+	// Retrieve the relay request signer for the current gateway mode.
+	permittedSigner, err := p.getGatewayModePermittedRelaySigner(p.gatewayMode)
+	if err != nil {
+		// Wrap the context setup error.
+		// Used to generate the observation.
+		err = fmt.Errorf("%w: gateway mode %s: %w", errRequestContextSetupErrSignerSetup, p.gatewayMode, err)
+		return nil, buildProtocolContextSetupErrorObservation(serviceID, err), err
+	}
+
+	// Get the fallback endpoints for the service ID.
+	fallbackEndpoints, _ := p.getServiceFallbackEndpoints(serviceID)
+
+	// Return new WebSocket request context for the pre-selected endpoint
+	return &websocketRequestContext{
+			logger:             p.logger,
+			context:            ctx,
+			fullNode:           p.FullNode,
+			selectedEndpoint:   selectedEndpoint,
+			serviceID:          serviceID,
+			relayRequestSigner: permittedSigner,
+			httpClient:         p.httpClient,
+			fallbackEndpoints:  fallbackEndpoints,
+		},
+		// If successful, return an empty observation list.
+		protocolobservations.Observations{}, nil
 }
 
 // ApplyObservations updates protocol instance state based on endpoint observations.
@@ -310,6 +346,53 @@ func (p *Protocol) Name() string {
 // IsAlive satisfies the HealthCheck#IsAlive interface function
 func (p *Protocol) IsAlive() bool {
 	return p.IsHealthy()
+}
+
+// getSelectedEndpoint returns the selected endpoint for a given service ID and endpoint address.
+//
+// Behavior:
+//   - Retrieves active sessions for the given service ID from the full node.
+//   - Retrieves unique endpoints available across all active sessions
+//   - Filters out sanctioned endpoints from list of unique endpoints.
+//
+// This function coordinates between session endpoints and fallback endpoints:
+//   - If configured to send all traffic to fallback, returns fallback endpoints only
+//   - Otherwise, attempts to get session endpoints and falls back to fallback endpoints if needed
+func (p *Protocol) getSelectedEndpoint(
+	ctx context.Context,
+	logger polylog.Logger,
+	httpReq *http.Request,
+	serviceID protocol.ServiceID,
+	selectedEndpointAddr protocol.EndpointAddr,
+) (endpoint, error) {
+	activeSessions, err := p.getActiveGatewaySessions(ctx, serviceID, httpReq)
+	if err != nil {
+		logger.Error().Err(err).Msgf("Relay request will fail due to error retrieving active sessions for service %s", serviceID)
+		return nil, err
+	}
+
+	// Retrieve the list of endpoints (i.e. backend service URLs by external operators)
+	// that can service RPC requests for the given service ID for the given apps.
+	// This includes fallback logic if session endpoints are unavailable.
+	// The final boolean parameter sets whether to filter out sanctioned endpoints.
+	endpoints, err := p.getUniqueEndpoints(ctx, serviceID, activeSessions, true)
+	if err != nil {
+		logger.Error().Err(err).Msg(err.Error())
+		return nil, err
+	}
+
+	// Select the endpoint that matches the pre-selected address.
+	// This ensures QoS checks are performed on the selected endpoint.
+	selectedEndpoint, ok := endpoints[selectedEndpointAddr]
+	if !ok {
+		// Wrap the context setup error.
+		// Used to generate the observation.
+		err := fmt.Errorf("%w: service %s endpoint %s", errRequestContextSetupInvalidEndpointSelected, serviceID, selectedEndpointAddr)
+		logger.Error().Err(err).Msg("Selected endpoint is not available.")
+		return nil, err
+	}
+
+	return selectedEndpoint, nil
 }
 
 // TODO_TECHDEBT(@adshmh): Refactor to split the fallback logic from Shannon endpoints handling.

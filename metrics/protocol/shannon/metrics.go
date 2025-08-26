@@ -895,22 +895,6 @@ func processWebsocketConnectionErrors(
 			},
 		).Inc()
 	}
-
-	// Record RelayMinerError if present
-	if wsConnectionObs.RelayMinerError != nil {
-		relayMinerCodespace := wsConnectionObs.RelayMinerError.GetCodespace()
-		relayMinerCode := fmt.Sprintf("%d", wsConnectionObs.RelayMinerError.GetCode())
-
-		relayMinerErrorsTotal.With(
-			prometheus.Labels{
-				"service_id":            serviceID,
-				"endpoint_domain":       endpointDomain,
-				"endpoint_error_type":   errorType,
-				"relay_miner_codespace": relayMinerCodespace,
-				"relay_miner_code":      relayMinerCode,
-			},
-		).Inc()
-	}
 }
 
 // processWebsocketMessageErrors records WebSocket message error metrics.

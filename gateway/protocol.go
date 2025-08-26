@@ -6,8 +6,10 @@ import (
 
 	"github.com/buildwithgrove/path/health"
 	"github.com/buildwithgrove/path/metrics/devtools"
+	"github.com/buildwithgrove/path/observation"
 	protocolobservations "github.com/buildwithgrove/path/observation/protocol"
 	"github.com/buildwithgrove/path/protocol"
+	"github.com/buildwithgrove/path/websockets"
 )
 
 // Protocol defines the core functionality of a protocol from the perspective of a gateway.
@@ -34,12 +36,22 @@ type Protocol interface {
 	// Context may contain a deadline that protocol should respect on best-effort basis.
 	// Return observation if the context setup fails.
 	// Used as protocol observation for the request when no protocol context exists.
-	BuildRequestContextForEndpoint(
+	BuildHTTPRequestContextForEndpoint(
 		context.Context,
 		protocol.ServiceID,
 		protocol.EndpointAddr,
 		*http.Request,
 	) (ProtocolRequestContext, protocolobservations.Observations, error)
+
+	// BuildWebsocketRequestContextForEndpoint builds and returns a ProtocolRequestContextWebsocket containing a single selected endpoint.
+	// This method is used to build a websocket request context for a specified service and endpoint.
+	// It is used to build a websocket request context for a specified service and endpoint.
+	BuildWebsocketRequestContextForEndpoint(
+		context.Context,
+		protocol.ServiceID,
+		protocol.EndpointAddr,
+		*http.Request,
+	) (ProtocolRequestContextWebsocket, protocolobservations.Observations, error)
 
 	// SupportedGatewayModes returns the Gateway modes supported by the protocol instance.
 	// See protocol/gateway_mode.go for more details.
@@ -94,26 +106,22 @@ type ProtocolRequestContext interface {
 	// Then the observation can be:
 	//  - `maxed-out endpoint` on `endpoint_101`.
 	GetObservations() protocolobservations.Observations
-
-	// TODO_TECHDEBT(@commodity, @adshmh): Revisit all the Websocket specific functions
-	// in ProtocolRequestContext.
-	// - Too many websocket specific functions are exposed explicitly implying a poor interface.
-	// - Revisit the need for exposing these at all through a refactor?
-	//
-	// TODO_TECHDEBT(@commodity, @adshmh): Revisit casing of websocket vs Websocket vs WebSocket through.
-	ProtocolRequestContextWebsocket
 }
 
 // ProtocolRequestContextWebsocket defines the functionality expected by the gateway from the protocol,
 // specifically for websocket requests
 type ProtocolRequestContextWebsocket interface {
-	// GetWebsocketConnectionHeaders returns protocol-specific headers needed for websocket connections.
-	// These headers contain protocol-specific information like session data, service IDs, etc.
-	GetWebsocketConnectionHeaders() (http.Header, error)
-
-	// GetWebsocketEndpointURL returns the websocket URL for the selected endpoint.
-	// This URL is used to establish the websocket connection to the endpoint.
-	GetWebsocketEndpointURL() (string, error)
+	// StartWebSocketBridge creates and starts a WebSocket bridge between client and endpoint.
+	// It handles all protocol-specific setup including headers, URL generation, and connection establishment.
+	// The messageProcessor handles the actual message processing (typically the gateway's websocketRequestContext).
+	// Returns a completion channel that signals when the bridge shuts down and observations for the connection.
+	StartWebSocketBridge(
+		ctx context.Context,
+		httpRequest *http.Request,
+		httpResponseWriter http.ResponseWriter,
+		messageProcessor websockets.WebsocketMessageProcessor,
+		messageObservationsChan chan *observation.RequestResponseObservations,
+	) (<-chan struct{}, *protocolobservations.Observations, error)
 
 	// ProcessProtocolClientWebsocketMessage processes a message from the client.
 	ProcessProtocolClientWebsocketMessage([]byte) ([]byte, error)

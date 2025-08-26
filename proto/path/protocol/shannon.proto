@@ -177,11 +177,8 @@ message ShannonWebsocketConnectionObservation {
   // Recommended sanction type based on the error
   optional ShannonSanctionType recommended_sanction = 10;
 
-  // RelayMiner error details if the endpoint returned a RelayMinerError during connection lifecycle
-  optional ShannonRelayMinerError relay_miner_error = 11;
-
   // Tracks whether the endpoint is a fallback endpoint
-  bool is_fallback_endpoint = 12;
+  bool is_fallback_endpoint = 11;
 }
 
 // ShannonWebsocketMessageObservation stores observations from individual WebSocket messages
