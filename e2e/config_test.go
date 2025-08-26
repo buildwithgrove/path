@@ -81,7 +81,7 @@ const (
 	customConfigFile = "config/.e2e_load_test.config.yaml"
 
 	// Default config file (used if custom config file is not found)
-	defaultConfigFile = "config/e2e_load_test.config.tmpl.yaml"
+	defaultConfigFile = "config/e2e_load_test.config.default.yaml"
 
 	// Services file path
 	servicesFile = "config/services_shannon.yaml"
@@ -92,7 +92,7 @@ const (
 
 // loadE2ELoadTestConfig loads the E2E configuration in the following order:
 //  1. Custom config in e2e/config/.e2e_load_test.config.yaml
-//  2. Default config in e2e/config/e2e_load_test.config.tmpl.yaml
+//  2. Default config in e2e/config/e2e_load_test.config.default.yaml
 func loadE2ELoadTestConfig() (*Config, error) {
 	envConfig, err := getEnvConfig()
 	if err != nil {
@@ -170,7 +170,7 @@ func loadTestServices() (TestServices, error) {
 // Config Struct - Configures the test case
 //
 // Public fields are unmarshalled from the YAML files:
-//   - `config/e2e_load_test.config.tmpl.yaml`
+//   - `config/e2e_load_test.config.default.yaml`
 //   - `config/.e2e_load_test.config.yaml`
 // -----------------------------------------------------------------------------
 
@@ -181,7 +181,7 @@ type (
 		// cfgPath is private because it is not loaded from YAML,
 		// so the requirement for it to be public does not apply.
 		// Can be either:
-		// 		- `config/e2e_load_test.config.tmpl.yaml`
+		// 		- `config/e2e_load_test.config.default.yaml`
 		// 		- `config/.e2e_load_test.config.yaml`
 		cfgPath string
 

@@ -30,7 +30,7 @@ An easy way to think about **PATH** and **Pocket Network** is:
 
 ## Where do I get started?
 
-To get started, allocate 1-3 hours of time and start with the [PATH Quick Start](develop/path/1_quick_start.md).
+To get started, allocate 1-3 hours of time and start with the [PATH Getting Started](develop/path/1_getting_started.md).
 
 It will go through all the details of how PATH works, how to configure it, and how to run it locally.
 
@@ -128,3 +128,11 @@ If you're a Web2 Gateway Provider, you can use this table to understand you pref
 | 2. Grove Hybrid (Frontend)   | ❌                          | ✅                    | ❌                     | ❌                           | ✅                                | Customers go to your frontend but use Grove's Portal API backend behind the scenes                                            |
 | 3. PATH Hybrid (Full Stack)  | ❌                          | ✅                    | ✅                     | ❌                           | ✅                                | Customers go to your frontend but use PATH's features (e.g. Quality-of Service) and settle traffic on Pocket network directly |
 | 4. Independent (On Your Own) | ✅                          | ✅                    | ✅                     | ❌                           | ❌                                | Customers go to your frontend and dependent on your gateway and infrastructure across the whole stack                         |
+
+<!-- TODO_IMPROVE(@olshansk):
+
+- Document the use case where the Gateway uses the network as a primary infra provider w/ their own infra as backup
+- Document the use cases where the Gateway uses the network as a backup infra provider w/ their own infra as primary
+- Write about the insurance analogy
+
+-->

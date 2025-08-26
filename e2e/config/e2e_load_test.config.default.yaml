@@ -40,8 +40,10 @@ e2e_load_test_config:
     # path.grove.city/develop/path/load_tests#load-testing-the-grove-portal
     #
     gateway_url_override: "http://localhost:3070/v1"
-    portal_api_key: "test_api_key"
-    portal_application_id: "test"
+    # portal_api_key: "test_api_key"
+    # portal_application_id: "test"
+    portal_api_key: "$GROVE_PORTAL_API_KEY"
+    portal_application_id: "$GROVE_PORTAL_APP_ID"
 
 # Default configuration applied to all test cases (unless overridden)
 default_service_config:
