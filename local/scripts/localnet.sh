@@ -15,6 +15,8 @@
 # Usage: ./localnet.sh [up|down] [--use-local-helm]
 #
 # For more information, see the documentation or the Dockerfile.dev used to build the environment.
+#
+# TODO_TECHDEBT: Ensure hot reload of config .yaml files works
 
 set -e
 
