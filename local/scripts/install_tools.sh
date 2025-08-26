@@ -148,14 +148,11 @@ detect_system
 # Check for missing dependencies
 MISSING_DEPS=()
 
-for cmd in docker kind kubectl helm tilt; do
+for cmd in docker pocketd; do
     if ! command_exists "$cmd"; then
         case "$cmd" in
             docker) MISSING_DEPS+=("🐳 Docker: Container engine for running applications in containers") ;;
-            kind) MISSING_DEPS+=("🌀 Kind: Tool for running local Kubernetes clusters using Docker") ;;
-            kubectl) MISSING_DEPS+=("🔧 kubectl: CLI tool for controlling Kubernetes clusters") ;;
-            helm) MISSING_DEPS+=("⛵ Helm: Package manager for Kubernetes") ;;
-            tilt) MISSING_DEPS+=("🚀 Tilt: Tool for development on Kubernetes") ;;
+            pocketd) MISSING_DEPS+=("🔧 pocketd: CLI tool for interacting with Pocket Network") ;;
         esac
     fi
 done

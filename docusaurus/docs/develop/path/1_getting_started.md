@@ -42,22 +42,8 @@ Optional but highly recommended tools:
 make install_tools_optional
 ```
 
-### 3. Configure your PATH Gateway for Pocket Network
-
-**[Pocket Network Cheat Sheet](2_cheatsheet_pocket.md)** - Configure PATH for the Shannon protocol
-
-### 4. [Optional] Developer Environment Details
-
 <details>
-<summary>Technical details for developers who want to understand PATH's development environment.</summary>
-
-## Development Environment Architecture
-
-**PATH**'s development mode uses a Kubernetes-based local development environment with [Tilt](https://tilt.dev/).
-
-We use [Kind](https://kind.sigs.k8s.io/) (Kubernetes in Docker) for running the local Kubernetes cluster, as it provides better compatibility with Tilt's image building process compared to Docker Desktop's Kubernetes cluster.
-
-## Installed Tools
+<summary>Details on Installed Tools</summary>
 
 **Tools installed by `make install_tools`**:
 
@@ -72,3 +58,7 @@ We use [Kind](https://kind.sigs.k8s.io/) (Kubernetes in Docker) for running the 
 - [**Uber Mockgen**](https://github.com/uber-go/mock): Mock interface generator for testing
 
 </details>
+
+### 3. Configure your PATH Gateway for Pocket Network
+
+**[Pocket Network Cheat Sheet](2_cheatsheet_pocket.md)** - Configure PATH for the Shannon protocol

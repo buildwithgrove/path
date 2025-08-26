@@ -42,18 +42,12 @@ check_path_up:
 		exit 1; \
 	fi
 
-# Brings up local Tilt environment with remote helm charts
-# TODO_TECHDEBT(@olshansk, @okdas):
-# 1. Revert the changes that deploy Tilt in a docker container
-# 2. Enable development with a fully dockerized environment and a native k8s environments
-# 3. Re-enable true hot reloading of .config and .values files
 .PHONY: path_up
-path_up: check_docker ## Brings up local Tilt development environment in Docker
+path_up: check_docker ## Brings up local Tilt development environment in Docker with remote helm charts
 	@./local/scripts/localnet.sh up
 
-# Brings up local Tilt environment with local helm charts
 .PHONY: path_up_local_helm
-path_up_local_helm: check_docker ## Brings up local Tilt environment with local helm charts
+path_up_local_helm: check_docker ## Brings up local Tilt development environment in Docker with local helm charts
 	@./local/scripts/localnet.sh up --use-local-helm
 
 .PHONY: path_down
