@@ -65,7 +65,7 @@ tmp/*
 # PATH artifacts
 install.log
 
-# Include values.tmpl.yaml in git
+# Include values.tmpl.yaml files in git
 !values.tmpl.yaml
 
 # Claudesync, Claude code and MCP servers
