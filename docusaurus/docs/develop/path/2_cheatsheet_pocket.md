@@ -250,7 +250,7 @@ pocketd query application show-application \
 
 :::tip More details about configs
 
-You can learn more about various configurations at [Auth Configs](../configs/3_auth_config.md) or [Helm Docs](../../operate/helm). It covers auth, rate limiting, etc...
+You can learn more about various configurations at [Auth Configs](../configs/3_auth_config.md) or [Helm Docs](../../operate/helm/1_introduction.md). It covers auth, rate limiting, etc...
 
 :::
 
