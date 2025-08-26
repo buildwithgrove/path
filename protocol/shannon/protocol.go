@@ -199,7 +199,6 @@ func (p *Protocol) BuildHTTPRequestContextForEndpoint(
 	httpReq *http.Request,
 ) (gateway.ProtocolRequestContext, protocolobservations.Observations, error) {
 	logger := p.logger.With(
-		"method", "BuildHTTPRequestContextForEndpoint",
 		"service_id", serviceID,
 		"endpoint_addr", selectedEndpointAddr,
 	)
@@ -231,7 +230,7 @@ func (p *Protocol) BuildHTTPRequestContextForEndpoint(
 
 	// Return new HTTP request context for the pre-selected endpoint
 	return &requestContext{
-		logger:             p.logger,
+		logger:             logger,
 		context:            ctx,
 		fullNode:           p.FullNode,
 		selectedEndpoint:   selectedEndpoint,
@@ -262,7 +261,6 @@ func (p *Protocol) BuildWebsocketRequestContextForEndpoint(
 	httpReq *http.Request,
 ) (gateway.ProtocolRequestContextWebsocket, protocolobservations.Observations, error) {
 	logger := p.logger.With(
-		"method", "BuildWebsocketRequestContextForEndpoint",
 		"service_id", serviceID,
 		"endpoint_addr", selectedEndpointAddr,
 	)
@@ -289,7 +287,7 @@ func (p *Protocol) BuildWebsocketRequestContextForEndpoint(
 
 	// Return new WebSocket request context for the pre-selected endpoint
 	return &websocketRequestContext{
-			logger:             p.logger,
+			logger:             logger,
 			context:            ctx,
 			fullNode:           p.FullNode,
 			selectedEndpoint:   selectedEndpoint,

@@ -146,13 +146,19 @@ func (wrc *websocketRequestContext) buildProtocolContextFromHTTPRequest(
 	}
 
 	// Build protocol context for the selected endpoint
-	protocolCtx, protocolCtxSetupErrObs, err := wrc.protocol.BuildWebsocketRequestContextForEndpoint(wrc.context, wrc.serviceID, selectedEndpoint, httpReq)
+	protocolCtx, protocolCtxSetupErrObs, err := wrc.protocol.BuildWebsocketRequestContextForEndpoint(
+		wrc.context,
+		wrc.serviceID,
+		selectedEndpoint,
+		httpReq,
+	)
 	if err != nil {
 		// error encountered: use the supplied observations as protocol observations.
 		wrc.updateProtocolObservations(&protocolCtxSetupErrObs)
 		logger.Error().Err(err).Str("endpoint_addr", string(selectedEndpoint)).Msg("Failed to build protocol context for websocket endpoint")
 		return fmt.Errorf("failed to build protocol context for websocket endpoint: %w", err)
 	}
+	wrc.logger = wrc.logger.With("endpoint_addr", selectedEndpoint)
 
 	wrc.protocolCtx = protocolCtx
 	logger.Info().Msgf("Successfully built protocol context for websocket endpoint: %s", selectedEndpoint)

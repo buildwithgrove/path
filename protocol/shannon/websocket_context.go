@@ -80,7 +80,8 @@ func (wrc *websocketRequestContext) StartWebSocketBridge(
 		logger.Error().Err(err).Msg("❌ Selected endpoint does not support websocket RPC type")
 		return nil, errorObs, fmt.Errorf("selected endpoint does not support websocket RPC type: %w", err)
 	}
-	wrc.logger = wrc.logger.With("websocket_url", websocketEndpointURL)
+	logger = logger.With("websocket_url", websocketEndpointURL)
+	wrc.logger = logger
 
 	// Get the headers for the websocket connection that will be sent to the endpoint.
 	endpointConnectionHeaders, err := wrc.getWebsocketConnectionHeaders()
