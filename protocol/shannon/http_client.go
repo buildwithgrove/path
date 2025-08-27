@@ -87,9 +87,9 @@ func newDefaultHTTPClientWithDebugMetrics() *httpClientWithDebugMetrics {
 		}).DialContext,
 
 		// Connection pool settings optimized for high concurrency with resource limits
-		MaxIdleConns:        500,              // Reduced from 2000 - reasonable total pool size
-		MaxIdleConnsPerHost: 25,               // Reduced from 500 - sufficient for most endpoints
-		MaxConnsPerHost:     50,               // Limited from unlimited - prevents connection exhaustion
+		MaxIdleConns:        2000,             // Increase total pool size
+		MaxIdleConnsPerHost: 500,              // Increase per-host pool to match concurrency
+		MaxConnsPerHost:     1000,             // Allow full concurrency per host
 		IdleConnTimeout:     90 * time.Second, // Reduced from 300s - shorter idle to free resources
 
 		// Timeout settings optimized for quick failure detection
