@@ -12,6 +12,9 @@ var (
 	// Unsupported gateway mode
 	errProtocolContextSetupUnsupportedGatewayMode = errors.New("unsupported gateway mode")
 
+	// Missing session header in relay request
+	ErrMissingSessionHeader = errors.New("missing session header in relay request")
+
 	// ** Network errors **
 	// endpoint configuration error:
 	// - TLS certificate verification error.
