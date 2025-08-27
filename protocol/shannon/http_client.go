@@ -5,7 +5,6 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
-	"io"
 	"net"
 	"net/http"
 	"net/http/httptrace"
@@ -29,6 +28,7 @@ const maxResponseSize = 100 * 1024 * 1024 // 100MB limit
 // - Connection issue visibility
 type httpClientWithDebugMetrics struct {
 	httpClient *http.Client
+	limiter    *concurrencyLimiter
 
 	// Atomic counters for monitoring
 	activeRequests   atomic.Uint64
@@ -84,11 +84,11 @@ func newDefaultHTTPClientWithDebugMetrics() *httpClientWithDebugMetrics {
 			KeepAlive: 30 * time.Second, // Keep-alive probe interval to maintain connection health
 		}).DialContext,
 
-		// Connection pool settings optimized for high concurrency
-		MaxIdleConns:        2000,              // Large total pool to support many concurrent hosts
-		MaxIdleConnsPerHost: 500,               // High per-host idle connections for connection reuse
-		MaxConnsPerHost:     0,                 // No limit to eliminate connection queueing bottlenecks
-		IdleConnTimeout:     300 * time.Second, // Long idle timeout to maximize connection reuse
+		// Connection pool settings optimized for high concurrency with resource limits
+		MaxIdleConns:        500,               // Reduced from 2000 - reasonable total pool size
+		MaxIdleConnsPerHost: 25,                // Reduced from 500 - sufficient for most endpoints
+		MaxConnsPerHost:     50,                // Limited from unlimited - prevents connection exhaustion
+		IdleConnTimeout:     90 * time.Second,  // Reduced from 300s - shorter idle to free resources
 
 		// Timeout settings optimized for quick failure detection
 		TLSHandshakeTimeout:   5 * time.Second,  // Fast TLS timeout since handshakes typically complete in ~100ms
@@ -113,6 +113,7 @@ func newDefaultHTTPClientWithDebugMetrics() *httpClientWithDebugMetrics {
 
 	return &httpClientWithDebugMetrics{
 		httpClient: httpClient,
+		limiter:    newConcurrencyLimiter(100), // Limit to 100 concurrent requests
 	}
 }
 
@@ -129,6 +130,12 @@ func (h *httpClientWithDebugMetrics) SendHTTPRelay(
 	relayRequestBz []byte,
 	headers map[string]string,
 ) ([]byte, int, error) {
+	// Acquire concurrency slot before proceeding
+	if !h.limiter.acquire(ctx) {
+		return nil, 0, fmt.Errorf("failed to acquire concurrency slot: context cancelled")
+	}
+	defer h.limiter.release()
+
 	// Set up debugging context and logging function
 	debugCtx, requestRecorder := h.setupRequestDebugging(ctx, logger, endpointURL)
 
@@ -215,6 +222,7 @@ func (h *httpClientWithDebugMetrics) setupRequestDebugging(
 		h.activeRequests.Add(^uint64(0)) // Atomic decrement
 		metrics.totalTime = time.Since(metrics.startTime)
 		metrics.error = err
+		// Log detailed metrics on error for debugging
 		if err != nil {
 			h.logRequestMetrics(logger, *metrics)
 		}
@@ -236,9 +244,8 @@ func (h *httpClientWithDebugMetrics) categorizeError(ctx context.Context, err er
 
 // readAndValidateResponse reads the response body and validates the HTTP status code
 func (h *httpClientWithDebugMetrics) readAndValidateResponse(resp *http.Response) ([]byte, error) {
-	// Read response body with size protection
-	limitedReader := io.LimitReader(resp.Body, maxResponseSize)
-	responseBody, err := io.ReadAll(limitedReader)
+	// Read response body with size protection using buffer pool
+	responseBody, err := readWithBuffer(resp.Body, maxResponseSize)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read response body: %w", err)
 	}

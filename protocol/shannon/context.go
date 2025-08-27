@@ -713,7 +713,7 @@ func (rc *requestContext) sendHTTPRequest(
 		wrappedErr := fmt.Errorf("%w: %v", errSendHTTPRelay, err)
 
 		selectedEndpoint := rc.getSelectedEndpoint()
-		rc.logger.Error().Err(wrappedErr).Msgf("❌ Failed to receive a response from the selected endpoint: '%s'. Relay request will FAIL 😢", selectedEndpoint.Addr())
+		rc.logger.Debug().Err(wrappedErr).Msgf("Failed to receive a response from the selected endpoint: '%s'. Relay request will FAIL", selectedEndpoint.Addr())
 		return nil, 0, fmt.Errorf("error sending request to endpoint %s: %w", selectedEndpoint.Addr(), wrappedErr)
 	}
 
