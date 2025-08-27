@@ -44,7 +44,9 @@ In `./local/path/.config.yaml`:
 
 ### 3. Download the guard `.values.yaml`
 
+```bash
 op item get fkltz2wb7fegpumntqyo3w5qau --fields notesPlain --format json | jq -r '.value' > ./local/path/.values.yaml
+```
 
 ### 4. Skip to Section 4
 
