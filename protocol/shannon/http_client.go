@@ -16,6 +16,8 @@ import (
 	"github.com/pokt-network/poktroll/pkg/polylog"
 )
 
+const concurrencyLimiterMax = 1_000
+
 // Maximum length of an HTTP response's body.
 const maxResponseSize = 100 * 1024 * 1024 // 100MB limit
 
@@ -85,10 +87,10 @@ func newDefaultHTTPClientWithDebugMetrics() *httpClientWithDebugMetrics {
 		}).DialContext,
 
 		// Connection pool settings optimized for high concurrency with resource limits
-		MaxIdleConns:        500,               // Reduced from 2000 - reasonable total pool size
-		MaxIdleConnsPerHost: 25,                // Reduced from 500 - sufficient for most endpoints
-		MaxConnsPerHost:     50,                // Limited from unlimited - prevents connection exhaustion
-		IdleConnTimeout:     90 * time.Second,  // Reduced from 300s - shorter idle to free resources
+		MaxIdleConns:        500,              // Reduced from 2000 - reasonable total pool size
+		MaxIdleConnsPerHost: 25,               // Reduced from 500 - sufficient for most endpoints
+		MaxConnsPerHost:     50,               // Limited from unlimited - prevents connection exhaustion
+		IdleConnTimeout:     90 * time.Second, // Reduced from 300s - shorter idle to free resources
 
 		// Timeout settings optimized for quick failure detection
 		TLSHandshakeTimeout:   5 * time.Second,  // Fast TLS timeout since handshakes typically complete in ~100ms
@@ -113,7 +115,7 @@ func newDefaultHTTPClientWithDebugMetrics() *httpClientWithDebugMetrics {
 
 	return &httpClientWithDebugMetrics{
 		httpClient: httpClient,
-		limiter:    newConcurrencyLimiter(100), // Limit to 100 concurrent requests
+		limiter:    newConcurrencyLimiter(concurrencyLimiterMax),
 	}
 }
 
