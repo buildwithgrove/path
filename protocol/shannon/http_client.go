@@ -215,9 +215,8 @@ func (h *httpClientWithDebugMetrics) setupRequestDebugging(
 		h.activeRequests.Add(^uint64(0)) // Atomic decrement
 		metrics.totalTime = time.Since(metrics.startTime)
 		metrics.error = err
-		if err != nil {
-			h.logRequestMetrics(logger, *metrics)
-		}
+		// TODO_HACK(@adshmh): Add back the condition to log only if the error is not nil.
+		h.logRequestMetrics(logger, *metrics)
 	}
 
 	return debugCtx, requestRecorder
