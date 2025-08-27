@@ -309,6 +309,12 @@ Visit the **Tilt dashboard** at [localhost:10350](<http://localhost:10350/r/(all
 curl http://localhost:3070/healthz | jq
 ```
 
+:::tip
+
+For more details about the PATH localnet, see [PATH Localnet](4_path_localnet.md).  
+
+:::
+
 ### 4.3 Example Relays
 
 See [Example Relays](3_example_requests.md).
