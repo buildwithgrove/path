@@ -282,20 +282,17 @@ func (p *Protocol) BuildWebsocketRequestContextForEndpoint(
 		return nil, buildProtocolContextSetupErrorObservation(serviceID, err), err
 	}
 
-	// Get the fallback endpoints for the service ID.
-	fallbackEndpoints, _ := p.getServiceFallbackEndpoints(serviceID)
-
 	// Return new WebSocket request context for the pre-selected endpoint
 	return &websocketRequestContext{
 			logger:             logger,
-			context:            ctx,
 			fullNode:           p.FullNode,
 			selectedEndpoint:   selectedEndpoint,
 			serviceID:          serviceID,
 			relayRequestSigner: permittedSigner,
-			fallbackEndpoints:  fallbackEndpoints,
 		},
 		// If successful, return an empty observation list.
+		// Websocket connection success observations are added when
+		// the Bridge is started successfully in `StartWebSocketBridge`.
 		protocolobservations.Observations{}, nil
 }
 

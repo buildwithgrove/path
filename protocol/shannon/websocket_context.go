@@ -28,9 +28,6 @@ var _ gateway.ProtocolRequestContextWebsocket = &websocketRequestContext{}
 type websocketRequestContext struct {
 	logger polylog.Logger
 
-	// Upstream context for timeout propagation and cancellation
-	context context.Context
-
 	// fullNode is used for retrieving onchain data.
 	fullNode FullNode
 
@@ -45,13 +42,6 @@ type websocketRequestContext struct {
 	//   - Must be set via setSelectedEndpoint before sending a relay (otherwise sending fails).
 	//   - Protected by selectedEndpointMutex for thread safety.
 	selectedEndpoint endpoint
-
-	// requestErrorObservation:
-	//   - Tracks any errors encountered during request processing.
-	requestErrorObservation *protocolobservations.ShannonRequestError
-
-	// fallbackEndpoints is used to retrieve a fallback endpoint by an endpoint address.
-	fallbackEndpoints map[protocol.EndpointAddr]endpoint
 }
 
 // ---------- Connection Establishment ----------
@@ -279,7 +269,7 @@ func (wrc *websocketRequestContext) getWebsocketMessageSuccessObservation(
 			Observations: []*protocolobservations.ShannonRequestObservations{
 				{
 					ServiceId:    string(wrc.serviceID),
-					RequestError: wrc.requestErrorObservation,
+					RequestError: nil, // WS messages do not have request errors
 					ObservationData: &protocolobservations.ShannonRequestObservations_WebsocketMessageObservation{
 						WebsocketMessageObservation: wsMessageObs,
 					},
@@ -312,7 +302,7 @@ func (wrc *websocketRequestContext) getWebsocketMessageErrorObservation(
 			Observations: []*protocolobservations.ShannonRequestObservations{
 				{
 					ServiceId:    string(wrc.serviceID),
-					RequestError: wrc.requestErrorObservation,
+					RequestError: nil, // WS messages do not have request errors
 					ObservationData: &protocolobservations.ShannonRequestObservations_WebsocketMessageObservation{
 						WebsocketMessageObservation: wsMessageObs,
 					},
