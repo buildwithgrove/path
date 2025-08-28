@@ -91,11 +91,11 @@ func NewDefaultHTTPClientWithDebugMetrics() *HTTPClientWithDebugMetrics {
 			KeepAlive: 30 * time.Second, // Keep-alive probe interval to maintain connection health
 		}).DialContext,
 
-		// Connection pool settings optimized for high concurrency with resource limits
-		MaxIdleConns:        2000,             // Increase total pool size
-		MaxIdleConnsPerHost: 500,              // Increase per-host pool to match concurrency
-		MaxConnsPerHost:     1000,             // Allow full concurrency per host
-		IdleConnTimeout:     90 * time.Second, // Reduced from 300s - shorter idle to free resources
+		// Connection pool settings scaled with concurrency limit
+		MaxIdleConns:        concurrencyLimiterMax / 5,      // Scale total pool: 20% of max concurrency
+		MaxIdleConnsPerHost: concurrencyLimiterMax / 20,     // Scale per-host pool: 5% of max concurrency
+		MaxConnsPerHost:     concurrencyLimiterMax / 10,     // Scale max connections: 10% of max concurrency
+		IdleConnTimeout:     90 * time.Second,               // Reduced from 300s - shorter idle to free resources
 
 		// Timeout settings optimized for quick failure detection
 		TLSHandshakeTimeout:   5 * time.Second,  // Fast TLS timeout since handshakes typically complete in ~100ms

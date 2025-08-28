@@ -13,8 +13,8 @@ import (
 
 func TestNewBufferPool(t *testing.T) {
 	bp := NewBufferPool(DefaultMaxBufferSize)
-	assert.NotNil(t, bp)
-	assert.Equal(t, int64(DefaultMaxBufferSize), bp.maxReaderSize)
+	require.NotNil(t, bp)
+	require.Equal(t, int64(DefaultMaxBufferSize), bp.maxReaderSize)
 }
 
 func TestBufferPoolGetBuffer(t *testing.T) {
@@ -22,27 +22,27 @@ func TestBufferPoolGetBuffer(t *testing.T) {
 
 	t.Run("get buffer returns clean buffer", func(t *testing.T) {
 		buf := bp.getBuffer()
-		assert.NotNil(t, buf)
-		assert.Equal(t, 0, buf.Len())
-		assert.GreaterOrEqual(t, buf.Cap(), DefaultInitialBufferSize)
+		require.NotNil(t, buf)
+		require.Equal(t, 0, buf.Len())
+		require.GreaterOrEqual(t, buf.Cap(), DefaultInitialBufferSize)
 	})
 
 	t.Run("multiple gets return different buffers", func(t *testing.T) {
 		buf1 := bp.getBuffer()
 		buf2 := bp.getBuffer()
-		assert.NotSame(t, buf1, buf2)
+		require.NotSame(t, buf1, buf2)
 	})
 
 	t.Run("reused buffer is reset", func(t *testing.T) {
 		buf := bp.getBuffer()
 		buf.WriteString("test data")
-		assert.Greater(t, buf.Len(), 0)
+		require.Greater(t, buf.Len(), 0)
 
 		bp.putBuffer(buf)
 
 		buf2 := bp.getBuffer()
-		assert.Equal(t, 0, buf2.Len())
-		assert.GreaterOrEqual(t, buf2.Cap(), DefaultInitialBufferSize)
+		require.Equal(t, 0, buf2.Len())
+		require.GreaterOrEqual(t, buf2.Cap(), DefaultInitialBufferSize)
 	})
 }
 
@@ -57,8 +57,8 @@ func TestBufferPoolPutBuffer(t *testing.T) {
 		bp.putBuffer(buf)
 
 		buf2 := bp.getBuffer()
-		assert.Equal(t, 0, buf2.Len())
-		assert.Equal(t, originalCap, buf2.Cap())
+		require.Equal(t, 0, buf2.Len())
+		require.Equal(t, originalCap, buf2.Cap())
 	})
 
 	t.Run("does not pool oversized buffers", func(t *testing.T) {
@@ -66,8 +66,8 @@ func TestBufferPoolPutBuffer(t *testing.T) {
 		bp.putBuffer(buf)
 
 		newBuf := bp.getBuffer()
-		assert.NotEqual(t, DefaultMaxBufferSize+1, newBuf.Cap())
-		assert.GreaterOrEqual(t, newBuf.Cap(), DefaultInitialBufferSize)
+		require.NotEqual(t, DefaultMaxBufferSize+1, newBuf.Cap())
+		require.GreaterOrEqual(t, newBuf.Cap(), DefaultInitialBufferSize)
 	})
 
 	t.Run("pools buffer at max size", func(t *testing.T) {
@@ -75,7 +75,7 @@ func TestBufferPoolPutBuffer(t *testing.T) {
 		bp.putBuffer(buf)
 
 		newBuf := bp.getBuffer()
-		assert.LessOrEqual(t, newBuf.Cap(), DefaultMaxBufferSize)
+		require.LessOrEqual(t, newBuf.Cap(), DefaultMaxBufferSize)
 	})
 }
 
@@ -88,7 +88,7 @@ func TestBufferPoolReadWithBuffer(t *testing.T) {
 
 		data, err := bp.readWithBuffer(reader)
 		require.NoError(t, err)
-		assert.Equal(t, testData, string(data))
+		require.Equal(t, testData, string(data))
 	})
 
 	t.Run("reads large data", func(t *testing.T) {
@@ -97,7 +97,7 @@ func TestBufferPoolReadWithBuffer(t *testing.T) {
 
 		data, err := bp.readWithBuffer(reader)
 		require.NoError(t, err)
-		assert.Equal(t, testData, string(data))
+		require.Equal(t, testData, string(data))
 	})
 
 	t.Run("respects max size limit", func(t *testing.T) {
@@ -108,8 +108,8 @@ func TestBufferPoolReadWithBuffer(t *testing.T) {
 
 		data, err := bpLimited.readWithBuffer(reader)
 		require.NoError(t, err)
-		assert.Equal(t, testData[:maxSize], string(data))
-		assert.Equal(t, int(maxSize), len(data))
+		require.Equal(t, testData[:maxSize], string(data))
+		require.Equal(t, int(maxSize), len(data))
 	})
 
 	t.Run("handles empty reader", func(t *testing.T) {
@@ -117,15 +117,15 @@ func TestBufferPoolReadWithBuffer(t *testing.T) {
 
 		data, err := bp.readWithBuffer(reader)
 		require.NoError(t, err)
-		assert.Empty(t, data)
+		require.Empty(t, data)
 	})
 
 	t.Run("handles reader error", func(t *testing.T) {
 		reader := &errorReader{err: io.ErrUnexpectedEOF}
 
 		data, err := bp.readWithBuffer(reader)
-		assert.Equal(t, io.ErrUnexpectedEOF, err)
-		assert.Nil(t, data)
+		require.Equal(t, io.ErrUnexpectedEOF, err)
+		require.Nil(t, data)
 	})
 
 	t.Run("returns independent copy of data", func(t *testing.T) {
@@ -139,8 +139,8 @@ func TestBufferPoolReadWithBuffer(t *testing.T) {
 		data2, err := bp.readWithBuffer(reader2)
 		require.NoError(t, err)
 
-		assert.Equal(t, "Original data", string(data1))
-		assert.Equal(t, "Modified data", string(data2))
+		require.Equal(t, "Original data", string(data1))
+		require.Equal(t, "Modified data", string(data2))
 	})
 }
 
@@ -159,7 +159,7 @@ func TestBufferPoolConcurrency(t *testing.T) {
 				for j := 0; j < numOperations; j++ {
 					buf := bp.getBuffer()
 					buf.WriteString("test data")
-					assert.Greater(t, buf.Len(), 0)
+					require.Greater(t, buf.Len(), 0)
 					bp.putBuffer(buf)
 				}
 			}(i)
@@ -180,8 +180,8 @@ func TestBufferPoolConcurrency(t *testing.T) {
 				defer wg.Done()
 				reader := strings.NewReader(testData)
 				data, err := bp.readWithBuffer(reader)
-				assert.NoError(t, err)
-				assert.Equal(t, testData, string(data))
+				require.NoError(t, err)
+				require.Equal(t, testData, string(data))
 			}()
 		}
 
@@ -226,7 +226,7 @@ func TestBufferPoolConcurrency(t *testing.T) {
 			}
 		}
 
-		assert.Greater(t, reusedCount, 0, "Some buffers should be reused")
+		require.Greater(t, reusedCount, 0, "Some buffers should be reused")
 	})
 }
 
@@ -240,8 +240,8 @@ func TestBufferPoolMemoryEfficiency(t *testing.T) {
 		largeData := strings.Repeat("x", DefaultInitialBufferSize*2)
 		buf.WriteString(largeData)
 
-		assert.Greater(t, buf.Cap(), initialCap)
-		assert.Equal(t, len(largeData), buf.Len())
+		require.Greater(t, buf.Cap(), initialCap)
+		require.Equal(t, len(largeData), buf.Len())
 	})
 
 	t.Run("large buffer not returned to pool", func(t *testing.T) {
@@ -250,7 +250,7 @@ func TestBufferPoolMemoryEfficiency(t *testing.T) {
 		bp.putBuffer(buf)
 
 		newBuf := bp.getBuffer()
-		assert.LessOrEqual(t, newBuf.Cap(), DefaultInitialBufferSize)
+		require.LessOrEqual(t, newBuf.Cap(), DefaultInitialBufferSize)
 	})
 
 	t.Run("readWithBuffer doesn't leak memory", func(t *testing.T) {
@@ -260,7 +260,7 @@ func TestBufferPoolMemoryEfficiency(t *testing.T) {
 			reader := strings.NewReader(testData)
 			data, err := bp.readWithBuffer(reader)
 			require.NoError(t, err)
-			assert.Equal(t, len(testData), len(data))
+			require.Equal(t, len(testData), len(data))
 		}
 	})
 }

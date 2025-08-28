@@ -42,7 +42,7 @@ func (cl *concurrencyLimiter) acquire(ctx context.Context) bool {
 		cl.mu.Lock()
 		cl.activeRequests++
 		// Track active relays for observability
-		shannonmetrics.SetActiveRelays(cl.activeRequests)
+		shannonmetrics.SetActiveHTTPRelays(cl.activeRequests)
 		cl.mu.Unlock()
 		return true
 	case <-ctx.Done():
@@ -64,7 +64,7 @@ func (cl *concurrencyLimiter) release() {
 		cl.mu.Lock()
 		cl.activeRequests--
 		// Track active relays for observability
-		shannonmetrics.SetActiveRelays(cl.activeRequests)
+		shannonmetrics.SetActiveHTTPRelays(cl.activeRequests)
 		cl.mu.Unlock()
 	default:
 		// TODO_TECHDEBT: Log acquire/release mismatch for debugging
@@ -77,7 +77,7 @@ func (cl *concurrencyLimiter) getActiveRequests() int64 {
 	defer cl.mu.RUnlock()
 
 	// Refresh metric with current count
-	shannonmetrics.SetActiveRelays(cl.activeRequests)
+	shannonmetrics.SetActiveHTTPRelays(cl.activeRequests)
 
 	return cl.activeRequests
 }

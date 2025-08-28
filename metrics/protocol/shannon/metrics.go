@@ -67,6 +67,7 @@ func init() {
 	prometheus.MustRegister(websocketConnectionErrors)
 	prometheus.MustRegister(websocketMessagesTotal)
 	prometheus.MustRegister(websocketMessageErrors)
+	prometheus.MustRegister(activeWebsocketConnections)
 
 	// Sanctions metrics (shared across HTTP and WebSocket)
 	prometheus.MustRegister(sanctionsByDomain)
@@ -236,6 +237,23 @@ var (
 			Help:      "Total WebSocket message errors by service, endpoint domain, error type, and sanction type",
 		},
 		[]string{"service_id", "endpoint_domain", "error_type", "sanction_type"},
+	)
+
+	// activeWebsocketConnections tracks the current number of active WebSocket connections.
+	// This gauge metric shows the real-time WebSocket connection count for monitoring
+	// persistent connection load and identifying potential bottlenecks.
+	//
+	// Use to analyze:
+	//   - Current WebSocket connection counts
+	//   - Connection load patterns over time
+	//   - Capacity planning for persistent connections
+	//   - Identifying connection spikes and bottlenecks
+	activeWebsocketConnections = prometheus.NewGauge(
+		prometheus.GaugeOpts{
+			Subsystem: pathProcess,
+			Name:      websocketConnectionsActiveMetric,
+			Help:      "Current number of active Shannon WebSocket connections",
+		},
 	)
 
 	// sanctionsByDomain tracks sanctions applied by domain.
@@ -762,10 +780,18 @@ func processRelayMinerErrors(
 	}
 }
 
-// SetActiveRelays updates the gauge metric with the current number of active relays.
-// This should be called whenever the active relay count changes in the concurrency limiter.
-func SetActiveRelays(activeCount int64) {
-	activeRelays.Set(float64(activeCount))
+// SetActiveHTTPRelays updates the gauge metric with the current number of active HTTP relays.
+// This should be called whenever the active HTTP relay count changes in the concurrency limiter.
+func SetActiveHTTPRelays(activeCount int64) {
+	activeRelays.With(prometheus.Labels{
+		"request_type": "http",
+	}).Set(float64(activeCount))
+}
+
+// SetActiveWebsocketConnections updates the gauge metric with the current number of active WebSocket connections.
+// This should be called whenever the WebSocket connection count changes.
+func SetActiveWebsocketConnections(activeCount int64) {
+	activeWebsocketConnections.Set(float64(activeCount))
 }
 
 // recordWebsocketConnectionTotal tracks WebSocket connection counts.
