@@ -1,6 +1,6 @@
 ---
 sidebar_position: 1
-title: Quick Start Guide (<10 minutes)
+title: Getting Started (<10 minutes)
 description: Guide to get a PATH instance up and running.
 ---
 

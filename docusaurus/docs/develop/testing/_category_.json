@@ -1,0 +1,8 @@
+{
+  "label": "PATH Testing Guide",
+  "position": 3,
+  "link": {
+    "type": "generated-index",
+    "description": "Documentation to E2E and Load Testing PATH"
+  }
+}

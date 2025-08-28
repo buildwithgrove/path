@@ -13,31 +13,42 @@
 # For more information see the documentation at:
 # https://path.grove.city/develop/path/environment
 
-# Brings up local Tilt environment with remote helm charts
-.PHONY: path_up
-path_up: check_docker ## Brings up local Tilt development environment in Docker
-	@./local/scripts/localnet.sh up
-
-# Brings up local Tilt environment with local helm charts
-.PHONY: path_up_local_helm
-path_up_local_helm: check_docker ## Brings up local Tilt environment with local helm charts
-	@./local/scripts/localnet.sh up --use-local-helm
 
 .PHONY: check_docker
 # Internal helper: Check if Docker is installed locally
 check_docker:
 	@if ! command -v docker >/dev/null 2>&1; then \
-		echo "Docker is not installed. Please install Docker and try again."; \
+		echo "${RED}Docker is not installed. Please install Docker and try again.${RESET}"; \
 		exit 1; \
 	fi;
 	@if ! docker info >/dev/null 2>&1; then \
-		echo "Docker daemon is not running. Please start Docker and try again."; \
-		echo "You can start Docker by doing one of the following:"; \
+		echo "${RED}Docker daemon is not running. Please start Docker and try again.${RESET}"; \
+		echo "You can start Docker by doing ONE OF the following:"; \
 		echo "  - Opening Docker Desktop application"; \
-		echo "  - Running 'sudo systemctl start docker' on Linux"; \
-		echo "  - Running 'open /Applications/Docker.app' on macOS"; \
+		echo "  - Running ${CYAN}'sudo systemctl start docker' on Linux${RESET}"; \
+		echo "  - Running ${CYAN}'open /Applications/Docker.app' on macOS${RESET}"; \
 		exit 1; \
 	fi;
+
+.PHONY: check_path_up
+# Internal helper: Checks if PATH is running at localhost:3070
+check_path_up:
+	@if ! nc -z localhost 3070 2>/dev/null; then \
+		echo "########################################################################"; \
+		echo "ERROR: PATH is not running on port 3070"; \
+		echo "Please start it with:"; \
+		echo "  make path_up"; \
+		echo "########################################################################"; \
+		exit 1; \
+	fi
+
+.PHONY: path_up
+path_up: check_docker ## Brings up local Tilt development environment in Docker with remote helm charts
+	@./local/scripts/localnet.sh up
+
+.PHONY: path_up_local_helm
+path_up_local_helm: check_docker ## Brings up local Tilt development environment in Docker with local helm charts
+	@./local/scripts/localnet.sh up --use-local-helm
 
 .PHONY: path_down
 path_down: ## Tears down local Tilt development environment in Docker

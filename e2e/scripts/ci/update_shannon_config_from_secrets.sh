@@ -2,10 +2,10 @@
 set -e
 set -o nounset
 
-# CI-ONLY: Modifies e2e_load_test.config.tmpl.yaml for CI environments
+# CI-ONLY: Modifies e2e_load_test.config.default.yaml for CI environments
 # KEY FUNCTIONS:
 # • Sets Docker log configuration for CI
-# • Enables Docker logging to stdout  
+# • Enables Docker logging to stdout
 # • Captures Docker logs for CI debugging
 # WARNING: Never run locally
 # This script updates the Shannon E2E config file from environment variables.
@@ -18,6 +18,7 @@ cd "$(dirname "$0")/../../config" || exit 1
 update_shannon_config_from_env() {
     check_env_vars "SHANNON_GATEWAY_ADDRESS" "SHANNON_GATEWAY_PRIVATE_KEY" "SHANNON_OWNED_APPS_PRIVATE_KEYS"
 
+    # TODO_TECHDEBT: Consolidate this with PATH's .config.yaml
     local CONFIG_FILE="./.shannon.config.yaml"
     if [[ ! -f $CONFIG_FILE ]]; then
         echo "config file" $CONFIG_FILE "not found in" $PWD

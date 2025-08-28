@@ -1,6 +1,6 @@
 ---
-sidebar_position: 5
-title: Load Tests Quickstart
+sidebar_position: 2
+title: Load Tests Quickstart (< 10min)
 description: Load Tests for PATH
 ---
 
@@ -18,9 +18,9 @@ _tl;dr Fully featured Load Tests to verify PATH works correctly._
 
 ## Load Testing using Local PATH
 
-⚠️ **Prerequisites**: Complete the [Quick Start](1_quick_start.md) and [Shannon Cheat Sheet](2_cheatsheet_shannon.md) guides.
+⚠️ **Prerequisites**: Complete the [Getting Started](../path/1_getting_started.md) and [Shannon Cheat Sheet](../path/2_cheatsheet_pocket.md) guides ⚠️
 
-First, prepare the Shannon E2E test config file:
+First, prepare the Shannon test config file at `./e2e/config/.shannon.config.yaml` by running:
 
 ```bash
 make config_copy_path_local_config_shannon_e2e
@@ -53,6 +53,12 @@ If you're only testing your local PATH instance, the commands above are sufficie
 :::info 🌿 **Grove Employees**
 
 You can obtain the required **Portal Application ID** and **API Key** from the [Grove Portal App Credentials for PATH Load Testing on 1Password](https://start.1password.com/open/i?a=4PU7ZENUCRCRTNSQWQ7PWCV2RM&v=kudw25ob4zcynmzmv2gv4qpkuq&i=iznzvqegxbl4y73d5lppm4y6r4&h=buildwithgrove.1password.com).
+
+You can export like so to your shell:
+
+```bash
+op item get iznzvqegxbl4y73d5lppm4y6r4 --fields notesPlain --format json | jq -r '.value'
+```
 
 :::
 

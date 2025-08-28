@@ -1,12 +1,12 @@
 ---
-sidebar_position: 6
-title: Load Tests Deep Dive
+sidebar_position: 4
+title: Load Tests Deep Dive (20+ min)
 description: Deep dive into Load Tests for PATH
 ---
 
 :::tip Quickstart
 
-⚠️ Make sure to visit the [Load Tests Quickstart](5_load_tests_quickstart.md) to get started quickly.
+⚠️ Make sure to visit the [Load Tests Quickstart](2_load_tests_quickstart.md) to get started quickly.
 
 :::
 
@@ -36,16 +36,16 @@ description: Deep dive into Load Tests for PATH
 
 PATH load tests support two distinct modes of operation:
 
-| Mode             | Purpose                                          | How it Works                                                                                                                                              | Use Cases                                                                                   |
-| ---------------- | ------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
-| **Local PATH**   | Performance testing against local PATH instances | 1. Requires completed [Quick Start](1_quick_start.md) and [Shannon Cheat Sheet](2_cheatsheet_shannon.md) setup <br/> 2. Tests against local PATH instance | - Local development testing <br/> - Feature validation <br/> - Development iteration        |
-| **Grove Portal** | Performance testing against Grove Portal         | 1. Sends requests to Grove Portal gateway URL <br/> 2. Requires Grove Portal credentials or pre-configured files                                          | - Testing production gateway <br/> - Production performance validation <br/> - Benchmarking |
+| Mode             | Purpose                                          | How it Works                                                                                                                                                                      | Use Cases                                                                                   |
+| ---------------- | ------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| **Local PATH**   | Performance testing against local PATH instances | 1. Requires completed [Getting Started](../path/1_getting_started.md) and [Shannon Cheat Sheet](../path/2_cheatsheet_pocket.md) setup <br/> 2. Tests against local PATH instance | - Local development testing <br/> - Feature validation <br/> - Development iteration        |
+| **Grove Portal** | Performance testing against Grove Portal         | 1. Sends requests to Grove Portal gateway URL <br/> 2. Requires Grove Portal credentials or pre-configured files                                                                  | - Testing production gateway <br/> - Production performance validation <br/> - Benchmarking |
 
 ### Local PATH Mode
 
 For local PATH load testing, you need:
 
-1. **Completed Setup**: Follow the [Quick Start](1_quick_start.md) and [Shannon Cheat Sheet](2_cheatsheet_shannon.md) guides
+1. **Completed Setup**: Follow the [Getting Started](../path/1_getting_started.md) and [Shannon Cheat Sheet](../path/2_cheatsheet_pocket.md) guides
 2. **Local PATH Instance**: Your local PATH instance should be running and configured
 3. **Default Configuration**: The system automatically targets your local PATH instance
 
@@ -67,10 +67,10 @@ You will need one of the following:
 
 **Configuration files used:**
 
-| Configuration File                              | Local PATH | Grove Portal |             Default Available?              |
-| ----------------------------------------------- | :--------: | :----------: | :-----------------------------------------: |
-| `./e2e/config/.grove.e2e_load_test.config.yaml` |     ❌     |      ✅      |                     ❌                      |
-| `./e2e/config/.e2e_load_test.config.yaml`       |     ✅     |      ✅      | `e2e/config/e2e_load_test.config.tmpl.yaml` |
+| Configuration File                              | Local PATH | Grove Portal |               Default Available?               |
+| ----------------------------------------------- | :--------: | :----------: | :--------------------------------------------: |
+| `./e2e/config/.grove.e2e_load_test.config.yaml` |     ❌     |      ✅      |                       ❌                       |
+| `./e2e/config/.e2e_load_test.config.yaml`       |     ✅     |      ✅      | `e2e/config/e2e_load_test.config.default.yaml` |
 
 :::tip Populate Configs
 
@@ -104,7 +104,7 @@ Enable it by ensuring the following annotation is present at the top of your con
 
 :::tip
 
-To see the list of supported services for the tests, see the `test_cases` array in the [Load Test Config](https://github.com/buildwithgrove/path/blob/main/e2e/config/e2e_load_test.config.tmpl.yaml) file.
+To see the list of supported services for the tests, see the `test_cases` array in the [Load Test Config](https://github.com/buildwithgrove/path/blob/main/e2e/config/e2e_load_test.config.default.yaml) file.
 
 :::
 
