@@ -353,12 +353,10 @@ func buildWebsocketConnectionSuccessObservation(
 func buildWebsocketConnectionErrorObservation(
 	logger polylog.Logger,
 	endpoint endpoint,
-	err error,
+	errorType protocolobservations.ShannonEndpointErrorType,
 	errorDetails string,
+	sanctionType protocolobservations.ShannonSanctionType,
 ) *protocolobservations.ShannonWebsocketConnectionObservation {
-	// Error classification based on trusted error sources
-	endpointErrorType, recommendedSanctionType := classifyRelayError(logger, err)
-
 	return &protocolobservations.ShannonWebsocketConnectionObservation{
 		// Endpoint information
 		Supplier:           endpoint.Supplier(),
@@ -373,8 +371,8 @@ func buildWebsocketConnectionErrorObservation(
 		SessionEndHeight:   endpoint.Session().GetHeader().SessionEndBlockHeight,
 
 		// Error information
-		ErrorType:           &endpointErrorType,
+		ErrorType:           &errorType,
 		ErrorDetails:        &errorDetails,
-		RecommendedSanction: &recommendedSanctionType,
+		RecommendedSanction: &sanctionType,
 	}
 }

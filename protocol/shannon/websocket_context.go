@@ -341,6 +341,10 @@ func (wrc *websocketRequestContext) getWebsocketConnectionErrorObservation(
 	err error,
 	details string,
 ) *protocolobservations.Observations {
+	endpointErrorType, recommendedSanctionType := classifyRelayError(wrc.logger, err)
+
+	errorDetails := fmt.Sprintf("websocket connection error: %s: %v", details, err)
+
 	return &protocolobservations.Observations{
 		Shannon: &protocolobservations.ShannonObservationsList{
 			Observations: []*protocolobservations.ShannonRequestObservations{
@@ -354,8 +358,9 @@ func (wrc *websocketRequestContext) getWebsocketConnectionErrorObservation(
 						WebsocketConnectionObservation: buildWebsocketConnectionErrorObservation(
 							wrc.logger,
 							wrc.selectedEndpoint,
-							err,
-							details,
+							endpointErrorType,
+							errorDetails,
+							recommendedSanctionType,
 						),
 					},
 				},
