@@ -1,4 +1,4 @@
-package shannon
+package gateway
 
 import (
 	"bytes"
@@ -21,14 +21,14 @@ const concurrencyLimiterMax = 1_000
 // Maximum length of an HTTP response's body.
 const maxResponseSize = 100 * 1024 * 1024 // 100MB limit
 
-// httpClientWithDebugMetrics provides HTTP client functionality with embedded tracking of debug metrics.
+// HTTPClientWithDebugMetrics provides HTTP client functionality with embedded tracking of debug metrics.
 // It includes things like:
 // - Built-in request debugging
 // - Metrics collection
 // - Detailed logging
 // - Timeout debugging
 // - Connection issue visibility
-type httpClientWithDebugMetrics struct {
+type HTTPClientWithDebugMetrics struct {
 	httpClient *http.Client
 	limiter    *concurrencyLimiter
 	bufferPool *bufferPool
@@ -75,11 +75,11 @@ type httpRequestMetrics struct {
 	error      error
 }
 
-// newDefaultHTTPClientWithDebugMetrics creates a new HTTP client with:
+// NewDefaultHTTPClientWithDebugMetrics creates a new HTTP client with:
 // - Transport settings configured for high-concurrency usage
 // - Built in request debugging capabilities and metrics tracking
 // TODO_TECHDEBT(@adshmh): Make HTTP client settings configurable
-func newDefaultHTTPClientWithDebugMetrics() *httpClientWithDebugMetrics {
+func NewDefaultHTTPClientWithDebugMetrics() *HTTPClientWithDebugMetrics {
 	// Configure transport with optimized settings for high-concurrency usage
 	transport := &http.Transport{
 		DialContext: (&net.Dialer{
@@ -114,7 +114,7 @@ func newDefaultHTTPClientWithDebugMetrics() *httpClientWithDebugMetrics {
 		Timeout:   80 * time.Second, // Large fallback timeout (80 seconds)
 	}
 
-	return &httpClientWithDebugMetrics{
+	return &HTTPClientWithDebugMetrics{
 		httpClient: httpClient,
 		limiter:    newConcurrencyLimiter(concurrencyLimiterMax),
 		bufferPool: NewBufferPool(),
@@ -126,7 +126,7 @@ func newDefaultHTTPClientWithDebugMetrics() *httpClientWithDebugMetrics {
 // Logs detailed metrics and debugging information on failure for debugging.
 //
 // Returns: response body, HTTP status code, error
-func (h *httpClientWithDebugMetrics) SendHTTPRelay(
+func (h *HTTPClientWithDebugMetrics) SendHTTPRelay(
 	ctx context.Context,
 	logger polylog.Logger,
 	endpointURL string,
@@ -194,7 +194,7 @@ func (h *httpClientWithDebugMetrics) SendHTTPRelay(
 
 // setupRequestDebugging initializes request metrics, HTTP debugging context, and atomic counters.
 // Returns the debug context and a cleanup function that accepts an error parameter.
-func (h *httpClientWithDebugMetrics) setupRequestDebugging(
+func (h *HTTPClientWithDebugMetrics) setupRequestDebugging(
 	ctx context.Context,
 	logger polylog.Logger,
 	endpointURL string,
@@ -236,7 +236,7 @@ func (h *httpClientWithDebugMetrics) setupRequestDebugging(
 }
 
 // categorizeError categorizes HTTP client errors and updates counters for monitoring
-func (h *httpClientWithDebugMetrics) categorizeError(ctx context.Context, err error) error {
+func (h *HTTPClientWithDebugMetrics) categorizeError(ctx context.Context, err error) error {
 	if ctx.Err() == context.DeadlineExceeded {
 		h.timeoutErrors.Add(1)
 		return fmt.Errorf("request timeout: %w", err)
@@ -247,7 +247,7 @@ func (h *httpClientWithDebugMetrics) categorizeError(ctx context.Context, err er
 }
 
 // readAndValidateResponse reads the response body and validates the HTTP status code
-func (h *httpClientWithDebugMetrics) readAndValidateResponse(resp *http.Response) ([]byte, error) {
+func (h *HTTPClientWithDebugMetrics) readAndValidateResponse(resp *http.Response) ([]byte, error) {
 	// Read response body with size protection using buffer pool
 	responseBody, err := h.bufferPool.readWithBuffer(resp.Body, maxResponseSize)
 	if err != nil {
@@ -256,7 +256,7 @@ func (h *httpClientWithDebugMetrics) readAndValidateResponse(resp *http.Response
 
 	// Validate HTTP status code
 	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices {
-		return nil, fmt.Errorf("%w: %d", errRelayEndpointHTTPError, resp.StatusCode)
+		return nil, fmt.Errorf("%w: %d", ErrRelayEndpointHTTPError, resp.StatusCode)
 	}
 
 	return responseBody, nil
@@ -351,7 +351,7 @@ func createDetailedHTTPTrace(metrics *httpRequestMetrics) *httptrace.ClientTrace
 
 // logRequestMetrics logs comprehensive request metrics for debugging failed requests.
 // Only called when a request fails to avoid verbose logging on successful requests.
-func (h *httpClientWithDebugMetrics) logRequestMetrics(logger polylog.Logger, metrics httpRequestMetrics) {
+func (h *HTTPClientWithDebugMetrics) logRequestMetrics(logger polylog.Logger, metrics httpRequestMetrics) {
 	// Calculate derived timings for easier analysis
 	connectionEstablishmentTime := metrics.dnsLookupTime + metrics.connectTime + metrics.tlsTime
 	requestTransmissionTime := metrics.wroteHeadersTime + metrics.wroteRequestTime

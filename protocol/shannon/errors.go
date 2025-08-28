@@ -5,6 +5,7 @@ import (
 	"errors"
 	"strings"
 
+	"github.com/buildwithgrove/path/gateway"
 	protocolobservations "github.com/buildwithgrove/path/observation/protocol"
 )
 
@@ -26,8 +27,6 @@ var (
 
 	// HTTP relay request failed - wraps net/http package errors
 	errSendHTTPRelay = errors.New("HTTP relay request failed")
-	// Endpoint's backend service returned a non 2xx HTTP status code.
-	errRelayEndpointHTTPError = errors.New("endpoint returned non 2xx HTTP status code")
 
 	// ** Centralized gateway mode errors **
 
@@ -106,7 +105,7 @@ func extractErrFromRelayError(err error) error {
 
 	// Endpoint's backend service returned a non 2xx HTTP status code.
 	if strings.Contains(err.Error(), "non 2xx HTTP status code") {
-		return errRelayEndpointHTTPError
+		return gateway.ErrRelayEndpointHTTPError
 	}
 	// context canceled manually
 	if strings.Contains(err.Error(), "context canceled") {

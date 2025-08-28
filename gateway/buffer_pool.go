@@ -1,4 +1,4 @@
-package shannon
+package gateway
 
 import (
 	"bytes"

@@ -4,10 +4,17 @@ import (
 	"errors"
 )
 
+// Publicly exposed errors
 var (
 	// no service ID was provided by the user.
 	ErrGatewayNoServiceIDProvided = errors.New("no service ID provided")
 
+	// Endpoint's backend service returned a non 2xx HTTP status code.
+	ErrRelayEndpointHTTPError = errors.New("endpoint returned non 2xx HTTP status code")
+)
+
+// Internal errors
+var (
 	// QoS instance rejected the request.
 	// e.g. HTTP payload could not be unmarshaled into a JSONRPC request.
 	errGatewayRejectedByQoS = errors.New("QoS instance rejected the request")

@@ -55,7 +55,7 @@ type Protocol struct {
 	sanctionedEndpointsStore *sanctionedEndpointsStore
 
 	// HTTP client used for sending relay requests to endpoints while also capturing & publishing various debug metrics.
-	httpClient *httpClientWithDebugMetrics
+	httpClient *gateway.HTTPClientWithDebugMetrics
 
 	// serviceFallbackMap contains the service fallback config per service.
 	//
@@ -109,7 +109,7 @@ func NewProtocol(
 		ownedApps: ownedApps,
 
 		// HTTP client with embedded tracking of debug metrics.
-		httpClient: newDefaultHTTPClientWithDebugMetrics(),
+		httpClient: gateway.NewDefaultHTTPClientWithDebugMetrics(),
 
 		// serviceFallbacks contains the fallback information for each service.
 		serviceFallbackMap: config.getServiceFallbackMap(),

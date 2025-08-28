@@ -59,7 +59,7 @@ func init() {
 	// HTTP relay metrics
 	prometheus.MustRegister(relaysTotal)
 	prometheus.MustRegister(relaysErrorsTotal)
-	prometheus.MustRegister(relaysActiveRequestsMetric)
+	prometheus.MustRegister(activeRelays)
 
 	// WebSocket metrics
 	prometheus.MustRegister(websocketConnectionsTotal)

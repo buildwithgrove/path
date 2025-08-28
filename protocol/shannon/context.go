@@ -89,7 +89,7 @@ type requestContext struct {
 	currentRelayMinerError *protocolobservations.ShannonRelayMinerError
 
 	// HTTP client used for sending relay requests to endpoints while also capturing various debug metrics
-	httpClient *httpClientWithDebugMetrics
+	httpClient *gateway.HTTPClientWithDebugMetrics
 
 	// fallbackEndpoints is used to retrieve a fallback endpoint by an endpoint address.
 	fallbackEndpoints map[protocol.EndpointAddr]endpoint
