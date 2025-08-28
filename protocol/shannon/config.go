@@ -11,6 +11,7 @@ import (
 
 	sharedtypes "github.com/pokt-network/poktroll/x/shared/types"
 
+	"github.com/buildwithgrove/path/network/grpc"
 	"github.com/buildwithgrove/path/protocol"
 )
 
@@ -41,8 +42,8 @@ var (
 
 type (
 	FullNodeConfig struct {
-		RpcURL     string     `yaml:"rpc_url"`
-		GRPCConfig GRPCConfig `yaml:"grpc_config"`
+		RpcURL     string          `yaml:"rpc_url"`
+		GRPCConfig grpc.GRPCConfig `yaml:"grpc_config"`
 
 		// LazyMode, if set to true, will disable all caching of onchain data. For
 		// example, this disables caching of apps and sessions.
@@ -54,17 +55,6 @@ type (
 		// SessionRolloverBlocks is a temporary fix to handle session rollover issues.
 		// TODO_TECHDEBT(@commoddity): Should be removed when the rollover issue is solved at the protocol level.
 		SessionRolloverBlocks int64 `yaml:"session_rollover_blocks"`
-	}
-
-	// TODO_TECHDEBT(@adshmh): Move this and related helpers into a new `grpc` package.
-	GRPCConfig struct {
-		HostPort          string        `yaml:"host_port"`
-		Insecure          bool          `yaml:"insecure"`
-		BackoffBaseDelay  time.Duration `yaml:"backoff_base_delay"`
-		BackoffMaxDelay   time.Duration `yaml:"backoff_max_delay"`
-		MinConnectTimeout time.Duration `yaml:"min_connect_timeout"`
-		KeepAliveTime     time.Duration `yaml:"keep_alive_time"`
-		KeepAliveTimeout  time.Duration `yaml:"keep_alive_timeout"`
 	}
 
 	CacheConfig struct {
@@ -248,38 +238,6 @@ func (gc GatewayConfig) getServiceFallbackMap() map[protocol.ServiceID]serviceFa
 	return configs
 }
 
-// TODO_TECHDEBT(@adshmh): add a new `grpc` package to handle all GRPC related functionality and configuration.
-// The config package is not a good fit for this, because it is designed to build the configuration structs for other packages,
-// and so it has dependencies on all other packages, including `relayer/shannon`. Therefore, no packages except `cmd` can have a dependency
-// on the `config` package.
-// TODO_TECHDEBT: Make all of these configurable
-const (
-	defaultBackoffBaseDelay  = 1 * time.Second
-	defaultBackoffMaxDelay   = 60 * time.Second
-	defaultMinConnectTimeout = 10 * time.Second
-	defaultKeepAliveTime     = 30 * time.Second
-	defaultKeepAliveTimeout  = 30 * time.Second
-)
-
-func (c *GRPCConfig) hydrateDefaults() GRPCConfig {
-	if c.BackoffBaseDelay == 0 {
-		c.BackoffBaseDelay = defaultBackoffBaseDelay
-	}
-	if c.BackoffMaxDelay == 0 {
-		c.BackoffMaxDelay = defaultBackoffMaxDelay
-	}
-	if c.MinConnectTimeout == 0 {
-		c.MinConnectTimeout = defaultMinConnectTimeout
-	}
-	if c.KeepAliveTime == 0 {
-		c.KeepAliveTime = defaultKeepAliveTime
-	}
-	if c.KeepAliveTimeout == 0 {
-		c.KeepAliveTimeout = defaultKeepAliveTimeout
-	}
-	return *c
-}
-
 // Session TTL should match the protocol's session length.
 // TODO_NEXT(@commoddity): Session refresh handling should be significantly reworked as part of the next changes following PATH PR #297.
 // The proposed change is to align session refreshes with actual session expiry time,
@@ -333,7 +291,7 @@ func isValidHostPort(hostPort string) bool {
 
 // HydrateDefaults applies default values to FullNodeConfig
 func (fnc *FullNodeConfig) HydrateDefaults() {
-	fnc.GRPCConfig = fnc.GRPCConfig.hydrateDefaults()
+	fnc.GRPCConfig = fnc.GRPCConfig.HydrateDefaults()
 	fnc.CacheConfig = fnc.CacheConfig.hydrateDefaults()
 	if fnc.SessionRolloverBlocks == 0 {
 		fnc.SessionRolloverBlocks = defaultSessionRolloverBlocks
