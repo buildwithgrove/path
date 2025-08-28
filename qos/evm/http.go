@@ -3,7 +3,7 @@ package evm
 import (
 	"net/http"
 
-	"github.com/buildwithgrove/path/gateway"
+	pathhttp "github.com/buildwithgrove/path/network/http"
 )
 
 const (
@@ -28,7 +28,7 @@ var httpHeadersApplicationJSON = map[string]string{
 
 // httpResponse is used by the RequestContext to provide
 // an EVM-specific implementation of gateway package's HTTPResponse.
-var _ gateway.HTTPResponse = httpResponse{}
+var _ pathhttp.HTTPResponse = httpResponse{}
 
 // httpResponse encapsulates an HTTP response to be returned to the client
 // including payload data and status code.

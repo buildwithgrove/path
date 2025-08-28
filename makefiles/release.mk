@@ -166,5 +166,5 @@ build_ghcr_image_current_branch: ## Trigger the main-build workflow using the cu
 	@echo "Triggering main-build workflow for current branch..."
 	@BRANCH=$$(git rev-parse --abbrev-ref HEAD) && \
 	gh workflow run main-build.yml --ref $$BRANCH
-	@echo "Workflow triggered for branch: $$(git rev-parse --abbrev-ref HEAD)"
-	@echo "Check the workflow status at: https://github.com/$(shell git config --get remote.origin.url | sed 's/.*github.com[:/]\([^/]*\/[^.]*\).*/\1/')/actions/workflows/main-build.yml"
+	@echo "Workflow triggered for branch: ${CYAN} $$(git rev-parse --abbrev-ref HEAD)${RESET}"
+	@echo "Check the workflow status at: ${BLUE}https://github.com/$(shell git config --get remote.origin.url | sed 's/.*github.com[:/]\([^/]*\/[^.]*\).*/\1/')/actions/workflows/main-build.yml${RESET}"
