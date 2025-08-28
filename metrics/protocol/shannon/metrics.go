@@ -31,6 +31,7 @@ const (
 	// WebSocket connection metrics
 	websocketConnectionsTotalMetric = "shannon_websocket_connections_total"
 	websocketConnectionErrorsMetric = "shannon_websocket_connection_errors_total"
+	websocketConnectionsActiveMetric = "shannon_websocket_connections_active"
 
 	// WebSocket message metrics
 	websocketMessagesTotalMetric = "shannon_websocket_messages_total"
@@ -138,12 +139,13 @@ var (
 	//   - Request load patterns over time
 	//   - Capacity planning and resource utilization
 	//   - Identifying request spikes and bottlenecks
-	activeRelays = prometheus.NewGauge(
+	activeRelays = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Subsystem: pathProcess,
 			Name:      relaysActiveRequestsMetric,
-			Help:      "Current number of active Shannon HTTP requests being processed",
+			Help:      "Current number of active Shannon requests being processed",
 		},
+		[]string{"request_type"},
 	)
 
 	// websocketConnectionsTotal tracks the total WebSocket connection attempts processed.
