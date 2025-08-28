@@ -293,7 +293,6 @@ func (p *Protocol) BuildWebsocketRequestContextForEndpoint(
 			selectedEndpoint:   selectedEndpoint,
 			serviceID:          serviceID,
 			relayRequestSigner: permittedSigner,
-			httpClient:         p.httpClient,
 			fallbackEndpoints:  fallbackEndpoints,
 		},
 		// If successful, return an empty observation list.

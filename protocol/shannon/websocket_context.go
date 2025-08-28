@@ -50,9 +50,6 @@ type websocketRequestContext struct {
 	//   - Tracks any errors encountered during request processing.
 	requestErrorObservation *protocolobservations.ShannonRequestError
 
-	// HTTP client used for sending relay requests to endpoints while also capturing various debug metrics
-	httpClient *httpClientWithDebugMetrics
-
 	// fallbackEndpoints is used to retrieve a fallback endpoint by an endpoint address.
 	fallbackEndpoints map[protocol.EndpointAddr]endpoint
 }
