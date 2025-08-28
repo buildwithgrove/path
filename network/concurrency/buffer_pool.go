@@ -1,3 +1,23 @@
+// Buffer Pool for High-Concurrency HTTP Processing
+// ================================================
+//
+// This buffer pool manages reusable byte buffers to optimize memory allocation
+// for high-throughput HTTP response processing. When handling thousands of
+// concurrent HTTP requests with large response bodies (blockchain data often
+// exceeds 1MB), naive allocation patterns create significant performance issues.
+//
+// Memory Allocation Patterns:
+//   - Without pooling: Each request allocates new []byte buffers
+//   - With pooling: Buffers are reused across requests via sync.Pool
+//
+// Benefits:
+//   - Reduces garbage collection pressure
+//   - Provides predictable memory usage under load
+//   - Maintains consistent performance during traffic spikes
+//   - Size limits prevent memory bloat
+//
+// The pool automatically grows buffer capacity as needed while preventing
+// oversized buffers from being returned to avoid memory waste.
 package concurrency
 
 import (

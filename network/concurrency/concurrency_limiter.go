@@ -1,3 +1,26 @@
+// Concurrency Limiter for Resource Management
+// ===========================================
+//
+// This concurrency limiter implements a semaphore pattern to bound the number
+// of concurrent HTTP operations, preventing resource exhaustion under high load.
+//
+// When processing thousands of simultaneous HTTP requests, unlimited concurrency
+// can overwhelm system resources (memory, file descriptors, network connections).
+//
+// Resource Protection Mechanisms:
+//   - Semaphore-based admission control using buffered channels
+//   - Context-aware blocking with cancellation support
+//   - Real-time tracking of active request counts
+//   - Graceful degradation when limits are exceeded
+//
+// Operational Characteristics:
+//   - Blocks new requests when limit is reached
+//   - Respects context cancellation for timeout handling
+//   - Integrates with metrics for observability
+//   - Thread-safe for concurrent access
+//
+// The limiter prevents cascading failures by ensuring system resources remain
+// available even during traffic spikes or slow downstream services.
 package concurrency
 
 import (
@@ -10,7 +33,7 @@ import (
 
 // TODO_IMPROVE: Make this configurable via settings
 const (
-	defaultMaxConcurrentRequests = 1000000
+	defaultMaxConcurrentRequests = 1_000_000
 )
 
 // ConcurrencyLimiter bounds concurrent operations via semaphore pattern.
