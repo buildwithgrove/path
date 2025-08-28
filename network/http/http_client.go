@@ -141,6 +141,7 @@ func (h *HTTPClientWithDebugMetrics) SendHTTPRelay(
 	headers map[string]string,
 ) ([]byte, int, error) {
 	// Acquire concurrency slot before proceeding
+	// TODO: use a predefined error, so we can build a proper observation indicating request failure due to reaching max concurrency.
 	if !h.limiter.Acquire(ctx) {
 		return nil, 0, fmt.Errorf("failed to acquire concurrency slot: context canceled")
 	}

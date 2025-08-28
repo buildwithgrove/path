@@ -782,6 +782,7 @@ func processRelayMinerErrors(
 
 // SetActiveHTTPRelays updates the gauge metric with the current number of active HTTP relays.
 // This should be called whenever the active HTTP relay count changes in the concurrency limiter.
+// TODO_TECHDEBT: the metrics package should use the passed observation to report metrics: it should not expose any methods for external usage (other than PublishMetrics)
 func SetActiveHTTPRelays(activeCount int64) {
 	activeRelays.With(prometheus.Labels{
 		"request_type": "http",
