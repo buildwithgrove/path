@@ -1,7 +1,6 @@
 package solana
 
 import (
-	"encoding/json"
 	"time"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
@@ -34,16 +33,20 @@ const (
 func responseUnmarshallerGeneric(
 	logger polylog.Logger,
 	jsonrpcReq jsonrpc.Request,
-	data []byte,
+	jsonrpcResp jsonrpc.Response,
 ) response {
-	var response jsonrpc.Response
-	if err := json.Unmarshal(data, &response); err != nil {
-		return getGenericJSONRPCErrResponse(logger, jsonrpcReq.ID, data, err)
+	// Log a debug entry if the JSONRPC Response indicates an error.
+	if jsonrpcResp.Error != nil {
+		logger.With(
+			"jsonrpc_request_method", jsonrpcReq.Method,
+			"jsonrpc_response_error_code", jsonrpcResp.Error.Code,
+			"jsonrpc_response_error_message", jsonrpcResp.Error.Message,
+		).Info().Msg("Received JSONRPC error response from endpoint.")
 	}
 
 	return responseGeneric{
 		Logger:          logger,
-		jsonrpcResponse: response,
+		jsonrpcResponse: jsonrpcResp,
 	}
 }
 

@@ -9,24 +9,23 @@
 debug_relayminer_supplier_info_msg:
 	@echo "#######################################################################################################################################"
 	@echo "INFO: If a request did not succeed, look into debugging the Anvil supplier by reviewing:"
-	@echo "https://www.notion.so/buildwithgrove/PATH-Shannon-Beta-Critical-Relay-Miner-Infrastructure-for-PATH-Supplier-Anvil-E2E-17da36edfff680da98f2ff01705be00b"
+	@echo "${CYAN}https://www.notion.so/buildwithgrove/PATH-Shannon-Beta-Critical-Relay-Miner-Infrastructure-for-PATH-Supplier-Anvil-E2E-17da36edfff680da98f2ff01705be00b${RESET}"
 	@echo "########################################################################################################################################"
 	@echo ""
 
 .PHONY: debug_view_results_links
 # Internal helper: Displays links to view results in local dashboards
 debug_view_results_links:
-	@echo "##########################################################################################################"
-	@echo "####   VIEW RESULTS IN LOCAL DASHBOARDS   ####"
+	@echo "##############################################"
+	@echo "####   ${BLUE}VIEW RESULTS IN LOCAL DASHBOARDS${RESET}   ####"
+	@echo "##############################################"
 	@echo ""
-	@echo "1. Path Service Requests:"
-	@echo "   http://localhost:3003/d/relays/path-service-requests?orgId=1&from=now-15m&to=now&timezone=browser"
+	@echo "1. Path Service Requests: ${CYAN}http://localhost:3003/d/relays/path-service-requests?orgId=1&from=now-15m&to=now&timezone=browser${RESET}"
 	@echo ""
-	@echo "2. Path Gateway Metrics:"
-	@echo "   http://localhost:3003/d/gateway/path-path-gateway?orgId=1&from=now-1h&to=now&timezone=browser&var-path=path-metrics&refresh=5s"
+	@echo "2. Path Gateway Metrics: ${CYAN}http://localhost:3003/d/gateway/path-path-gateway?orgId=1&from=now-1h&to=now&timezone=browser&var-path=path-metrics&refresh=5s${RESET}"
 	@echo ""
-	@echo "Login with: admin / admin (for now)"
-	@echo "##########################################################################################################"
+	@echo "${BOLD}Login with: admin / admin (for now)${RESET}"
+	@echo "##############################################"
 	@echo ""
 
 .PHONY: check_path_up_binary
@@ -181,3 +180,4 @@ test_request__envoy_relay_util__eth: check_path_up_envoy check_relay_util debug_
 test_disqualified_endpoints__envoy: check_path_up_envoy ## Get list of currently disqualified eth endpoints with reasons
 	curl http://localhost:3070/disqualified_endpoints \
 		-H "Target-Service-Id: eth"
+		-d '{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }'
