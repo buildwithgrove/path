@@ -47,7 +47,8 @@ func (NoOpQoS) ApplyObservations(_ *qosobservations.Observations) error {
 }
 
 // CheckWebsocketConnection returns true if the endpoint supports WebSocket connections.
-func (NoOpQoS) CheckWebsocketConnection(_ protocol.EndpointAddr) bool {
+// NoOp QoS does not support WebSocket connections.
+func (NoOpQoS) CheckWebsocketConnection() bool {
 	return false
 }
 

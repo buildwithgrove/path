@@ -207,7 +207,7 @@ func (eph *EndpointHydrator) runEndpointChecks(
 
 	// Check if WebSocket connection checks should be performed for this endpoint
 	// Run WebSocket checks in parallel to avoid blocking HTTP checks
-	if serviceQoS.CheckWebsocketConnection(endpointAddr) {
+	if serviceQoS.CheckWebsocketConnection() {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()

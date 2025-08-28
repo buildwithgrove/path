@@ -23,9 +23,9 @@ const (
 // using synthetic service requests.
 var _ gateway.QoSEndpointCheckGenerator = &EndpointStore{}
 
-// TODO_IN_THIS_PR(@commoddity): allow configuring per-service whether to run WebSocket connection checks.
+// TODO_TECHDEBT(@commoddity): Update Solana QoS to support WebSocket connection checks.
 // CheckWebsocketConnection returns true if the endpoint supports WebSocket connections.
-func (es *EndpointStore) CheckWebsocketConnection(endpointAddr protocol.EndpointAddr) bool {
+func (es *EndpointStore) CheckWebsocketConnection() bool {
 	return false
 }
 

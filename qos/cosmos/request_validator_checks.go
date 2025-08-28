@@ -18,10 +18,10 @@ import (
 // It generates requests for both JSONRPC and REST endpoints.
 var _ gateway.QoSEndpointCheckGenerator = &requestValidator{}
 
-// TODO_IN_THIS_PR(@commoddity): allow configuring per-service whether to run WebSocket connection checks.
 // CheckWebsocketConnection returns true if the endpoint supports WebSocket connections.
-func (rv *requestValidator) CheckWebsocketConnection(endpointAddr protocol.EndpointAddr) bool {
-	return true
+func (rv *requestValidator) CheckWebsocketConnection() bool {
+	_, supportsWebsockets := rv.serviceState.serviceQoSConfig.getSupportedAPIs()[sharedtypes.RPCType_WEBSOCKET]
+	return supportsWebsockets
 }
 
 // GetRequiredQualityChecks returns the list of quality checks required for an endpoint.
