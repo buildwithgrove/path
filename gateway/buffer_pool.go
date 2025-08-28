@@ -11,14 +11,14 @@ const (
 	// Start with 256KB buffers - can grow as needed
 	DefaultInitialBufferSize = 256 * 1024
 
-	// TODO_CONSIDERATION: Consider making this configurable
+	// TODO_IMPROVE: Make this configurable via YAML settings
 	// DefaultMaxBufferSize is the maximum size of the buffer pool.
 	// Set the max buffer size to 4MB to avoid memory bloat.
 	DefaultMaxBufferSize = 4 * 1024 * 1024
 )
 
-// bufferPool manages a pool of reusable byte buffers to reduce GC pressure.
-// Buffers are sized appropriately for typical HTTP response bodies.
+// bufferPool manages reusable byte buffers to reduce GC pressure.
+// Uses sync.Pool for efficient buffer recycling with size limits.
 type bufferPool struct {
 	pool          sync.Pool
 	maxReaderSize int64
@@ -38,14 +38,14 @@ func NewBufferPool(maxReaderSize int64) *bufferPool {
 // getBuffer retrieves a buffer from the pool.
 func (bp *bufferPool) getBuffer() *bytes.Buffer {
 	buf := bp.pool.Get().(*bytes.Buffer)
-	buf.Reset() // Ensure buffer is clean
+	buf.Reset() // Always reset to ensure clean state
 	return buf
 }
 
 // putBuffer returns a buffer to the pool.
 // Buffers larger than maxBufferSize are not returned to avoid memory bloat.
 func (bp *bufferPool) putBuffer(buf *bytes.Buffer) {
-	// Don't pool huge buffers to avoid memory bloat
+	// Skip pooling oversized buffers to prevent memory bloat
 	if buf.Cap() > DefaultMaxBufferSize {
 		return
 	}
@@ -63,7 +63,7 @@ func (bp *bufferPool) readWithBuffer(r io.Reader) ([]byte, error) {
 		return nil, err
 	}
 
-	// Make a copy of the bytes to return
+	// Return independent copy to avoid data races
 	result := make([]byte, buf.Len())
 	copy(result, buf.Bytes())
 	return result, nil

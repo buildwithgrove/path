@@ -22,15 +22,15 @@ func TestNewConcurrencyLimiter(t *testing.T) {
 	t.Run("with zero limit uses default", func(t *testing.T) {
 		cl := NewConcurrencyLimiter(0)
 		assert.NotNil(t, cl)
-		assert.Equal(t, maxConcurrentStuff, cl.maxConcurrent)
-		assert.Equal(t, maxConcurrentStuff, cap(cl.semaphore))
+		assert.Equal(t, defaultMaxConcurrentRequests, cl.maxConcurrent)
+		assert.Equal(t, defaultMaxConcurrentRequests, cap(cl.semaphore))
 	})
 
 	t.Run("with negative limit uses default", func(t *testing.T) {
 		cl := NewConcurrencyLimiter(-5)
 		assert.NotNil(t, cl)
-		assert.Equal(t, maxConcurrentStuff, cl.maxConcurrent)
-		assert.Equal(t, maxConcurrentStuff, cap(cl.semaphore))
+		assert.Equal(t, defaultMaxConcurrentRequests, cl.maxConcurrent)
+		assert.Equal(t, defaultMaxConcurrentRequests, cap(cl.semaphore))
 	})
 }
 

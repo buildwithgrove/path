@@ -102,7 +102,7 @@ func NewDefaultHTTPClientWithDebugMetrics() *HTTPClientWithDebugMetrics {
 		ResponseHeaderTimeout: 70 * time.Second, // Conservative header timeout to allow for server processing time
 
 		// Performance optimizations
-		DisableKeepAlive:   false, // Enable connection reuse to reduce connection overhead
+		DisableKeepAlives:  false, // Enable connection reuse to reduce connection overhead
 		DisableCompression: false, // Enable gzip compression to reduce bandwidth
 		ForceAttemptHTTP2:  true,  // Prefer HTTP/2 for connection multiplexing benefits
 

@@ -14,7 +14,7 @@ import (
 func TestNewBufferPool(t *testing.T) {
 	bp := NewBufferPool(DefaultMaxBufferSize)
 	assert.NotNil(t, bp)
-	assert.NotNil(t, bp.pool)
+	assert.Equal(t, int64(DefaultMaxBufferSize), bp.maxReaderSize)
 }
 
 func TestBufferPoolGetBuffer(t *testing.T) {
@@ -104,8 +104,9 @@ func TestBufferPoolReadWithBuffer(t *testing.T) {
 		testData := "This is a longer string that will be truncated"
 		reader := strings.NewReader(testData)
 		maxSize := int64(10)
+		bpLimited := NewBufferPool(maxSize)
 
-		data, err := bp.readWithBuffer(reader)
+		data, err := bpLimited.readWithBuffer(reader)
 		require.NoError(t, err)
 		assert.Equal(t, testData[:maxSize], string(data))
 		assert.Equal(t, int(maxSize), len(data))

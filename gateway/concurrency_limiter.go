@@ -8,12 +8,13 @@ import (
 	shannonmetrics "github.com/buildwithgrove/path/metrics/protocol/shannon"
 )
 
+// TODO_IMPROVE: Make this configurable via settings
 const (
-	maxConcurrentStuff = 1000000
+	defaultMaxConcurrentRequests = 1000000
 )
 
-// concurrencyLimiter provides bounded concurrency control for HTTP requests.
-// It uses a weighted semaphore pattern to limit the number of concurrent operations.
+// concurrencyLimiter bounds concurrent operations via semaphore pattern.
+// Prevents resource exhaustion and tracks active request counts.
 type concurrencyLimiter struct {
 	semaphore      chan struct{}
 	maxConcurrent  int
@@ -24,7 +25,7 @@ type concurrencyLimiter struct {
 // NewConcurrencyLimiter creates a limiter that bounds concurrent operations.
 func NewConcurrencyLimiter(maxConcurrent int) *concurrencyLimiter {
 	if maxConcurrent <= 0 {
-		maxConcurrent = maxConcurrentStuff // Default reasonable limit
+		maxConcurrent = defaultMaxConcurrentRequests // Default reasonable limit
 	}
 
 	return &concurrencyLimiter{
@@ -40,7 +41,7 @@ func (cl *concurrencyLimiter) acquire(ctx context.Context) bool {
 	case cl.semaphore <- struct{}{}:
 		cl.mu.Lock()
 		cl.activeRequests++
-		// Update the gauge metric immediately when active request count changes
+		// Track active relays for observability
 		shannonmetrics.SetActiveRelays(cl.activeRequests)
 		cl.mu.Unlock()
 		return true
@@ -62,11 +63,11 @@ func (cl *concurrencyLimiter) release() {
 	case <-cl.semaphore:
 		cl.mu.Lock()
 		cl.activeRequests--
-		// Update the gauge metric immediately when active request count changes
+		// Track active relays for observability
 		shannonmetrics.SetActiveRelays(cl.activeRequests)
 		cl.mu.Unlock()
 	default:
-		// Should never happen if acquire/release are properly paired
+		// TODO_TECHDEBT: Log acquire/release mismatch for debugging
 	}
 }
 
@@ -75,7 +76,7 @@ func (cl *concurrencyLimiter) getActiveRequests() int64 {
 	cl.mu.RLock()
 	defer cl.mu.RUnlock()
 
-	// Update the gauge metric to track current active requests
+	// Refresh metric with current count
 	shannonmetrics.SetActiveRelays(cl.activeRequests)
 
 	return cl.activeRequests
