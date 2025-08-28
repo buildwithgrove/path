@@ -118,12 +118,12 @@ func (es *EndpointStore) filterValidEndpoints(allAvailableEndpoints protocol.End
 
 		endpoint, found := es.endpoints[availableEndpointAddr]
 		if !found {
-			logger.Warn().Msgf("❓ Skipping endpoint because it was not found in PATH's endpoint store: %s", availableEndpointAddr)
+			logger.Warn().Msgf("⚠️ SKIPPING endpoint %s because it was not found in PATH's endpoint store.", availableEndpointAddr)
 			continue
 		}
 
 		if err := es.serviceState.ValidateEndpoint(endpoint); err != nil {
-			logger.Error().Err(err).Msgf("❌ Skipping endpoint because it failed validation: %s", availableEndpointAddr)
+			logger.Info().Err(err).Msgf("❕ SKIPPING endpoint '%s' with invalid status", availableEndpointAddr)
 			continue
 		}
 
