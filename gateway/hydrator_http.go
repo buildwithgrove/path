@@ -11,7 +11,10 @@ import (
 
 // runHTTPChecks performs HTTP-based QoS checks for all services and endpoints.
 func (eph *EndpointHydrator) runHTTPChecks() {
-	logger := eph.Logger.With("services_count", len(eph.ActiveQoSServices), "check_type", "HTTP")
+	logger := eph.Logger.With(
+		"services_count", len(eph.ActiveQoSServices),
+		"check_type", "http",
+	)
 	logger.Info().Msg("Running HTTP Endpoint Hydrator checks")
 
 	// TODO_TECHDEBT: ensure every outgoing request (or the goroutine checking a service ID)

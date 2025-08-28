@@ -14,7 +14,10 @@ const websocketCheckInterval = 10 * time.Minute
 
 // runWebSocketChecks performs WebSocket connection checks for all services and endpoints.
 func (eph *EndpointHydrator) runWebSocketChecks() {
-	logger := eph.Logger.With("services_count", len(eph.ActiveQoSServices), "check_type", "WebSocket")
+	logger := eph.Logger.With(
+		"services_count", len(eph.ActiveQoSServices),
+		"check_type", "websocket",
+	)
 	logger.Info().Msg("Running WebSocket Endpoint Hydrator checks")
 
 	// TODO_TECHDEBT: ensure every outgoing request (or the goroutine checking a service ID)
@@ -22,6 +25,14 @@ func (eph *EndpointHydrator) runWebSocketChecks() {
 	var wg sync.WaitGroup
 
 	for svcID, svcQoS := range eph.ActiveQoSServices {
+		logger := logger.With("service_id", string(svcID))
+
+		// Skip if WebSocket checks are not enabled for this service.
+		if !svcQoS.CheckWebsocketConnection() {
+			logger.Debug().Msg("Service is not configured to run WebSocket checks. Skipping.")
+			continue
+		}
+
 		wg.Add(1)
 		go func(serviceID protocol.ServiceID, serviceQoS QoSService) {
 			defer wg.Done()
@@ -46,12 +57,6 @@ func (eph *EndpointHydrator) performWebSocketChecks(serviceID protocol.ServiceID
 		"method", "performWebSocketChecks",
 		"service_id", string(serviceID),
 	)
-
-	// Skip if WebSocket checks are not enabled for this service
-	if !serviceQoS.CheckWebsocketConnection() {
-		logger.Debug().Msg("WebSocket connection checks disabled for service, skipping")
-		return nil
-	}
 
 	// Passing a nil as the HTTP request, because we assume the hydrator uses "Centralized Operation Mode".
 	// This implies there is no need to specify a specific app.
