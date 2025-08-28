@@ -11,7 +11,7 @@ WHITE='\033[0;37m'
 NC='\033[0m' # No Color
 
 # File paths
-TEMPLATE_FILE="./e2e/config/e2e_load_test.config.tmpl.yaml"
+TEMPLATE_FILE="./e2e/config/e2e_load_test.config.default.yaml"
 CONFIG_FILE="./e2e/config/.e2e_load_test.config.yaml"
 
 echo -e "${BLUE}🚀 Setting up E2E Load Test Configuration for Grove Portal${NC}"
@@ -66,7 +66,7 @@ read -p "🔐 Enter your Portal API Key (or press Enter to skip): " PORTAL_API_K
 echo ""
 
 # Step 3: Copy the template file (only after prompts are complete)
-echo "📁 Copying e2e_load_test.config.tmpl.yaml to .e2e_load_test.config.yaml"
+echo "📁 Copying e2e_load_test.config.default.yaml to .e2e_load_test.config.yaml"
 echo "\n 👀 You can verify the new config by running:\n    cat ./e2e/config/.e2e_load_test.config.yaml\n"
 cp "$TEMPLATE_FILE" "$CONFIG_FILE"
 echo -e "${GREEN}✅ Successfully copied template to config file${NC}"

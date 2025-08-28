@@ -100,7 +100,7 @@ Configure PATH for the service you want to test, and run `make path_run` to star
 
 :::tip Pocket Network Cheat Sheet
 
-For information on how to configure PATH for a service, see the [Shannon Cheat Sheet](../../develop/path/2_cheatsheet_shannon.md).
+For information on how to configure PATH for a service, see the [Shannon Cheat Sheet](../../develop/path/2_cheatsheet_pocket.md).
 
 :::
 
