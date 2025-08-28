@@ -90,6 +90,20 @@ func (eph *EndpointHydrator) Start() error {
 	return nil
 }
 
+// Name is used when checking the status/health of the hydrator.
+func (eph *EndpointHydrator) Name() string {
+	return componentNameHydrator
+}
+
+// IsAlive returns true if the hydrator has completed 1 iteration.
+// It is used to check the status/health of the hydrator
+func (eph *EndpointHydrator) IsAlive() bool {
+	eph.healthStatusMutex.RLock()
+	defer eph.healthStatusMutex.RUnlock()
+
+	return eph.isHealthy
+}
+
 func (eph *EndpointHydrator) run() {
 	logger := eph.Logger.With("services_count", len(eph.ActiveQoSServices))
 	logger.Info().Msg("Running Endpoint Hydrator")
@@ -157,69 +171,7 @@ func (eph *EndpointHydrator) performChecks(serviceID protocol.ServiceID, service
 			defer wgEndpoints.Done()
 
 			for endpointAddr := range endpointCheckChan {
-				// Creating a new locally scoped logger
-				endpointLogger := logger.With("endpoint_addr", string(endpointAddr))
-				endpointLogger.Info().Msg("About to run QoS checks against the current endpoint and service")
-
-				// Retrieve all the required QoS checks for the endpoint.
-				requiredQoSChecks := serviceQoS.GetRequiredQualityChecks(endpointAddr)
-				if len(requiredQoSChecks) == 0 {
-					endpointLogger.Warn().Msg("No required QoS checks for endpoint and service. Skipping checks...")
-					continue
-				}
-
-				// Iterate over every required QoS check for the endpoint and service.
-				for _, serviceRequestCtx := range requiredQoSChecks {
-					// Create a new protocol request context with a pre-selected endpoint for each request.
-					// IMPORTANT: A new request context MUST be created on each iteration of the loop to
-					// avoid race conditions related to concurrent access issues when running concurrent QoS checks.
-
-					// Passing a nil as the HTTP request, because we assume the Centralized Operation Mode being used by the hydrator,
-					// which means there is no need for specifying a specific app.
-					// TODO_FUTURE(@adshmh): support specifying the app(s) used for sending/signing synthetic relay requests by the hydrator.
-					// TODO_FUTURE(@adshmh): consider publishing observations here.
-					hydratorRequestCtx, _, err := eph.BuildHTTPRequestContextForEndpoint(context.TODO(), serviceID, endpointAddr, nil)
-					if err != nil {
-						logger.Error().Err(err).Msg("Failed to build a protocol request context for the endpoint")
-						continue
-					}
-
-					// Prepare a request context to submit a synthetic relay request to the endpoint on behalf of the gateway for QoS purposes.
-					gatewayRequestCtx := requestContext{
-						logger:  endpointLogger,
-						context: context.TODO(),
-						// TODO_MVP(@adshmh): populate the fields of gatewayObservations struct.
-						// Mark the request as Synthetic using the following steps:
-						// 	1. Define a `gatewayObserver` function as a field in the `requestContext` struct.
-						//	2. Define a `hydratorObserver` function in this file: it should at-least set the request type as `Synthetic`
-						//	3. Set the `hydratorObserver` function in the `gatewayRequestContext` below.
-						gatewayObservations: getSyntheticRequestGatewayObservations(),
-						serviceID:           serviceID,
-						serviceQoS:          serviceQoS,
-						qosCtx:              serviceRequestCtx,
-						protocol:            eph.Protocol,
-						protocolContexts:    []ProtocolRequestContext{hydratorRequestCtx},
-						// metrics reporter for exporting metrics on hydrator service requests.
-						metricsReporter: eph.MetricsReporter,
-						// data reporter for exporting data on hydrator service requests to the data pipeline.
-						dataReporter: eph.DataReporter,
-					}
-
-					err = gatewayRequestCtx.HandleRelayRequest()
-					if err != nil {
-						// TODO_FUTURE: consider skipping the rest of the checks based on the error.
-						// e.g. if the endpoint is refusing connections it may be reasonable to skip it
-						// in this iteration of QoS checks.
-						//
-						// TODO_FUTURE: consider retrying failed service requests
-						// as the failure may not be related to the quality of the endpoint.
-						logger.Warn().Err(err).Msg("Failed to send a relay. Only protocol-level observations will be applied.")
-					}
-
-					// publish all observations gathered through sending the synthetic service requests.
-					// e.g. protocol-level, qos-level observations.
-					gatewayRequestCtx.BroadcastAllObservations()
-				}
+				eph.runEndpointChecks(logger, serviceID, serviceQoS, endpointAddr)
 			}
 		}()
 	}
@@ -238,18 +190,45 @@ func (eph *EndpointHydrator) performChecks(serviceID protocol.ServiceID, service
 	return nil
 }
 
-// Name is used when checking the status/health of the hydrator.
-func (eph *EndpointHydrator) Name() string {
-	return componentNameHydrator
-}
+// runEndpointChecks performs all QoS checks for a specific endpoint, including
+// WebSocket connection checks and HTTP-based quality checks.
+// WebSocket checks run in parallel with HTTP checks to avoid blocking.
+func (eph *EndpointHydrator) runEndpointChecks(
+	logger polylog.Logger,
+	serviceID protocol.ServiceID,
+	serviceQoS QoSService,
+	endpointAddr protocol.EndpointAddr,
+) {
+	// Creating a new locally scoped logger
+	endpointLogger := logger.With("endpoint_addr", string(endpointAddr))
+	endpointLogger.Info().Msg("About to run QoS checks against the current endpoint and service")
 
-// IsAlive returns true if the hydrator has completed 1 iteration.
-// It is used to check the status/health of the hydrator
-func (eph *EndpointHydrator) IsAlive() bool {
-	eph.healthStatusMutex.RLock()
-	defer eph.healthStatusMutex.RUnlock()
+	var wg sync.WaitGroup
 
-	return eph.isHealthy
+	// Check if WebSocket connection checks should be performed for this endpoint
+	// Run WebSocket checks in parallel to avoid blocking HTTP checks
+	if serviceQoS.CheckWebsocketConnection(endpointAddr) {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			endpointLogger.Info().Msg("Running WebSocket connection check for endpoint")
+			err := eph.performWebSocketConnectionCheck(serviceID, serviceQoS, endpointAddr)
+			if err != nil {
+				endpointLogger.Warn().Err(err).Msg("WebSocket connection check failed")
+				// Continue with other checks even if WebSocket check fails
+			}
+		}()
+	}
+
+	// Perform HTTP-based quality checks in parallel with WebSocket checks
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		eph.runHTTPQualityChecks(endpointLogger, serviceID, serviceQoS, endpointAddr)
+	}()
+
+	// Wait for both WebSocket and HTTP checks to complete
+	wg.Wait()
 }
 
 // getHealthStatus returns the health status of the hydrator

@@ -89,6 +89,11 @@ type QoSEndpointCheckGenerator interface {
 	// - Returns required quality checks for a QoS instance to assess endpoint validity.
 	// - Example: EVM QoS may skip block height check if chain ID check already failed.
 	GetRequiredQualityChecks(protocol.EndpointAddr) []RequestQoSContext
+
+	// CheckWebsocketConnection
+	//  - Checks if the endpoint supports WebSocket connections.
+	//  - Returns a boolean indicating whether the endpoint should be checked for WebSocket connection.
+	CheckWebsocketConnection(protocol.EndpointAddr) bool
 }
 
 // TODO_IMPLEMENT:

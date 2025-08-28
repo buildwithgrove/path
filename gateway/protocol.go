@@ -4,6 +4,8 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/gorilla/websocket"
+
 	"github.com/buildwithgrove/path/health"
 	"github.com/buildwithgrove/path/metrics/devtools"
 	"github.com/buildwithgrove/path/observation"
@@ -124,8 +126,7 @@ type ProtocolRequestContextWebsocket interface {
 	// Returns a completion channel that signals when the bridge shuts down and observations for the connection.
 	StartWebSocketBridge(
 		ctx context.Context,
-		httpRequest *http.Request,
-		httpResponseWriter http.ResponseWriter,
+		clientConn *websocket.Conn,
 		messageProcessor websockets.WebsocketMessageProcessor,
 		messageObservationsChan chan *observation.RequestResponseObservations,
 	) (<-chan struct{}, *protocolobservations.Observations, error)

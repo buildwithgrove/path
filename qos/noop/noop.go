@@ -46,6 +46,11 @@ func (NoOpQoS) ApplyObservations(_ *qosobservations.Observations) error {
 	return nil
 }
 
+// CheckWebsocketConnection returns true if the endpoint supports WebSocket connections.
+func (NoOpQoS) CheckWebsocketConnection(_ protocol.EndpointAddr) bool {
+	return false
+}
+
 // GetRequiredQualityChecks on noop QoS only fulfills the interface requirements and does not perform any actions.
 // Implements the gateway.QoSService interface.
 func (NoOpQoS) GetRequiredQualityChecks(_ protocol.EndpointAddr) []gateway.RequestQoSContext {

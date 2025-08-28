@@ -18,6 +18,12 @@ import (
 // It generates requests for both JSONRPC and REST endpoints.
 var _ gateway.QoSEndpointCheckGenerator = &requestValidator{}
 
+// TODO_IN_THIS_PR(@commoddity): allow configuring per-service whether to run WebSocket connection checks.
+// CheckWebsocketConnection returns true if the endpoint supports WebSocket connections.
+func (rv *requestValidator) CheckWebsocketConnection(endpointAddr protocol.EndpointAddr) bool {
+	return true
+}
+
 // GetRequiredQualityChecks returns the list of quality checks required for an endpoint.
 // It is called in the `gateway/hydrator.go` file on each run of the hydrator.
 func (rv *requestValidator) GetRequiredQualityChecks(endpointAddr protocol.EndpointAddr) []gateway.RequestQoSContext {

@@ -23,6 +23,12 @@ const (
 // using synthetic service requests.
 var _ gateway.QoSEndpointCheckGenerator = &EndpointStore{}
 
+// TODO_IN_THIS_PR(@commoddity): allow configuring per-service whether to run WebSocket connection checks.
+// CheckWebsocketConnection returns true if the endpoint supports WebSocket connections.
+func (es *EndpointStore) CheckWebsocketConnection(endpointAddr protocol.EndpointAddr) bool {
+	return false
+}
+
 // TODO_IMPROVE(@commoddity): implement QoS check expiry functionality and use protocol.EndpointAddr
 // to filter out checks for any endpoint which has acurrently valid QoS data point.
 func (es *EndpointStore) GetRequiredQualityChecks(_ protocol.EndpointAddr) []gateway.RequestQoSContext {

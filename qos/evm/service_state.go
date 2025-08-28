@@ -59,6 +59,12 @@ type serviceState struct {
 // using synthetic service requests.
 var _ gateway.QoSEndpointCheckGenerator = &serviceState{}
 
+// TODO_IN_THIS_PR(@commoddity): allow configuring per-service whether to run WebSocket connection checks.
+// CheckWebsocketConnection returns true if the endpoint supports WebSocket connections.
+func (ss *serviceState) CheckWebsocketConnection(endpointAddr protocol.EndpointAddr) bool {
+	return true
+}
+
 // GetRequiredQualityChecks returns the list of quality checks required for an endpoint.
 // It is called in the `gateway/hydrator.go` file on each run of the hydrator.
 func (ss *serviceState) GetRequiredQualityChecks(endpointAddr protocol.EndpointAddr) []gateway.RequestQoSContext {
