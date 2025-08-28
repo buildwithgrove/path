@@ -16,10 +16,13 @@ import (
 	"github.com/pokt-network/poktroll/pkg/polylog"
 )
 
-const concurrencyLimiterMax = 1_000
+const (
+	// Maximum length of an HTTP response's body.
+	maxResponseSize = 100 * 1024 * 1024 // 100MB limit
 
-// Maximum length of an HTTP response's body.
-const maxResponseSize = 100 * 1024 * 1024 // 100MB limit
+	// Maximum number of concurrent HTTP requests.
+	concurrencyLimiterMax = 10_000
+)
 
 // HTTPClientWithDebugMetrics provides HTTP client functionality with embedded tracking of debug metrics.
 // It includes things like:
@@ -98,7 +101,7 @@ func NewDefaultHTTPClientWithDebugMetrics() *HTTPClientWithDebugMetrics {
 		ResponseHeaderTimeout: 70 * time.Second, // Conservative header timeout to allow for server processing time
 
 		// Performance optimizations
-		DisableKeepAlives:  false, // Enable connection reuse to reduce connection overhead
+		DisableKeepAlive:   false, // Enable connection reuse to reduce connection overhead
 		DisableCompression: false, // Enable gzip compression to reduce bandwidth
 		ForceAttemptHTTP2:  true,  // Prefer HTTP/2 for connection multiplexing benefits
 
@@ -116,8 +119,8 @@ func NewDefaultHTTPClientWithDebugMetrics() *HTTPClientWithDebugMetrics {
 
 	return &HTTPClientWithDebugMetrics{
 		httpClient: httpClient,
-		limiter:    newConcurrencyLimiter(concurrencyLimiterMax),
-		bufferPool: NewBufferPool(),
+		limiter:    NewConcurrencyLimiter(concurrencyLimiterMax),
+		bufferPool: NewBufferPool(maxResponseSize),
 	}
 }
 

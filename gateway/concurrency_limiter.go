@@ -21,8 +21,8 @@ type concurrencyLimiter struct {
 	mu             sync.RWMutex
 }
 
-// newConcurrencyLimiter creates a limiter that bounds concurrent operations.
-func newConcurrencyLimiter(maxConcurrent int) *concurrencyLimiter {
+// NewConcurrencyLimiter creates a limiter that bounds concurrent operations.
+func NewConcurrencyLimiter(maxConcurrent int) *concurrencyLimiter {
 	if maxConcurrent <= 0 {
 		maxConcurrent = maxConcurrentStuff // Default reasonable limit
 	}

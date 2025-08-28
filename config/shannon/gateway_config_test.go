@@ -5,6 +5,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	"github.com/buildwithgrove/path/gateway/grpc"
 	"github.com/buildwithgrove/path/protocol"
 	shannonprotocol "github.com/buildwithgrove/path/protocol/shannon"
 )
@@ -22,7 +23,7 @@ func Test_Validate(t *testing.T) {
 				FullNodeConfig: shannonprotocol.FullNodeConfig{
 					RpcURL:                "https://rpc-url.io",
 					SessionRolloverBlocks: 24,
-					GRPCConfig: shannonprotocol.GRPCConfig{
+					GRPCConfig: grpc.GRPCConfig{
 						HostPort: "grpc-url.io:443",
 					},
 				},
@@ -39,7 +40,7 @@ func Test_Validate(t *testing.T) {
 			config: ShannonGatewayConfig{
 				FullNodeConfig: shannonprotocol.FullNodeConfig{
 					RpcURL: "invalid-url",
-					GRPCConfig: shannonprotocol.GRPCConfig{
+					GRPCConfig: grpc.GRPCConfig{
 						HostPort: "grpc-url.io:443",
 					},
 				},
@@ -51,7 +52,7 @@ func Test_Validate(t *testing.T) {
 			config: ShannonGatewayConfig{
 				FullNodeConfig: shannonprotocol.FullNodeConfig{
 					RpcURL: "https://rpc-url.io",
-					GRPCConfig: shannonprotocol.GRPCConfig{
+					GRPCConfig: grpc.GRPCConfig{
 						HostPort: "grpc-url.io:443",
 					},
 				},
@@ -68,7 +69,7 @@ func Test_Validate(t *testing.T) {
 			config: ShannonGatewayConfig{
 				FullNodeConfig: shannonprotocol.FullNodeConfig{
 					RpcURL: "https://rpc-url.io",
-					GRPCConfig: shannonprotocol.GRPCConfig{
+					GRPCConfig: grpc.GRPCConfig{
 						HostPort: "grpc-url.io:443",
 					},
 				},
@@ -86,7 +87,7 @@ func Test_Validate(t *testing.T) {
 				FullNodeConfig: shannonprotocol.FullNodeConfig{
 					RpcURL:                "https://rpc-url.io",
 					SessionRolloverBlocks: 0, // Invalid: must be positive
-					GRPCConfig: shannonprotocol.GRPCConfig{
+					GRPCConfig: grpc.GRPCConfig{
 						HostPort: "grpc-url.io:443",
 					},
 				},

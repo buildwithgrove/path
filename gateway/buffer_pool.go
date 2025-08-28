@@ -20,16 +20,18 @@ const (
 // bufferPool manages a pool of reusable byte buffers to reduce GC pressure.
 // Buffers are sized appropriately for typical HTTP response bodies.
 type bufferPool struct {
-	pool sync.Pool
+	pool          sync.Pool
+	maxReaderSize int64
 }
 
-func NewBufferPool() *bufferPool {
+func NewBufferPool(maxReaderSize int64) *bufferPool {
 	return &bufferPool{
 		pool: sync.Pool{
 			New: func() interface{} {
 				return bytes.NewBuffer(make([]byte, 0, defaultInitialBufferSize))
 			},
 		},
+		maxReaderSize: maxReaderSize,
 	}
 }
 
@@ -51,11 +53,11 @@ func (bp *bufferPool) putBuffer(buf *bytes.Buffer) {
 }
 
 // readWithBuffer reads from an io.Reader using a pooled buffer.
-func (bp *bufferPool) readWithBuffer(r io.Reader, maxSize int64) ([]byte, error) {
+func (bp *bufferPool) readWithBuffer(r io.Reader) ([]byte, error) {
 	buf := bp.getBuffer()
 	defer bp.putBuffer(buf)
 
-	limitedReader := io.LimitReader(r, maxSize)
+	limitedReader := io.LimitReader(r, bp.maxReaderSize)
 	_, err := buf.ReadFrom(limitedReader)
 	if err != nil {
 		return nil, err
