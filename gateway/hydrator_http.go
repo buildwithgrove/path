@@ -2,11 +2,100 @@ package gateway
 
 import (
 	"context"
+	"sync"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
 	"github.com/buildwithgrove/path/protocol"
 )
+
+// runHTTPChecks performs HTTP-based QoS checks for all services and endpoints.
+func (eph *EndpointHydrator) runHTTPChecks() {
+	logger := eph.Logger.With("services_count", len(eph.ActiveQoSServices), "check_type", "HTTP")
+	logger.Info().Msg("Running HTTP Endpoint Hydrator checks")
+
+	// TODO_TECHDEBT: ensure every outgoing request (or the goroutine checking a service ID)
+	// has a timeout set.
+	var wg sync.WaitGroup
+	// A sync.Map is optimized for the use case here,
+	// i.e. each map entry is written only once.
+	var successfulServiceChecks sync.Map
+
+	for svcID, svcQoS := range eph.ActiveQoSServices {
+		wg.Add(1)
+		go func(serviceID protocol.ServiceID, serviceQoS QoSService) {
+			defer wg.Done()
+
+			logger := eph.Logger.With("serviceID", serviceID)
+
+			err := eph.performHTTPChecks(serviceID, serviceQoS)
+			if err != nil {
+				logger.Warn().Err(err).Msg("failed to run HTTP QoS checks for service")
+				return
+			}
+
+			successfulServiceChecks.Store(svcID, true)
+			logger.Info().Msg("successfully completed HTTP QoS checks for service")
+		}(svcID, svcQoS)
+	}
+	wg.Wait()
+
+	eph.healthStatusMutex.Lock()
+	defer eph.healthStatusMutex.Unlock()
+
+	eph.isHealthy = eph.getHealthStatus(&successfulServiceChecks)
+}
+
+// performHTTPChecks performs HTTP-based QoS checks for a specific service.
+func (eph *EndpointHydrator) performHTTPChecks(serviceID protocol.ServiceID, serviceQoS QoSService) error {
+	logger := eph.Logger.With(
+		"method", "performHTTPChecks",
+		"service_id", string(serviceID),
+	)
+
+	// Passing a nil as the HTTP request, because we assume the hydrator uses "Centralized Operation Mode".
+	// This implies there is no need to specify a specific app.
+	// TODO_TECHDEBT(@adshmh): support specifying the app(s) used for sending/signing synthetic relay requests by the hydrator.
+	// TODO_FUTURE(@adshmh): consider publishing observations if endpoint lookup fails.
+	availableEndpoints, _, err := eph.AvailableEndpoints(context.TODO(), serviceID, nil)
+	if err != nil || len(availableEndpoints) == 0 {
+		// No session found or no endpoints available for service: skip.
+		logger.Warn().Msg("no session found or no endpoints available for service when running HTTP hydrator checks.")
+		// do NOT return an error: hydrator and PATH should not report unhealthy status if a single service is unavailable.
+		return nil
+	}
+
+	logger = logger.With("number_of_endpoints", len(availableEndpoints))
+
+	// Prepare a channel that will keep track of all the parallel async job to perform HTTP QoS checks on every endpoint.
+	endpointCheckChan := make(chan protocol.EndpointAddr, len(availableEndpoints))
+
+	var wgEndpoints sync.WaitGroup
+	for range eph.MaxEndpointCheckWorkers {
+		wgEndpoints.Add(1)
+
+		go func() {
+			defer wgEndpoints.Done()
+
+			for endpointAddr := range endpointCheckChan {
+				eph.runHTTPQualityChecks(logger, serviceID, serviceQoS, endpointAddr)
+			}
+		}()
+	}
+
+	// Kick off the workers above for every unique endpoint.
+	for _, endpointAddr := range availableEndpoints {
+		endpointCheckChan <- endpointAddr
+	}
+
+	close(endpointCheckChan)
+
+	// Wait for all workers to finish processing the endpoints.
+	wgEndpoints.Wait()
+
+	// TODO_FUTURE: publish aggregated QoS reports (in addition to reports on endpoints of a specific service)
+	return nil
+}
 
 // runHTTPQualityChecks performs HTTP-based quality checks for a specific endpoint.
 func (eph *EndpointHydrator) runHTTPQualityChecks(

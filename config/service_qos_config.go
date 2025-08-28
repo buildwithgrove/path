@@ -59,7 +59,8 @@ var shannonServices = []ServiceQoSConfig{
 		),
 		map[sharedtypes.RPCType]struct{}{
 			sharedtypes.RPCType_JSON_RPC: {},
-		}),
+		},
+	),
 
 	// Arbitrum Sepolia Testnet
 	evm.NewEVMServiceQoSConfig(
@@ -73,7 +74,8 @@ var shannonServices = []ServiceQoSConfig{
 		),
 		map[sharedtypes.RPCType]struct{}{
 			sharedtypes.RPCType_JSON_RPC: {},
-		}),
+		},
+	),
 
 	// Avalanche
 	evm.NewEVMServiceQoSConfig(
@@ -87,7 +89,8 @@ var shannonServices = []ServiceQoSConfig{
 		),
 		map[sharedtypes.RPCType]struct{}{
 			sharedtypes.RPCType_JSON_RPC: {},
-		}),
+		},
+	),
 
 	// Avalanche-DFK
 	evm.NewEVMServiceQoSConfig(
@@ -101,7 +104,8 @@ var shannonServices = []ServiceQoSConfig{
 		),
 		map[sharedtypes.RPCType]struct{}{
 			sharedtypes.RPCType_JSON_RPC: {},
-		}),
+		},
+	),
 
 	// Base
 	evm.NewEVMServiceQoSConfig(
@@ -115,7 +119,8 @@ var shannonServices = []ServiceQoSConfig{
 		),
 		map[sharedtypes.RPCType]struct{}{
 			sharedtypes.RPCType_JSON_RPC: {},
-		}),
+		},
+	),
 
 	// Base Sepolia Testnet
 	evm.NewEVMServiceQoSConfig(
@@ -129,7 +134,8 @@ var shannonServices = []ServiceQoSConfig{
 		),
 		map[sharedtypes.RPCType]struct{}{
 			sharedtypes.RPCType_JSON_RPC: {},
-		}),
+		},
+	),
 
 	// Berachain
 	evm.NewEVMServiceQoSConfig(
@@ -143,7 +149,8 @@ var shannonServices = []ServiceQoSConfig{
 		),
 		map[sharedtypes.RPCType]struct{}{
 			sharedtypes.RPCType_JSON_RPC: {},
-		}),
+		},
+	),
 
 	// Blast
 	evm.NewEVMServiceQoSConfig(
@@ -157,7 +164,8 @@ var shannonServices = []ServiceQoSConfig{
 		),
 		map[sharedtypes.RPCType]struct{}{
 			sharedtypes.RPCType_JSON_RPC: {},
-		}),
+		},
+	),
 
 	// BNB Smart Chain
 	evm.NewEVMServiceQoSConfig(
@@ -171,7 +179,8 @@ var shannonServices = []ServiceQoSConfig{
 		),
 		map[sharedtypes.RPCType]struct{}{
 			sharedtypes.RPCType_JSON_RPC: {},
-		}),
+		},
+	),
 
 	// Boba
 	evm.NewEVMServiceQoSConfig(
@@ -185,7 +194,8 @@ var shannonServices = []ServiceQoSConfig{
 		),
 		map[sharedtypes.RPCType]struct{}{
 			sharedtypes.RPCType_JSON_RPC: {},
-		}),
+		},
+	),
 
 	// Celo
 	evm.NewEVMServiceQoSConfig(
@@ -199,7 +209,8 @@ var shannonServices = []ServiceQoSConfig{
 		),
 		map[sharedtypes.RPCType]struct{}{
 			sharedtypes.RPCType_JSON_RPC: {},
-		}),
+		},
+	),
 
 	// Ethereum
 	evm.NewEVMServiceQoSConfig(
@@ -213,7 +224,8 @@ var shannonServices = []ServiceQoSConfig{
 		),
 		map[sharedtypes.RPCType]struct{}{
 			sharedtypes.RPCType_JSON_RPC: {},
-		}),
+		},
+	),
 
 	// Ethereum Holesky Testnet
 	evm.NewEVMServiceQoSConfig(
@@ -227,7 +239,8 @@ var shannonServices = []ServiceQoSConfig{
 		),
 		map[sharedtypes.RPCType]struct{}{
 			sharedtypes.RPCType_JSON_RPC: {},
-		}),
+		},
+	),
 
 	// Ethereum Sepolia Testnet
 	evm.NewEVMServiceQoSConfig(
@@ -241,7 +254,8 @@ var shannonServices = []ServiceQoSConfig{
 		),
 		map[sharedtypes.RPCType]struct{}{
 			sharedtypes.RPCType_JSON_RPC: {},
-		}),
+		},
+	),
 
 	// Fantom
 	evm.NewEVMServiceQoSConfig(
@@ -255,7 +269,8 @@ var shannonServices = []ServiceQoSConfig{
 		),
 		map[sharedtypes.RPCType]struct{}{
 			sharedtypes.RPCType_JSON_RPC: {},
-		}),
+		},
+	),
 
 	// Fuse
 	evm.NewEVMServiceQoSConfig(
@@ -269,7 +284,8 @@ var shannonServices = []ServiceQoSConfig{
 		),
 		map[sharedtypes.RPCType]struct{}{
 			sharedtypes.RPCType_JSON_RPC: {},
-		}),
+		},
+	),
 
 	// Gnosis
 	evm.NewEVMServiceQoSConfig(
@@ -283,7 +299,8 @@ var shannonServices = []ServiceQoSConfig{
 		),
 		map[sharedtypes.RPCType]struct{}{
 			sharedtypes.RPCType_JSON_RPC: {},
-		}),
+		},
+	),
 
 	// Harmony-0
 	evm.NewEVMServiceQoSConfig(
@@ -297,7 +314,8 @@ var shannonServices = []ServiceQoSConfig{
 		),
 		map[sharedtypes.RPCType]struct{}{
 			sharedtypes.RPCType_JSON_RPC: {},
-		}),
+		},
+	),
 
 	// Ink
 	evm.NewEVMServiceQoSConfig(
@@ -311,7 +329,8 @@ var shannonServices = []ServiceQoSConfig{
 		),
 		map[sharedtypes.RPCType]struct{}{
 			sharedtypes.RPCType_JSON_RPC: {},
-		}),
+		},
+	),
 
 	// IoTeX
 	evm.NewEVMServiceQoSConfig(
@@ -325,7 +344,8 @@ var shannonServices = []ServiceQoSConfig{
 		),
 		map[sharedtypes.RPCType]struct{}{
 			sharedtypes.RPCType_JSON_RPC: {},
-		}),
+		},
+	),
 
 	// Kaia
 	evm.NewEVMServiceQoSConfig(
@@ -339,7 +359,8 @@ var shannonServices = []ServiceQoSConfig{
 		),
 		map[sharedtypes.RPCType]struct{}{
 			sharedtypes.RPCType_JSON_RPC: {},
-		}),
+		},
+	),
 
 	// Linea
 	evm.NewEVMServiceQoSConfig(
@@ -353,7 +374,8 @@ var shannonServices = []ServiceQoSConfig{
 		),
 		map[sharedtypes.RPCType]struct{}{
 			sharedtypes.RPCType_JSON_RPC: {},
-		}),
+		},
+	),
 
 	// Mantle
 	evm.NewEVMServiceQoSConfig(
@@ -367,7 +389,8 @@ var shannonServices = []ServiceQoSConfig{
 		),
 		map[sharedtypes.RPCType]struct{}{
 			sharedtypes.RPCType_JSON_RPC: {},
-		}),
+		},
+	),
 
 	// Metis
 	evm.NewEVMServiceQoSConfig(
@@ -381,7 +404,8 @@ var shannonServices = []ServiceQoSConfig{
 		),
 		map[sharedtypes.RPCType]struct{}{
 			sharedtypes.RPCType_JSON_RPC: {},
-		}),
+		},
+	),
 
 	// Moonbeam
 	evm.NewEVMServiceQoSConfig(
@@ -395,7 +419,8 @@ var shannonServices = []ServiceQoSConfig{
 		),
 		map[sharedtypes.RPCType]struct{}{
 			sharedtypes.RPCType_JSON_RPC: {},
-		}),
+		},
+	),
 
 	// Oasys
 	evm.NewEVMServiceQoSConfig(
@@ -409,7 +434,8 @@ var shannonServices = []ServiceQoSConfig{
 		),
 		map[sharedtypes.RPCType]struct{}{
 			sharedtypes.RPCType_JSON_RPC: {},
-		}),
+		},
+	),
 
 	// Optimism
 	evm.NewEVMServiceQoSConfig(
@@ -423,7 +449,8 @@ var shannonServices = []ServiceQoSConfig{
 		),
 		map[sharedtypes.RPCType]struct{}{
 			sharedtypes.RPCType_JSON_RPC: {},
-		}),
+		},
+	),
 
 	// Optimism Sepolia Testnet
 	evm.NewEVMServiceQoSConfig(
@@ -437,7 +464,8 @@ var shannonServices = []ServiceQoSConfig{
 		),
 		map[sharedtypes.RPCType]struct{}{
 			sharedtypes.RPCType_JSON_RPC: {},
-		}),
+		},
+	),
 
 	// Polygon
 	evm.NewEVMServiceQoSConfig(
@@ -465,7 +493,8 @@ var shannonServices = []ServiceQoSConfig{
 		),
 		map[sharedtypes.RPCType]struct{}{
 			sharedtypes.RPCType_JSON_RPC: {},
-		}),
+		},
+	),
 
 	// Polygon zkEVM
 	evm.NewEVMServiceQoSConfig(
@@ -479,7 +508,8 @@ var shannonServices = []ServiceQoSConfig{
 		),
 		map[sharedtypes.RPCType]struct{}{
 			sharedtypes.RPCType_JSON_RPC: {},
-		}),
+		},
+	),
 
 	// Scroll
 	evm.NewEVMServiceQoSConfig(
@@ -493,7 +523,8 @@ var shannonServices = []ServiceQoSConfig{
 		),
 		map[sharedtypes.RPCType]struct{}{
 			sharedtypes.RPCType_JSON_RPC: {},
-		}),
+		},
+	),
 
 	// Sonic
 	evm.NewEVMServiceQoSConfig(
@@ -507,7 +538,8 @@ var shannonServices = []ServiceQoSConfig{
 		),
 		map[sharedtypes.RPCType]struct{}{
 			sharedtypes.RPCType_JSON_RPC: {},
-		}),
+		},
+	),
 
 	// Taiko
 	evm.NewEVMServiceQoSConfig(
@@ -521,7 +553,8 @@ var shannonServices = []ServiceQoSConfig{
 		),
 		map[sharedtypes.RPCType]struct{}{
 			sharedtypes.RPCType_JSON_RPC: {},
-		}),
+		},
+	),
 
 	// Taiko Hekla Testnet
 	evm.NewEVMServiceQoSConfig(
@@ -535,7 +568,8 @@ var shannonServices = []ServiceQoSConfig{
 		),
 		map[sharedtypes.RPCType]struct{}{
 			sharedtypes.RPCType_JSON_RPC: {},
-		}),
+		},
+	),
 	// zkLink
 	evm.NewEVMServiceQoSConfig(
 		"zklink-nova",
@@ -547,7 +581,8 @@ var shannonServices = []ServiceQoSConfig{
 		),
 		map[sharedtypes.RPCType]struct{}{
 			sharedtypes.RPCType_JSON_RPC: {},
-		}),
+		},
+	),
 
 	// zkSync
 	evm.NewEVMServiceQoSConfig(
@@ -561,7 +596,8 @@ var shannonServices = []ServiceQoSConfig{
 		),
 		map[sharedtypes.RPCType]struct{}{
 			sharedtypes.RPCType_JSON_RPC: {},
-		}),
+		},
+	),
 
 	// *** EVM Services (testing) ***
 

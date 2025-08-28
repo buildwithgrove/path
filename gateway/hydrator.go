@@ -3,7 +3,6 @@
 package gateway
 
 import (
-	"context"
 	"errors"
 	"sync"
 	"time"
@@ -51,7 +50,7 @@ type EndpointHydrator struct {
 	// of explicitly defining PATH gateway's components and their interactions.
 	DataReporter RequestResponseReporter
 
-	// RunInterval is the interval at which the Endpoint Hydrator will run in milliseconds.
+	// RunInterval is the interval at which the Endpoint Hydrator will run HTTP checks in milliseconds.
 	RunInterval time.Duration
 	// MaxEndpointCheckWorkers is the maximum number of workers that will be used to concurrently check endpoints.
 	MaxEndpointCheckWorkers int
@@ -70,6 +69,7 @@ type EndpointHydrator struct {
 
 // Start should be called to signal this instance of the hydrator
 // to start generating and sending endpoint check requests.
+// It starts two separate goroutines: one for HTTP checks and one for WebSocket checks.
 func (eph *EndpointHydrator) Start() error {
 	if eph.Protocol == nil {
 		return errors.New("an instance of Protocol must be provided")
@@ -79,10 +79,22 @@ func (eph *EndpointHydrator) Start() error {
 		return errors.New("at least one QoS instance must be provided to the endpoint hydrator to start sending check requests")
 	}
 
+	// Start HTTP checks on the configured interval
 	go func() {
 		ticker := time.NewTicker(eph.RunInterval)
+		defer ticker.Stop()
 		for {
-			eph.run()
+			eph.runHTTPChecks()
+			<-ticker.C
+		}
+	}()
+
+	// Start WebSocket checks on a separate interval
+	go func() {
+		ticker := time.NewTicker(websocketCheckInterval)
+		defer ticker.Stop()
+		for {
+			eph.runWebSocketChecks()
 			<-ticker.C
 		}
 	}()
@@ -102,133 +114,6 @@ func (eph *EndpointHydrator) IsAlive() bool {
 	defer eph.healthStatusMutex.RUnlock()
 
 	return eph.isHealthy
-}
-
-func (eph *EndpointHydrator) run() {
-	logger := eph.Logger.With("services_count", len(eph.ActiveQoSServices))
-	logger.Info().Msg("Running Endpoint Hydrator")
-
-	// TODO_TECHDEBT: ensure every outgoing request (or the goroutine checking a service ID)
-	// has a timeout set.
-	var wg sync.WaitGroup
-	// A sync.Map is optimized for the use case here,
-	// i.e. each map entry is written only once.
-	var successfulServiceChecks sync.Map
-
-	for svcID, svcQoS := range eph.ActiveQoSServices {
-		wg.Add(1)
-		go func(serviceID protocol.ServiceID, serviceQoS QoSService) {
-			defer wg.Done()
-
-			logger := eph.Logger.With("serviceID", serviceID)
-
-			err := eph.performChecks(serviceID, serviceQoS)
-			if err != nil {
-				logger.Warn().Err(err).Msg("failed to run QoS checks for service")
-				return
-			}
-
-			successfulServiceChecks.Store(svcID, true)
-			logger.Info().Msg("successfully completed QoS checks for service")
-		}(svcID, svcQoS)
-	}
-	wg.Wait()
-
-	eph.healthStatusMutex.Lock()
-	defer eph.healthStatusMutex.Unlock()
-
-	eph.isHealthy = eph.getHealthStatus(&successfulServiceChecks)
-}
-
-func (eph *EndpointHydrator) performChecks(serviceID protocol.ServiceID, serviceQoS QoSService) error {
-	logger := eph.Logger.With(
-		"method", "performChecks",
-		"service_id", string(serviceID),
-	)
-
-	// Passing a nil as the HTTP request, because we assume the hydrator uses "Centralized Operation Mode".
-	// This implies there is no need to specify a specific app.
-	// TODO_TECHDEBT(@adshmh): support specifying the app(s) used for sending/signing synthetic relay requests by the hydrator.
-	// TODO_FUTURE(@adshmh): consider publishing observations if endpoint lookup fails.
-	availableEndpoints, _, err := eph.AvailableEndpoints(context.TODO(), serviceID, nil)
-	if err != nil || len(availableEndpoints) == 0 {
-		// No session found or no endpoints available for service: skip.
-		logger.Warn().Msg("no session found or no endpoints available for service when running hydrator checks.")
-		// do NOT return an error: hydrator and PATH should not report unhealthy status if a single service is unavailable.
-		return nil
-	}
-
-	logger = logger.With("number_of_endpoints", len(availableEndpoints))
-
-	// Prepare a channel that will keep track of all the parallel async job to perform QoS checks on every endpoint.
-	endpointCheckChan := make(chan protocol.EndpointAddr, len(availableEndpoints))
-
-	var wgEndpoints sync.WaitGroup
-	for range eph.MaxEndpointCheckWorkers {
-		wgEndpoints.Add(1)
-
-		go func() {
-			defer wgEndpoints.Done()
-
-			for endpointAddr := range endpointCheckChan {
-				eph.runEndpointChecks(logger, serviceID, serviceQoS, endpointAddr)
-			}
-		}()
-	}
-
-	// Kick off the workers above for every unique endpoint.
-	for _, endpointAddr := range availableEndpoints {
-		endpointCheckChan <- endpointAddr
-	}
-
-	close(endpointCheckChan)
-
-	// Wait for all workers to finish processing the endpoints.
-	wgEndpoints.Wait()
-
-	// TODO_FUTURE: publish aggregated QoS reports (in addition to reports on endpoints of a specific service)
-	return nil
-}
-
-// runEndpointChecks performs all QoS checks for a specific endpoint, including
-// WebSocket connection checks and HTTP-based quality checks.
-// WebSocket checks run in parallel with HTTP checks to avoid blocking.
-func (eph *EndpointHydrator) runEndpointChecks(
-	logger polylog.Logger,
-	serviceID protocol.ServiceID,
-	serviceQoS QoSService,
-	endpointAddr protocol.EndpointAddr,
-) {
-	// Creating a new locally scoped logger
-	endpointLogger := logger.With("endpoint_addr", string(endpointAddr))
-	endpointLogger.Info().Msg("About to run QoS checks against the current endpoint and service")
-
-	var wg sync.WaitGroup
-
-	// Check if WebSocket connection checks should be performed for this endpoint
-	// Run WebSocket checks in parallel to avoid blocking HTTP checks
-	if serviceQoS.CheckWebsocketConnection() {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			endpointLogger.Info().Msg("Running WebSocket connection check for endpoint")
-			err := eph.performWebSocketConnectionCheck(serviceID, serviceQoS, endpointAddr)
-			if err != nil {
-				endpointLogger.Warn().Err(err).Msg("WebSocket connection check failed")
-				// Continue with other checks even if WebSocket check fails
-			}
-		}()
-	}
-
-	// Perform HTTP-based quality checks in parallel with WebSocket checks
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		eph.runHTTPQualityChecks(endpointLogger, serviceID, serviceQoS, endpointAddr)
-	}()
-
-	// Wait for both WebSocket and HTTP checks to complete
-	wg.Wait()
 }
 
 // getHealthStatus returns the health status of the hydrator
