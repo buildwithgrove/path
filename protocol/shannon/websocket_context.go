@@ -48,7 +48,9 @@ type websocketRequestContext struct {
 
 // StartWebSocketBridge creates and starts a WebSocket bridge between client and endpoint.
 // It handles all protocol-specific setup including headers, URL generation, and connection establishment.
+//
 // The messageProcessor handles the actual message processing (typically the gateway's websocketRequestContext).
+//
 // Returns a completion channel that signals when the bridge shuts down and observations for the connection.
 func (wrc *websocketRequestContext) StartWebSocketBridge(
 	ctx context.Context,
@@ -98,7 +100,8 @@ func (wrc *websocketRequestContext) StartWebSocketBridge(
 		return nil, errorObs, fmt.Errorf("failed to start websocket bridge: %w", err)
 	}
 
-	// Build success observation for the established connection
+	// Build success observation for the established connection.
+	// These observations will
 	successObs := wrc.getWebsocketConnectionSuccessObservation()
 	logger.Info().Msg("✅ WebSocket bridge started successfully")
 
