@@ -77,3 +77,14 @@ func (s sanction) sessionSanctionToDetails(
 		CreatedAt:     s.createdAt,
 	}
 }
+
+// buildSanctionFromWebSocketConnectionObservation creates a sanction struct from a WebSocket connection observation.
+func buildSanctionFromWebSocketConnectionObservation(observation *protocolobservations.ShannonWebsocketConnectionObservation) sanction {
+	return sanction{
+		reason:             observation.GetErrorDetails(),
+		errorType:          observation.GetErrorType(),
+		createdAt:          time.Now(),
+		sessionServiceID:   observation.GetSessionServiceId(),
+		sessionStartHeight: observation.GetSessionStartHeight(),
+	}
+}

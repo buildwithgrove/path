@@ -79,8 +79,7 @@ type bridge struct {
 func StartBridge(
 	ctx context.Context,
 	logger polylog.Logger,
-	req *http.Request,
-	w http.ResponseWriter,
+	clientConn *websocket.Conn,
 	websocketURL string,
 	headers http.Header,
 	websocketMessageProcessor WebsocketMessageProcessor,
@@ -91,14 +90,6 @@ func StartBridge(
 	// Create a bridge-specific context that can be canceled from connections
 	// This is a child of the shared WebSocket context
 	bridgeCtx, cancelCtx := context.WithCancel(ctx)
-
-	// Upgrade HTTP request from client to websocket connection.
-	clientConn, err := upgradeClientWebsocketConnection(logger, req, w)
-	if err != nil {
-		logger.Error().Err(err).Msg("❌ error upgrading client websocket connection")
-		cancelCtx() // Clean up context on error
-		return nil, fmt.Errorf("createWebsocketBridge: %s", err.Error())
-	}
 
 	// Connect to the Relay Miner endpoint
 	endpointConn, err := connectWebsocketEndpoint(logger, websocketURL, headers)
@@ -138,14 +129,19 @@ func StartBridge(
 		messageSourceEndpoint,
 		msgChan,
 	)
-	b.clientConn = newConnection(
-		b.ctx,
-		cancelCtx,
-		logger.With("conn", "client"),
-		clientConn,
-		messageSourceClient,
-		msgChan,
-	)
+	// Only create a client connection if it is not nil.
+	// This allows for synthetic hydrator connection
+	// checks without requiring an actual HTTP upgrade.
+	if clientConn != nil {
+		b.clientConn = newConnection(
+			b.ctx,
+			cancelCtx,
+			logger.With("conn", "client"),
+			clientConn,
+			messageSourceClient,
+			msgChan,
+		)
+	}
 
 	// Start the bridge in a goroutine
 	go func() {

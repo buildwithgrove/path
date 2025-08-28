@@ -147,7 +147,7 @@ func Test_Connection_HandleDisconnect(t *testing.T) {
 }
 
 // createTestConnection creates a websocket connection for testing
-func Test_ConnectWebsocketEndpoint(t *testing.T) {
+func Test_connectWebsocketEndpoint(t *testing.T) {
 	tests := []struct {
 		name         string
 		websocketURL string

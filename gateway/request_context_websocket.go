@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/gorilla/websocket"
 	"github.com/pokt-network/poktroll/pkg/polylog"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
@@ -171,10 +172,7 @@ func (wrc *websocketRequestContext) buildProtocolContextFromHTTPRequest(
 // It also starts a goroutine to listen for message processing notifications from the bridge.
 //
 // This method blocks until the WebSocket connection terminates.
-func (wrc *websocketRequestContext) handleWebsocketRequest(
-	httpRequest *http.Request,
-	httpResponseWriter http.ResponseWriter,
-) error {
+func (wrc *websocketRequestContext) handleWebsocketRequest(clientConn *websocket.Conn) error {
 	logger := wrc.logger.With("method", "handleWebsocketRequest")
 
 	// Delegate to the protocol context to start the WebSocket bridge
@@ -182,8 +180,7 @@ func (wrc *websocketRequestContext) handleWebsocketRequest(
 	// We pass ourselves (wrc) as the messageProcessor to handle message processing
 	completionChan, protocolObservations, err := wrc.protocolCtx.StartWebSocketBridge(
 		wrc.context,
-		httpRequest,
-		httpResponseWriter,
+		clientConn,
 		wrc, // Pass the websocketRequestContext as the message processor
 		wrc.messageObservationsChan,
 	)
@@ -367,6 +364,14 @@ func (wrc *websocketRequestContext) BroadcastWebsocketConnectionRequestObservati
 		Protocol: wrc.protocolConnectionObservations,
 		// TODO_IMPROVE: add QoS observations for WebSocket connection observations.
 		Qos: nil,
+	}
+
+	// Apply protocol observations to the protocol instance.
+	if protocolObservations := observations.GetProtocol(); protocolObservations != nil {
+		err := wrc.protocol.ApplyObservations(protocolObservations)
+		if err != nil {
+			wrc.logger.Warn().Err(err).Msg("error applying protocol observations for websocket connection.")
+		}
 	}
 
 	// Broadcast the combined observations

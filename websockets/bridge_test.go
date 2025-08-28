@@ -52,12 +52,18 @@ func Test_Bridge_StartBridge(t *testing.T) {
 
 	// Create a test client connection
 	clientServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Start the bridge using the client request
+		// Upgrade the HTTP connection to WebSocket
+		clientConn, err := UpgradeClientWebsocketConnection(polyzero.NewLogger(), r, w)
+		if err != nil {
+			t.Error("Error upgrading client connection:", err)
+			return
+		}
+
+		// Start the bridge using the upgraded client connection
 		completionChan, err := StartBridge(
 			context.Background(), // Use background context for tests
 			polyzero.NewLogger(),
-			r,
-			w,
+			clientConn,
 			endpointURL,
 			http.Header{},
 			messageProcessor,
@@ -99,21 +105,30 @@ func Test_Bridge_StartBridge_ErrorCases(t *testing.T) {
 	// Create channel for observation notifications
 	observationsChan := make(chan *observation.RequestResponseObservations, 10)
 
-	// Test with invalid endpoint URL
-	clientReq := httptest.NewRequest("GET", "/ws", nil)
-	clientReq.Header.Set("Upgrade", "websocket")
-	clientReq.Header.Set("Connection", "Upgrade")
-	clientReq.Header.Set("Sec-WebSocket-Key", "dGhlIHNhbXBsZSBub25jZQ==")
-	clientReq.Header.Set("Sec-WebSocket-Version", "13")
+	// Create a mock client connection for error test
+	// We create a real connection but will use an invalid endpoint URL to trigger the error
+	mockClientServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		upgrader := websocket.Upgrader{}
+		conn, err := upgrader.Upgrade(w, r, nil)
+		if err != nil {
+			t.Error("Error upgrading mock client connection:", err)
+			return
+		}
+		defer conn.Close()
+	}))
+	defer mockClientServer.Close()
 
-	clientRespWriter := httptest.NewRecorder()
+	// Connect to get a valid client connection
+	mockClientURL := "ws" + strings.TrimPrefix(mockClientServer.URL, "http")
+	mockClientConn, _, err := websocket.DefaultDialer.Dial(mockClientURL, nil)
+	c.NoError(err)
+	defer mockClientConn.Close()
 
 	// This should fail because the endpoint URL is invalid
 	completionChan, err := StartBridge(
 		context.Background(), // Use background context for tests
 		polyzero.NewLogger(),
-		clientReq,
-		clientRespWriter,
+		mockClientConn,
 		"invalid-url",
 		http.Header{},
 		messageProcessor,
