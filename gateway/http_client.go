@@ -31,6 +31,7 @@ const maxResponseSize = 100 * 1024 * 1024 // 100MB limit
 type httpClientWithDebugMetrics struct {
 	httpClient *http.Client
 	limiter    *concurrencyLimiter
+	bufferPool *bufferPool
 
 	// Atomic counters for monitoring
 	activeRequests   atomic.Uint64
@@ -116,6 +117,7 @@ func newDefaultHTTPClientWithDebugMetrics() *httpClientWithDebugMetrics {
 	return &httpClientWithDebugMetrics{
 		httpClient: httpClient,
 		limiter:    newConcurrencyLimiter(concurrencyLimiterMax),
+		bufferPool: NewBufferPool(),
 	}
 }
 
@@ -247,7 +249,7 @@ func (h *httpClientWithDebugMetrics) categorizeError(ctx context.Context, err er
 // readAndValidateResponse reads the response body and validates the HTTP status code
 func (h *httpClientWithDebugMetrics) readAndValidateResponse(resp *http.Response) ([]byte, error) {
 	// Read response body with size protection using buffer pool
-	responseBody, err := readWithBuffer(resp.Body, maxResponseSize)
+	responseBody, err := h.bufferPool.readWithBuffer(resp.Body, maxResponseSize)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read response body: %w", err)
 	}

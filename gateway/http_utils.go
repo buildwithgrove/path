@@ -14,7 +14,7 @@ const (
 	// TODO_CONSIDERATION: Consider making this configurable
 	// maxBufferSize is the maximum size of the buffer pool.
 	// Set the max buffer size to 4MB to avoid memory bloat.
-	maxBufferSize = 8 * 1024 * 1024
+	maxBufferSize = 4 * 1024 * 1024
 )
 
 // bufferPool manages a pool of reusable byte buffers to reduce GC pressure.
