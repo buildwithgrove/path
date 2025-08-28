@@ -41,7 +41,7 @@ func (cl *concurrencyLimiter) acquire(ctx context.Context) bool {
 		cl.mu.Lock()
 		cl.activeRequests++
 		// Update the gauge metric immediately when active request count changes
-		shannonmetrics.SetActiveRequests(cl.activeRequests)
+		shannonmetrics.SetActiveRelays(cl.activeRequests)
 		cl.mu.Unlock()
 		return true
 	case <-ctx.Done():
@@ -63,7 +63,7 @@ func (cl *concurrencyLimiter) release() {
 		cl.mu.Lock()
 		cl.activeRequests--
 		// Update the gauge metric immediately when active request count changes
-		shannonmetrics.SetActiveRequests(cl.activeRequests)
+		shannonmetrics.SetActiveRelays(cl.activeRequests)
 		cl.mu.Unlock()
 	default:
 		// Should never happen if acquire/release are properly paired
@@ -76,7 +76,7 @@ func (cl *concurrencyLimiter) getActiveRequests() int64 {
 	defer cl.mu.RUnlock()
 
 	// Update the gauge metric to track current active requests
-	shannonmetrics.SetActiveRequests(cl.activeRequests)
+	shannonmetrics.SetActiveRelays(cl.activeRequests)
 
 	return cl.activeRequests
 }

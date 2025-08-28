@@ -24,8 +24,9 @@ const (
 	pathProcess = "path"
 
 	// HTTP relay metrics
-	relaysTotalMetric       = "shannon_relays_total"
-	relaysErrorsTotalMetric = "shannon_relay_errors_total"
+	relaysTotalMetric          = "shannon_relays_total"
+	relaysErrorsTotalMetric    = "shannon_relay_errors_total"
+	relaysActiveRequestsMetric = "shannon_relays_active"
 
 	// WebSocket connection metrics
 	websocketConnectionsTotalMetric = "shannon_websocket_connections_total"
@@ -41,9 +42,6 @@ const (
 	// Latency metrics (currently HTTP only)
 	endpointLatencyMetric       = "shannon_endpoint_latency_seconds"
 	relayMinerErrorsTotalMetric = "shannon_relay_miner_errors_total"
-
-	// Concurrency metrics
-	activeRequestsMetric = "shannon_active_requests"
 )
 
 var (
@@ -61,6 +59,7 @@ func init() {
 	// HTTP relay metrics
 	prometheus.MustRegister(relaysTotal)
 	prometheus.MustRegister(relaysErrorsTotal)
+	prometheus.MustRegister(relaysActiveRequestsMetric)
 
 	// WebSocket metrics
 	prometheus.MustRegister(websocketConnectionsTotal)
@@ -75,9 +74,6 @@ func init() {
 	prometheus.MustRegister(endpointLatency)
 	prometheus.MustRegister(endpointResponseSize)
 	prometheus.MustRegister(relayMinerErrorsTotal)
-
-	// Concurrency metrics
-	prometheus.MustRegister(activeRequests)
 }
 
 var (
@@ -131,6 +127,23 @@ var (
 			Help:      "Total relay errors by service, endpoint domain, error type, and sanction type",
 		},
 		[]string{"service_id", "endpoint_domain", "error_type", "sanction_type"},
+	)
+
+	// activeRelays tracks the current number of active Shannon HTTP requests.
+	// This gauge metric shows the real-time concurrency level for monitoring
+	// request load and identifying potential bottlenecks.
+	//
+	// Use to analyze:
+	//   - Current request concurrency levels
+	//   - Request load patterns over time
+	//   - Capacity planning and resource utilization
+	//   - Identifying request spikes and bottlenecks
+	activeRelays = prometheus.NewGauge(
+		prometheus.GaugeOpts{
+			Subsystem: pathProcess,
+			Name:      relaysActiveRequestsMetric,
+			Help:      "Current number of active Shannon HTTP requests being processed",
+		},
 	)
 
 	// websocketConnectionsTotal tracks the total WebSocket connection attempts processed.
@@ -314,23 +327,6 @@ var (
 			Help:      "Total RelayMinerError occurrences by service, endpoint domain, endpoint error type, and relay miner details",
 		},
 		[]string{"service_id", "endpoint_domain", "endpoint_error_type", "relay_miner_codespace", "relay_miner_code"},
-	)
-
-	// activeRequests tracks the current number of active Shannon HTTP requests.
-	// This gauge metric shows the real-time concurrency level for monitoring
-	// request load and identifying potential bottlenecks.
-	//
-	// Use to analyze:
-	//   - Current request concurrency levels
-	//   - Request load patterns over time
-	//   - Capacity planning and resource utilization
-	//   - Identifying request spikes and bottlenecks
-	activeRequests = prometheus.NewGauge(
-		prometheus.GaugeOpts{
-			Subsystem: pathProcess,
-			Name:      activeRequestsMetric,
-			Help:      "Current number of active Shannon HTTP requests being processed",
-		},
 	)
 )
 
@@ -764,6 +760,12 @@ func processRelayMinerErrors(
 	}
 }
 
+// SetActiveRelays updates the gauge metric with the current number of active relays.
+// This should be called whenever the active relay count changes in the concurrency limiter.
+func SetActiveRelays(activeCount int64) {
+	activeRelays.Set(float64(activeCount))
+}
+
 // recordWebsocketConnectionTotal tracks WebSocket connection counts.
 func recordWebsocketConnectionTotal(
 	logger polylog.Logger,
@@ -1008,10 +1010,4 @@ func processWebsocketMessageErrors(
 			},
 		).Inc()
 	}
-}
-
-// SetActiveRequests updates the gauge metric with the current number of active requests.
-// This should be called whenever the active request count changes in the concurrency limiter.
-func SetActiveRequests(activeCount int64) {
-	activeRequests.Set(float64(activeCount))
 }
