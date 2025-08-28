@@ -7,30 +7,29 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestNewConcurrencyLimiter(t *testing.T) {
 	t.Run("with positive limit", func(t *testing.T) {
 		cl := NewConcurrencyLimiter(10)
-		assert.NotNil(t, cl)
-		assert.Equal(t, 10, cl.maxConcurrent)
-		assert.Equal(t, 10, cap(cl.semaphore))
+		require.NotNil(t, cl)
+		require.Equal(t, 10, cl.maxConcurrent)
+		require.Equal(t, 10, cap(cl.semaphore))
 	})
 
 	t.Run("with zero limit uses default", func(t *testing.T) {
 		cl := NewConcurrencyLimiter(0)
-		assert.NotNil(t, cl)
-		assert.Equal(t, defaultMaxConcurrentRequests, cl.maxConcurrent)
-		assert.Equal(t, defaultMaxConcurrentRequests, cap(cl.semaphore))
+		require.NotNil(t, cl)
+		require.Equal(t, defaultMaxConcurrentRequests, cl.maxConcurrent)
+		require.Equal(t, defaultMaxConcurrentRequests, cap(cl.semaphore))
 	})
 
 	t.Run("with negative limit uses default", func(t *testing.T) {
 		cl := NewConcurrencyLimiter(-5)
-		assert.NotNil(t, cl)
-		assert.Equal(t, defaultMaxConcurrentRequests, cl.maxConcurrent)
-		assert.Equal(t, defaultMaxConcurrentRequests, cap(cl.semaphore))
+		require.NotNil(t, cl)
+		require.Equal(t, defaultMaxConcurrentRequests, cl.maxConcurrent)
+		require.Equal(t, defaultMaxConcurrentRequests, cap(cl.semaphore))
 	})
 }
 
@@ -39,27 +38,27 @@ func TestConcurrencyLimiterAcquire(t *testing.T) {
 		cl := NewConcurrencyLimiter(3)
 		ctx := context.Background()
 
-		assert.True(t, cl.acquire(ctx))
-		assert.Equal(t, int64(1), cl.getActiveRequests())
+		require.True(t, cl.acquire(ctx))
+		require.Equal(t, int64(1), cl.getActiveRequests())
 
-		assert.True(t, cl.acquire(ctx))
-		assert.Equal(t, int64(2), cl.getActiveRequests())
+		require.True(t, cl.acquire(ctx))
+		require.Equal(t, int64(2), cl.getActiveRequests())
 
-		assert.True(t, cl.acquire(ctx))
-		assert.Equal(t, int64(3), cl.getActiveRequests())
+		require.True(t, cl.acquire(ctx))
+		require.Equal(t, int64(3), cl.getActiveRequests())
 
 		cl.release()
 		cl.release()
 		cl.release()
-		assert.Equal(t, int64(0), cl.getActiveRequests())
+		require.Equal(t, int64(0), cl.getActiveRequests())
 	})
 
 	t.Run("acquire blocks when at limit", func(t *testing.T) {
 		cl := NewConcurrencyLimiter(2)
 		ctx := context.Background()
 
-		assert.True(t, cl.acquire(ctx))
-		assert.True(t, cl.acquire(ctx))
+		require.True(t, cl.acquire(ctx))
+		require.True(t, cl.acquire(ctx))
 
 		acquired := make(chan bool)
 		go func() {
@@ -70,7 +69,7 @@ func TestConcurrencyLimiterAcquire(t *testing.T) {
 
 		select {
 		case result := <-acquired:
-			assert.False(t, result, "should have timed out")
+			require.False(t, result, "should have timed out")
 		case <-time.After(100 * time.Millisecond):
 			t.Fatal("acquire should have returned with timeout")
 		}
@@ -83,13 +82,13 @@ func TestConcurrencyLimiterAcquire(t *testing.T) {
 		cl := NewConcurrencyLimiter(1)
 		ctx := context.Background()
 
-		assert.True(t, cl.acquire(ctx))
+		require.True(t, cl.acquire(ctx))
 
 		cancelCtx, cancel := context.WithCancel(context.Background())
 		cancel()
 
-		assert.False(t, cl.acquire(cancelCtx))
-		assert.Equal(t, int64(1), cl.getActiveRequests())
+		require.False(t, cl.acquire(cancelCtx))
+		require.Equal(t, int64(1), cl.getActiveRequests())
 
 		cl.release()
 	})
@@ -99,11 +98,11 @@ func TestConcurrencyLimiterTryAcquireWithTimeout(t *testing.T) {
 	t.Run("acquires when available", func(t *testing.T) {
 		cl := NewConcurrencyLimiter(2)
 
-		assert.True(t, cl.tryAcquireWithTimeout(100*time.Millisecond))
-		assert.Equal(t, int64(1), cl.getActiveRequests())
+		require.True(t, cl.tryAcquireWithTimeout(100*time.Millisecond))
+		require.Equal(t, int64(1), cl.getActiveRequests())
 
-		assert.True(t, cl.tryAcquireWithTimeout(100*time.Millisecond))
-		assert.Equal(t, int64(2), cl.getActiveRequests())
+		require.True(t, cl.tryAcquireWithTimeout(100*time.Millisecond))
+		require.Equal(t, int64(2), cl.getActiveRequests())
 
 		cl.release()
 		cl.release()
@@ -112,14 +111,14 @@ func TestConcurrencyLimiterTryAcquireWithTimeout(t *testing.T) {
 	t.Run("times out when at limit", func(t *testing.T) {
 		cl := NewConcurrencyLimiter(1)
 
-		assert.True(t, cl.tryAcquireWithTimeout(100*time.Millisecond))
+		require.True(t, cl.tryAcquireWithTimeout(100*time.Millisecond))
 
 		start := time.Now()
-		assert.False(t, cl.tryAcquireWithTimeout(50*time.Millisecond))
+		require.False(t, cl.tryAcquireWithTimeout(50*time.Millisecond))
 		elapsed := time.Since(start)
 
-		assert.Greater(t, elapsed, 40*time.Millisecond)
-		assert.Less(t, elapsed, 60*time.Millisecond)
+		require.Greater(t, elapsed, 40*time.Millisecond)
+		require.Less(t, elapsed, 60*time.Millisecond)
 
 		cl.release()
 	})
@@ -133,24 +132,24 @@ func TestConcurrencyLimiterRelease(t *testing.T) {
 		cl.acquire(ctx)
 		cl.acquire(ctx)
 		cl.acquire(ctx)
-		assert.Equal(t, int64(3), cl.getActiveRequests())
+		require.Equal(t, int64(3), cl.getActiveRequests())
 
 		cl.release()
-		assert.Equal(t, int64(2), cl.getActiveRequests())
+		require.Equal(t, int64(2), cl.getActiveRequests())
 
 		cl.release()
-		assert.Equal(t, int64(1), cl.getActiveRequests())
+		require.Equal(t, int64(1), cl.getActiveRequests())
 
 		cl.release()
-		assert.Equal(t, int64(0), cl.getActiveRequests())
+		require.Equal(t, int64(0), cl.getActiveRequests())
 	})
 
 	t.Run("release without acquire is safe", func(t *testing.T) {
 		cl := NewConcurrencyLimiter(2)
-		assert.Equal(t, int64(0), cl.getActiveRequests())
+		require.Equal(t, int64(0), cl.getActiveRequests())
 
 		cl.release()
-		assert.Equal(t, int64(0), cl.getActiveRequests())
+		require.Equal(t, int64(0), cl.getActiveRequests())
 	})
 
 	t.Run("release allows blocked acquire", func(t *testing.T) {
@@ -171,7 +170,7 @@ func TestConcurrencyLimiterRelease(t *testing.T) {
 
 		select {
 		case result := <-acquired:
-			assert.True(t, result)
+			require.True(t, result)
 		case <-time.After(100 * time.Millisecond):
 			t.Fatal("acquire should have succeeded after release")
 		}
@@ -184,19 +183,19 @@ func TestConcurrencyLimiterGetActiveRequests(t *testing.T) {
 	cl := NewConcurrencyLimiter(10)
 	ctx := context.Background()
 
-	assert.Equal(t, int64(0), cl.getActiveRequests())
+	require.Equal(t, int64(0), cl.getActiveRequests())
 
 	cl.acquire(ctx)
-	assert.Equal(t, int64(1), cl.getActiveRequests())
+	require.Equal(t, int64(1), cl.getActiveRequests())
 
 	cl.acquire(ctx)
-	assert.Equal(t, int64(2), cl.getActiveRequests())
+	require.Equal(t, int64(2), cl.getActiveRequests())
 
 	cl.release()
-	assert.Equal(t, int64(1), cl.getActiveRequests())
+	require.Equal(t, int64(1), cl.getActiveRequests())
 
 	cl.release()
-	assert.Equal(t, int64(0), cl.getActiveRequests())
+	require.Equal(t, int64(0), cl.getActiveRequests())
 }
 
 func TestConcurrencyLimiterConcurrentAccess(t *testing.T) {
@@ -222,7 +221,7 @@ func TestConcurrencyLimiterConcurrentAccess(t *testing.T) {
 		}
 
 		wg.Wait()
-		assert.Equal(t, int64(0), cl.getActiveRequests())
+		require.Equal(t, int64(0), cl.getActiveRequests())
 	})
 
 	t.Run("enforces max concurrent limit", func(t *testing.T) {
@@ -254,8 +253,8 @@ func TestConcurrencyLimiterConcurrentAccess(t *testing.T) {
 		}
 
 		wg.Wait()
-		assert.LessOrEqual(t, maxActiveCount, int32(maxConcurrent))
-		assert.Equal(t, int64(0), cl.getActiveRequests())
+		require.LessOrEqual(t, maxActiveCount, int32(maxConcurrent))
+		require.Equal(t, int64(0), cl.getActiveRequests())
 	})
 
 	t.Run("concurrent getActiveRequests", func(t *testing.T) {
@@ -274,8 +273,8 @@ func TestConcurrencyLimiterConcurrentAccess(t *testing.T) {
 					return
 				default:
 					count := cl.getActiveRequests()
-					assert.GreaterOrEqual(t, count, int64(0))
-					assert.LessOrEqual(t, count, int64(100))
+					require.GreaterOrEqual(t, count, int64(0))
+					require.LessOrEqual(t, count, int64(100))
 				}
 			}
 		}()
@@ -297,7 +296,7 @@ func TestConcurrencyLimiterConcurrentAccess(t *testing.T) {
 		close(stopReading)
 		wg.Wait()
 
-		assert.Equal(t, int64(0), cl.getActiveRequests())
+		require.Equal(t, int64(0), cl.getActiveRequests())
 	})
 }
 
