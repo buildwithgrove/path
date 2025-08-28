@@ -7,14 +7,14 @@ import (
 )
 
 const (
-	// defaultInitialBufferSize is the initial size of the buffer pool.
+	// DefaultInitialBufferSize is the initial size of the buffer pool.
 	// Start with 256KB buffers - can grow as needed
-	defaultInitialBufferSize = 256 * 1024
+	DefaultInitialBufferSize = 256 * 1024
 
 	// TODO_CONSIDERATION: Consider making this configurable
-	// maxBufferSize is the maximum size of the buffer pool.
+	// DefaultMaxBufferSize is the maximum size of the buffer pool.
 	// Set the max buffer size to 4MB to avoid memory bloat.
-	maxBufferSize = 4 * 1024 * 1024
+	DefaultMaxBufferSize = 4 * 1024 * 1024
 )
 
 // bufferPool manages a pool of reusable byte buffers to reduce GC pressure.
@@ -28,7 +28,7 @@ func NewBufferPool(maxReaderSize int64) *bufferPool {
 	return &bufferPool{
 		pool: sync.Pool{
 			New: func() interface{} {
-				return bytes.NewBuffer(make([]byte, 0, defaultInitialBufferSize))
+				return bytes.NewBuffer(make([]byte, 0, DefaultInitialBufferSize))
 			},
 		},
 		maxReaderSize: maxReaderSize,
@@ -46,7 +46,7 @@ func (bp *bufferPool) getBuffer() *bytes.Buffer {
 // Buffers larger than maxBufferSize are not returned to avoid memory bloat.
 func (bp *bufferPool) putBuffer(buf *bytes.Buffer) {
 	// Don't pool huge buffers to avoid memory bloat
-	if buf.Cap() > maxBufferSize {
+	if buf.Cap() > DefaultMaxBufferSize {
 		return
 	}
 	bp.pool.Put(buf)

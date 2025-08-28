@@ -8,14 +8,15 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/buildwithgrove/path/config/shannon"
+	"github.com/buildwithgrove/path/gateway/grpc"
 	"github.com/buildwithgrove/path/protocol"
 	shannonprotocol "github.com/buildwithgrove/path/protocol/shannon"
 )
 
 // getTestDefaultGRPCConfig returns a GRPCConfig with default values applied
 // using the same defaults as defined in the shannon package
-func getTestDefaultGRPCConfig() gateway.GRPCConfig {
-	return gateway.GRPCConfig{
+func getTestDefaultGRPCConfig() grpc.GRPCConfig {
+	return grpc.GRPCConfig{
 		BackoffBaseDelay:  1 * time.Second,
 		BackoffMaxDelay:   60 * time.Second,
 		MinConnectTimeout: 10 * time.Second,
@@ -40,7 +41,7 @@ func Test_LoadGatewayConfigFromYAML(t *testing.T) {
 					FullNodeConfig: shannonprotocol.FullNodeConfig{
 						RpcURL:                "https://shannon-grove-rpc.mainnet.poktroll.com",
 						SessionRolloverBlocks: 10,
-						GRPCConfig: func() gateway.GRPCConfig {
+						GRPCConfig: func() grpc.GRPCConfig {
 							config := getTestDefaultGRPCConfig()
 							config.HostPort = "shannon-grove-grpc.mainnet.poktroll.com:443"
 							return config
@@ -160,7 +161,7 @@ logger_config:
 					FullNodeConfig: shannonprotocol.FullNodeConfig{
 						RpcURL:                "https://shannon-testnet-grove-rpc.beta.poktroll.com",
 						SessionRolloverBlocks: 10,
-						GRPCConfig: func() gateway.GRPCConfig {
+						GRPCConfig: func() grpc.GRPCConfig {
 							config := getTestDefaultGRPCConfig()
 							config.HostPort = "shannon-testnet-grove-grpc.beta.poktroll.com:443"
 							return config

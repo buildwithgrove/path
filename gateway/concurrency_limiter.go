@@ -33,8 +33,8 @@ func NewConcurrencyLimiter(maxConcurrent int) *concurrencyLimiter {
 	}
 }
 
-// acquire blocks until a slot is available or context is cancelled.
-// Returns true if acquired, false if context was cancelled.
+// acquire blocks until a slot is available or context is canceled.
+// Returns true if acquired, false if context was canceled.
 func (cl *concurrencyLimiter) acquire(ctx context.Context) bool {
 	select {
 	case cl.semaphore <- struct{}{}:

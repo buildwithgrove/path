@@ -16,6 +16,7 @@ import (
 	"github.com/pokt-network/poktroll/pkg/polylog"
 )
 
+// TODO_IMPROVE: Make these configurable.
 const (
 	// Maximum length of an HTTP response's body.
 	maxResponseSize = 100 * 1024 * 1024 // 100MB limit
@@ -139,7 +140,7 @@ func (h *HTTPClientWithDebugMetrics) SendHTTPRelay(
 ) ([]byte, int, error) {
 	// Acquire concurrency slot before proceeding
 	if !h.limiter.acquire(ctx) {
-		return nil, 0, fmt.Errorf("failed to acquire concurrency slot: context cancelled")
+		return nil, 0, fmt.Errorf("failed to acquire concurrency slot: context canceled")
 	}
 	defer h.limiter.release()
 
@@ -252,7 +253,7 @@ func (h *HTTPClientWithDebugMetrics) categorizeError(ctx context.Context, err er
 // readAndValidateResponse reads the response body and validates the HTTP status code
 func (h *HTTPClientWithDebugMetrics) readAndValidateResponse(resp *http.Response) ([]byte, error) {
 	// Read response body with size protection using buffer pool
-	responseBody, err := h.bufferPool.readWithBuffer(resp.Body, maxResponseSize)
+	responseBody, err := h.bufferPool.readWithBuffer(resp.Body)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read response body: %w", err)
 	}
