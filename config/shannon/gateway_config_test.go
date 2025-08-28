@@ -5,7 +5,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/buildwithgrove/path/gateway/grpc"
+	"github.com/buildwithgrove/path/network/grpc"
 	"github.com/buildwithgrove/path/protocol"
 	shannonprotocol "github.com/buildwithgrove/path/protocol/shannon"
 )

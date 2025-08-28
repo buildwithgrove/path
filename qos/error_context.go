@@ -7,6 +7,7 @@ import (
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
 	"github.com/buildwithgrove/path/gateway"
+	pathhttp "github.com/buildwithgrove/path/network/http"
 	qosobservations "github.com/buildwithgrove/path/observation/qos"
 	"github.com/buildwithgrove/path/protocol"
 	"github.com/buildwithgrove/path/qos/jsonrpc"
@@ -38,7 +39,7 @@ type RequestErrorContext struct {
 
 // GetHTTPResponse formats the stored JSONRPC error as an HTTP response
 // Implements the gateway.RequestQoSContext interface.
-func (rec *RequestErrorContext) GetHTTPResponse() gateway.HTTPResponse {
+func (rec *RequestErrorContext) GetHTTPResponse() pathhttp.HTTPResponse {
 	bz, err := json.Marshal(rec.Response)
 	if err != nil {
 		rec.Logger.With(

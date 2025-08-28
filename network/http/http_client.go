@@ -1,4 +1,4 @@
-package gateway
+package http
 
 import (
 	"bytes"
@@ -14,6 +14,8 @@ import (
 	"time"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
+
+	"github.com/buildwithgrove/path/network/concurrency"
 )
 
 // TODO_IMPROVE: Make these configurable.
@@ -34,8 +36,8 @@ const (
 // - Connection issue visibility
 type HTTPClientWithDebugMetrics struct {
 	httpClient *http.Client
-	limiter    *concurrencyLimiter
-	bufferPool *bufferPool
+	limiter    *concurrency.ConcurrencyLimiter
+	bufferPool *concurrency.BufferPool
 
 	// Atomic counters for monitoring
 	activeRequests   atomic.Uint64
@@ -92,10 +94,10 @@ func NewDefaultHTTPClientWithDebugMetrics() *HTTPClientWithDebugMetrics {
 		}).DialContext,
 
 		// Connection pool settings scaled with concurrency limit
-		MaxIdleConns:        concurrencyLimiterMax / 5,      // Scale total pool: 20% of max concurrency
-		MaxIdleConnsPerHost: concurrencyLimiterMax / 20,     // Scale per-host pool: 5% of max concurrency
-		MaxConnsPerHost:     concurrencyLimiterMax / 10,     // Scale max connections: 10% of max concurrency
-		IdleConnTimeout:     90 * time.Second,               // Reduced from 300s - shorter idle to free resources
+		MaxIdleConns:        concurrencyLimiterMax / 5,  // Scale total pool: 20% of max concurrency
+		MaxIdleConnsPerHost: concurrencyLimiterMax / 20, // Scale per-host pool: 5% of max concurrency
+		MaxConnsPerHost:     concurrencyLimiterMax / 10, // Scale max connections: 10% of max concurrency
+		IdleConnTimeout:     90 * time.Second,           // Reduced from 300s - shorter idle to free resources
 
 		// Timeout settings optimized for quick failure detection
 		TLSHandshakeTimeout:   5 * time.Second,  // Fast TLS timeout since handshakes typically complete in ~100ms
@@ -120,8 +122,8 @@ func NewDefaultHTTPClientWithDebugMetrics() *HTTPClientWithDebugMetrics {
 
 	return &HTTPClientWithDebugMetrics{
 		httpClient: httpClient,
-		limiter:    NewConcurrencyLimiter(concurrencyLimiterMax),
-		bufferPool: NewBufferPool(maxResponseSize),
+		limiter:    concurrency.NewConcurrencyLimiter(concurrencyLimiterMax),
+		bufferPool: concurrency.NewBufferPool(maxResponseSize),
 	}
 }
 
@@ -139,10 +141,10 @@ func (h *HTTPClientWithDebugMetrics) SendHTTPRelay(
 	headers map[string]string,
 ) ([]byte, int, error) {
 	// Acquire concurrency slot before proceeding
-	if !h.limiter.acquire(ctx) {
+	if !h.limiter.Acquire(ctx) {
 		return nil, 0, fmt.Errorf("failed to acquire concurrency slot: context canceled")
 	}
-	defer h.limiter.release()
+	defer h.limiter.Release()
 
 	// Set up debugging context and logging function
 	debugCtx, requestRecorder := h.setupRequestDebugging(ctx, logger, endpointURL)
@@ -253,7 +255,7 @@ func (h *HTTPClientWithDebugMetrics) categorizeError(ctx context.Context, err er
 // readAndValidateResponse reads the response body and validates the HTTP status code
 func (h *HTTPClientWithDebugMetrics) readAndValidateResponse(resp *http.Response) ([]byte, error) {
 	// Read response body with size protection using buffer pool
-	responseBody, err := h.bufferPool.readWithBuffer(resp.Body)
+	responseBody, err := h.bufferPool.ReadWithBuffer(resp.Body)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read response body: %w", err)
 	}

@@ -1,4 +1,4 @@
-package gateway
+package http
 
 // HTTPResponse allows passing around an HTTP response intended to be received by the user.
 // It is used instead of the standard http.Response to minimze the requirements for producers and clarify the data items that

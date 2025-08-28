@@ -5,7 +5,7 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/buildwithgrove/path/gateway"
+	pathhttp "github.com/buildwithgrove/path/network/http"
 	protocolobservations "github.com/buildwithgrove/path/observation/protocol"
 )
 
@@ -105,7 +105,7 @@ func extractErrFromRelayError(err error) error {
 
 	// Endpoint's backend service returned a non 2xx HTTP status code.
 	if strings.Contains(err.Error(), "non 2xx HTTP status code") {
-		return gateway.ErrRelayEndpointHTTPError
+		return pathhttp.ErrRelayEndpointHTTPError
 	}
 	// context canceled manually
 	if strings.Contains(err.Error(), "context canceled") {

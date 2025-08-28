@@ -11,7 +11,7 @@ import (
 
 	sharedtypes "github.com/pokt-network/poktroll/x/shared/types"
 
-	"github.com/buildwithgrove/path/gateway/grpc"
+	"github.com/buildwithgrove/path/network/grpc"
 	"github.com/buildwithgrove/path/protocol"
 )
 

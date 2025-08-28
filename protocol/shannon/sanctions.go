@@ -8,7 +8,7 @@ import (
 	"github.com/pokt-network/poktroll/pkg/polylog"
 	sdk "github.com/pokt-network/shannon-sdk"
 
-	"github.com/buildwithgrove/path/gateway"
+	pathhttp "github.com/buildwithgrove/path/network/http"
 	protocolobservations "github.com/buildwithgrove/path/observation/protocol"
 )
 
@@ -111,7 +111,7 @@ func classifyRelayError(logger polylog.Logger, err error) (protocolobservations.
 			protocolobservations.ShannonSanctionType_SHANNON_SANCTION_SESSION
 
 	// Endpoint's backend service returned a non 2xx HTTP status code.
-	case gateway.ErrRelayEndpointHTTPError:
+	case pathhttp.ErrRelayEndpointHTTPError:
 		// TODO_IMPROVE: Make this a sanction that just lasts a few blocks
 		return protocolobservations.ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_HTTP_BAD_RESPONSE,
 			protocolobservations.ShannonSanctionType_SHANNON_SANCTION_UNSPECIFIED
@@ -139,7 +139,7 @@ func classifyHttpError(logger polylog.Logger, err error) (protocolobservations.S
 	logger = logger.With("error_message", err.Error())
 
 	// Endpoint returned non 2xx HTTP Status code
-	if errors.Is(err, gateway.ErrRelayEndpointHTTPError) {
+	if errors.Is(err, pathhttp.ErrRelayEndpointHTTPError) {
 		// TODO_IMPROVE: Make this a sanction that just lasts a few blocks
 		return protocolobservations.ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_HTTP_NON_2XX_STATUS,
 			protocolobservations.ShannonSanctionType_SHANNON_SANCTION_UNSPECIFIED

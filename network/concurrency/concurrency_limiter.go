@@ -1,4 +1,4 @@
-package gateway
+package concurrency
 
 import (
 	"context"
@@ -13,9 +13,9 @@ const (
 	defaultMaxConcurrentRequests = 1000000
 )
 
-// concurrencyLimiter bounds concurrent operations via semaphore pattern.
+// ConcurrencyLimiter bounds concurrent operations via semaphore pattern.
 // Prevents resource exhaustion and tracks active request counts.
-type concurrencyLimiter struct {
+type ConcurrencyLimiter struct {
 	semaphore      chan struct{}
 	maxConcurrent  int
 	activeRequests int64
@@ -23,20 +23,20 @@ type concurrencyLimiter struct {
 }
 
 // NewConcurrencyLimiter creates a limiter that bounds concurrent operations.
-func NewConcurrencyLimiter(maxConcurrent int) *concurrencyLimiter {
+func NewConcurrencyLimiter(maxConcurrent int) *ConcurrencyLimiter {
 	if maxConcurrent <= 0 {
 		maxConcurrent = defaultMaxConcurrentRequests // Default reasonable limit
 	}
 
-	return &concurrencyLimiter{
+	return &ConcurrencyLimiter{
 		semaphore:     make(chan struct{}, maxConcurrent),
 		maxConcurrent: maxConcurrent,
 	}
 }
 
-// acquire blocks until a slot is available or context is canceled.
+// Acquire blocks until a slot is available or context is canceled.
 // Returns true if acquired, false if context was canceled.
-func (cl *concurrencyLimiter) acquire(ctx context.Context) bool {
+func (cl *ConcurrencyLimiter) Acquire(ctx context.Context) bool {
 	select {
 	case cl.semaphore <- struct{}{}:
 		cl.mu.Lock()
@@ -51,14 +51,14 @@ func (cl *concurrencyLimiter) acquire(ctx context.Context) bool {
 }
 
 // tryAcquireWithTimeout attempts to acquire a slot with timeout.
-func (cl *concurrencyLimiter) tryAcquireWithTimeout(timeout time.Duration) bool {
+func (cl *ConcurrencyLimiter) tryAcquireWithTimeout(timeout time.Duration) bool {
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
-	return cl.acquire(ctx)
+	return cl.Acquire(ctx)
 }
 
-// release returns a slot to the pool.
-func (cl *concurrencyLimiter) release() {
+// Release returns a slot to the pool.
+func (cl *ConcurrencyLimiter) Release() {
 	select {
 	case <-cl.semaphore:
 		cl.mu.Lock()
@@ -72,7 +72,7 @@ func (cl *concurrencyLimiter) release() {
 }
 
 // getActiveRequests returns the current number of active requests.
-func (cl *concurrencyLimiter) getActiveRequests() int64 {
+func (cl *ConcurrencyLimiter) getActiveRequests() int64 {
 	cl.mu.RLock()
 	defer cl.mu.RUnlock()
 

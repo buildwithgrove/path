@@ -8,8 +8,9 @@ import (
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
-	"github.com/buildwithgrove/path/gateway"
+	pathhttp "github.com/buildwithgrove/path/network/http"
 	qosobservations "github.com/buildwithgrove/path/observation/qos"
+	"github.com/buildwithgrove/path/qos"
 )
 
 // TODO_IMPROVE(@commoddity): Replace custom struct with official Cosmos SDK types.
@@ -106,9 +107,9 @@ func (r responseCosmosStatus) GetResponseStatusCode() int {
 
 // GetHTTPResponse builds and returns the httpResponse matching the responseCosmosStatus instance.
 // Implements the response interface.
-func (r responseCosmosStatus) GetHTTPResponse() gateway.HTTPResponse {
-	return httpResponse{
-		responsePayload: r.GetResponsePayload(),
-		httpStatusCode:  r.GetResponseStatusCode(),
-	}
+func (r responseCosmosStatus) GetHTTPResponse() pathhttp.HTTPResponse {
+	return qos.BuildHTTPResponseFromBytes(
+		r.GetResponsePayload(),
+		r.GetResponseStatusCode(),
+	)
 }

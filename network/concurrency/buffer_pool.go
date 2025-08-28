@@ -1,4 +1,4 @@
-package gateway
+package concurrency
 
 import (
 	"bytes"
@@ -17,15 +17,15 @@ const (
 	DefaultMaxBufferSize = 4 * 1024 * 1024
 )
 
-// bufferPool manages reusable byte buffers to reduce GC pressure.
+// BufferPool manages reusable byte buffers to reduce GC pressure.
 // Uses sync.Pool for efficient buffer recycling with size limits.
-type bufferPool struct {
+type BufferPool struct {
 	pool          sync.Pool
 	maxReaderSize int64
 }
 
-func NewBufferPool(maxReaderSize int64) *bufferPool {
-	return &bufferPool{
+func NewBufferPool(maxReaderSize int64) *BufferPool {
+	return &BufferPool{
 		pool: sync.Pool{
 			New: func() interface{} {
 				return bytes.NewBuffer(make([]byte, 0, DefaultInitialBufferSize))
@@ -36,7 +36,7 @@ func NewBufferPool(maxReaderSize int64) *bufferPool {
 }
 
 // getBuffer retrieves a buffer from the pool.
-func (bp *bufferPool) getBuffer() *bytes.Buffer {
+func (bp *BufferPool) getBuffer() *bytes.Buffer {
 	buf := bp.pool.Get().(*bytes.Buffer)
 	buf.Reset() // Always reset to ensure clean state
 	return buf
@@ -44,7 +44,7 @@ func (bp *bufferPool) getBuffer() *bytes.Buffer {
 
 // putBuffer returns a buffer to the pool.
 // Buffers larger than maxBufferSize are not returned to avoid memory bloat.
-func (bp *bufferPool) putBuffer(buf *bytes.Buffer) {
+func (bp *BufferPool) putBuffer(buf *bytes.Buffer) {
 	// Skip pooling oversized buffers to prevent memory bloat
 	if buf.Cap() > DefaultMaxBufferSize {
 		return
@@ -52,8 +52,8 @@ func (bp *bufferPool) putBuffer(buf *bytes.Buffer) {
 	bp.pool.Put(buf)
 }
 
-// readWithBuffer reads from an io.Reader using a pooled buffer.
-func (bp *bufferPool) readWithBuffer(r io.Reader) ([]byte, error) {
+// ReadWithBuffer reads from an io.Reader using a pooled buffer.
+func (bp *BufferPool) ReadWithBuffer(r io.Reader) ([]byte, error) {
 	buf := bp.getBuffer()
 	defer bp.putBuffer(buf)
 

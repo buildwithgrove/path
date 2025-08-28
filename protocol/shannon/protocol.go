@@ -12,6 +12,7 @@ import (
 	"github.com/buildwithgrove/path/gateway"
 	"github.com/buildwithgrove/path/health"
 	"github.com/buildwithgrove/path/metrics/devtools"
+	pathhttp "github.com/buildwithgrove/path/network/http"
 	protocolobservations "github.com/buildwithgrove/path/observation/protocol"
 	"github.com/buildwithgrove/path/protocol"
 )
@@ -55,7 +56,7 @@ type Protocol struct {
 	sanctionedEndpointsStore *sanctionedEndpointsStore
 
 	// HTTP client used for sending relay requests to endpoints while also capturing & publishing various debug metrics.
-	httpClient *gateway.HTTPClientWithDebugMetrics
+	httpClient *pathhttp.HTTPClientWithDebugMetrics
 
 	// serviceFallbackMap contains the service fallback config per service.
 	//
@@ -109,7 +110,7 @@ func NewProtocol(
 		ownedApps: ownedApps,
 
 		// HTTP client with embedded tracking of debug metrics.
-		httpClient: gateway.NewDefaultHTTPClientWithDebugMetrics(),
+		httpClient: pathhttp.NewDefaultHTTPClientWithDebugMetrics(),
 
 		// serviceFallbacks contains the fallback information for each service.
 		serviceFallbackMap: config.getServiceFallbackMap(),

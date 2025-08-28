@@ -1,4 +1,4 @@
-package gateway
+package concurrency
 
 import (
 	"bytes"
@@ -85,7 +85,7 @@ func TestBufferPoolReadWithBuffer(t *testing.T) {
 		testData := "Hello, World!"
 		reader := strings.NewReader(testData)
 
-		data, err := bp.readWithBuffer(reader)
+		data, err := bp.ReadWithBuffer(reader)
 		require.NoError(t, err)
 		require.Equal(t, testData, string(data))
 	})
@@ -94,7 +94,7 @@ func TestBufferPoolReadWithBuffer(t *testing.T) {
 		testData := strings.Repeat("x", 100000)
 		reader := strings.NewReader(testData)
 
-		data, err := bp.readWithBuffer(reader)
+		data, err := bp.ReadWithBuffer(reader)
 		require.NoError(t, err)
 		require.Equal(t, testData, string(data))
 	})
@@ -105,7 +105,7 @@ func TestBufferPoolReadWithBuffer(t *testing.T) {
 		maxSize := int64(10)
 		bpLimited := NewBufferPool(maxSize)
 
-		data, err := bpLimited.readWithBuffer(reader)
+		data, err := bpLimited.ReadWithBuffer(reader)
 		require.NoError(t, err)
 		require.Equal(t, testData[:maxSize], string(data))
 		require.Equal(t, int(maxSize), len(data))
@@ -114,7 +114,7 @@ func TestBufferPoolReadWithBuffer(t *testing.T) {
 	t.Run("handles empty reader", func(t *testing.T) {
 		reader := strings.NewReader("")
 
-		data, err := bp.readWithBuffer(reader)
+		data, err := bp.ReadWithBuffer(reader)
 		require.NoError(t, err)
 		require.Empty(t, data)
 	})
@@ -122,7 +122,7 @@ func TestBufferPoolReadWithBuffer(t *testing.T) {
 	t.Run("handles reader error", func(t *testing.T) {
 		reader := &errorReader{err: io.ErrUnexpectedEOF}
 
-		data, err := bp.readWithBuffer(reader)
+		data, err := bp.ReadWithBuffer(reader)
 		require.Equal(t, io.ErrUnexpectedEOF, err)
 		require.Nil(t, data)
 	})
@@ -131,11 +131,11 @@ func TestBufferPoolReadWithBuffer(t *testing.T) {
 		testData := "Original data"
 		reader := strings.NewReader(testData)
 
-		data1, err := bp.readWithBuffer(reader)
+		data1, err := bp.ReadWithBuffer(reader)
 		require.NoError(t, err)
 
 		reader2 := strings.NewReader("Modified data")
-		data2, err := bp.readWithBuffer(reader2)
+		data2, err := bp.ReadWithBuffer(reader2)
 		require.NoError(t, err)
 
 		require.Equal(t, "Original data", string(data1))
@@ -167,7 +167,7 @@ func TestBufferPoolConcurrency(t *testing.T) {
 		wg.Wait()
 	})
 
-	t.Run("concurrent readWithBuffer", func(t *testing.T) {
+	t.Run("concurrent ReadWithBuffer", func(t *testing.T) {
 		var wg sync.WaitGroup
 		numGoroutines := 50
 
@@ -178,7 +178,7 @@ func TestBufferPoolConcurrency(t *testing.T) {
 			go func() {
 				defer wg.Done()
 				reader := strings.NewReader(testData)
-				data, err := bp.readWithBuffer(reader)
+				data, err := bp.ReadWithBuffer(reader)
 				require.NoError(t, err)
 				require.Equal(t, testData, string(data))
 			}()
@@ -252,12 +252,12 @@ func TestBufferPoolMemoryEfficiency(t *testing.T) {
 		require.LessOrEqual(t, newBuf.Cap(), DefaultInitialBufferSize)
 	})
 
-	t.Run("readWithBuffer doesn't leak memory", func(t *testing.T) {
+	t.Run("ReadWithBuffer doesn't leak memory", func(t *testing.T) {
 		testData := strings.Repeat("x", 1000)
 
 		for i := 0; i < 100; i++ {
 			reader := strings.NewReader(testData)
-			data, err := bp.readWithBuffer(reader)
+			data, err := bp.ReadWithBuffer(reader)
 			require.NoError(t, err)
 			require.Equal(t, len(testData), len(data))
 		}
@@ -284,7 +284,7 @@ func BenchmarkBufferPoolReadWithBuffer(b *testing.B) {
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
 			reader := strings.NewReader(testData)
-			data, err := bp.readWithBuffer(reader)
+			data, err := bp.ReadWithBuffer(reader)
 			if err != nil {
 				b.Fatal(err)
 			}

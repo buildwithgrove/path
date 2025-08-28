@@ -18,6 +18,7 @@ import (
 	sdk "github.com/pokt-network/shannon-sdk"
 
 	"github.com/buildwithgrove/path/gateway"
+	pathhttp "github.com/buildwithgrove/path/network/http"
 	protocolobservations "github.com/buildwithgrove/path/observation/protocol"
 	"github.com/buildwithgrove/path/protocol"
 )
@@ -89,7 +90,7 @@ type requestContext struct {
 	currentRelayMinerError *protocolobservations.ShannonRelayMinerError
 
 	// HTTP client used for sending relay requests to endpoints while also capturing various debug metrics
-	httpClient *gateway.HTTPClientWithDebugMetrics
+	httpClient *pathhttp.HTTPClientWithDebugMetrics
 
 	// fallbackEndpoints is used to retrieve a fallback endpoint by an endpoint address.
 	fallbackEndpoints map[protocol.EndpointAddr]endpoint

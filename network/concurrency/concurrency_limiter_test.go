@@ -1,4 +1,4 @@
-package gateway
+package concurrency
 
 import (
 	"context"
@@ -38,18 +38,18 @@ func TestConcurrencyLimiterAcquire(t *testing.T) {
 		cl := NewConcurrencyLimiter(3)
 		ctx := context.Background()
 
-		require.True(t, cl.acquire(ctx))
+		require.True(t, cl.Acquire(ctx))
 		require.Equal(t, int64(1), cl.getActiveRequests())
 
-		require.True(t, cl.acquire(ctx))
+		require.True(t, cl.Acquire(ctx))
 		require.Equal(t, int64(2), cl.getActiveRequests())
 
-		require.True(t, cl.acquire(ctx))
+		require.True(t, cl.Acquire(ctx))
 		require.Equal(t, int64(3), cl.getActiveRequests())
 
-		cl.release()
-		cl.release()
-		cl.release()
+		cl.Release()
+		cl.Release()
+		cl.Release()
 		require.Equal(t, int64(0), cl.getActiveRequests())
 	})
 
@@ -57,14 +57,14 @@ func TestConcurrencyLimiterAcquire(t *testing.T) {
 		cl := NewConcurrencyLimiter(2)
 		ctx := context.Background()
 
-		require.True(t, cl.acquire(ctx))
-		require.True(t, cl.acquire(ctx))
+		require.True(t, cl.Acquire(ctx))
+		require.True(t, cl.Acquire(ctx))
 
 		acquired := make(chan bool)
 		go func() {
 			ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
 			defer cancel()
-			acquired <- cl.acquire(ctx)
+			acquired <- cl.Acquire(ctx)
 		}()
 
 		select {
@@ -74,23 +74,23 @@ func TestConcurrencyLimiterAcquire(t *testing.T) {
 			t.Fatal("acquire should have returned with timeout")
 		}
 
-		cl.release()
-		cl.release()
+		cl.Release()
+		cl.Release()
 	})
 
 	t.Run("acquire respects context cancellation", func(t *testing.T) {
 		cl := NewConcurrencyLimiter(1)
 		ctx := context.Background()
 
-		require.True(t, cl.acquire(ctx))
+		require.True(t, cl.Acquire(ctx))
 
 		cancelCtx, cancel := context.WithCancel(context.Background())
 		cancel()
 
-		require.False(t, cl.acquire(cancelCtx))
+		require.False(t, cl.Acquire(cancelCtx))
 		require.Equal(t, int64(1), cl.getActiveRequests())
 
-		cl.release()
+		cl.Release()
 	})
 }
 
@@ -104,8 +104,8 @@ func TestConcurrencyLimiterTryAcquireWithTimeout(t *testing.T) {
 		require.True(t, cl.tryAcquireWithTimeout(100*time.Millisecond))
 		require.Equal(t, int64(2), cl.getActiveRequests())
 
-		cl.release()
-		cl.release()
+		cl.Release()
+		cl.Release()
 	})
 
 	t.Run("times out when at limit", func(t *testing.T) {
@@ -120,7 +120,7 @@ func TestConcurrencyLimiterTryAcquireWithTimeout(t *testing.T) {
 		require.Greater(t, elapsed, 40*time.Millisecond)
 		require.Less(t, elapsed, 60*time.Millisecond)
 
-		cl.release()
+		cl.Release()
 	})
 }
 
@@ -129,18 +129,18 @@ func TestConcurrencyLimiterRelease(t *testing.T) {
 		cl := NewConcurrencyLimiter(3)
 		ctx := context.Background()
 
-		cl.acquire(ctx)
-		cl.acquire(ctx)
-		cl.acquire(ctx)
+		cl.Acquire(ctx)
+		cl.Acquire(ctx)
+		cl.Acquire(ctx)
 		require.Equal(t, int64(3), cl.getActiveRequests())
 
-		cl.release()
+		cl.Release()
 		require.Equal(t, int64(2), cl.getActiveRequests())
 
-		cl.release()
+		cl.Release()
 		require.Equal(t, int64(1), cl.getActiveRequests())
 
-		cl.release()
+		cl.Release()
 		require.Equal(t, int64(0), cl.getActiveRequests())
 	})
 
@@ -148,7 +148,7 @@ func TestConcurrencyLimiterRelease(t *testing.T) {
 		cl := NewConcurrencyLimiter(2)
 		require.Equal(t, int64(0), cl.getActiveRequests())
 
-		cl.release()
+		cl.Release()
 		require.Equal(t, int64(0), cl.getActiveRequests())
 	})
 
@@ -156,17 +156,17 @@ func TestConcurrencyLimiterRelease(t *testing.T) {
 		cl := NewConcurrencyLimiter(1)
 		ctx := context.Background()
 
-		require.True(t, cl.acquire(ctx))
+		require.True(t, cl.Acquire(ctx))
 
 		acquired := make(chan bool)
 		go func() {
 			ctx := context.Background()
-			acquired <- cl.acquire(ctx)
+			acquired <- cl.Acquire(ctx)
 		}()
 
 		time.Sleep(10 * time.Millisecond)
 
-		cl.release()
+		cl.Release()
 
 		select {
 		case result := <-acquired:
@@ -175,7 +175,7 @@ func TestConcurrencyLimiterRelease(t *testing.T) {
 			t.Fatal("acquire should have succeeded after release")
 		}
 
-		cl.release()
+		cl.Release()
 	})
 }
 
@@ -185,16 +185,16 @@ func TestConcurrencyLimiterGetActiveRequests(t *testing.T) {
 
 	require.Equal(t, int64(0), cl.getActiveRequests())
 
-	cl.acquire(ctx)
+	cl.Acquire(ctx)
 	require.Equal(t, int64(1), cl.getActiveRequests())
 
-	cl.acquire(ctx)
+	cl.Acquire(ctx)
 	require.Equal(t, int64(2), cl.getActiveRequests())
 
-	cl.release()
+	cl.Release()
 	require.Equal(t, int64(1), cl.getActiveRequests())
 
-	cl.release()
+	cl.Release()
 	require.Equal(t, int64(0), cl.getActiveRequests())
 }
 
@@ -212,9 +212,9 @@ func TestConcurrencyLimiterConcurrentAccess(t *testing.T) {
 			go func() {
 				defer wg.Done()
 				for j := 0; j < numOperations; j++ {
-					if cl.acquire(ctx) {
+					if cl.Acquire(ctx) {
 						time.Sleep(time.Microsecond)
-						cl.release()
+						cl.Release()
 					}
 				}
 			}()
@@ -237,7 +237,7 @@ func TestConcurrencyLimiterConcurrentAccess(t *testing.T) {
 			wg.Add(1)
 			go func() {
 				defer wg.Done()
-				if cl.acquire(ctx) {
+				if cl.Acquire(ctx) {
 					current := atomic.AddInt32(&activeCount, 1)
 					for {
 						max := atomic.LoadInt32(&maxActiveCount)
@@ -247,7 +247,7 @@ func TestConcurrencyLimiterConcurrentAccess(t *testing.T) {
 					}
 					time.Sleep(10 * time.Millisecond)
 					atomic.AddInt32(&activeCount, -1)
-					cl.release()
+					cl.Release()
 				}
 			}()
 		}
@@ -284,9 +284,9 @@ func TestConcurrencyLimiterConcurrentAccess(t *testing.T) {
 			go func() {
 				defer wg.Done()
 				for j := 0; j < 10; j++ {
-					if cl.acquire(ctx) {
+					if cl.Acquire(ctx) {
 						time.Sleep(time.Millisecond)
-						cl.release()
+						cl.Release()
 					}
 				}
 			}()
@@ -310,7 +310,7 @@ func TestConcurrencyLimiterRaceConditions(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			cl.acquire(ctx)
+			cl.Acquire(ctx)
 		}()
 	}
 
@@ -318,7 +318,7 @@ func TestConcurrencyLimiterRaceConditions(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			cl.release()
+			cl.Release()
 		}()
 	}
 
@@ -348,8 +348,8 @@ func BenchmarkConcurrencyLimiterAcquireRelease(b *testing.B) {
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
-			if cl.acquire(ctx) {
-				cl.release()
+			if cl.Acquire(ctx) {
+				cl.Release()
 			}
 		}
 	})
@@ -360,7 +360,7 @@ func BenchmarkConcurrencyLimiterGetActiveRequests(b *testing.B) {
 	ctx := context.Background()
 
 	for i := 0; i < 500; i++ {
-		cl.acquire(ctx)
+		cl.Acquire(ctx)
 	}
 
 	b.ResetTimer()
@@ -371,6 +371,6 @@ func BenchmarkConcurrencyLimiterGetActiveRequests(b *testing.B) {
 	})
 
 	for i := 0; i < 500; i++ {
-		cl.release()
+		cl.Release()
 	}
 }
