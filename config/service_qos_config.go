@@ -118,7 +118,8 @@ var shannonServices = []ServiceQoSConfig{
 			4_504_400,
 		),
 		map[sharedtypes.RPCType]struct{}{
-			sharedtypes.RPCType_JSON_RPC: {},
+			sharedtypes.RPCType_JSON_RPC:  {},
+			sharedtypes.RPCType_WEBSOCKET: {},
 		},
 	),
 
@@ -178,7 +179,8 @@ var shannonServices = []ServiceQoSConfig{
 			33_049_200,
 		),
 		map[sharedtypes.RPCType]struct{}{
-			sharedtypes.RPCType_JSON_RPC: {},
+			sharedtypes.RPCType_JSON_RPC:  {},
+			sharedtypes.RPCType_WEBSOCKET: {},
 		},
 	),
 

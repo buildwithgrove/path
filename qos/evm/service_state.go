@@ -210,7 +210,8 @@ func (ss *serviceState) getDisqualifiedEndpointsResponse(serviceID protocol.Serv
 
 			// Endpoint is disqualified due to a missing or invalid block number.
 			case errors.Is(err, errNoBlockNumberObs),
-				errors.Is(err, errInvalidBlockNumberObs):
+				errors.Is(err, errInvalidBlockNumberObs),
+				errors.Is(err, errOutsideSyncAllowanceBlockNumberObs):
 				qosLevelDataResponse.BlockNumberCheckErrorsCount++
 
 			// Endpoint is disqualified due to a missing or invalid chain ID.
