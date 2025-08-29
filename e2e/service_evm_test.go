@@ -46,6 +46,13 @@ const (
 	eth_getTransactionReceipt = "eth_getTransactionReceipt"
 	eth_getTransactionByHash  = "eth_getTransactionByHash"
 	eth_call                  = "eth_call"
+
+	// Special identifier for batch requests
+	// Will send a request containing:
+	// 	- eth_blockNumber
+	// 	- eth_chainId
+	// 	- eth_gasPrice
+	batchRequest = "BATCH_REQUEST: [eth_blockNumber, eth_chainId, eth_gasPrice]"
 )
 
 // getEVMTestMethods returns all EVM JSON-RPC methods for a service load test.
@@ -62,6 +69,9 @@ func getEVMTestMethods() []string {
 		eth_getTransactionReceipt,
 		eth_getTransactionByHash,
 		eth_call,
+
+		// Include batch request testing
+		batchRequest,
 	}
 }
 
@@ -114,6 +124,33 @@ func createEVMJsonRPCParams(method jsonrpc.Method, sp ServiceParams) jsonrpc.Par
 	}
 }
 
+// createEVMBatchRequest creates a batch request containing eth_blockNumber, eth_chainId, and eth_gasPrice.
+// Returns the marshaled JSON bytes for the batch request.
+func createEVMBatchRequest() ([]byte, error) {
+	batchRequests := []jsonrpc.Request{
+		{
+			JSONRPC: jsonrpc.Version2,
+			ID:      jsonrpc.IDFromInt(1),
+			Method:  jsonrpc.Method(eth_blockNumber),
+			Params:  jsonrpc.Params{},
+		},
+		{
+			JSONRPC: jsonrpc.Version2,
+			ID:      jsonrpc.IDFromInt(2),
+			Method:  jsonrpc.Method(eth_chainId),
+			Params:  jsonrpc.Params{},
+		},
+		{
+			JSONRPC: jsonrpc.Version2,
+			ID:      jsonrpc.IDFromInt(3),
+			Method:  jsonrpc.Method(eth_gasPrice),
+			Params:  jsonrpc.Params{},
+		},
+	}
+
+	return json.Marshal(batchRequests)
+}
+
 func getEVMVegetaTargets(
 	ts *TestService,
 	methods []string,
@@ -129,18 +166,29 @@ func getEVMVegetaTargets(
 
 	targets := make(map[string]vegeta.Target)
 	for _, method := range methods {
-		// Create JSON-RPC request with appropriate parameters
-		jsonrpcReq := jsonrpc.Request{
-			JSONRPC: jsonrpc.Version2,
-			ID:      jsonrpc.IDFromInt(1),
-			Method:  jsonrpc.Method(method),
-			Params:  createEVMJsonRPCParams(jsonrpc.Method(method), ts.ServiceParams),
-		}
+		var body []byte
+		var err error
 
-		// Marshal the request body
-		body, err := json.Marshal(jsonrpcReq)
-		if err != nil {
-			return nil, fmt.Errorf("failed to marshal JSON-RPC request for method '%s' for service '%s': %w", method, ts.ServiceID, err)
+		// Handle batch request specially
+		if method == batchRequest {
+			body, err = createEVMBatchRequest()
+			if err != nil {
+				return nil, fmt.Errorf("failed to create batch request for service '%s': %w", ts.ServiceID, err)
+			}
+		} else {
+			// Create individual JSON-RPC request with appropriate parameters
+			jsonrpcReq := jsonrpc.Request{
+				JSONRPC: jsonrpc.Version2,
+				ID:      jsonrpc.IDFromInt(1),
+				Method:  jsonrpc.Method(method),
+				Params:  createEVMJsonRPCParams(jsonrpc.Method(method), ts.ServiceParams),
+			}
+
+			// Marshal the request body
+			body, err = json.Marshal(jsonrpcReq)
+			if err != nil {
+				return nil, fmt.Errorf("failed to marshal JSON-RPC request for method '%s' for service '%s': %w", method, ts.ServiceID, err)
+			}
 		}
 
 		// Create vegeta target

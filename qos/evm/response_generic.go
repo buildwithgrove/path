@@ -2,6 +2,7 @@ package evm
 
 import (
 	"encoding/json"
+	"net/http"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
@@ -76,6 +77,11 @@ func (r responseGeneric) GetHTTPResponse() httpResponse {
 // TODO_MVP(@adshmh): handle any unmarshaling errors
 // TODO_INCOMPLETE: build a method-specific payload generator.
 func (r responseGeneric) getResponsePayload() []byte {
+	// Special case for empty batch responses - return empty payload per JSON-RPC spec
+	if (r.jsonRPCResponse == jsonrpc.Response{}) {
+		return []byte{} // "nothing at all" per JSON-RPC batch specification
+	}
+
 	bz, err := json.Marshal(r.jsonRPCResponse)
 	if err != nil {
 		// This should never happen: log an entry but return the response anyway.
@@ -87,6 +93,11 @@ func (r responseGeneric) getResponsePayload() []byte {
 // getHTTPStatusCode returns an HTTP status code corresponding to the underlying JSON-RPC response code.
 // DEV_NOTE: This is an opinionated mapping following best practice but not enforced by any specifications or standards.
 func (r responseGeneric) getHTTPStatusCode() int {
+	// Special case for empty batch responses - return 200 OK per JSON-RPC over HTTP best practices
+	if (r.jsonRPCResponse == jsonrpc.Response{}) {
+		return http.StatusOK
+	}
+
 	return r.jsonRPCResponse.GetRecommendedHTTPStatusCode()
 }
 
@@ -124,6 +135,44 @@ func getGenericJSONRPCErrResponse(_ polylog.Logger, id jsonrpc.ID, malformedResp
 		jsonRPCResponse: jsonrpc.GetErrorResponse(id, errCodeUnmarshaling, errMsgUnmarshaling, errData),
 		validationError: &validationError, // Set validation error to trigger endpoint disqualification
 	}
+}
+
+// getGenericJSONRPCErrResponseBatchMarshalFailure creates a generic response for batch marshaling failures.
+// This occurs when individual responses are valid but combining them into a JSON array fails.
+// Uses null ID per JSON-RPC spec for batch-level errors that cannot be correlated to specific requests.
+func getGenericJSONRPCErrResponseBatchMarshalFailure(logger polylog.Logger, err error) responseGeneric {
+	logger.Error().Err(err).Msg("Failed to marshal batch response")
+
+	// Create the batch marshal failure response using the error function
+	jsonrpcResponse := newErrResponseBatchMarshalFailure(err)
+
+	// No validation error since this is an internal processing issue, not an endpoint issue
+	return responseGeneric{
+		logger:          logger,
+		jsonRPCResponse: jsonrpcResponse,
+		validationError: nil, // No validation error - this is an internal marshaling issue
+	}
+}
+
+// getGenericResponseBatchEmpty creates a responseGeneric instance for handling empty batch responses.
+// This follows JSON-RPC 2.0 specification requirement to return "nothing at all" when
+// no Response objects are contained in the batch response array.
+// This occurs when all requests in the batch are notifications or all responses are filtered out.
+func getGenericResponseBatchEmpty(logger polylog.Logger) responseGeneric {
+	logger.Debug().Msg("Batch request resulted in no response objects - returning empty response per JSON-RPC spec")
+
+	// Create a responseGeneric with empty payload to represent "nothing at all"
+	return responseGeneric{
+		logger:          logger,
+		jsonRPCResponse: jsonrpc.Response{}, // Empty response - will marshal to empty JSON object
+		validationError: nil,                // No validation error - this is valid JSON-RPC behavior
+	}
+}
+
+// GetJSONRPCID returns the JSONRPC ID of the response.
+// Implements the response interface.
+func (r responseGeneric) GetJSONRPCID() jsonrpc.ID {
+	return r.jsonRPCResponse.ID
 }
 
 // TODO_INCOMPLETE: Handle the string `null`, as it could be returned

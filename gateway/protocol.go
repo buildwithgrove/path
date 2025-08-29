@@ -100,7 +100,7 @@ type Protocol interface {
 type ProtocolRequestContext interface {
 	// HandleServiceRequest sends the supplied payload to the endpoint selected using the above SelectEndpoint method,
 	// and receives and verifies the response.
-	HandleServiceRequest(protocol.Payload) (protocol.Response, error)
+	HandleServiceRequest([]protocol.Payload) ([]protocol.Response, error)
 
 	// GetObservations builds and returns the set of protocol-specific observations using the current context.
 	//
