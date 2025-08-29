@@ -182,19 +182,6 @@ func (g Gateway) handleWebSocketRequest(
 		messageObservationsChan: make(chan *observation.RequestResponseObservations, 1_000),
 	}
 
-	// Defer broadcasting connection observations to ensure they are sent ONLY when the connection terminates.
-	// This implements the TODO requirement to broadcast observations with complete connection duration.
-	//
-	// Key timing: This defer block executes AFTER HandleWebsocketRequest returns, which happens AFTER
-	// the bridge shuts down completely. This provides:
-	// 	 - Complete connection duration from establishment to termination
-	// 	 - Final connection status (success/error and termination reason)
-	// 	 - Accurate connection lifecycle observations (not immediate success observations)
-	defer func() {
-		logger.Info().Msg("🔍 Broadcasting WebSocket connection observations with complete duration")
-		websocketRequestCtx.BroadcastWebsocketConnectionRequestObservations()
-	}()
-
 	// Initialize the websocket request context using the HTTP request.
 	err := websocketRequestCtx.initFromHTTPRequest(httpReq)
 	if err != nil {
