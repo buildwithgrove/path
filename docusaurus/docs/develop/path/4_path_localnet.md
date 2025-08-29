@@ -9,6 +9,8 @@ description: Development environment for the full PATH, GUARD & WATCH stack
 - [Architecture](#architecture)
   - [Components](#components)
 - [Prerequisites](#prerequisites)
+  - [Install Docker](#install-docker)
+  - [Prepare Configuration Files](#prepare-configuration-files)
 - [Quick Start](#quick-start)
   - [1. Start PATH Localnet](#1-start-path-localnet)
   - [2. Verify the Setup](#2-verify-the-setup)
@@ -16,7 +18,12 @@ description: Development environment for the full PATH, GUARD & WATCH stack
   - [3. Access Development Tools](#3-access-development-tools)
 - [Make Targets](#make-targets)
   - [Core Commands](#core-commands)
+    - [`make path_up`](#make-path_up)
+    - [`make path_up_local_helm`](#make-path_up_local_helm)
+    - [`make path_down`](#make-path_down)
   - [Debugging Commands](#debugging-commands)
+    - [`make localnet_k9s`](#make-localnet_k9s)
+    - [`make localnet_exec`](#make-localnet_exec)
 - [Container Environment](#container-environment)
   - [Installed Tools](#installed-tools)
   - [File Mounts](#file-mounts)
@@ -25,10 +32,11 @@ description: Development environment for the full PATH, GUARD & WATCH stack
   - [Hot Reloading](#hot-reloading)
   - [Viewing Logs](#viewing-logs)
 
-
 ## Overview
 
-The PATH Localnet is a containerized development environment that enables you to run the complete PATH, GUARD, and WATCH stack locally with minimal dependencies. It provides a fully isolated, reproducible development environment that requires only Docker on your host machine.
+PATH Localnet is a containerized development environment that enables you to run the complete PATH stack locally: PATH (API Gateway), GUARD (Envoy Gateway), and WATCH (Observability).
+
+It provides a fully isolated, reproducible development environment that requires only Docker on your host machine.
 
 ### Why PATH Localnet?
 
@@ -44,7 +52,7 @@ The PATH Localnet development container exists to:
 
 The PATH Localnet runs as a Docker container that internally manages a complete Kubernetes environment:
 
-```
+```bash
 ┌─────────────────────────────────────────────────────────────┐
 │                    Host Machine (Your Computer)             │
 │                                                             │
@@ -86,34 +94,37 @@ The PATH Localnet runs as a Docker container that internally manages a complete 
 
 ## Prerequisites
 
+Run the following command to install required tools:
+
+```bash
+make install_tools
+```
+
 Before starting, ensure you have:
 
-1. **Docker installed and running**:
-   ```bash
-   docker --version  # Should output Docker version
-   docker ps         # Should list running containers (or be empty)
-   ```
+### Install Docker
 
-   :::tip
-   If you do not have Docker installed, you can install it by running the following command:
-   ```bash
-   make install_tools
-   ```
-   :::
+```bash
+docker --version  # Should output Docker version
+docker ps         # Should list running containers (or be empty)
+```
 
-1. **Required configuration files**:
-   - `./local/path/.config.yaml` - PATH gateway configuration
-   - `./local/path/.values.yaml` - Helm values override file
+### Prepare Configuration Files
 
-   :::tip
-   Grove employees can find valid configuration files on 1Password in the note called "PATH Localnet Config".
-   
-   For external contributors, you can generate starter configs:
-   ```bash
-   make config_shannon_populate    # Generate .config.yaml
-   make configs_copy_values_yaml   # Copy default .values.yaml
-   ```
-   :::
+- `./local/path/.config.yaml` - PATH gateway configuration
+- `./local/path/.values.yaml` - Helm values override file
+
+:::tip
+Grove employees can find valid configuration files on 1Password in the note called "PATH Localnet Config".
+
+For external contributors, you can generate starter configs:
+
+```bash
+make config_shannon_populate    # Generate .config.yaml
+make configs_copy_values_yaml   # Copy default .values.yaml
+```
+
+:::
 
 ## Quick Start
 
@@ -128,6 +139,7 @@ make path_up_local_helm
 ```
 
 The startup process will:
+
 1. Validate your configuration files against the schema
 2. Create a Kind Kubernetes cluster
 3. Deploy PATH, GUARD, and WATCH using Helm
@@ -140,7 +152,8 @@ First-time startup may take 3-5 minutes as Docker pulls the required images.
 ### 2. Verify the Setup
 
 Once started, you'll see:
-```
+
+```bash
 🌿 PATH Localnet started successfully.
   🚀 Send relay requests to: http://localhost:3070/v1
 
@@ -150,6 +163,7 @@ Once started, you'll see:
 ```
 
 Test with a simple request:
+
 ```bash
 curl http://localhost:3070/healthz
 ```
@@ -172,91 +186,99 @@ The PATH Localnet provides several make targets for managing your development en
 
 ### Core Commands
 
-- #### `make path_up`
-   Starts the PATH Localnet environment using remote Helm charts from the official repository.
+#### `make path_up`
 
-   ```bash
-   make path_up
-   ```
+Starts the PATH Localnet environment using remote Helm charts from the official repository.
 
-   This is the recommended way to start for most development tasks. The container will:
-   - Pull the latest `ghcr.io/buildwithgrove/path-localnet-env` image
-   - Mount your local PATH repository for hot reloading
-   - Use Helm charts from https://buildwithgrove.github.io/helm-charts/
+```bash
+make path_up
+```
 
-- #### `make path_up_local_helm`
-   Starts the PATH Localnet with local Helm charts, useful when developing Helm chart changes.
+This is the recommended way to start for most development tasks. The container will:
 
-   ```bash
-   make path_up_local_helm
-   ```
+- Pull the latest `ghcr.io/buildwithgrove/path-localnet-env` image
+- Mount your local PATH repository for hot reloading
+- Use Helm charts from https://buildwithgrove.github.io/helm-charts/
 
-   You'll be prompted for the path to your local `helm-charts` repository. The default is `../helm-charts`.
+#### `make path_up_local_helm`
 
-   - #### `make path_down`
-   Stops and removes the PATH Localnet container.
+Starts the PATH Localnet with local Helm charts, useful when developing Helm chart changes.
 
-   ```bash
-   make path_down
-   ```
+```bash
+make path_up_local_helm
+```
 
-   This cleanly shuts down all services by stopping the localnet Docker container.
+You'll be prompted for the path to your local `helm-charts` repository. The default is `../helm-charts`.
+
+#### `make path_down`
+
+Stops and removes the PATH Localnet container.
+
+```bash
+make path_down
+```
+
+This cleanly shuts down all services by stopping the localnet Docker container.
 
 ### Debugging Commands
 
-- #### `make localnet_k9s`
-   Launches [k9s](https://k9scli.io/), a terminal-based Kubernetes UI, inside the container.
+#### `make localnet_k9s`
 
-   ```bash
-   make localnet_k9s
-   ```
+Launches [k9s](https://k9scli.io/), a terminal-based Kubernetes UI, inside the container.
 
-   k9s provides an interactive way to:
-   - Navigate Kubernetes resources
-   - View and follow logs
-   - Execute into pods
-   - Edit resources
-   - Monitor resource usage
+```bash
+make localnet_k9s
+```
 
-   ![k9s Dashboard](../../../static/img/k9s-localnet.png)
-   *k9s running inside the PATH localnet Docker container*
+k9s provides an interactive way to:
 
-   :::tip k9s Quick Commands
+- Navigate Kubernetes resources
+- View and follow logs
+- Execute into pods
+- Edit resources
+- Monitor resource usage
 
-   - `:pods` - List all pods
-   - `:svc` - List all services  
-   - `l` - View logs for selected resource
-   - `d` - Describe selected resource
-   - `s` - Shell into selected pod
-   - `ctrl+a` - Show all namespaces
-   - `?` - Show help menu
-   - 
-   :::
+![k9s Dashboard](../../../static/img/k9s-localnet.png)
+_k9s running inside the PATH localnet Docker container_
 
-- #### `make localnet_exec`
-   Opens an interactive shell inside the running PATH Localnet container.
+:::tip k9s Quick Commands
 
-   ```bash
-   make localnet_exec
-   ```
+- `:pods` - List all pods
+- `:svc` - List all services
+- `l` - View logs for selected resource
+- `d` - Describe selected resource
+- `s` - Shell into selected pod
+- `ctrl+a` - Show all namespaces
+- `?` - Show help menu
+- :::
 
-   Useful for:
-   - Running kubectl commands directly
-   - Inspecting logs and configurations
-   - Debugging networking issues
-   - Managing the Kind cluster
+#### `make localnet_exec`
 
-   Example session:
-   ```bash
-   $ make localnet_exec
-   root@path-localnet:/app# kubectl get pods
-   NAME                           READY   STATUS    RESTARTS   AGE
-   path-5f7b9c4d6f-abc12         1/1     Running   0          5m
-   envoy-gateway-xyz789          1/1     Running   0          5m
-   grafana-6d8f9c7b5-def45      1/1     Running   0          5m
+Opens an interactive shell inside the running PATH Localnet container.
 
-   root@path-localnet:/app# kubectl logs path-5f7b9c4d6f-abc12
-   ```
+```bash
+make localnet_exec
+```
+
+Useful for:
+
+- Running kubectl commands directly
+- Inspecting logs and configurations
+- Debugging networking issues
+- Managing the Kind cluster
+
+Example session:
+
+```bash
+$ make localnet_exec
+root@path-localnet:/app# kubectl get pods
+NAME                           READY   STATUS    RESTARTS   AGE
+path-5f7b9c4d6f-abc12         1/1     Running   0          5m
+envoy-gateway-xyz789          1/1     Running   0          5m
+grafana-6d8f9c7b5-def45      1/1     Running   0          5m
+
+root@path-localnet:/app# kubectl logs path-5f7b9c4d6f-abc12
+```
 
 ## Container Environment
 
@@ -264,9 +286,6 @@ The PATH Localnet image includes all necessary development tools, meaning you ca
 
 - Image: `ghcr.io/buildwithgrove/path-localnet-env`
 - [GHCR Repository](https://github.com/orgs/buildwithgrove/packages/container/package/path-localnet-env)
-
-
-
 
 ### Installed Tools
 
@@ -283,6 +302,7 @@ The PATH Localnet image includes all necessary development tools, meaning you ca
 ### File Mounts
 
 The container mounts your local PATH repository at `/app`, enabling:
+
 - Hot reloading of Go code changes
 - Configuration file updates
 - Access to test data and scripts
@@ -298,7 +318,7 @@ On startup, the container validates your `./local/.config.yaml` against the [YAM
 The PATH Localnet supports hot reloading for rapid development:
 
 1. **Make code changes** in your local PATH repository
-2. **Save the file** 
+2. **Save the file**
 3. **Tilt detects changes** and triggers a rebuild
 4. **New binary is deployed** to the Kind cluster
 5. **Service restarts** with your changes
@@ -308,11 +328,13 @@ The PATH Localnet supports hot reloading for rapid development:
 Multiple ways to view logs:
 
 1. Recommended: **Tilt UI** (http://localhost:10350):
+
    - Real-time log streaming
    - Filtered by service
    - Search functionality
 
 2. **Inside the container**:
+
    ```bash
    make localnet_exec
    kubectl logs -f deployment/path

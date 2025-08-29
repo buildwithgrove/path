@@ -289,6 +289,12 @@ Make sure this reflects both of the following:
 
 ## 4. Run PATH Stack Locally
 
+:::tip PATH LocalNet
+
+Find more about feature available for local development of [PATH](./4_path_localnet.md).
+
+:::
+
 ### 4.1 Run & Monitor PATH
 
 Run the following command and wait 1-2 minutes:
@@ -310,12 +316,6 @@ Visit the **Tilt dashboard** at [localhost:10350](<http://localhost:10350/r/(all
 ```bash
 curl http://localhost:3070/healthz | jq
 ```
-
-:::tip
-
-For more details about the PATH localnet, see [PATH Localnet](4_path_localnet.md).  
-
-:::
 
 ### 4.3 Example Relays
 
