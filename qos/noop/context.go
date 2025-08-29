@@ -50,7 +50,7 @@ type requestContext struct {
 
 // GetServicePayload returns the payload to be sent to a service endpoint.
 // Implements the gateway.RequestQoSContext interface.
-func (rc *requestContext) GetServicePayload() protocol.Payload {
+func (rc *requestContext) GetServicePayloads() []protocol.Payload {
 	payload := protocol.Payload{
 		Data:    string(rc.httpRequestBody),
 		Method:  rc.httpRequestMethod,
@@ -61,7 +61,7 @@ func (rc *requestContext) GetServicePayload() protocol.Payload {
 	if rc.httpRequestPath != "" {
 		payload.Path = rc.httpRequestPath
 	}
-	return payload
+	return []protocol.Payload{payload}
 }
 
 // UpdateWithResponse is used to inform the requestContext of the response to its underlying service request, returned from an endpoint.

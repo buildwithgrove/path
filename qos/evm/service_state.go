@@ -97,7 +97,10 @@ func (ss *serviceState) getEndpointCheck(jsonrpcReq jsonrpc.Request) *requestCon
 	return &requestContext{
 		logger:       ss.logger,
 		serviceState: ss,
-		jsonrpcReq:   jsonrpcReq,
+		// Wrap single request in map for consistency
+		jsonrpcReqs: map[string]jsonrpc.Request{
+			jsonrpcReq.ID.String(): jsonrpcReq,
+		},
 		// Set the chain and Service ID: this is required to generate observations with the correct chain ID.
 		chainID:   ss.serviceQoSConfig.getEVMChainID(),
 		serviceID: ss.serviceQoSConfig.GetServiceID(),

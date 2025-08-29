@@ -68,9 +68,9 @@ func (rec *RequestErrorContext) GetObservations() qosobservations.Observations {
 // GetServicePayload should never be called.
 // It logs a warning and returns nil.
 // Implements the gateway.RequestQoSContext interface.
-func (rec *RequestErrorContext) GetServicePayload() protocol.Payload {
+func (rec *RequestErrorContext) GetServicePayloads() []protocol.Payload {
 	rec.Logger.Warn().Msg("SHOULD NEVER HAPPEN: RequestErrorContext.GetServicePayload() should never be called.")
-	return protocol.EmptyErrorPayload()
+	return []protocol.Payload{protocol.EmptyErrorPayload()}
 }
 
 // UpdateWithResponse should never be called.
