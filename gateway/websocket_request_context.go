@@ -205,6 +205,12 @@ func (wrc *websocketRequestContext) handleWebsocketRequest(
 	// Start listening for message processing notifications from the bridge.
 	go wrc.listenForMessageNotifications()
 
+	// TODO_TECHDEBT(@commoddity): We should be broadcasting an observation on connection establishment
+	// in order to be able to track number of current active connections via metrics. But this needs to
+	// be done in a way that does not end up showing the connection as two separate requests for billing
+	// and data pipeline purposes.
+	logger.Info().Msg("🔌 WebSocket connection established successfully")
+
 	// Wait for the bridge to complete (blocks until WebSocket connection terminates)
 	// in order to allow publishing observations for the connection duration.
 	<-completionChan
@@ -396,9 +402,8 @@ func (wrc *websocketRequestContext) updateProtocolObservations(
 
 	// protocol context setup error observation is set: use it.
 	if protocolConnectionObservations != nil {
-		fmt.Println("protocol connection observations is not nil")
-		wrc.logger.Info().
-			Str("protocolConnectionObservations", protocolConnectionObservations.String()).
+		wrc.logger.Debug().
+			Str("protocol_connection_observations", protocolConnectionObservations.String()).
 			Msg("Setting protocol connection observations")
 		wrc.protocolConnectionObservations = protocolConnectionObservations
 		return

@@ -748,6 +748,7 @@ func prepareURLFromPayload(endpointURL string, payload protocol.Payload) string 
 //   - Selected endpoint URL
 func (rc *requestContext) hydratedLogger(methodName string) {
 	logger := rc.logger.With(
+		"request_type", "http",
 		"method", methodName,
 		"service_id", rc.serviceID,
 	)

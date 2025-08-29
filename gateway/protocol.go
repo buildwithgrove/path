@@ -17,8 +17,9 @@ import (
 type Protocol interface {
 	// AvailableEndpoints returns the list of available endpoints matching both the service ID
 	//
-	// (Shannon only: in Delegated mode, the staked application is passed in the request header, which
-	// filters the list of available endpoints. In all other modes, *http.Request will be nil.)
+	// If the Pocket Network Gateway is in delegated mode, the staked application is passed via
+	// the `App-Address` header. In all other modes, *http.Request will be nil.
+	//
 	// Context may contain a deadline that protocol should respect on best-effort basis.
 	// Return observation if endpoint lookup fails.
 	// Used as protocol observation for the request when no protocol context exists.
@@ -31,8 +32,8 @@ type Protocol interface {
 	// BuildRequestContextForEndpoint builds and returns a ProtocolRequestContext containing a single selected endpoint.
 	// One `ProtocolRequestContext` correspond to a single request, which is sent to a single endpoint.
 	//
-	// (Shannon only: in Delegated mode, the staked application is passed in the request header, which
-	// filters the list of available endpoints. In all other modes, *http.Request will be nil.)
+	// If the Pocket Network Gateway is in delegated mode, the staked application is passed via
+	// the `App-Address` header. In all other modes, *http.Request will be nil.
 	//
 	// Context may contain a deadline that protocol should respect on best-effort basis.
 	//
@@ -48,8 +49,8 @@ type Protocol interface {
 	// BuildWebsocketRequestContextForEndpoint builds and returns a ProtocolRequestContextWebsocket containing a single selected endpoint.
 	// One `ProtocolRequestContextWebsocket` corresponds to a single long-lived websocket connection to a single endpoint.
 	//
-	// (Shannon only: in Delegated mode, the staked application is passed in the request header, which
-	// filters the list of available endpoints. In all other modes, *http.Request will be nil.)
+	// If the Pocket Network Gateway is in delegated mode, the staked application is passed via
+	// the `App-Address` header. In all other modes, *http.Request will be nil.
 	//
 	// Return observation if the context setup fails.
 	// Used as protocol observation for the connection when no protocol context exists.
