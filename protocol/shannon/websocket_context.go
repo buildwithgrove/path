@@ -51,14 +51,15 @@ type websocketRequestContext struct {
 //
 // The messageProcessor handles the actual message processing (typically the gateway's websocketRequestContext).
 //
-// Returns a completion channel that signals when the bridge shuts down and observations for the connection.
+// This method sends establishment observation immediately, blocks until bridge completes, then sends closure observation.
 func (wrc *websocketRequestContext) StartWebSocketBridge(
 	ctx context.Context,
 	httpRequest *http.Request,
 	httpResponseWriter http.ResponseWriter,
 	messageProcessor websockets.WebsocketMessageProcessor,
 	messageObservationsChan chan *observation.RequestResponseObservations,
-) (<-chan struct{}, *protocolobservations.Observations, error) {
+	establishmentObservationsChan, closureObservationsChan chan *protocolobservations.Observations,
+) error {
 	wrc.hydratedLogger("StartWebSocketBridge")
 
 	// Get the websocket-specific URL from the selected endpoint.
@@ -67,7 +68,9 @@ func (wrc *websocketRequestContext) StartWebSocketBridge(
 		// Build error observation for connection failure
 		errorObs := wrc.getWebsocketConnectionErrorObservation(err, "selected endpoint does not support websocket RPC type")
 		wrc.logger.Error().Err(err).Msg("❌ Selected endpoint does not support websocket RPC type")
-		return nil, errorObs, fmt.Errorf("selected endpoint does not support websocket RPC type: %w", err)
+		// Send error observation to establishment channel (since connection failed to establish)
+		establishmentObservationsChan <- errorObs
+		return fmt.Errorf("selected endpoint does not support websocket RPC type: %w", err)
 	}
 	wrc.logger = wrc.logger.With("websocket_url", websocketEndpointURL)
 
@@ -77,12 +80,14 @@ func (wrc *websocketRequestContext) StartWebSocketBridge(
 		// Build error observation for connection failure
 		errorObs := wrc.getWebsocketConnectionErrorObservation(err, "failed to get websocket connection headers")
 		wrc.logger.Error().Err(err).Msg("❌ Failed to get websocket connection headers")
-		return nil, errorObs, fmt.Errorf("failed to get websocket connection headers: %w", err)
+		// Send error observation to establishment channel (since connection failed to establish)
+		establishmentObservationsChan <- errorObs
+		return fmt.Errorf("failed to get websocket connection headers: %w", err)
 	}
 
 	// Start the websocket bridge and get a completion channel.
 	// The messageProcessor (typically from the gateway layer) handles message processing.
-	completionChan, err := websockets.StartBridge(
+	bridgeCompletionChan, err := websockets.StartBridge(
 		ctx,
 		wrc.logger,
 		httpRequest,
@@ -96,15 +101,23 @@ func (wrc *websocketRequestContext) StartWebSocketBridge(
 		// Build error observation for connection failure
 		errorObs := wrc.getWebsocketConnectionErrorObservation(err, "failed to start websocket bridge")
 		wrc.logger.Error().Err(err).Msg("Failed to start WebSocket bridge")
-		return nil, errorObs, fmt.Errorf("failed to start websocket bridge: %w", err)
+		// Send error observation to establishment channel (since connection failed to establish)
+		establishmentObservationsChan <- errorObs
+		return fmt.Errorf("failed to start websocket bridge: %w", err)
 	}
 
-	// Build success observation for the established connection.
-	// These observations will
-	successObs := wrc.getWebsocketConnectionSuccessObservation()
-	wrc.logger.Info().Msg("✅ WebSocket bridge started successfully")
+	// Send establishment observation immediately so gateway can broadcast it
+	wrc.logger.Info().Msg("✅ WebSocket bridge started successfully, sending establishment observation")
+	establishmentObservationsChan <- wrc.getWebsocketConnectionEstablishedObservation()
 
-	return completionChan, successObs, nil
+	// Wait for the bridge to complete (blocks until WebSocket connection terminates)
+	<-bridgeCompletionChan
+
+	// Send closure observation so gateway can broadcast it
+	wrc.logger.Info().Msg("🔌 WebSocket connection closed, sending closure observation")
+	closureObservationsChan <- wrc.getWebsocketConnectionClosedObservation()
+
+	return nil
 }
 
 // getWebsocketConnectionHeaders returns headers for the websocket connection:
@@ -327,16 +340,36 @@ func (wrc *websocketRequestContext) getWebsocketMessageErrorObservation(
 // ---------- Connection-Level Observations ----------
 
 // getWebsocketConnectionSuccessObservation builds observations for successful WebSocket connection establishment.
-func (wrc *websocketRequestContext) getWebsocketConnectionSuccessObservation() *protocolobservations.Observations {
+func (wrc *websocketRequestContext) getWebsocketConnectionEstablishedObservation() *protocolobservations.Observations {
 	return &protocolobservations.Observations{
 		Shannon: &protocolobservations.ShannonObservationsList{
 			Observations: []*protocolobservations.ShannonRequestObservations{
 				{
 					ServiceId: string(wrc.serviceID),
 					ObservationData: &protocolobservations.ShannonRequestObservations_WebsocketConnectionObservation{
-						WebsocketConnectionObservation: buildWebsocketConnectionSuccessObservation(
+						WebsocketConnectionObservation: buildWebsocketConnectionObservation(
 							wrc.logger,
 							wrc.selectedEndpoint,
+							protocolobservations.ShannonWebsocketConnectionObservation_CONNECTION_ESTABLISHED,
+						),
+					},
+				},
+			},
+		},
+	}
+}
+
+func (wrc *websocketRequestContext) getWebsocketConnectionClosedObservation() *protocolobservations.Observations {
+	return &protocolobservations.Observations{
+		Shannon: &protocolobservations.ShannonObservationsList{
+			Observations: []*protocolobservations.ShannonRequestObservations{
+				{
+					ServiceId: string(wrc.serviceID),
+					ObservationData: &protocolobservations.ShannonRequestObservations_WebsocketConnectionObservation{
+						WebsocketConnectionObservation: buildWebsocketConnectionObservation(
+							wrc.logger,
+							wrc.selectedEndpoint,
+							protocolobservations.ShannonWebsocketConnectionObservation_CONNECTION_CLOSED,
 						),
 					},
 				},
@@ -370,6 +403,7 @@ func (wrc *websocketRequestContext) getWebsocketConnectionErrorObservation(
 							endpointErrorType,
 							errorDetails,
 							recommendedSanctionType,
+							protocolobservations.ShannonWebsocketConnectionObservation_CONNECTION_ESTABLISHMENT_FAILED,
 						),
 					},
 				},

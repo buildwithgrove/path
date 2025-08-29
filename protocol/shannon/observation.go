@@ -322,12 +322,13 @@ func buildWebsocketMessageErrorObservation(
 	}
 }
 
-// buildWebsocketConnectionSuccessObservation creates a Shannon websocket connection observation for successful connection establishment.
+// buildWebsocketConnectionObservation creates a Shannon websocket connection observation for connection lifecycle events.
 // It includes endpoint details and session information for connection-level tracking.
-// Used when websocket connection setup succeeds.
-func buildWebsocketConnectionSuccessObservation(
+// Used when websocket connection setup succeeds or when connection closes.
+func buildWebsocketConnectionObservation(
 	_ polylog.Logger,
 	endpoint endpoint,
+	eventType protocolobservations.ShannonWebsocketConnectionObservation_ConnectionEventType,
 ) *protocolobservations.ShannonWebsocketConnectionObservation {
 	session := *endpoint.Session()
 	sessionHeader := session.GetHeader()
@@ -344,18 +345,23 @@ func buildWebsocketConnectionSuccessObservation(
 		SessionId:          sessionHeader.SessionId,
 		SessionStartHeight: sessionHeader.SessionStartBlockHeight,
 		SessionEndHeight:   sessionHeader.SessionEndBlockHeight,
+
+		// Connection lifecycle
+		ConnectionEstablishedTimestamp: timestamppb.New(time.Now()),
+		EventType:                      eventType,
 	}
 }
 
-// buildWebsocketConnectionErrorObservation creates a Shannon websocket connection observation for failed connection establishment.
+// buildWebsocketConnectionErrorObservation creates a Shannon websocket connection observation for failed connection events.
 // It includes endpoint details, session information, and error details.
-// Used when websocket connection setup fails.
+// Used when websocket connection setup fails or when connection closes with an error.
 func buildWebsocketConnectionErrorObservation(
-	logger polylog.Logger,
+	_ polylog.Logger,
 	endpoint endpoint,
 	errorType protocolobservations.ShannonEndpointErrorType,
 	errorDetails string,
 	sanctionType protocolobservations.ShannonSanctionType,
+	eventType protocolobservations.ShannonWebsocketConnectionObservation_ConnectionEventType,
 ) *protocolobservations.ShannonWebsocketConnectionObservation {
 	return &protocolobservations.ShannonWebsocketConnectionObservation{
 		// Endpoint information
@@ -374,5 +380,9 @@ func buildWebsocketConnectionErrorObservation(
 		ErrorType:           &errorType,
 		ErrorDetails:        &errorDetails,
 		RecommendedSanction: &sanctionType,
+
+		// Connection lifecycle
+		ConnectionEstablishedTimestamp: timestamppb.New(time.Now()),
+		EventType:                      eventType,
 	}
 }

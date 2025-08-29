@@ -122,14 +122,15 @@ type ProtocolRequestContextWebsocket interface {
 	// StartWebSocketBridge creates and starts a WebSocket bridge between client and endpoint.
 	// It handles all protocol-specific setup including headers, URL generation, and connection establishment.
 	// The messageProcessor handles the actual message processing (typically the gateway's websocketRequestContext).
-	// Returns a completion channel that signals when the bridge shuts down and observations for the connection.
+	// This method sends establishment observation immediately, blocks until bridge completes, then sends closure observation.
 	StartWebSocketBridge(
 		ctx context.Context,
 		httpRequest *http.Request,
 		httpResponseWriter http.ResponseWriter,
 		messageProcessor websockets.WebsocketMessageProcessor,
 		messageObservationsChan chan *observation.RequestResponseObservations,
-	) (<-chan struct{}, *protocolobservations.Observations, error)
+		establishmentObservationsChan, closureObservationsChan chan *protocolobservations.Observations,
+	) error
 
 	// ProcessProtocolClientWebsocketMessage processes a message from the client.
 	ProcessProtocolClientWebsocketMessage([]byte) ([]byte, error)
