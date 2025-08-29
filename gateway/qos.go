@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/buildwithgrove/path/metrics/devtools"
+	pathhttp "github.com/buildwithgrove/path/network/http"
 	"github.com/buildwithgrove/path/observation/qos"
 	"github.com/buildwithgrove/path/protocol"
 )
@@ -36,7 +37,7 @@ type RequestQoSContext interface {
 	// - Response depends on the current state of the service request context.
 	// - State is set at context creation and updated via UpdateWithResponse.
 	// - If never updated, may return 404 HTTP status.
-	GetHTTPResponse() HTTPResponse
+	GetHTTPResponse() pathhttp.HTTPResponse
 
 	// GetObservations:
 	// - Returns QoS-level observations in the context.

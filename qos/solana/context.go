@@ -9,6 +9,7 @@ import (
 	sharedtypes "github.com/pokt-network/poktroll/x/shared/types"
 
 	"github.com/buildwithgrove/path/gateway"
+	pathhttp "github.com/buildwithgrove/path/network/http"
 	qosobservations "github.com/buildwithgrove/path/observation/qos"
 	"github.com/buildwithgrove/path/protocol"
 	"github.com/buildwithgrove/path/qos"
@@ -113,7 +114,7 @@ func (rc *requestContext) UpdateWithResponse(endpointAddr protocol.EndpointAddr,
 // TODO_MVP(@adshmh): add `Content-Type: application/json` header.
 // GetHTTPResponse builds the HTTP response that should be returned for
 // a Solana blockchain service request.
-func (rc requestContext) GetHTTPResponse() gateway.HTTPResponse {
+func (rc requestContext) GetHTTPResponse() pathhttp.HTTPResponse {
 	// No responses received: this is an internal error:
 	// e.g. protocol-level errors like endpoint timing out.
 	if len(rc.endpointResponses) == 0 {

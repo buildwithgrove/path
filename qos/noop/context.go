@@ -6,6 +6,7 @@ import (
 	sharedtypes "github.com/pokt-network/poktroll/x/shared/types"
 
 	"github.com/buildwithgrove/path/gateway"
+	pathhttp "github.com/buildwithgrove/path/network/http"
 	qosobservations "github.com/buildwithgrove/path/observation/qos"
 	"github.com/buildwithgrove/path/protocol"
 )
@@ -70,11 +71,11 @@ func (rc *requestContext) UpdateWithResponse(endpointAddr protocol.EndpointAddr,
 	rc.receivedResponses = append(rc.receivedResponses, endpointResponse{EndpointAddr: endpointAddr, ResponseBytes: endpointSerializedResponse})
 }
 
-// GetHTTPResponse returns a user-facing response that fulfills the gateway.HTTPResponse interface.
+// GetHTTPResponse returns a user-facing response that fulfills the pathhttp.HTTPResponse interface.
 // Any preset failure responses, e.g. set during the construction of the requestContext instance, take priority.
 // After that, this method simply returns an HTTP response based on the most recently reported endpoint response.
 // Implements the gateway.RequestQoSContext interface.
-func (rc *requestContext) GetHTTPResponse() gateway.HTTPResponse {
+func (rc *requestContext) GetHTTPResponse() pathhttp.HTTPResponse {
 	if rc.presetFailureResponse != nil {
 		return rc.presetFailureResponse
 	}

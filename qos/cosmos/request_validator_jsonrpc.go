@@ -9,7 +9,8 @@ import (
 	"github.com/pokt-network/poktroll/pkg/polylog"
 	sharedtypes "github.com/pokt-network/poktroll/x/shared/types"
 
-	"github.com/buildwithgrove/path/gateway"
+	gateway "github.com/buildwithgrove/path/gateway"
+	pathhttp "github.com/buildwithgrove/path/network/http"
 	qosobservations "github.com/buildwithgrove/path/observation/qos"
 	"github.com/buildwithgrove/path/protocol"
 	"github.com/buildwithgrove/path/qos"
@@ -143,8 +144,8 @@ func getJSONRPCRequestEndpointResponseValidator(
 
 func buildJSONRPCProtocolErrorResponse(
 	jsonrpcRequestID jsonrpc.ID,
-) func(logger polylog.Logger) gateway.HTTPResponse {
-	return func(logger polylog.Logger) gateway.HTTPResponse {
+) func(logger polylog.Logger) pathhttp.HTTPResponse {
+	return func(logger polylog.Logger) pathhttp.HTTPResponse {
 		errorResp := jsonrpc.NewErrResponseInternalErr(
 			jsonrpcRequestID,
 			errors.New("protocol-level error: no endpoint responses received"),
