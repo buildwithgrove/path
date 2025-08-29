@@ -197,6 +197,8 @@ func (rc *requestContext) launchParallelRelays(payloads []protocol.Payload) <-ch
 	return resultChan
 }
 
+// TODO_TECHDEBT(@adshmh): Define/configure limits for the number of parallel requests from a single context.
+//
 // executeParallelRelay handles a single relay request in a goroutine
 func (rc *requestContext) executeParallelRelay(
 	payload protocol.Payload,
