@@ -44,7 +44,9 @@ In `./local/path/.config.yaml`:
 
 ### 3. Download the guard `.values.yaml`
 
+```bash
 op item get fkltz2wb7fegpumntqyo3w5qau --fields notesPlain --format json | jq -r '.value' > ./local/path/.values.yaml
+```
 
 ### 4. Skip to Section 4
 
@@ -286,6 +288,12 @@ Make sure this reflects both of the following:
 2. What your gateway `.config.yaml` is configured for
 
 ## 4. Run PATH Stack Locally
+
+:::tip PATH LocalNet
+
+Find more about feature available for local development of [PATH](./4_path_localnet.md).
+
+:::
 
 ### 4.1 Run & Monitor PATH
 
