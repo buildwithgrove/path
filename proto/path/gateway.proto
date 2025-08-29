@@ -10,17 +10,23 @@ import "google/protobuf/timestamp.proto";
 import "path/auth.proto"; // import RequestAuth message.
 
 // RequestType captures the origin of the request.
-// As of PR #72, it is one of:
-//  1. Organic: a real user sent a service request to a PATH instance
-//  2. Synthetic: internal infrastructure generated the service request for simulation and data purposes.
+// Next free index: 5
 enum RequestType {
   REQUEST_TYPE_UNSPECIFIED = 0;
 
-  // Organic: Service request sent by a user.
+  // Organic: A real user sent a service request to a PATH instance
   REQUEST_TYPE_ORGANIC = 1;
 
-  // Synthetic: Service request sent by the endpoint hydrator: see gateway/hydrator.go.
+  // Synthetic: Internal infrastructure generated the service request for simulation and data purposes.
   REQUEST_TYPE_SYNTHETIC = 2;
+
+  // Parallel: PATH sent the service request for higher redundancy
+  REQUEST_TYPE_PARALLEL = 3;
+
+  // Fallback: PATH sent the service request for higher redundancy
+  // TODO_TECHDEBT(@adshmh): Use this when fallback endpoints are part of the gateway context.
+  // DUe to the current structure of the code, there is not clean way to apply this type to the RPC observations..
+  REQUEST_TYPE_FALLBACK = 4;
 }
 
 enum GatewayRequestErrorKind {

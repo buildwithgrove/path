@@ -93,6 +93,7 @@ type requestContext struct {
 	httpClient *pathhttp.HTTPClientWithDebugMetrics
 
 	// fallbackEndpoints is used to retrieve a fallback endpoint by an endpoint address.
+	// TODO_TECHDEBT(@adshmh): This should be part of the gateway context and not the protocol specific request context.
 	fallbackEndpoints map[protocol.EndpointAddr]endpoint
 }
 
@@ -174,6 +175,9 @@ func (rc *requestContext) executeRelayRequest(payload protocol.Payload) (protoco
 	selectedEndpoint := rc.getSelectedEndpoint()
 	rc.hydratedLogger("executeRelayRequest")
 
+	// TODO_TECHDEBT(@adshmh): This should be handled by the gateway context.
+	// Fallback logic is not "shannon specific". It should apply to any protocol we ever support.
+	// The separation of concerns leaked throughout development and must be updated.
 	switch {
 	// ** Priority 1: Check Endpoint type **
 	// Direct fallback endpoint
@@ -181,6 +185,8 @@ func (rc *requestContext) executeRelayRequest(payload protocol.Payload) (protoco
 	// - Used when endpoint is explicitly configured as a fallback endpoint
 	case selectedEndpoint.IsFallback():
 		rc.logger.Debug().Msg("Executing fallback relay")
+		// TODO_TECHDEBT(@adshmh): Find a place to ensure fallback RPC type is set.
+
 		return rc.sendFallbackRelay(selectedEndpoint, payload)
 
 	// ** Priority 2: Check Network conditions **
