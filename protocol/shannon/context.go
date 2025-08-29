@@ -18,6 +18,7 @@ import (
 	sdk "github.com/pokt-network/shannon-sdk"
 
 	"github.com/buildwithgrove/path/gateway"
+	pathhttp "github.com/buildwithgrove/path/network/http"
 	protocolobservations "github.com/buildwithgrove/path/observation/protocol"
 	"github.com/buildwithgrove/path/protocol"
 )
@@ -89,7 +90,7 @@ type requestContext struct {
 	currentRelayMinerError *protocolobservations.ShannonRelayMinerError
 
 	// HTTP client used for sending relay requests to endpoints while also capturing various debug metrics
-	httpClient *httpClientWithDebugMetrics
+	httpClient *pathhttp.HTTPClientWithDebugMetrics
 
 	// fallbackEndpoints is used to retrieve a fallback endpoint by an endpoint address.
 	fallbackEndpoints map[protocol.EndpointAddr]endpoint
@@ -330,6 +331,14 @@ func (rc *requestContext) sendProtocolRelay(payload protocol.Payload) (protocol.
 	selectedEndpoint := rc.getSelectedEndpoint()
 	defaultResponse := protocol.Response{
 		EndpointAddr: selectedEndpoint.Addr(),
+	}
+
+	// If this is a fallback endpoint, use sendFallbackRelay instead
+	// This can happen during session rollover when sendRelayWithFallback spawns
+	// a goroutine that calls sendProtocolRelay with a fallback endpoint selected
+	if selectedEndpoint.IsFallback() {
+		rc.logger.Error().Msg("SHOULD NEVER HAPPEN: Select endpoint should not be a fallback endpoint in this code path.")
+		return rc.sendFallbackRelay(selectedEndpoint, payload)
 	}
 
 	// Validate endpoint and session
@@ -713,7 +722,7 @@ func (rc *requestContext) sendHTTPRequest(
 		wrappedErr := fmt.Errorf("%w: %v", errSendHTTPRelay, err)
 
 		selectedEndpoint := rc.getSelectedEndpoint()
-		rc.logger.Error().Err(wrappedErr).Msgf("❌ Failed to receive a response from the selected endpoint: '%s'. Relay request will FAIL 😢", selectedEndpoint.Addr())
+		rc.logger.Debug().Err(wrappedErr).Msgf("Failed to receive a response from the selected endpoint: '%s'. Relay request will FAIL", selectedEndpoint.Addr())
 		return nil, 0, fmt.Errorf("error sending request to endpoint %s: %w", selectedEndpoint.Addr(), wrappedErr)
 	}
 
