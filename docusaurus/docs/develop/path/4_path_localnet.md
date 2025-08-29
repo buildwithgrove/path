@@ -5,17 +5,20 @@ description: Development environment for the full PATH, GUARD & WATCH stack
 ---
 
 - [Overview](#overview)
-  - [Why PATH Localnet?](#why-path-localnet)
+- [Quick Start](#quick-start)
+  - [Prerequisites](#prerequisites)
+    - [Install Docker](#install-docker)
+    - [Prepare Configuration Files](#prepare-configuration-files)
+  - [1. Download the shannon `.config.yaml`](#1-download-the-shannon-configyaml)
+  - [2. Comment out unused config sections](#2-comment-out-unused-config-sections)
+  - [3. Download the guard `.values.yaml`](#3-download-the-guard-valuesyaml)
+  - [Start PATH Localnet](#start-path-localnet)
+  - [Verify the Setup](#verify-the-setup)
+    - [Example Relays](#example-relays)
+  - [3. Access Development Tools](#3-access-development-tools)
+- [Why PATH Localnet?](#why-path-localnet)
 - [Architecture](#architecture)
   - [Components](#components)
-- [Prerequisites](#prerequisites)
-  - [Install Docker](#install-docker)
-  - [Prepare Configuration Files](#prepare-configuration-files)
-- [Quick Start](#quick-start)
-  - [1. Start PATH Localnet](#1-start-path-localnet)
-  - [2. Verify the Setup](#2-verify-the-setup)
-  - [2.1 Example Relays](#21-example-relays)
-  - [3. Access Development Tools](#3-access-development-tools)
 - [Make Targets](#make-targets)
   - [Core Commands](#core-commands)
     - [`make path_up`](#make-path_up)
@@ -25,12 +28,14 @@ description: Development environment for the full PATH, GUARD & WATCH stack
     - [`make localnet_k9s`](#make-localnet_k9s)
     - [`make localnet_exec`](#make-localnet_exec)
 - [Container Environment](#container-environment)
-  - [Installed Tools](#installed-tools)
   - [File Mounts](#file-mounts)
   - [Configuration Validation](#configuration-validation)
 - [Development Workflow](#development-workflow)
   - [Hot Reloading](#hot-reloading)
   - [Viewing Logs](#viewing-logs)
+    - [Recommended: **Tilt UI** (http://localhost:10350):](#recommended-tilt-ui-httplocalhost10350)
+    - [**Inside the container**:](#inside-the-container)
+    - [**Using k9s**:](#using-k9s)
 
 ## Overview
 
@@ -38,7 +43,133 @@ PATH Localnet is a containerized development environment that enables you to run
 
 It provides a fully isolated, reproducible development environment that requires only Docker on your host machine.
 
-### Why PATH Localnet?
+## Quick Start
+
+### Prerequisites
+
+Run the following command to install required tools:
+
+```bash
+make install_tools
+```
+
+#### Install Docker
+
+```bash
+docker --version  # Should output Docker version
+docker ps         # Should list running containers (or be empty)
+```
+
+#### Prepare Configuration Files
+
+For external contributors, you can generate starter configs:
+
+```bash
+make config_shannon_populate    # Generate .config.yaml
+make configs_copy_values_yaml   # Copy default .values.yaml
+```
+
+- `./local/path/.config.yaml` - PATH gateway configuration
+- `./local/path/.values.yaml` - Helm values override file
+
+
+:::note 🌿 Are you a Grove employee 🌿?
+
+<details>
+
+<summary>Download your configs here</summary>
+
+### 1. Download the shannon `.config.yaml`
+
+For **MainNet**:
+
+```bash
+op item get 4ifsnkuifvaggwgptns6xyglsa --fields notesPlain --format json | jq -r '.value' > ./local/path/.config.yaml
+```
+
+For **Beta TestNet**:
+
+```bash
+op item get 3treknedz5q47rgwdbreluwffu --fields notesPlain --format json | jq -r '.value' > ./local/path/.config.yaml
+```
+
+### 2. Comment out unused config sections
+
+In `./local/path/.config.yaml`:
+
+1. Comment out the `owned_apps_private_keys_hex` you're not using for testing.
+2. Comment out the `data_reporter_config` section:
+
+   ```bash
+   sed -i '' \
+     -e 's/^[[:space:]]*data_reporter_config:/# data_reporter_config:/' \
+     -e 's/^[[:space:]]*"target_url":/#   "target_url":/' \
+     local/path/.config.yaml
+   ```
+
+### 3. Download the guard `.values.yaml`
+
+```bash
+op item get fkltz2wb7fegpumntqyo3w5qau --fields notesPlain --format json | jq -r '.value' > ./local/path/.values.yaml
+```
+
+</details>
+
+:::
+
+### Start PATH Localnet
+
+```bash
+# Start with remote Helm charts (recommended for most users)
+make path_up
+
+# Or start with local Helm charts (for Helm chart development)
+make path_up_local_helm
+```
+
+The startup process will:
+
+1. Validate your configuration files against the schema
+2. Create a Kind Kubernetes cluster
+3. Deploy PATH, GUARD, and WATCH using Helm
+4. Start Tilt for orchestration and hot reloading
+
+:::info
+First-time startup may take 3-5 minutes as Docker pulls the required images.
+:::
+
+### Verify the Setup
+
+Once started, you'll see:
+
+```bash
+🌿 PATH Localnet started successfully.
+  🚀 Send relay requests to: http://localhost:3070/v1
+
+🛠️  Development tools:
+  🔧 Open container shell: make localnet_exec
+  🔍 Launch k9s for debugging: make localnet_k9s
+```
+
+Test with a simple request:
+
+```bash
+curl http://localhost:3070/healthz
+```
+
+#### Example Relays
+
+For more example relay requests, see [Example Relays](3_example_requests.md).
+
+### 3. Access Development Tools
+
+- **Tilt UI**: http://localhost:10350 - Monitor services, view logs, trigger rebuilds
+- **Grafana**: http://localhost:3003 - View metrics and dashboards
+- **PATH API**: http://localhost:3070 - Send relay requests
+
+![Tilt Dashboard](../../../static/img/path-in-tilt.png)
+
+## Why PATH Localnet?
 
 The PATH Localnet development container exists to:
 
@@ -92,93 +223,6 @@ The PATH Localnet runs as a Docker container that internally manages a complete 
 - **Tilt**: Development orchestrator that manages hot reloading and service lifecycle
 - **Kind**: Kubernetes-in-Docker providing the cluster environment
 
-## Prerequisites
-
-Run the following command to install required tools:
-
-```bash
-make install_tools
-```
-
-Before starting, ensure you have:
-
-### Install Docker
-
-```bash
-docker --version  # Should output Docker version
-docker ps         # Should list running containers (or be empty)
-```
-
-### Prepare Configuration Files
-
-- `./local/path/.config.yaml` - PATH gateway configuration
-- `./local/path/.values.yaml` - Helm values override file
-
-:::tip
-Grove employees can find valid configuration files on 1Password in the note called "PATH Localnet Config".
-
-For external contributors, you can generate starter configs:
-
-```bash
-make config_shannon_populate    # Generate .config.yaml
-make configs_copy_values_yaml   # Copy default .values.yaml
-```
-
-:::
-
-## Quick Start
-
-### 1. Start PATH Localnet
-
-```bash
-# Start with remote Helm charts (recommended for most users)
-make path_up
-
-# Or start with local Helm charts (for Helm chart development)
-make path_up_local_helm
-```
-
-The startup process will:
-
-1. Validate your configuration files against the schema
-2. Create a Kind Kubernetes cluster
-3. Deploy PATH, GUARD, and WATCH using Helm
-4. Start Tilt for orchestration and hot reloading
-
-:::info
-First-time startup may take 3-5 minutes as Docker pulls the required images.
-:::
-
-### 2. Verify the Setup
-
-Once started, you'll see:
-
-```bash
-🌿 PATH Localnet started successfully.
-  🚀 Send relay requests to: http://localhost:3070/v1
-
-🛠️  Development tools:
-  🔧 Open container shell: make localnet_exec
-  🔍 Launch k9s for debugging: make localnet_k9s
-```
-
-Test with a simple request:
-
-```bash
-curl http://localhost:3070/healthz
-```
-
-### 2.1 Example Relays
-
-For more example relay requests, see [Example Relays](3_example_requests.md).
-
-### 3. Access Development Tools
-
-- **Tilt UI**: http://localhost:10350 - Monitor services, view logs, trigger rebuilds
-- **Grafana**: http://localhost:3003 - View metrics and dashboards
-- **PATH API**: http://localhost:3070 - Send relay requests
-
-![Tilt Dashboard](../../../static/img/path-in-tilt.png)
 
 ## Make Targets
 
@@ -250,7 +294,8 @@ _k9s running inside the PATH localnet Docker container_
 - `s` - Shell into selected pod
 - `ctrl+a` - Show all namespaces
 - `?` - Show help menu
-- :::
+
+:::
 
 #### `make localnet_exec`
 
@@ -287,18 +332,6 @@ The PATH Localnet image includes all necessary development tools, meaning you ca
 - Image: `ghcr.io/buildwithgrove/path-localnet-env`
 - [GHCR Repository](https://github.com/orgs/buildwithgrove/packages/container/package/path-localnet-env)
 
-### Installed Tools
-
-- **Go**: For building PATH
-- **Tilt**: Development orchestrator
-- **kubectl**: Kubernetes CLI
-- **Kind**: Kubernetes in Docker
-- **Helm 3**: Package manager for Kubernetes
-- **k9s**: Terminal UI for Kubernetes
-- **Docker**: Docker-in-Docker for Kind cluster
-- **ajv-cli**: For validating configuration schema
-- **yq/jq**: YAML/JSON processors
-
 ### File Mounts
 
 The container mounts your local PATH repository at `/app`, enabling:
@@ -327,20 +360,21 @@ The PATH Localnet supports hot reloading for rapid development:
 
 Multiple ways to view logs:
 
-1. Recommended: **Tilt UI** (http://localhost:10350):
+#### Recommended: **Tilt UI** (http://localhost:10350):
 
    - Real-time log streaming
    - Filtered by service
    - Search functionality
 
-2. **Inside the container**:
+#### **Inside the container**:
 
    ```bash
    make localnet_exec
    kubectl logs -f deployment/path
    ```
 
-3. **Using k9s**:
+#### **Using k9s**:
+
    ```bash
    make localnet_k9s
    # Navigate to pod and press 'l'
