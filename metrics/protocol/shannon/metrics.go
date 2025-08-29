@@ -24,12 +24,14 @@ const (
 	pathProcess = "path"
 
 	// HTTP relay metrics
-	relaysTotalMetric       = "shannon_relays_total"
-	relaysErrorsTotalMetric = "shannon_relay_errors_total"
+	relaysTotalMetric          = "shannon_relays_total"
+	relaysErrorsTotalMetric    = "shannon_relay_errors_total"
+	relaysActiveRequestsMetric = "shannon_relays_active"
 
 	// WebSocket connection metrics
 	websocketConnectionsTotalMetric = "shannon_websocket_connections_total"
 	websocketConnectionErrorsMetric = "shannon_websocket_connection_errors_total"
+	websocketConnectionsActiveMetric = "shannon_websocket_connections_active"
 
 	// WebSocket message metrics
 	websocketMessagesTotalMetric = "shannon_websocket_messages_total"
@@ -58,12 +60,14 @@ func init() {
 	// HTTP relay metrics
 	prometheus.MustRegister(relaysTotal)
 	prometheus.MustRegister(relaysErrorsTotal)
+	prometheus.MustRegister(activeRelays)
 
 	// WebSocket metrics
 	prometheus.MustRegister(websocketConnectionsTotal)
 	prometheus.MustRegister(websocketConnectionErrors)
 	prometheus.MustRegister(websocketMessagesTotal)
 	prometheus.MustRegister(websocketMessageErrors)
+	prometheus.MustRegister(activeWebsocketConnections)
 
 	// Sanctions metrics (shared across HTTP and WebSocket)
 	prometheus.MustRegister(sanctionsByDomain)
@@ -125,6 +129,24 @@ var (
 			Help:      "Total relay errors by service, endpoint domain, error type, and sanction type",
 		},
 		[]string{"service_id", "endpoint_domain", "error_type", "sanction_type"},
+	)
+
+	// activeRelays tracks the current number of active Shannon HTTP requests.
+	// This gauge metric shows the real-time concurrency level for monitoring
+	// request load and identifying potential bottlenecks.
+	//
+	// Use to analyze:
+	//   - Current request concurrency levels
+	//   - Request load patterns over time
+	//   - Capacity planning and resource utilization
+	//   - Identifying request spikes and bottlenecks
+	activeRelays = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Subsystem: pathProcess,
+			Name:      relaysActiveRequestsMetric,
+			Help:      "Current number of active Shannon requests being processed",
+		},
+		[]string{"request_type"},
 	)
 
 	// websocketConnectionsTotal tracks the total WebSocket connection attempts processed.
@@ -215,6 +237,23 @@ var (
 			Help:      "Total WebSocket message errors by service, endpoint domain, error type, and sanction type",
 		},
 		[]string{"service_id", "endpoint_domain", "error_type", "sanction_type"},
+	)
+
+	// activeWebsocketConnections tracks the current number of active WebSocket connections.
+	// This gauge metric shows the real-time WebSocket connection count for monitoring
+	// persistent connection load and identifying potential bottlenecks.
+	//
+	// Use to analyze:
+	//   - Current WebSocket connection counts
+	//   - Connection load patterns over time
+	//   - Capacity planning for persistent connections
+	//   - Identifying connection spikes and bottlenecks
+	activeWebsocketConnections = prometheus.NewGauge(
+		prometheus.GaugeOpts{
+			Subsystem: pathProcess,
+			Name:      websocketConnectionsActiveMetric,
+			Help:      "Current number of active Shannon WebSocket connections",
+		},
 	)
 
 	// sanctionsByDomain tracks sanctions applied by domain.
@@ -739,6 +778,21 @@ func processRelayMinerErrors(
 			},
 		).Inc()
 	}
+}
+
+// SetActiveHTTPRelays updates the gauge metric with the current number of active HTTP relays.
+// This should be called whenever the active HTTP relay count changes in the concurrency limiter.
+// TODO_TECHDEBT: the metrics package should use the passed observation to report metrics: it should not expose any methods for external usage (other than PublishMetrics)
+func SetActiveHTTPRelays(activeCount int64) {
+	activeRelays.With(prometheus.Labels{
+		"request_type": "http",
+	}).Set(float64(activeCount))
+}
+
+// SetActiveWebsocketConnections updates the gauge metric with the current number of active WebSocket connections.
+// This should be called whenever the WebSocket connection count changes.
+func SetActiveWebsocketConnections(activeCount int64) {
+	activeWebsocketConnections.Set(float64(activeCount))
 }
 
 // recordWebsocketConnectionTotal tracks WebSocket connection counts.

@@ -7,10 +7,10 @@ set -euo pipefail
 # making it reachable from the local machine on port 3070 as defined in the `kind-config.yaml` file.
 #
 # Implementation context:
-#   - Envoy Gateway service is created as a LoadBalancer 
+#   - Envoy Gateway service is created as a LoadBalancer
 #   - When running in kind, LoadBalancer services automatically use NodePort underneath
 #   - In cloud environments, a LoadBalancer provisioner would map a public IP to this NodePort
-#   - In kind environments (without external load balancers), Kubernetes auto-assigns a dynamic 
+#   - In kind environments (without external load balancers), Kubernetes auto-assigns a dynamic
 #     NodePort (30000-32767 range) unless explicitly specified
 
 PATH_NAMESPACE="path"

@@ -4,14 +4,15 @@ load("ext://helm_resource", "helm_resource", "helm_repo")
 load('ext://k8s_attach', 'k8s_attach')
 load("ext://configmap", "configmap_create")
 
-analytics_settings(
-    enabled=False,
-)
+# Disable Tilt analytics
+# Ref: https://docs.tilt.dev/telemetry_faq.html
+analytics_settings(enable=False)
 
 # A list of directories where changes trigger a hot-reload of PATH.
 # IMPORTANT_DEV_NOTE: this list needs to be updated each time a new package is added to the repo.
 hot_reload_dirs = [
     "./local/path/.config.yaml",
+    "./local/path/.values.yaml",
     "./local/guard",
     "./local/observability",
     "./cmd",
@@ -212,11 +213,8 @@ flags = [
 # For example, Tilt will append the flags:
 #    --values ./local/path/.values.yaml --reset-values
 # to the Helm command if the file exists.
-#
-# See file `./local/path/values.tmpl.yaml` for more details.
 valuesFile = "./local/path/.values.yaml"
 if read_yaml(valuesFile, default=None) != None:
-    watch_file(valuesFile)
     flags.append("--reset-values") # Ensure that values are overridden by the .values.yaml file.
     flags.append("--values")
     flags.append(valuesFile)
