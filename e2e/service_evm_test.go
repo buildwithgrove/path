@@ -18,8 +18,6 @@ import (
 	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
 
-// TODO_IN_THIS_PR:(@commoddity) - Add E2E test cases for EVM services to test batch requests.
-
 // TODO_TECHDEBT(@commoddity): The service_<SERVICE_TYPE>_test.go files in this package
 // are essentially encapsulating knowledge about specific services.
 //
