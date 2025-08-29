@@ -24,6 +24,7 @@ description: Development environment for the full PATH, GUARD & WATCH stack
     - [`make path_up`](#make-path_up)
     - [`make path_up_local_helm`](#make-path_up_local_helm)
     - [`make path_down`](#make-path_down)
+    - [`make build_and_push_localnet_image`](#make-build_and_push_localnet_image)
   - [Debugging Commands](#debugging-commands)
     - [`make localnet_k9s`](#make-localnet_k9s)
     - [`make localnet_exec`](#make-localnet_exec)
@@ -263,6 +264,20 @@ make path_down
 ```
 
 This cleanly shuts down all services by stopping the localnet Docker container.
+
+:::note 🌿 Grove employees only 🌿?
+
+#### `make build_and_push_localnet_image`
+
+If changes have been made to the localnet Dockerfile at `./local/Dockerfile.dev`, you can build and push the `path-localnet-env` image to the Grove GitHub Container Registry (GHCR) with the following command:
+
+```bash
+make build_and_push_localnet_image
+```
+
+This will build the image and push it to the GHCR repository `ghcr.io/buildwithgrove/path-localnet-env`.
+
+:::
 
 ### Debugging Commands
 
