@@ -22,7 +22,7 @@ import (
 // parallelRelayResult is used to track the result of a parallel relay request.
 // It is intended for internal use by the requestContext.
 type parallelRelayResult struct {
-	response  protocol.Response
+	responses []protocol.Response
 	err       error
 	index     int
 	duration  time.Duration
@@ -69,16 +69,20 @@ func (rc *requestContext) HandleRelayRequest() error {
 }
 
 // handleSingleRelayRequest handles a single relay request (original behavior)
+// handleSingleRelayRequest handles a single relay request (original behavior)
 func (rc *requestContext) handleSingleRelayRequest() error {
 	// Send the service request payload, through the protocol context, to the selected endpoint.
 	// In this code path, we are always guaranteed to have exactly one protocol context.
-	endpointResponse, err := rc.protocolContexts[0].HandleServiceRequest(rc.qosCtx.GetServicePayload())
+	endpointResponses, err := rc.protocolContexts[0].HandleServiceRequest(rc.qosCtx.GetServicePayloads())
 	if err != nil {
 		rc.logger.Warn().Err(err).Msg("Failed to send a single relay request.")
 		return err
 	}
 
-	rc.qosCtx.UpdateWithResponse(endpointResponse.EndpointAddr, endpointResponse.Bytes)
+	for _, endpointResponse := range endpointResponses {
+		rc.qosCtx.UpdateWithResponse(endpointResponse.EndpointAddr, endpointResponse.Bytes)
+	}
+
 	return nil
 }
 
@@ -140,11 +144,11 @@ func (rc *requestContext) executeOneOfParallelRequests(
 	qosContextMutex *sync.Mutex,
 ) {
 	startTime := time.Now()
-	endpointResponse, err := protocolCtx.HandleServiceRequest(rc.qosCtx.GetServicePayload())
+	responses, err := protocolCtx.HandleServiceRequest(rc.qosCtx.GetServicePayloads())
 	duration := time.Since(startTime)
 
 	result := parallelRelayResult{
-		response:  endpointResponse,
+		responses: responses,
 		err:       err,
 		index:     index,
 		duration:  duration,
@@ -156,7 +160,9 @@ func (rc *requestContext) executeOneOfParallelRequests(
 		// 1. Ensure parallel requests are handled correctly by the QoS layer: e.g. cannot use the most recent response as best anymore.
 		// 2. Simplify the parallel requests feature: it may be best to fully encapsulate it in the protocol/shannon package.
 		qosContextMutex.Lock()
-		rc.qosCtx.UpdateWithResponse(endpointResponse.EndpointAddr, endpointResponse.Bytes)
+		for _, response := range responses {
+			rc.qosCtx.UpdateWithResponse(response.EndpointAddr, response.Bytes)
+		}
 		qosContextMutex.Unlock()
 	}
 
@@ -205,14 +211,18 @@ func (rc *requestContext) handleSuccessfulResponse(
 ) error {
 	metrics.numCompletedSuccessfully++
 	overallDuration := time.Since(metrics.overallStartTime)
-	endpointDomain := shannonmetrics.ExtractTLDFromEndpointAddr(string(result.response.EndpointAddr))
 
-	logger.Info().
-		Str("endpoint_domain", endpointDomain).
-		Msgf("Parallel request success: endpoint %d/%d responded in %dms",
-			result.index+1, metrics.numRequestsToAttempt, overallDuration.Milliseconds())
+	for _, response := range result.responses {
+		endpointDomain := shannonmetrics.ExtractTLDFromEndpointAddr(string(response.EndpointAddr))
 
-	rc.qosCtx.UpdateWithResponse(result.response.EndpointAddr, result.response.Bytes)
+		logger.Info().
+			Str("endpoint_domain", endpointDomain).
+			Msgf("Parallel request success: endpoint %d/%d responded in %dms",
+				result.index+1, metrics.numRequestsToAttempt, overallDuration.Milliseconds())
+
+		rc.qosCtx.UpdateWithResponse(response.EndpointAddr, response.Bytes)
+	}
+
 	return nil
 }
 
