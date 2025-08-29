@@ -160,7 +160,7 @@ func (rc requestContext) GetHTTPResponse() pathhttp.HTTPResponse {
 // getBatchHTTPResponse handles batch requests by combining individual JSON-RPC responses
 // into an array according to the JSON-RPC 2.0 specification.
 // https://www.jsonrpc.org/specification#batch
-func (rc requestContext) getBatchHTTPResponse() gateway.HTTPResponse {
+func (rc requestContext) getBatchHTTPResponse() pathhttp.HTTPResponse {
 	// Collect individual response payloads
 	var individualResponses []json.RawMessage
 
