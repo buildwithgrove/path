@@ -5,7 +5,7 @@ import (
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
-	"github.com/buildwithgrove/path/gateway"
+	pathhttp "github.com/buildwithgrove/path/network/http"
 	qosobservations "github.com/buildwithgrove/path/observation/qos"
 	"github.com/buildwithgrove/path/qos"
 	"github.com/buildwithgrove/path/qos/jsonrpc"
@@ -148,6 +148,6 @@ func (r *responseCometBFTStatus) GetObservation() qosobservations.CosmosEndpoint
 
 // GetHTTPResponse builds and returns the HTTP response
 // Implements the response interface
-func (r *responseCometBFTStatus) GetHTTPResponse() gateway.HTTPResponse {
+func (r *responseCometBFTStatus) GetHTTPResponse() pathhttp.HTTPResponse {
 	return qos.BuildHTTPResponseFromJSONRPCResponse(r.logger, r.jsonRPCResponse)
 }

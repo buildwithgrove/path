@@ -3,7 +3,7 @@ package cosmos
 import (
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
-	"github.com/buildwithgrove/path/gateway"
+	pathhttp "github.com/buildwithgrove/path/network/http"
 	qosobservations "github.com/buildwithgrove/path/observation/qos"
 	"github.com/buildwithgrove/path/protocol"
 )
@@ -21,7 +21,7 @@ type requestContext struct {
 	//
 	// Builds a response to return to the user.
 	// Used only if no endpoint responses are received.
-	protocolErrorResponseBuilder func(polylog.Logger) gateway.HTTPResponse
+	protocolErrorResponseBuilder func(polylog.Logger) pathhttp.HTTPResponse
 
 	// Builds a request error observation indicating protocol-level error.
 	// Used only if no endpoint responses are received.
@@ -45,7 +45,7 @@ type endpointResponse struct {
 
 // response interface defines what endpoint response validators must return
 type response interface {
-	GetHTTPResponse() gateway.HTTPResponse
+	GetHTTPResponse() pathhttp.HTTPResponse
 	GetObservation() qosobservations.CosmosEndpointObservation
 }
 
@@ -73,7 +73,7 @@ func (rc *requestContext) UpdateWithResponse(endpointAddr protocol.EndpointAddr,
 }
 
 // GetHTTPResponse builds the HTTP response to return to the client
-func (rc *requestContext) GetHTTPResponse() gateway.HTTPResponse {
+func (rc *requestContext) GetHTTPResponse() pathhttp.HTTPResponse {
 	// No responses received - this is a protocol-level error
 	if len(rc.endpointResponses) == 0 {
 		rc.logger.With(

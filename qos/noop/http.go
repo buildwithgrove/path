@@ -1,11 +1,9 @@
 package noop
 
-import (
-	"github.com/buildwithgrove/path/gateway"
-)
+import pathhttp "github.com/buildwithgrove/path/network/http"
 
 // HTTPResponse provides all the functionality required by the gate.HTTPResponse interface.
-var _ gateway.HTTPResponse = &HTTPResponse{}
+var _ pathhttp.HTTPResponse = &HTTPResponse{}
 
 // HTTPResponse stores the data required for building and returning a user-facing HTTP response
 // based on the response received from an endpoint to a service request.
@@ -17,20 +15,20 @@ type HTTPResponse struct {
 }
 
 // GetPayload returns the payload of the user-facing HTTP response.
-// Implements the gateway.HTTPResponse interface.
+// Implements the pathhttp.HTTPResponse interface.
 func (h *HTTPResponse) GetPayload() []byte {
 	return h.payload
 }
 
 // GetHTTPStatusCode returns the HTTP status code of the user-facing HTTP response.
-// Implements the gateway.HTTPResponse interface.
+// Implements the pathhttp.HTTPResponse interface.
 func (h *HTTPResponse) GetHTTPStatusCode() int {
 	return h.httpStatusCode
 }
 
 // GetHTTPHeaders always returns nil, as HTTP headers are not used by noop QoS as of PR #106.
 // See: https://github.com/buildwithgrove/path/pull/106
-// Implements the gateway.HTTPResponse interface.
+// Implements the pathhttp.HTTPResponse interface.
 func (h *HTTPResponse) GetHTTPHeaders() map[string]string {
 	return nil
 }

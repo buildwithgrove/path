@@ -1,11 +1,12 @@
 package cosmos
 
 import (
-	"github.com/buildwithgrove/path/gateway"
+	"github.com/pokt-network/poktroll/pkg/polylog"
+
+	pathhttp "github.com/buildwithgrove/path/network/http"
 	qosobservations "github.com/buildwithgrove/path/observation/qos"
 	"github.com/buildwithgrove/path/qos"
 	"github.com/buildwithgrove/path/qos/jsonrpc"
-	"github.com/pokt-network/poktroll/pkg/polylog"
 )
 
 // responseValidatorCometBFTHealth implements jsonrpcResponseValidator for /health endpoint
@@ -69,6 +70,6 @@ func (r *responseCometBFTHealth) GetObservation() qosobservations.CosmosEndpoint
 
 // GetHTTPResponse builds and returns the HTTP response
 // Implements the response interface
-func (r *responseCometBFTHealth) GetHTTPResponse() gateway.HTTPResponse {
+func (r *responseCometBFTHealth) GetHTTPResponse() pathhttp.HTTPResponse {
 	return qos.BuildHTTPResponseFromJSONRPCResponse(r.logger, r.userJSONRPCResponse)
 }

@@ -6,7 +6,7 @@ import (
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
-	"github.com/buildwithgrove/path/gateway"
+	pathhttp "github.com/buildwithgrove/path/network/http"
 	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
 
@@ -17,7 +17,7 @@ var httpHeadersApplicationJSON = map[string]string{
 
 // HTTPResponse is used by the RequestContext to provide
 // an JSONRPC-specific implementation of gateway package's HTTPResponse.
-var _ gateway.HTTPResponse = HTTPResponse{}
+var _ pathhttp.HTTPResponse = HTTPResponse{}
 
 func BuildHTTPResponseFromJSONRPCResponse(
 	logger polylog.Logger,
@@ -33,6 +33,16 @@ func BuildHTTPResponseFromJSONRPCResponse(
 		responsePayload: bz,
 		// Use the HTTP status code recommended by the JSONRPC response.
 		httpStatusCode: jsonrpcResp.GetRecommendedHTTPStatusCode(),
+	}
+}
+
+func BuildHTTPResponseFromBytes(
+	responsePayload []byte,
+	httpStatusCode int,
+) HTTPResponse {
+	return HTTPResponse{
+		responsePayload: responsePayload,
+		httpStatusCode:  httpStatusCode,
 	}
 }
 

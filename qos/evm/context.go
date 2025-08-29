@@ -8,6 +8,7 @@ import (
 	sharedtypes "github.com/pokt-network/poktroll/x/shared/types"
 
 	"github.com/buildwithgrove/path/gateway"
+	pathhttp "github.com/buildwithgrove/path/network/http"
 	qosobservations "github.com/buildwithgrove/path/observation/qos"
 	"github.com/buildwithgrove/path/protocol"
 	"github.com/buildwithgrove/path/qos/jsonrpc"
@@ -135,7 +136,7 @@ func (rc *requestContext) UpdateWithResponse(endpointAddr protocol.EndpointAddr,
 // GetHTTPResponse builds the HTTP response that should be returned for
 // an EVM blockchain service request.
 // Implements the gateway.RequestQoSContext interface.
-func (rc requestContext) GetHTTPResponse() gateway.HTTPResponse {
+func (rc requestContext) GetHTTPResponse() pathhttp.HTTPResponse {
 	// Use a noResponses struct if no responses were reported by the protocol from any endpoints.
 	if len(rc.endpointResponses) == 0 {
 		responseNoneObj := responseNone{
