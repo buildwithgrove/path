@@ -188,6 +188,12 @@ const (
 	jsonrpcBatchRequest
 )
 
+// TODO_TECHDEBT(@adshmh): JSONRPC handling should be done in the qos/jsonrpc package:
+// - Parse a []byte into a JSONRPC request: detect whether it is a single or a batch request.
+// - Validate the request: e.g. no duplicate IDs in a batch request.
+// - Determine the response format: e.g. response to a single request formatted as a batch must also be formatted as a batch.
+// - Support building observations.
+//
 // TODO_MVP(@adshmh): Add a JSON-RPC request validator to reject invalid/unsupported
 // method calls early in request flow.
 //
@@ -211,6 +217,8 @@ func parseJSONRPCFromRequestBody(
 		return nil, err
 	}
 
+	// TODO_TECHDEBT(@adshmh): Move the parsing logic to qos/jsonrpc package.
+	//
 	// Step 2: Detect request format (batch vs single)
 	requestFormat := detectRequestFormat(trimmedBody)
 
@@ -225,6 +233,9 @@ func parseJSONRPCFromRequestBody(
 	}
 }
 
+// TODO_TECHDEBT(@adshmh): Move this to qos/jsonrpc package.
+// Parsing (via encoding/json) should handle this without the need for extra validation logic.
+//
 // validateRequestBody performs initial validation on the HTTP request body.
 // It trims whitespace and ensures the body is not empty.
 //
@@ -240,6 +251,10 @@ func validateRequestBody(logger polylog.Logger, requestBody []byte) ([]byte, err
 	return trimmedBody, nil
 }
 
+// TODO_TECHDEBT(@adshmh): Handle all the parsing in qos/jsonrpc package:
+// - No need to check for specific characters.
+// - encoding/json Unmarshaling can handle different cases: single vs. batch.
+//
 // detectRequestFormat analyzes the trimmed request body to determine if it represents
 // a single JSON-RPC request or a batch request.
 //
@@ -263,6 +278,8 @@ func detectRequestFormat(trimmedBody []byte) jsonrpcRequestFormat {
 	}
 }
 
+// TODO_TECHDEBT(@adshmh): move any validation to the qos/jsonrpc package.
+//
 // parseBatchRequest handles parsing of JSON-RPC batch requests (JSON arrays).
 // Performs validation to ensure:
 //   - The array can be unmarshaled into JSON-RPC request structures

@@ -309,6 +309,9 @@ message ShannonEndpointObservation {
   // HTTP Response payload size
   optional int64 endpoint_backend_service_http_response_payload_size = 15;
 
+  // TODO_TECHDEBT(@adshmh): Separate fallback endpoints into a separate message:
+  // Most of fields above (e.g. session_id) only apply to a Shannon endpoint.
+  //
   // TODO_CONSIDERATION(@adshmh): Consider renaming to is_gateway_owned OR is_off_protocol.
   //
   // Tracks whether the endpoint is a fallback endpoint.

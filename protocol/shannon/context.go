@@ -146,6 +146,14 @@ func (rc *requestContext) sendSingleRelay(payload protocol.Payload) (protocol.Re
 	return relayResponse, err
 }
 
+// TODO_TECHDEBT(@adshmh): Single and Multiple payloads should be handled as similarly as possible:
+// - This includes using similar execution paths.
+//
+// TODO_TECHDEBT(@adshmh): Use the same endpoint response processing used in single relay requests:
+// - Use the following on every parallel request:
+//   - handleEndpointSuccess
+//   - handleEndpointError
+//
 // handleParallelRelayRequests orchestrates parallel relay requests to a single endpoint.
 // Uses concurrent processing while maintaining response order and proper error handling.
 func (rc *requestContext) handleParallelRelayRequests(payloads []protocol.Payload) ([]protocol.Response, error) {
@@ -238,6 +246,9 @@ func (rc *requestContext) waitForAllRelayResponses(
 	return rc.convertResultsToResponses(results, firstErr)
 }
 
+// TODO_TECHDEBT(@adshmh): Handle EVERY error encountered in parallel requests.
+// TODO_TECHDEBT(@adshmh): Support multiple endpoints for parallel requests.
+//
 // convertResultsToResponses converts parallel relay results into an array of protocol responses.
 // Maintains the order of responses to match the order of input payloads.
 func (rc *requestContext) convertResultsToResponses(results []parallelRelayResult, firstErr error) ([]protocol.Response, error) {
