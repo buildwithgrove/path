@@ -7,7 +7,6 @@ import (
 	"net/http"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
-	sessiontypes "github.com/pokt-network/poktroll/x/session/types"
 
 	"github.com/buildwithgrove/path/gateway"
 	"github.com/buildwithgrove/path/health"
@@ -162,6 +161,7 @@ func (p *Protocol) AvailableEndpoints(
 	// endpoints will be used to populate the list of endpoints.
 	//
 	// The final boolean parameter sets whether to filter out sanctioned endpoints.
+
 	endpoints, err := p.getUniqueEndpoints(ctx, serviceID, activeSessions, true)
 	if err != nil {
 		logger.Error().Err(err).Msg(err.Error())
@@ -327,7 +327,7 @@ func (p *Protocol) IsAlive() bool {
 func (p *Protocol) getUniqueEndpoints(
 	ctx context.Context,
 	serviceID protocol.ServiceID,
-	activeSessions []sessiontypes.Session,
+	activeSessions []hydratedSession,
 	filterSanctioned bool,
 ) (map[protocol.EndpointAddr]endpoint, error) {
 	logger := p.logger.With(
@@ -380,7 +380,7 @@ func (p *Protocol) getUniqueEndpoints(
 func (p *Protocol) getSessionsUniqueEndpoints(
 	_ context.Context,
 	serviceID protocol.ServiceID,
-	activeSessions []sessiontypes.Session,
+	activeSessions []hydratedSession,
 	filterSanctioned bool, // will be true for calls made by service request handling.
 ) (map[protocol.EndpointAddr]endpoint, error) {
 	logger := p.logger.With(
@@ -407,13 +407,8 @@ func (p *Protocol) getSessionsUniqueEndpoints(
 		logger.ProbabilisticDebugInfo(polylog.ProbabilisticDebugInfoProb).Msgf("Finding unique endpoints for session %s for app %s for service %s.", session.SessionId, app.Address, serviceID)
 
 		// Retrieve all endpoints for the session.
-		sessionEndpoints, err := endpointsFromSession(session)
-		if err != nil {
-			logger.Error().Err(err).Msgf("Internal error: error getting all endpoints for service %s app %s and session: skipping the app.", serviceID, app.Address)
-			continue
-		}
+		qualifiedEndpoints := session.endpoints
 
-		qualifiedEndpoints := sessionEndpoints
 		// Filter out sanctioned endpoints if requested.
 		if filterSanctioned {
 			logger.Debug().Msgf(
