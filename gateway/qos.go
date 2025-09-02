@@ -21,7 +21,7 @@ type RequestQoSContext interface {
 	// TODO_TECHDEBT: Should eventually return []Payload
 	// - Allows mapping a single RelayRequest into multiple ServiceRequests.
 	// - Example: A batch relay request on JSONRPC should decompose into multiple independent requests.
-	GetServicePayload() protocol.Payload
+	GetServicePayloads() []protocol.Payload
 
 	// TODO_FUTURE:
 	// - Add retry-related return values to UpdateWithResponse,

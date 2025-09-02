@@ -49,9 +49,10 @@ type response interface {
 	GetObservation() qosobservations.CosmosEndpointObservation
 }
 
+// TODO_NEXT(@commoddity): handle batch requests for Cosmos SDK
 // GetServicePayload builds the payload to send to blockchain endpoints
-func (rc *requestContext) GetServicePayload() protocol.Payload {
-	return rc.servicePayload
+func (rc *requestContext) GetServicePayloads() []protocol.Payload {
+	return []protocol.Payload{rc.servicePayload}
 }
 
 // UpdateWithResponse processes a response from an endpoint

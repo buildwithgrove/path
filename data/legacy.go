@@ -39,17 +39,19 @@ type legacyRecord struct {
 	endpointTripTime float64 // endpoint response timestamp - endpoint query time, in seconds.
 }
 
-// converts a data record to legacy format, for compatibility with the existing data pipeline.
-func buildLegacyDataRecord(
+// converts data records to legacy format, for compatibility with the existing data pipeline.
+// Returns multiple legacy records for scenarios like EVM batch requests where each method
+// needs its own record.
+func buildLegacyDataRecords(
 	logger polylog.Logger,
 	observations *observation.RequestResponseObservations,
-) *legacyRecord {
-	// initialize the legacy-compatible data record.
-	legacyRecord := &legacyRecord{}
+) []*legacyRecord {
+	// initialize the base legacy-compatible data record.
+	baseLegacyRecord := &legacyRecord{}
 
 	// Update the legacy data record from Gateway observations.
 	if gatewayObservations := observations.GetGateway(); gatewayObservations != nil {
-		legacyRecord = setLegacyFieldsFromGatewayObservations(logger, legacyRecord, gatewayObservations)
+		baseLegacyRecord = setLegacyFieldsFromGatewayObservations(logger, baseLegacyRecord, gatewayObservations)
 	}
 
 	// TODO_MVP(@adshmh): Set legacy fields from Shannon observations.
@@ -57,31 +59,36 @@ func buildLegacyDataRecord(
 	// Extract protocol observations
 	protocolObservations := observations.GetProtocol()
 
-	// Update the data record from Shannonprotocol data
+	// Update the data record from Shannon protocol data
 	if shannonObservations := protocolObservations.GetShannon(); shannonObservations != nil {
-		legacyRecord = setLegacyFieldsFromShannonProtocolObservations(logger, legacyRecord, shannonObservations)
+		baseLegacyRecord = setLegacyFieldsFromShannonProtocolObservations(logger, baseLegacyRecord, shannonObservations)
 	}
 
-	// Update the legacy data record from QoS observations.
+	// Update the legacy data records from QoS observations.
+	// This may return multiple records for EVM batch requests.
+	var legacyRecords []*legacyRecord
 	if qosObservations := observations.GetQos(); qosObservations != nil {
-		legacyRecord = setLegacyFieldsFromQoSObservations(logger, legacyRecord, qosObservations)
+		legacyRecords = setLegacyFieldsFromQoSObservations(logger, baseLegacyRecord, qosObservations)
+	} else {
+		legacyRecords = []*legacyRecord{baseLegacyRecord}
 	}
 
-	// Set constant/calculated/inferred fields' values.
-	//
-	if legacyRecord.ErrorType != "" {
-		// Redundant value, set to comply with the legacy data pipeline.
-		legacyRecord.IsError = true
+	// Set constant/calculated/inferred fields' values for all records.
+	for _, legacyRecord := range legacyRecords {
+		if legacyRecord.ErrorType != "" {
+			// Redundant value, set to comply with the legacy data pipeline.
+			legacyRecord.IsError = true
+		}
+
+		// Hardcoded to "PATH" to inform the legacy data pipeline.
+		legacyRecord.ErrorSource = "PATH"
+
+		// Time spent waiting for the endpoint's response, in seconds.
+		legacyRecord.NodeTripTime = legacyRecord.endpointTripTime
+
+		// Total request processing time - time spent waiting for the endpoint, measured in seconds.
+		legacyRecord.PortalTripTime = legacyRecord.RequestRoundTripTime - legacyRecord.endpointTripTime
 	}
 
-	// Hardcoded to "PATH" to inform the legacy data pipeline.
-	legacyRecord.ErrorSource = "PATH"
-
-	// Time spent waiting for the endpoint's response, in seconds.
-	legacyRecord.NodeTripTime = legacyRecord.endpointTripTime
-
-	// Total request processing time - time spent waiting for the endpoint, measured in seconds.
-	legacyRecord.PortalTripTime = legacyRecord.RequestRoundTripTime - legacyRecord.endpointTripTime
-
-	return legacyRecord
+	return legacyRecords
 }

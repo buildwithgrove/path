@@ -85,6 +85,14 @@ func (ec *errorContext) GetServicePayload() protocol.Payload {
 	return protocol.EmptyErrorPayload()
 }
 
+// GetServicePayloads should never be called.
+// It logs a warning and returns an empty error payload.
+// Implements the gateway.RequestQoSContext interface for batch request support.
+func (ec *errorContext) GetServicePayloads() []protocol.Payload {
+	ec.logger.Warn().Msg("SHOULD NEVER HAPPEN: errorContext.GetServicePayloads() should never be called.")
+	return []protocol.Payload{protocol.EmptyErrorPayload()}
+}
+
 // UpdateWithResponse should never be called.
 // Only logs a warning.
 // Implements the gateway.RequestQoSContext interface.

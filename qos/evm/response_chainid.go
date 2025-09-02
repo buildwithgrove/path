@@ -18,7 +18,7 @@ var _ response = responseToChainID{}
 // adding any encountered errors to the returned struct for constructing a response payload.
 func responseUnmarshallerChainID(
 	logger polylog.Logger,
-	jsonrpcReq jsonrpc.Request,
+	_ jsonrpc.Request,
 	jsonrpcResp jsonrpc.Response,
 ) (response, error) {
 	// The endpoint returned an error: no need to do further processing of the response.
@@ -125,4 +125,10 @@ func (r responseToChainID) getResponsePayload() []byte {
 // DEV_NOTE: This is an opinionated mapping following best practice but not enforced by any specifications or standards.
 func (r responseToChainID) getHTTPStatusCode() int {
 	return r.jsonRPCResponse.GetRecommendedHTTPStatusCode()
+}
+
+// GetJSONRPCID returns the JSONRPC ID of the response.
+// Implements the response interface.
+func (r responseToChainID) GetJSONRPCID() jsonrpc.ID {
+	return r.jsonRPCResponse.ID
 }

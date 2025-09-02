@@ -22,7 +22,7 @@ import (
 // parallelRelayResult is used to track the result of a parallel relay request.
 // It is intended for internal use by the requestContext.
 type parallelRelayResult struct {
-	response  protocol.Response
+	responses []protocol.Response
 	err       error
 	index     int
 	duration  time.Duration
@@ -37,6 +37,9 @@ type parallelRequestMetrics struct {
 	overallStartTime         time.Time
 }
 
+// TODO_TECHDEBT(@adshmh): Use a SINGLE protocol context to handle a relay request.
+// - Launching multiple parallel requests to multiple endpoints is an internal protocol decision.
+//
 // HandleRelayRequest sends a relay from the perspective of a gateway.
 //
 // It performs the following steps:
@@ -69,19 +72,33 @@ func (rc *requestContext) HandleRelayRequest() error {
 }
 
 // handleSingleRelayRequest handles a single relay request (original behavior)
+// handleSingleRelayRequest handles a single relay request (original behavior)
 func (rc *requestContext) handleSingleRelayRequest() error {
 	// Send the service request payload, through the protocol context, to the selected endpoint.
 	// In this code path, we are always guaranteed to have exactly one protocol context.
-	endpointResponse, err := rc.protocolContexts[0].HandleServiceRequest(rc.qosCtx.GetServicePayload())
+	endpointResponses, err := rc.protocolContexts[0].HandleServiceRequest(rc.qosCtx.GetServicePayloads())
 	if err != nil {
 		rc.logger.Warn().Err(err).Msg("Failed to send a single relay request.")
 		return err
 	}
 
-	rc.qosCtx.UpdateWithResponse(endpointResponse.EndpointAddr, endpointResponse.Bytes)
+	// TODO_TECHDEBT(@adshmh): Ensure the protocol returns exactly one response per service payload:
+	// - Define a struct to contain each service payload and its corresponding response.
+	// - protocol should return this new struct to clarify mapping of service payloads and the corresponding endpoint response.
+	// - QoS packages should use this new struct to prepare the user response.
+	// - Remove the individual endpoint response handling from the gateway package.
+	//
+	for _, endpointResponse := range endpointResponses {
+		rc.qosCtx.UpdateWithResponse(endpointResponse.EndpointAddr, endpointResponse.Bytes)
+	}
+
 	return nil
 }
 
+// TODO_TECHDEBT(@adshmh): Remove this method:
+// Parallel requests are an internal detail of a protocol integration package
+// As of PR #388, `protocol/shannon` is the only protocol integration package.
+//
 // handleParallelRelayRequests orchestrates parallel relay requests and returns the first successful response.
 func (rc *requestContext) handleParallelRelayRequests() error {
 	metrics := &parallelRequestMetrics{
@@ -140,11 +157,11 @@ func (rc *requestContext) executeOneOfParallelRequests(
 	qosContextMutex *sync.Mutex,
 ) {
 	startTime := time.Now()
-	endpointResponse, err := protocolCtx.HandleServiceRequest(rc.qosCtx.GetServicePayload())
+	responses, err := protocolCtx.HandleServiceRequest(rc.qosCtx.GetServicePayloads())
 	duration := time.Since(startTime)
 
 	result := parallelRelayResult{
-		response:  endpointResponse,
+		responses: responses,
 		err:       err,
 		index:     index,
 		duration:  duration,
@@ -156,7 +173,9 @@ func (rc *requestContext) executeOneOfParallelRequests(
 		// 1. Ensure parallel requests are handled correctly by the QoS layer: e.g. cannot use the most recent response as best anymore.
 		// 2. Simplify the parallel requests feature: it may be best to fully encapsulate it in the protocol/shannon package.
 		qosContextMutex.Lock()
-		rc.qosCtx.UpdateWithResponse(endpointResponse.EndpointAddr, endpointResponse.Bytes)
+		for _, response := range responses {
+			rc.qosCtx.UpdateWithResponse(response.EndpointAddr, response.Bytes)
+		}
 		qosContextMutex.Unlock()
 	}
 
@@ -205,14 +224,18 @@ func (rc *requestContext) handleSuccessfulResponse(
 ) error {
 	metrics.numCompletedSuccessfully++
 	overallDuration := time.Since(metrics.overallStartTime)
-	endpointDomain := shannonmetrics.ExtractTLDFromEndpointAddr(string(result.response.EndpointAddr))
 
-	logger.Info().
-		Str("endpoint_domain", endpointDomain).
-		Msgf("Parallel request success: endpoint %d/%d responded in %dms",
-			result.index+1, metrics.numRequestsToAttempt, overallDuration.Milliseconds())
+	for _, response := range result.responses {
+		endpointDomain := shannonmetrics.ExtractTLDFromEndpointAddr(string(response.EndpointAddr))
 
-	rc.qosCtx.UpdateWithResponse(result.response.EndpointAddr, result.response.Bytes)
+		logger.Info().
+			Str("endpoint_domain", endpointDomain).
+			Msgf("Parallel request success: endpoint %d/%d responded in %dms",
+				result.index+1, metrics.numRequestsToAttempt, overallDuration.Milliseconds())
+
+		rc.qosCtx.UpdateWithResponse(response.EndpointAddr, response.Bytes)
+	}
+
 	return nil
 }
 
