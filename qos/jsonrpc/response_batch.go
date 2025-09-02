@@ -33,15 +33,6 @@ func ValidateAndBuildBatchResponse(
 	responses []json.RawMessage,
 	servicePayloads map[ID]protocol.Payload,
 ) ([]byte, error) {
-	// Handle empty batch according to JSON-RPC spec first:
-	// If there are no Response objects contained within the Response array
-	// as it is to be sent to the client, the server MUST NOT return an empty
-	// Array and should return nothing at all.
-	if len(responses) == 0 {
-		logger.Debug().Msg("Batch request resulted in no response objects - returning empty response per JSON-RPC spec")
-		return []byte{}, nil // Return empty payload representing "nothing at all"
-	}
-
 	// Validate response length matches request length
 	if err := validateResponseLength(responses, servicePayloads); err != nil {
 		return nil, err

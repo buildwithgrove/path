@@ -162,6 +162,16 @@ func (rc requestContext) getBatchHTTPResponse() pathhttp.HTTPResponse {
 		}
 	}
 
+	// According to JSON-RPC spec: "If there are no Response objects contained within the Response array
+	// as it is to be sent to the client, the server MUST NOT return an empty Array and should return nothing at all."
+	// This can happen when all requests in the batch are notifications (which don't get responses)
+	// or when all individual responses are empty/invalid.
+	if len(individualResponses) == 0 {
+		// Create a responseGeneric for empty batch response and return its HTTP response
+		errorResponse := getGenericResponseBatchEmpty(rc.logger)
+		return errorResponse.GetHTTPResponse()
+	}
+
 	// Validate and construct batch response using jsonrpc package
 	batchResponse, err := jsonrpc.ValidateAndBuildBatchResponse(
 		rc.logger,
@@ -332,15 +342,4 @@ func (rc *requestContext) findServicePayload(targetID jsonrpc.ID) (protocol.Payl
 		}
 	}
 	return protocol.Payload{}, false
-}
-
-// getFirstID returns the first ID from servicePayloads for single-request error scenarios.
-// Returns empty ID if no payloads exist or multiple payloads exist (batch scenario).
-func (rc *requestContext) getFirstID() jsonrpc.ID {
-	if len(rc.servicePayloads) == 1 {
-		for id := range rc.servicePayloads {
-			return id
-		}
-	}
-	return jsonrpc.ID{}
 }
