@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"strings"
 
+	sharedtypes "github.com/pokt-network/poktroll/x/shared/types"
 	vegeta "github.com/tsenart/vegeta/lib"
 
 	"github.com/buildwithgrove/path/gateway"
@@ -19,10 +20,10 @@ import (
 type serviceType string
 
 const (
-	serviceTypeEVM      serviceType = "evm"
-	serviceTypeCometBFT serviceType = "cometbft"
-	serviceTypeSolana   serviceType = "solana"
-	serviceTypeAnvil    serviceType = "anvil"
+	serviceTypeEVM       serviceType = "evm"
+	serviceTypeCosmosSDK serviceType = "cosmos_sdk"
+	serviceTypeSolana    serviceType = "solana"
+	serviceTypeAnvil     serviceType = "anvil"
 )
 
 // -----------------------------------------------------------------------------
@@ -38,12 +39,14 @@ type (
 	}
 
 	TestService struct {
-		Name          string             `yaml:"name"`               // Name of the service
-		ServiceID     protocol.ServiceID `yaml:"service_id"`         // Service ID to test (identifies the specific blockchain service)
-		ServiceType   serviceType        `yaml:"service_type"`       // Type of service to test (evm, cometbft, solana, anvil)
-		Alias         string             `yaml:"alias,omitempty"`    // Alias for the service
-		Archival      bool               `yaml:"archival,omitempty"` // Whether this is an archival test (historical data access)
-		ServiceParams ServiceParams      `yaml:"service_params"`     // Service-specific parameters for test requests
+		Name          string             `yaml:"name"`                 // Name of the service
+		ServiceID     protocol.ServiceID `yaml:"service_id"`           // Service ID to test (identifies the specific blockchain service)
+		ServiceType   serviceType        `yaml:"service_type"`         // Type of service to test (evm, cometbft, solana, anvil)
+		Alias         string             `yaml:"alias,omitempty"`      // Alias for the service
+		Archival      bool               `yaml:"archival,omitempty"`   // Whether this is an archival test (historical data access)
+		WebSockets    bool               `yaml:"websockets,omitempty"` // Whether this service should run WebSocket tests in addition to HTTP tests
+		ServiceParams ServiceParams      `yaml:"service_params"`       // Service-specific parameters for test requests
+		SupportedAPIs []string           `yaml:"supported_apis"`       // List of APIs supported by the service
 		// Not marshaled from YAML; set in test case.
 		serviceType    serviceType
 		testMethodsMap map[string]testMethodConfig
@@ -81,33 +84,31 @@ func (ts *TestService) hydrate(serviceConfig ServiceConfig, serviceType serviceT
 	ts.testMethodsMap = testMethodsMap
 }
 
-func (ts *TestService) getTestMethods() []string {
+func (ts *TestService) getVegetaTargets(gatewayURL string) (map[string]vegeta.Target, error) {
 	switch ts.ServiceType {
 	case serviceTypeEVM:
-		return getEVMTestMethods()
+		return getEVMVegetaTargets(ts, gatewayURL)
 	case serviceTypeSolana:
-		return getSolanaTestMethods()
-	case serviceTypeCometBFT:
-		// CometBFT uses REST-like URL paths, not JSON-RPC methods
-		return getCometBFTTestURLPaths()
+		return getSolanaVegetaTargets(ts, gatewayURL)
+	case serviceTypeCosmosSDK:
+		return getCosmosSDKVegetaTargets(ts, gatewayURL)
 	case serviceTypeAnvil:
-		return getAnvilTestMethods()
-	}
-	return nil
-}
-
-func (ts *TestService) getVegetaTargets(methods []string, gatewayURL string) (map[string]vegeta.Target, error) {
-	switch ts.ServiceType {
-	case serviceTypeEVM:
-		return getEVMVegetaTargets(ts, methods, gatewayURL)
-	case serviceTypeSolana:
-		return getSolanaVegetaTargets(ts, methods, gatewayURL)
-	case serviceTypeCometBFT:
-		return getCometBFTVegetaTargets(ts, methods, gatewayURL)
-	case serviceTypeAnvil:
-		return getAnvilVegetaTargets(ts, methods, gatewayURL)
+		return getAnvilVegetaTargets(ts, gatewayURL)
 	}
 	return nil, fmt.Errorf("unsupported service type: %s", ts.ServiceType)
+}
+
+// supportsWebSockets returns true if the service is configured for WebSocket testing
+func (ts *TestService) supportsWebSockets() bool {
+	return ts.WebSockets
+}
+
+// supportsEVMWebSockets returns true if the service supports WebSocket EVM JSON-RPC tests
+func (ts *TestService) supportsEVMWebSockets() bool {
+	// Only EVM-like services can run EVM WebSocket tests
+	// This includes pure EVM services and Cosmos SDK services with EVM support (like XRPLEVM)
+	return ts.supportsWebSockets() && (ts.ServiceType == serviceTypeEVM ||
+		(ts.ServiceType == serviceTypeCosmosSDK && ts.ServiceParams.ContractAddress != ""))
 }
 
 func getExpectedID(serviceType serviceType) jsonrpc.ID {
@@ -116,8 +117,8 @@ func getExpectedID(serviceType serviceType) jsonrpc.ID {
 		return evmExpectedID
 	case serviceTypeSolana:
 		return solanaExpectedID
-	case serviceTypeCometBFT:
-		return cometbftExpectedID
+	case serviceTypeCosmosSDK:
+		return cosmosSDKExpectedID
 	case serviceTypeAnvil:
 		return anvilExpectedID
 	default:
@@ -128,6 +129,21 @@ func getExpectedID(serviceType serviceType) jsonrpc.ID {
 // -----------------------------------------------------------------------------
 // Utility Functions
 // -----------------------------------------------------------------------------
+
+// getRPCTypeFromString converts a string from the config file to a sharedtypes.RPCType.
+// Used to convert a Service's SupportedAPIs to a sharedtypes.RPCType in order
+// to determine which test methods to run.
+//
+// For example, when running Cosmos SDK service tests, the service
+// may support Cosmos SDK, CometBFT and REST APIs.
+func getRPCTypeFromString(rpcType string) sharedtypes.RPCType {
+	rpcTypeUpper := strings.ToUpper(rpcType)
+	rpcTypeValue, ok := sharedtypes.RPCType_value[rpcTypeUpper]
+	if !ok {
+		return sharedtypes.RPCType_UNKNOWN_RPC
+	}
+	return sharedtypes.RPCType(rpcTypeValue)
+}
 
 // getRequestHeaders returns the HTTP headers for a given service ID, including Portal credentials if in load test mode.
 func getRequestHeaders(serviceID protocol.ServiceID) http.Header {
@@ -228,8 +244,8 @@ func (ts *TestServices) validateTestService(tc TestService, index int) error {
 		if tc.ServiceParams.TransactionHash == "" {
 			return fmt.Errorf("test service #%d: TransactionHash is required for Solana services", index)
 		}
-	case serviceTypeCometBFT:
-		// No specific validation for CometBFT yet
+	case serviceTypeCosmosSDK:
+		// No specific validation for Cosmos SDK yet
 	case serviceTypeAnvil:
 		// Anvil services require no specific parameters since all test methods use empty params
 		// This is intentionally minimal - just verify the service can respond to basic JSON-RPC calls

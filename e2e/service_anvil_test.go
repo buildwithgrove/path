@@ -36,13 +36,12 @@ func getAnvilTestMethods() []string {
 // Performs basic health check by fetching current block number.
 func getAnvilVegetaTargets(
 	ts *TestService,
-	methods []string,
 	gatewayURL string,
 ) (map[string]vegeta.Target, error) {
 	headers := getRequestHeaders(ts.ServiceID)
 
 	targets := make(map[string]vegeta.Target)
-	for _, method := range methods {
+	for _, method := range getAnvilTestMethods() {
 		// Create JSON-RPC request - Anvil test methods use no parameters
 		jsonrpcReq := jsonrpc.Request{
 			JSONRPC: jsonrpc.Version2,

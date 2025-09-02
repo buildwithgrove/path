@@ -65,7 +65,7 @@ func (ses *sanctionedEndpointsStore) ApplyObservations(shannonObservations []*pr
 	logger := ses.logger.With("method", "ApplyObservations")
 
 	if len(shannonObservations) == 0 {
-		logger.Warn().Msg("Skipping processing: received empty observation list")
+		logger.Warn().Msg("⚠️ Skipping processing: received empty observation list")
 		return
 	}
 

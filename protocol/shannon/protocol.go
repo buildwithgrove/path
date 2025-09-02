@@ -426,7 +426,7 @@ func (p *Protocol) getSessionsUniqueEndpoints(
 			// All endpoints are sanctioned: log a warning and skip this app.
 			if len(filteredEndpoints) == 0 {
 				logger.Error().Msgf(
-					"All %d session endpoints are sanctioned for service %s, app %s. Skipping the app.",
+					"❌ All %d session endpoints are sanctioned for service %s, app %s. SKIPPING the app.",
 					len(sessionEndpoints), serviceID, app.Address,
 				)
 				continue

@@ -153,7 +153,6 @@ func createEVMBatchRequest() ([]byte, error) {
 
 func getEVMVegetaTargets(
 	ts *TestService,
-	methods []string,
 	gatewayURL string,
 ) (map[string]vegeta.Target, error) {
 	headers := getRequestHeaders(ts.ServiceID)
@@ -165,7 +164,7 @@ func getEVMVegetaTargets(
 	ts.ServiceParams.blockNumber = blockNumber
 
 	targets := make(map[string]vegeta.Target)
-	for _, method := range methods {
+	for _, method := range getEVMTestMethods() {
 		var body []byte
 		var err error
 
@@ -313,14 +312,14 @@ func getCurrentBlockHeight(client *http.Client, gatewayURL string, headers http.
 	}
 
 	// Parse response
-	var jsonRPC jsonrpc.Response
-	if err := json.NewDecoder(resp.Body).Decode(&jsonRPC); err != nil {
+	var jsonrpc jsonrpc.Response
+	if err := json.NewDecoder(resp.Body).Decode(&jsonrpc); err != nil {
 		return 0, fmt.Errorf("Error getting current block height: %w", err)
 	}
 
 	// Unmarshal the result into a string
 	var hexString string
-	if err := jsonRPC.UnmarshalResult(&hexString); err != nil {
+	if err := jsonrpc.UnmarshalResult(&hexString); err != nil {
 		return 0, fmt.Errorf("Error unmarshaling block number result: %w", err)
 	}
 
