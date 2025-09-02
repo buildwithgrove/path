@@ -82,6 +82,11 @@ type requestContext struct {
 	// JSON-RPC requests - supports both single and batch requests per JSON-RPC 2.0 spec
 	jsonrpcReqs map[string]jsonrpc.Request
 
+	// Whether the request is a batch request.
+	// Necessary to distinguish between a batch request of length 1 and a single request.
+	// In the case of a batch request of length 1, the response must be returned as an array.
+	isBatch bool
+
 	// endpointResponses is the set of responses received from one or
 	// more endpoints as part of handling this service request.
 	// Supports both single and batch JSON-RPC requests.
@@ -103,7 +108,10 @@ func (rc requestContext) GetServicePayloads() []protocol.Payload {
 	for _, req := range rc.jsonrpcReqs {
 		reqBz, err := json.Marshal(req)
 		if err != nil {
-			rc.logger.Error().Err(err).Msg("SHOULD RARELY HAPPEN: requestContext.GetServicePayload() should never fail marshaling the JSONRPC request.")
+			rc.logger.
+				Error().
+				Err(err).
+				Msg("SHOULD RARELY HAPPEN: requestContext.GetServicePayload() should never fail marshaling the JSONRPC request.")
 			return []protocol.Payload{protocol.EmptyErrorPayload()}
 		}
 
@@ -147,14 +155,14 @@ func (rc requestContext) GetHTTPResponse() pathhttp.HTTPResponse {
 		return responseNoneObj.GetHTTPResponse()
 	}
 
-	if len(rc.jsonrpcReqs) == 1 {
-		// return the only endpoint response reported to the context for single requests.
-		return rc.endpointResponses[0].GetHTTPResponse()
-	}
-
 	// Handle batch requests according to JSON-RPC 2.0 specification
 	// https://www.jsonrpc.org/specification#batch
-	return rc.getBatchHTTPResponse()
+	if rc.isBatch {
+		return rc.getBatchHTTPResponse()
+	}
+
+	// Handle single requests
+	return rc.endpointResponses[0].GetHTTPResponse()
 }
 
 // getBatchHTTPResponse handles batch requests by combining individual JSON-RPC responses
