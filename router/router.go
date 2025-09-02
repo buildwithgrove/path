@@ -18,6 +18,13 @@ import (
 	"github.com/buildwithgrove/path/request"
 )
 
+// TODO_TECHDEBT(@adshmh): Make this configurable.
+// DEV_NOTE: This MUST be updated if Solana service's ID changes or if new Solana services with different IDs are staked.
+const (
+	// Used to determine if solana-specific headers need to be set on the response.
+	serviceIDSolana = "solana"
+)
+
 type (
 	router struct {
 		logger polylog.Logger
@@ -113,18 +120,37 @@ func methodCheckMiddleware(next http.HandlerFunc) http.HandlerFunc {
 
 // TODO_IMPROVE: gather the CORS config from the config YAML
 func (r *router) corsMiddleware(next http.HandlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		origin := r.Header.Get("Origin")
+	return func(w http.ResponseWriter, req *http.Request) {
+		origin := req.Header.Get("Origin")
 		w.Header().Set("Access-Control-Allow-Origin", origin)
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, solana-client")
-		if r.Method == "OPTIONS" {
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+
+		// Add service-specific allowed headers.
+		// As of PR #424, this only applies to Solana service.
+		for _, allowedHeader := range r.getCORSServiceAllowedHeaders(req) {
+			w.Header().Add("Access-Control-Allow-Headers", allowedHeader)
+		}
+
+		if req.Method == "OPTIONS" {
 			// Handle preflight request, which is necessary for CORS to work.
 			w.WriteHeader(http.StatusOK)
 			return
 		}
-		next(w, r)
+		next(w, req)
 	}
+}
+
+// TODO_TECHDEBT(@adshmh): Make this configurable.
+// DEV_NOTE: This MUST be updated if Solana service's ID changes or if new Solana services with different IDs are staked.
+func (r *router) getCORSServiceAllowedHeaders(req *http.Request) []string {
+	svcID := req.Header.Get(request.HTTPHeaderTargetServiceID)
+	// Solana-specific Allowed HTTP headers
+	if svcID == serviceIDSolana {
+		return []string{"solana-client"}
+	}
+
+	return nil
 }
 
 // TODO_TECHDEBT: Rename removeGrovePortalPrefixMiddleware to removePrefixMiddleware
