@@ -10,6 +10,8 @@ import (
 	"github.com/buildwithgrove/path/log"
 )
 
+// TODO_IN_THIS_PR(@commoddity): Should this return protocol.Payload instead of Request?
+
 // TODO_MVP(@adshmh): Add a JSON-RPC request validator to reject invalid/unsupported
 // method calls early in request flow.
 //
@@ -21,7 +23,7 @@ import (
 func ParseJSONRPCFromRequestBody(
 	logger polylog.Logger,
 	requestBody []byte,
-) (map[string]Request, bool, error) {
+) (map[ID]Request, bool, error) {
 	// Validate and parse the request body into a slice of requests
 	requests, isBatch, err := parseRequestsFromBody(logger, requestBody)
 	if err != nil {
@@ -99,7 +101,7 @@ func tryUnmarshalAsSingle(logger polylog.Logger, requestBody []byte) ([]Request,
 
 // validateAndMapRequests validates batch constraints and converts requests to a map.
 // Ensures no duplicate IDs exist and batch is not empty per JSON-RPC specification.
-func validateAndMapRequests(logger polylog.Logger, requests []Request) (map[string]Request, error) {
+func validateAndMapRequests(logger polylog.Logger, requests []Request) (map[ID]Request, error) {
 	// Validate batch is not empty (per JSON-RPC spec)
 	if len(requests) == 0 {
 		logger.Error().
@@ -108,18 +110,19 @@ func validateAndMapRequests(logger polylog.Logger, requests []Request) (map[stri
 	}
 
 	// Convert to map and validate no duplicate IDs exist
-	requestsMap := make(map[string]Request)
+	requestsMap := make(map[ID]Request)
 	for _, req := range requests {
 		// Check for duplicate IDs (skip notifications which have empty IDs)
 		if !req.ID.IsEmpty() {
-			if _, exists := requestsMap[req.ID.String()]; exists {
+			if _, exists := requestsMap[req.ID]; exists {
 				logger.Error().Msg("❌ Duplicate ID found in batch request")
 				return nil, fmt.Errorf("duplicate ID '%s' found in batch request - IDs must be unique for proper request-response correlation", req.ID.String())
 			}
 		}
-		requestsMap[req.ID.String()] = req
+		requestsMap[req.ID] = req
 	}
 
 	logger.Debug().Int("request_count", len(requests)).Msg("Parsed JSON-RPC request(s)")
+
 	return requestsMap, nil
 }

@@ -149,9 +149,3 @@ func getRequestParams(req jsonrpc.Request) [2]string {
 
 	return paramsArray
 }
-
-// GetJSONRPCID returns the JSONRPC ID of the response.
-// Implements the response interface.
-func (r responseToGetBalance) GetJSONRPCID() jsonrpc.ID {
-	return r.jsonRPCResponse.ID
-}

@@ -5,7 +5,6 @@ import (
 	"net/http"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
-	sharedtypes "github.com/pokt-network/poktroll/x/shared/types"
 
 	"github.com/buildwithgrove/path/gateway"
 	pathhttp "github.com/buildwithgrove/path/network/http"
@@ -43,8 +42,6 @@ type response interface {
 
 	// GetHTTPResponse returns the HTTP response to be sent back to the client.
 	GetHTTPResponse() jsonrpc.HTTPResponse
-
-	GetJSONRPCID() jsonrpc.ID
 }
 
 var _ response = &endpointResponse{}
@@ -80,7 +77,7 @@ type requestContext struct {
 	serviceState *serviceState
 
 	// JSON-RPC requests - supports both single and batch requests per JSON-RPC 2.0 spec
-	jsonrpcReqs map[string]jsonrpc.Request
+	servicePayloads map[jsonrpc.ID]protocol.Payload
 
 	// Whether the request is a batch request.
 	// Necessary to distinguish between a batch request of length 1 and a single request.
@@ -104,25 +101,9 @@ type requestContext struct {
 // TODO_MVP(@adshmh): Ensure the JSONRPC request struct can handle all valid service requests.
 func (rc requestContext) GetServicePayloads() []protocol.Payload {
 	var payloads []protocol.Payload
-
-	for _, req := range rc.jsonrpcReqs {
-		reqBz, err := json.Marshal(req)
-		if err != nil {
-			rc.logger.
-				Error().
-				Err(err).
-				Msg("SHOULD RARELY HAPPEN: requestContext.GetServicePayload() should never fail marshaling the JSONRPC request.")
-			return []protocol.Payload{protocol.EmptyErrorPayload()}
-		}
-
-		payloads = append(payloads, protocol.Payload{
-			Data:    string(reqBz),
-			Method:  http.MethodPost, // Method is always POST for EVM-based blockchains.
-			Headers: map[string]string{},
-			RPCType: sharedtypes.RPCType_JSON_RPC,
-		})
+	for _, payload := range rc.servicePayloads {
+		payloads = append(payloads, payload)
 	}
-
 	return payloads
 }
 
@@ -132,7 +113,9 @@ func (rc *requestContext) UpdateWithResponse(endpointAddr protocol.EndpointAddr,
 	// This would be an extra safety measure, as the caller should have checked the returned value
 	// indicating the validity of the request when calling on QoS instance's ParseHTTPRequest
 
-	response, err := unmarshalResponse(rc.logger, rc.jsonrpcReqs, responseBz, endpointAddr)
+	response, err := unmarshalResponse(
+		rc.logger, rc.servicePayloads, responseBz, endpointAddr,
+	)
 
 	rc.endpointResponses = append(rc.endpointResponses, endpointResponse{
 		EndpointAddr: endpointAddr,
@@ -148,8 +131,8 @@ func (rc requestContext) GetHTTPResponse() pathhttp.HTTPResponse {
 	// Use a noResponses struct if no responses were reported by the protocol from any endpoints.
 	if len(rc.endpointResponses) == 0 {
 		responseNoneObj := responseNone{
-			logger:      rc.logger,
-			jsonrpcReqs: rc.jsonrpcReqs,
+			logger:          rc.logger,
+			servicePayloads: rc.servicePayloads,
 		}
 
 		return responseNoneObj.GetHTTPResponse()
@@ -171,13 +154,9 @@ func (rc requestContext) GetHTTPResponse() pathhttp.HTTPResponse {
 func (rc requestContext) getBatchHTTPResponse() pathhttp.HTTPResponse {
 	// Collect individual response payloads
 	var individualResponses []json.RawMessage
-
-	// Process each endpoint response
 	for _, endpointResp := range rc.endpointResponses {
-		individualHTTPResp := endpointResp.GetHTTPResponse()
-
 		// Extract the JSON payload from each response
-		payload := individualHTTPResp.GetPayload()
+		payload := endpointResp.GetHTTPResponse().GetPayload()
 		if len(payload) > 0 {
 			individualResponses = append(individualResponses, json.RawMessage(payload))
 		}
@@ -187,7 +166,7 @@ func (rc requestContext) getBatchHTTPResponse() pathhttp.HTTPResponse {
 	batchResponse, err := jsonrpc.ValidateAndBuildBatchResponse(
 		rc.logger,
 		individualResponses,
-		rc.jsonrpcReqs,
+		rc.servicePayloads,
 	)
 	if err != nil {
 		// Create a responseGeneric for batch validation failure and return its HTTP response
@@ -248,8 +227,8 @@ func (rc requestContext) createRequestObservations() []*qosobservations.EVMReque
 // The observation includes all JSON-RPC requests from the batch but no endpoint observations.
 func (rc requestContext) createNoResponseObservations() []*qosobservations.EVMRequestObservation {
 	responseNoneObj := responseNone{
-		logger:      rc.logger,
-		jsonrpcReqs: rc.jsonrpcReqs,
+		logger:          rc.logger,
+		servicePayloads: rc.servicePayloads,
 	}
 	responseNoneObs := responseNoneObj.GetObservation()
 
@@ -270,14 +249,25 @@ func (rc requestContext) createResponseObservations() []*qosobservations.EVMRequ
 	var observations []*qosobservations.EVMRequestObservation
 
 	for _, endpointResp := range rc.endpointResponses {
-		responseIDStr := endpointResp.GetJSONRPCID().String()
+		var jsonrpcResponse jsonrpc.Response
+		err := json.Unmarshal(endpointResp.GetHTTPResponse().GetPayload(), &jsonrpcResponse)
+		if err != nil {
+			rc.logger.Error().Err(err).Msg("SHOULD RARELY HAPPEN: requestContext.createResponseObservations() should never fail to unmarshal the JSONRPC response.")
+			continue
+		}
 
 		// Look up the original JSON-RPC request using the response ID
 		// This correlation is critical for batch requests where multiple requests/responses
 		// need to be properly matched
-		jsonrpcReq, ok := rc.jsonrpcReqs[responseIDStr]
+		servicePayload, ok := rc.findServicePayload(jsonrpcResponse.ID)
 		if !ok {
-			rc.logger.Error().Msgf("SHOULD RARELY HAPPEN: requestContext.createResponseObservations() should never fail to find the JSONRPC request for response ID: %s", responseIDStr)
+			rc.logger.Error().Msgf("SHOULD RARELY HAPPEN: requestContext.createResponseObservations() should never fail to find the JSONRPC request for response ID: %s", jsonrpcResponse.ID.String())
+			continue
+		}
+
+		jsonrpcReq, err := jsonrpc.GetJsonRpcReqFromServicePayload(servicePayload)
+		if err != nil {
+			rc.logger.Error().Err(err).Msg("SHOULD RARELY HAPPEN: requestContext.createResponseObservations() should never fail to get the JSONRPC request from the service payload.")
 			continue
 		}
 
@@ -330,4 +320,27 @@ func (rc *requestContext) Select(allEndpoints protocol.EndpointAddrList) (protoc
 // Implements the protocol.EndpointSelector interface.
 func (rc *requestContext) SelectMultiple(allEndpoints protocol.EndpointAddrList, numEndpoints uint) (protocol.EndpointAddrList, error) {
 	return rc.serviceState.SelectMultiple(allEndpoints, numEndpoints)
+}
+
+// findServicePayload finds a service payload by ID using value-based comparison.
+// This handles the case where JSON unmarshaling creates new ID structs with different
+// pointer addresses but equivalent values.
+func (rc *requestContext) findServicePayload(targetID jsonrpc.ID) (protocol.Payload, bool) {
+	for id, payload := range rc.servicePayloads {
+		if id.Equal(targetID) {
+			return payload, true
+		}
+	}
+	return protocol.Payload{}, false
+}
+
+// getFirstID returns the first ID from servicePayloads for single-request error scenarios.
+// Returns empty ID if no payloads exist or multiple payloads exist (batch scenario).
+func (rc *requestContext) getFirstID() jsonrpc.ID {
+	if len(rc.servicePayloads) == 1 {
+		for id := range rc.servicePayloads {
+			return id
+		}
+	}
+	return jsonrpc.ID{}
 }

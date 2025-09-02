@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/buildwithgrove/path/protocol"
 	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
 
@@ -37,13 +38,17 @@ type endpointCheckArchival struct {
 	expiresAt               time.Time
 }
 
+func (e *endpointCheckArchival) getRequestID() jsonrpc.ID {
+	return jsonrpc.IDFromInt(idArchivalCheck)
+}
+
 // getRequest returns a JSONRPC request to check the balance of:
 //   - the contract specified in `a.archivalCheckConfig.ContractAddress`
 //   - at the block number specified in `a.blockNumberHex`
 //
 // For example:
 // '{"jsonrpc":"2.0","id":1,"method":"eth_getBalance","params":["0x28C6c06298d514Db089934071355E5743bf21d60", "0xe71e1d"]}'
-func (e *endpointCheckArchival) getRequest(archivalState archivalState) jsonrpc.Request {
+func (e *endpointCheckArchival) getServicePayload(archivalState archivalState) protocol.Payload {
 	// Pass params in this order: [<contract_address>, <block_number>]
 	// eg. "params":["0x28C6c06298d514Db089934071355E5743bf21d60", "0xe71e1d"]
 	// Reference: https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_getbalance
@@ -53,15 +58,18 @@ func (e *endpointCheckArchival) getRequest(archivalState archivalState) jsonrpc.
 	})
 	if err != nil {
 		archivalState.logger.Error().Msgf("failed to build archival check request params: %v", err)
-		return jsonrpc.Request{}
+		return protocol.Payload{}
 	}
 
-	return jsonrpc.Request{
+	req := jsonrpc.Request{
 		JSONRPC: jsonrpc.Version2,
 		ID:      jsonrpc.IDFromInt(idArchivalCheck),
 		Method:  jsonrpc.Method(methodGetBalance),
 		Params:  params,
 	}
+	// Hardcoded request will never fail to build the payload
+	payload, _ := req.BuildPayload()
+	return payload
 }
 
 // getArchivalBalance returns the observed archival balance for the endpoint at the archival block height.

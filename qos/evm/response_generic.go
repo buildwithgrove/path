@@ -169,12 +169,6 @@ func getGenericResponseBatchEmpty(logger polylog.Logger) responseGeneric {
 	}
 }
 
-// GetJSONRPCID returns the JSONRPC ID of the response.
-// Implements the response interface.
-func (r responseGeneric) GetJSONRPCID() jsonrpc.ID {
-	return r.jsonRPCResponse.ID
-}
-
 // TODO_INCOMPLETE: Handle the string `null`, as it could be returned
 // when an object is expected.
 // See the following link for more details:

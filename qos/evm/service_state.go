@@ -69,12 +69,12 @@ func (ss *serviceState) GetRequiredQualityChecks(endpointAddr protocol.EndpointA
 
 	var checks = []gateway.RequestQoSContext{
 		// Block number check should always run
-		ss.getEndpointCheck(endpoint.checkBlockNumber.getRequest()),
+		ss.getEndpointCheck(endpoint.checkBlockNumber.getRequestID(), endpoint.checkBlockNumber.getServicePayload()),
 	}
 
 	// Chain ID check runs infrequently as an endpoint's EVM chain ID is very unlikely to change regularly.
 	if ss.shouldChainIDCheckRun(endpoint.checkChainID) {
-		checks = append(checks, ss.getEndpointCheck(endpoint.checkChainID.getRequest()))
+		checks = append(checks, ss.getEndpointCheck(endpoint.checkChainID.getRequestID(), endpoint.checkChainID.getServicePayload()))
 	}
 
 	// Archival check runs infrequently as the result of a request for an archival block is not expected to change regularly.
@@ -82,7 +82,7 @@ func (ss *serviceState) GetRequiredQualityChecks(endpointAddr protocol.EndpointA
 	if ss.archivalState.shouldArchivalCheckRun(endpoint.checkArchival) {
 		checks = append(
 			checks,
-			ss.getEndpointCheck(endpoint.checkArchival.getRequest(ss.archivalState)),
+			ss.getEndpointCheck(endpoint.checkArchival.getRequestID(), endpoint.checkArchival.getServicePayload(ss.archivalState)),
 		)
 	}
 
@@ -93,13 +93,13 @@ func (ss *serviceState) GetRequiredQualityChecks(endpointAddr protocol.EndpointA
 // The pre-selected endpoint address is assigned to the request context in the `endpoint.getChecks` method.
 // It is called in the individual `check_*.go` files to build the request context.
 // getEndpointCheck prepares a request context for a specific endpoint check.
-func (ss *serviceState) getEndpointCheck(jsonrpcReq jsonrpc.Request) *requestContext {
+func (ss *serviceState) getEndpointCheck(jsonrpcReqID jsonrpc.ID, servicePayload protocol.Payload) *requestContext {
 	return &requestContext{
 		logger:       ss.logger,
 		serviceState: ss,
 		// Wrap single request in map for consistency
-		jsonrpcReqs: map[string]jsonrpc.Request{
-			jsonrpcReq.ID.String(): jsonrpcReq,
+		servicePayloads: map[jsonrpc.ID]protocol.Payload{
+			jsonrpcReqID: servicePayload,
 		},
 		// Set the chain and Service ID: this is required to generate observations with the correct chain ID.
 		chainID:   ss.serviceQoSConfig.getEVMChainID(),

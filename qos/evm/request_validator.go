@@ -48,13 +48,14 @@ func (erv *evmRequestValidator) validateHTTPRequest(req *http.Request) (gateway.
 	// Parse and validate the JSONRPC request(s) - handles both single and batch requests
 	jsonrpcReqs, isBatch, err := jsonrpc.ParseJSONRPCFromRequestBody(logger, body)
 	if err != nil {
-		requestID := getJsonRpcIDForErrorResponse(jsonrpcReqs)
 		// If no requests parsed or empty ID, requestID will be zero value (empty)
-		return erv.createRequestUnmarshalingFailureContext(requestID, err), false
+		return erv.createRequestUnmarshalingFailureContext(jsonrpc.ID{}, err), false
 	}
 
 	// TODO_MVP(@adshmh): Add JSON-RPC request validation to block invalid requests
 	// TODO_IMPROVE(@adshmh): Add method-specific JSONRPC request validation
+
+	servicePayloads := erv.buildServicePayloads(jsonrpcReqs)
 
 	// Request is valid, return a fully initialized requestContext
 	return &requestContext{
@@ -62,12 +63,30 @@ func (erv *evmRequestValidator) validateHTTPRequest(req *http.Request) (gateway.
 		chainID:              erv.chainID,
 		serviceID:            erv.serviceID,
 		requestPayloadLength: uint(len(body)),
-		jsonrpcReqs:          jsonrpcReqs,
+		servicePayloads:      servicePayloads,
 		isBatch:              isBatch,
 		serviceState:         erv.serviceState,
 		// Set the origin of the request as ORGANIC (i.e. from a user).
 		requestOrigin: qosobservations.RequestOrigin_REQUEST_ORIGIN_ORGANIC,
 	}, true
+}
+
+func (erv *evmRequestValidator) buildServicePayloads(
+	jsonrpcReqs map[jsonrpc.ID]jsonrpc.Request,
+) map[jsonrpc.ID]protocol.Payload {
+	payloads := make(map[jsonrpc.ID]protocol.Payload)
+
+	for reqID, req := range jsonrpcReqs {
+		payload, err := req.BuildPayload()
+		if err != nil {
+			erv.logger.Error().Err(err).Msg("SHOULD RARELY HAPPEN: requestContext.GetServicePayload() should never fail building the JSONRPC request.")
+			payloads[reqID] = protocol.EmptyErrorPayload()
+			continue
+		}
+		payloads[reqID] = payload
+	}
+
+	return payloads
 }
 
 // createHTTPBodyReadFailureContext creates an error context for HTTP body read failures.

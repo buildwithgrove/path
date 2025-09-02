@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/buildwithgrove/path/protocol"
 	"github.com/pokt-network/poktroll/pkg/polylog"
 )
 
@@ -16,7 +17,8 @@ var (
 	ErrBatchResponseMarshalFailure = errors.New("failed to marshal batch response")
 )
 
-// ValidateAndBuildBatchResponse validates and constructs a batch response according to JSON-RPC 2.0 specification.
+// ValidateBatchResponse validates and constructs a batch response according to JSON-RPC 2.0 specification.
+//
 // It performs comprehensive validation including:
 //   - Empty batch handling per JSON-RPC spec (returns empty payload)
 //   - Response length matches request length
@@ -24,28 +26,29 @@ var (
 //   - Proper JSON array construction
 //
 // Returns the marshaled JSON byte array for the response payload.
-// For empty batches, returns empty byte slice per JSON-RPC spec requirement to return "nothing at all".
+// Note that response validation of the individual responses is not performed here;
+// this is handled in the unmarshalResponse function inside the respective QoS package.
 func ValidateAndBuildBatchResponse(
 	logger polylog.Logger,
 	responses []json.RawMessage,
-	jsonrpcReqs map[string]Request,
+	servicePayloads map[ID]protocol.Payload,
 ) ([]byte, error) {
-
-	// Handle empty batch according to JSON-RPC spec first
-	// "If there are no Response objects contained within the Response array
-	// as it is to be sent to the client, the server MUST NOT return an empty Array and should return nothing at all."
+	// Handle empty batch according to JSON-RPC spec first:
+	// If there are no Response objects contained within the Response array
+	// as it is to be sent to the client, the server MUST NOT return an empty
+	// Array and should return nothing at all.
 	if len(responses) == 0 {
 		logger.Debug().Msg("Batch request resulted in no response objects - returning empty response per JSON-RPC spec")
 		return []byte{}, nil // Return empty payload representing "nothing at all"
 	}
 
 	// Validate response length matches request length
-	if err := validateResponseLength(responses, jsonrpcReqs); err != nil {
+	if err := validateResponseLength(responses, servicePayloads); err != nil {
 		return nil, err
 	}
 
 	// Validate all request IDs are present in responses
-	if err := validateResponseIDs(responses, jsonrpcReqs); err != nil {
+	if err := validateResponseIDs(responses, servicePayloads); err != nil {
 		return nil, err
 	}
 
@@ -54,39 +57,33 @@ func ValidateAndBuildBatchResponse(
 }
 
 // validateResponseLength ensures response count matches request count
-func validateResponseLength(responses []json.RawMessage, jsonrpcReqs map[string]Request) error {
-	if len(responses) != len(jsonrpcReqs) {
+func validateResponseLength(responses []json.RawMessage, servicePayloads map[ID]protocol.Payload) error {
+	if len(responses) != len(servicePayloads) {
 		return fmt.Errorf("%w: expected %d responses, got %d",
-			ErrBatchResponseLengthMismatch, len(jsonrpcReqs), len(responses))
+			ErrBatchResponseLengthMismatch, len(servicePayloads), len(responses))
 	}
 	return nil
 }
 
 // validateResponseIDs ensures all request IDs are present in the responses
-func validateResponseIDs(responses []json.RawMessage, jsonrpcReqs map[string]Request) error {
-	// Parse response IDs from the raw JSON messages
-	responseIDs := make(map[string]bool)
-	for _, respMsg := range responses {
-		var resp Response
-		if err := json.Unmarshal(respMsg, &resp); err != nil {
-			// Skip invalid responses - they'll be handled elsewhere
-			continue
+func validateResponseIDs(responses []json.RawMessage, servicePayloads map[ID]protocol.Payload) error {
+	// Check each request ID has a corresponding response
+	for reqID := range servicePayloads {
+		found := false
+		for _, respMsg := range responses {
+			var resp Response
+			if err := json.Unmarshal(respMsg, &resp); err != nil {
+				continue // Skip invalid responses - they'll be handled elsewhere
+			}
+			if reqID.Equal(resp.ID) {
+				found = true
+				break
+			}
 		}
-		responseIDs[resp.ID.String()] = true
-	}
-
-	// Check for missing request IDs in responses
-	var missingIDs []string
-	for reqID := range jsonrpcReqs {
-		if !responseIDs[reqID] {
-			missingIDs = append(missingIDs, reqID)
+		if !found {
+			return fmt.Errorf("%w: missing response for request ID '%s'", ErrBatchResponseMissingIDs, reqID.String())
 		}
 	}
-
-	if len(missingIDs) > 0 {
-		return fmt.Errorf("%w: %v", ErrBatchResponseMissingIDs, missingIDs)
-	}
-
 	return nil
 }
 
