@@ -102,10 +102,10 @@ func (r responseToGetBalance) GetObservation() qosobservations.EVMEndpointObserv
 
 // GetHTTPResponse returns the HTTP response corresponding to the JSON-RPC response.
 // Implements the response interface.
-func (r responseToGetBalance) GetHTTPResponse() httpResponse {
-	return httpResponse{
-		responsePayload: r.getResponsePayload(),
-		httpStatusCode:  r.getHTTPStatusCode(),
+func (r responseToGetBalance) GetHTTPResponse() jsonrpc.HTTPResponse {
+	return jsonrpc.HTTPResponse{
+		ResponsePayload: r.getResponsePayload(),
+		HTTPStatusCode:  r.getHTTPStatusCode(),
 	}
 }
 

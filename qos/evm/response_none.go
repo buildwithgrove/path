@@ -39,17 +39,17 @@ func (r responseNone) GetObservation() qosobservations.EVMEndpointObservation {
 
 // GetHTTPResponse creates and returns a predefined httpResponse for cases when QoS has received no responses from the protocol.
 // Implements the response interface.
-func (r responseNone) GetHTTPResponse() httpResponse {
-	return httpResponse{
-		responsePayload: r.getResponsePayload(),
-		httpStatusCode:  r.getHTTPStatusCode(),
+func (r responseNone) GetHTTPResponse() jsonrpc.HTTPResponse {
+	return jsonrpc.HTTPResponse{
+		ResponsePayload: r.getResponsePayload(),
+		HTTPStatusCode:  r.getHTTPStatusCode(),
 	}
 }
 
 // getResponsePayload constructs a JSONRPC error response indicating no endpoint response was received.
 // Uses request ID in response per JSONRPC spec: https://www.jsonrpc.org/specification#response_object
 func (r responseNone) getResponsePayload() []byte {
-	userResponse := newErrResponseNoEndpointResponse(getJsonRpcIDForErrorResponse(r.jsonrpcReqs))
+	userResponse := jsonrpc.NewErrResponseNoEndpointResponse(getJsonRpcIDForErrorResponse(r.jsonrpcReqs))
 	bz, err := json.Marshal(userResponse)
 	if err != nil {
 		// This should never happen: log an entry but return the response anyway.
@@ -61,7 +61,7 @@ func (r responseNone) getResponsePayload() []byte {
 // getHTTPStatusCode returns the HTTP status code to be returned to the client.
 // Always a 500 Internal Server Error for the responseNone struct.
 func (r responseNone) getHTTPStatusCode() int {
-	return httpStatusResponseValidationFailureNoResponse
+	return jsonrpc.HTTPStatusResponseValidationFailureNoResponse
 }
 
 // GetJSONRPCID returns the JSONRPC ID of the response.

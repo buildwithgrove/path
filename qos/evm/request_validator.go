@@ -86,7 +86,7 @@ func (erv *evmRequestValidator) createHTTPBodyReadFailureContext(err error) gate
 	return &errorContext{
 		logger:                 erv.logger,
 		response:               response,
-		responseHTTPStatusCode: httpStatusRequestValidationFailureReadHTTPBodyFailure,
+		responseHTTPStatusCode: jsonrpc.HTTPStatusRequestValidationFailureReadHTTPBodyFailure,
 		evmObservations:        observations,
 	}
 }
@@ -103,7 +103,7 @@ func (erv *evmRequestValidator) createRequestUnmarshalingFailureContext(id jsonr
 	return &errorContext{
 		logger:                 erv.logger,
 		response:               response,
-		responseHTTPStatusCode: httpStatusRequestValidationFailureUnmarshalFailure,
+		responseHTTPStatusCode: jsonrpc.HTTPStatusRequestValidationFailureUnmarshalFailure,
 		evmObservations:        observations,
 	}
 }
@@ -135,7 +135,7 @@ func createRequestUnmarshalingFailureObservation(
 			ChainId:   chainID,
 			RequestValidationFailure: &qosobservations.EVMRequestObservations_EvmRequestUnmarshalingFailure{
 				EvmRequestUnmarshalingFailure: &qosobservations.EVMRequestUnmarshalingFailure{
-					HttpStatusCode:  httpStatusRequestValidationFailureUnmarshalFailure,
+					HttpStatusCode:  jsonrpc.HTTPStatusRequestValidationFailureUnmarshalFailure,
 					ValidationError: qosobservations.EVMRequestValidationError_EVM_REQUEST_VALIDATION_ERROR_REQUEST_UNMARSHALING_FAILURE,
 					ErrorDetails:    &errorDetails,
 				},
@@ -167,7 +167,7 @@ func (erv *evmRequestValidator) createHTTPBodyReadFailureObservation(
 			ServiceId: string(erv.serviceID),
 			RequestValidationFailure: &qosobservations.EVMRequestObservations_EvmHttpBodyReadFailure{
 				EvmHttpBodyReadFailure: &qosobservations.EVMHTTPBodyReadFailure{
-					HttpStatusCode:  httpStatusRequestValidationFailureReadHTTPBodyFailure,
+					HttpStatusCode:  jsonrpc.HTTPStatusRequestValidationFailureReadHTTPBodyFailure,
 					ValidationError: qosobservations.EVMRequestValidationError_EVM_REQUEST_VALIDATION_ERROR_HTTP_BODY_READ_FAILURE,
 					ErrorDetails:    &errorDetails,
 				},

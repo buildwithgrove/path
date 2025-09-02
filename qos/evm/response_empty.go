@@ -43,18 +43,18 @@ func (r responseEmpty) GetObservation() qosobservations.EVMEndpointObservation {
 
 // GetHTTPResponse builds and returns the httpResponse matching the responseEmpty instance.
 // Implements the response interface.
-func (r responseEmpty) GetHTTPResponse() httpResponse {
-	return httpResponse{
-		responsePayload: r.getResponsePayload(),
+func (r responseEmpty) GetHTTPResponse() jsonrpc.HTTPResponse {
+	return jsonrpc.HTTPResponse{
+		ResponsePayload: r.getResponsePayload(),
 		// HTTP Status 500 Internal Server Error for an empty response
-		httpStatusCode: r.getHTTPStatusCode(),
+		HTTPStatusCode: r.getHTTPStatusCode(),
 	}
 }
 
 // getResponsePayload constructs a JSONRPC error response indicating endpoint failure.
 // Uses request ID in response per JSONRPC spec: https://www.jsonrpc.org/specification#response_object
 func (r responseEmpty) getResponsePayload() []byte {
-	userResponse := newErrResponseEmptyEndpointResponse(getJsonRpcIDForErrorResponse(r.jsonrpcReqs))
+	userResponse := jsonrpc.NewErrResponseEmptyEndpointResponse(getJsonRpcIDForErrorResponse(r.jsonrpcReqs))
 	bz, err := json.Marshal(userResponse)
 	if err != nil {
 		// This should never happen: log an entry but return the response anyway.
@@ -66,7 +66,7 @@ func (r responseEmpty) getResponsePayload() []byte {
 // getHTTPStatusCode returns the HTTP status code to be returned to the client.
 // Always returns returns 500 Internal Server Error on responseEmpty struct.
 func (r responseEmpty) getHTTPStatusCode() int {
-	return httpStatusResponseValidationFailureEmptyResponse
+	return jsonrpc.HTTPStatusResponseValidationFailureEmptyResponse
 }
 
 // GetJSONRPCID returns the JSONRPC ID of the response.

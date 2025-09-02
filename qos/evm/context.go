@@ -42,7 +42,7 @@ type response interface {
 	GetObservation() qosobservations.EVMEndpointObservation
 
 	// GetHTTPResponse returns the HTTP response to be sent back to the client.
-	GetHTTPResponse() httpResponse
+	GetHTTPResponse() jsonrpc.HTTPResponse
 
 	GetJSONRPCID() jsonrpc.ID
 }
@@ -183,28 +183,23 @@ func (rc requestContext) getBatchHTTPResponse() pathhttp.HTTPResponse {
 		}
 	}
 
-	// According to JSON-RPC spec: "If there are no Response objects contained within the Response array
-	// as it is to be sent to the client, the server MUST NOT return an empty Array and should return nothing at all."
-	// This can happen when all requests in the batch are notifications (which don't get responses)
-	// or when all individual responses are empty/invalid.
-	if len(individualResponses) == 0 {
-		emptyBatchResponse := getGenericResponseBatchEmpty(rc.logger)
-		return emptyBatchResponse.GetHTTPResponse()
-	}
-
-	// Combine individual responses into a JSON array
-	batchResponse, err := json.Marshal(individualResponses)
+	// Validate and construct batch response using jsonrpc package
+	batchResponse, err := jsonrpc.ValidateAndBuildBatchResponse(
+		rc.logger,
+		individualResponses,
+		rc.jsonrpcReqs,
+	)
 	if err != nil {
-		// Create a responseGeneric for batch marshaling failure and return its HTTP response
+		// Create a responseGeneric for batch validation failure and return its HTTP response
 		errorResponse := getGenericJSONRPCErrResponseBatchMarshalFailure(rc.logger, err)
 		return errorResponse.GetHTTPResponse()
 	}
 
-	return httpResponse{
-		responsePayload: batchResponse,
+	return jsonrpc.HTTPResponse{
+		ResponsePayload: batchResponse,
 		// According to the JSON-RPC 2.0 specification, even if individual responses
 		// in a batch contain errors, the entire batch should still return HTTP 200 OK.
-		httpStatusCode: http.StatusOK,
+		HTTPStatusCode: http.StatusOK,
 	}
 }
 

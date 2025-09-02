@@ -104,10 +104,10 @@ func (r responseToChainID) GetObservation() qosobservations.EVMEndpointObservati
 //
 // GetHTTPResponse builds and returns the httpResponse matching the responseToChainID instance.
 // Implements the response interface.
-func (r responseToChainID) GetHTTPResponse() httpResponse {
-	return httpResponse{
-		responsePayload: r.getResponsePayload(),
-		httpStatusCode:  r.getHTTPStatusCode(),
+func (r responseToChainID) GetHTTPResponse() jsonrpc.HTTPResponse {
+	return jsonrpc.HTTPResponse{
+		ResponsePayload: r.getResponsePayload(),
+		HTTPStatusCode:  r.getHTTPStatusCode(),
 	}
 }
 
