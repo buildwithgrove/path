@@ -262,11 +262,19 @@ func (h *HTTPClientWithDebugMetrics) readAndValidateResponse(resp *http.Response
 	}
 
 	// Validate HTTP status code
-	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices {
-		return nil, fmt.Errorf("%w: %d", ErrRelayEndpointHTTPError, resp.StatusCode)
+	if err := CheckHTTPStatusCode(resp.StatusCode); err != nil {
+		return nil, err
 	}
 
 	return responseBody, nil
+}
+
+// CheckHTTPStatusCode validates that the HTTP status code is in the range of 2xx.
+func CheckHTTPStatusCode(statusCode int) error {
+	if statusCode < http.StatusOK || statusCode >= http.StatusMultipleChoices {
+		return fmt.Errorf("%w: %d", ErrRelayEndpointHTTPError, statusCode)
+	}
+	return nil
 }
 
 // createDetailedHTTPTrace creates comprehensive HTTP tracing using the httptrace library:

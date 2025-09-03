@@ -113,8 +113,9 @@ func classifyRelayError(logger polylog.Logger, err error) (protocolobservations.
 	// Endpoint's backend service returned a non 2xx HTTP status code.
 	case pathhttp.ErrRelayEndpointHTTPError:
 		// TODO_IMPROVE: Make this a sanction that just lasts a few blocks
+		// Apply session sanction for backend service HTTP errors (502, 503, etc.)
 		return protocolobservations.ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_HTTP_BAD_RESPONSE,
-			protocolobservations.ShannonSanctionType_SHANNON_SANCTION_UNSPECIFIED
+			protocolobservations.ShannonSanctionType_SHANNON_SANCTION_SESSION
 
 	case errContextCanceled:
 		return protocolobservations.ShannonEndpointErrorType_SHANNON_ENDPOINT_REQUEST_CANCELED_BY_PATH,
@@ -141,8 +142,9 @@ func classifyHttpError(logger polylog.Logger, err error) (protocolobservations.S
 	// Endpoint returned non 2xx HTTP Status code
 	if errors.Is(err, pathhttp.ErrRelayEndpointHTTPError) {
 		// TODO_IMPROVE: Make this a sanction that just lasts a few blocks
+		// Apply session sanction for backend service HTTP errors (502, 503, etc.)
 		return protocolobservations.ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_HTTP_NON_2XX_STATUS,
-			protocolobservations.ShannonSanctionType_SHANNON_SANCTION_UNSPECIFIED
+			protocolobservations.ShannonSanctionType_SHANNON_SANCTION_SESSION
 	}
 
 	errStr := err.Error()
