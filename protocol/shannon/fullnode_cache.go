@@ -3,7 +3,6 @@ package shannon
 import (
 	"context"
 	"fmt"
-	"strings"
 	"sync"
 	"time"
 

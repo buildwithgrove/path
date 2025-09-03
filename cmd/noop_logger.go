@@ -1,4 +1,4 @@
-package cmd
+package main
 
 import (
 	"context"
@@ -57,7 +57,7 @@ func (n *noOpLogger) WithLevel(level polylog.Level) polylog.Event {
 }
 
 // Write implements io.Writer by doing nothing and returning the length of p.
-func (n *noOpLogger) Write(p []byte) (n int, err error) {
+func (n *noOpLogger) Write(p []byte) (int, error) {
 	return len(p), nil
 }
 

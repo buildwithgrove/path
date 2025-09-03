@@ -396,24 +396,24 @@ func (p *Protocol) getSessionsUniqueEndpoints(
 	endpoints := make(map[protocol.EndpointAddr]endpoint)
 
 	// Iterate over all active sessions for the service ID.
-	for _, session := range activeSessions {
-		app := session.Application
+	for _, hydratedSession := range activeSessions {
+		app := hydratedSession.session.Application
 
 		// Using a single iteration scope for this logger.
 		// Avoids adding all apps in the loop to the logger's fields.
 		// Hydrate the logger with session details.
 		logger := logger.With("valid_app_address", app.Address).With("method", "getSessionsUniqueEndpoints")
-		logger = hydrateLoggerWithSession(logger, &session)
-		logger.ProbabilisticDebugInfo(polylog.ProbabilisticDebugInfoProb).Msgf("Finding unique endpoints for session %s for app %s for service %s.", session.SessionId, app.Address, serviceID)
+		logger = hydrateLoggerWithSession(logger, hydratedSession.session)
+		logger.ProbabilisticDebugInfo(polylog.ProbabilisticDebugInfoProb).Msgf("Finding unique endpoints for session %s for app %s for service %s.", hydratedSession.session.SessionId, app.Address, serviceID)
 
 		// Retrieve all endpoints for the session.
-		qualifiedEndpoints := session.endpoints
+		qualifiedEndpoints := hydratedSession.endpoints
 
 		// Filter out sanctioned endpoints if requested.
 		if filterSanctioned {
 			logger.Debug().Msgf(
 				"app %s has %d endpoints before filtering sanctioned endpoints.",
-				app.Address, len(sessionEndpoints),
+				app.Address, len(hydratedSession.endpoints),
 			)
 
 			// Filter out any sanctioned endpoints
@@ -422,7 +422,7 @@ func (p *Protocol) getSessionsUniqueEndpoints(
 			if len(filteredEndpoints) == 0 {
 				logger.Error().Msgf(
 					"All %d session endpoints are sanctioned for service %s, app %s. Skipping the app.",
-					len(sessionEndpoints), serviceID, app.Address,
+					len(hydratedSession.endpoints), serviceID, app.Address,
 				)
 				continue
 			}
@@ -432,13 +432,13 @@ func (p *Protocol) getSessionsUniqueEndpoints(
 		}
 
 		// Log the number of endpoints before and after filtering
-		logger.Info().Msgf("Filtered session endpoints for app %s from %d to %d.", app.Address, len(sessionEndpoints), len(qualifiedEndpoints))
+		logger.Info().Msgf("Filtered session endpoints for app %s from %d to %d.", app.Address, len(hydratedSession.endpoints), len(qualifiedEndpoints))
 
 		maps.Copy(endpoints, qualifiedEndpoints)
 
 		logger.Info().Msgf(
 			"Successfully fetched %d endpoints for session %s for application %s for service %s.",
-			len(qualifiedEndpoints), session.SessionId, app.Address, serviceID,
+			len(qualifiedEndpoints), hydratedSession.session.SessionId, app.Address, serviceID,
 		)
 	}
 
