@@ -295,13 +295,8 @@ func (cfn *cachingFullNode) updateSessionCache() {
 	}
 }
 
+// TODO_UPNEXT(@adshmh): Support height-based session retrieval.
 func (cfn *cachingFullNode) fetchAllSessions() (map[string]sessionCacheEntry, error) {
-	// Get current block height for session updates
-	height, err := cfn.GetCurrentBlockHeight(cfn.ctx)
-	if err != nil {
-		return nil, err
-	}
-
 	// Initialize updated sessions
 	updatedSessions := make(map[string]sessionCacheEntry)
 
@@ -323,7 +318,7 @@ func (cfn *cachingFullNode) fetchAllSessions() (map[string]sessionCacheEntry, er
 			}
 
 			// Update the session with new cache key based on current height
-			newKey := getSessionCacheKey(serviceID, appAddr, height)
+			newKey := getSessionCacheKey(serviceID, appAddr)
 			updatedSessions[newKey] = sessionCacheEntry{
 				hydratedSession: session,
 				lastUpdated:     time.Now(),
@@ -349,21 +344,7 @@ func (cfn *cachingFullNode) GetSession(
 	serviceID protocol.ServiceID,
 	appAddr string,
 ) (hydratedSession, error) {
-	logger := cfn.logger.With(
-		"service_id", string(serviceID),
-		"app_addr", appAddr,
-		"method", "GetSession",
-	)
-
-	height, err := cfn.GetCurrentBlockHeight(ctx)
-	if err != nil {
-		logger.Error().Err(err).Msgf(
-			"[cachingFullNode.GetSession] Failed to get current block height",
-		)
-		return hydratedSession{}, err
-	}
-
-	sessionKey := getSessionCacheKey(serviceID, appAddr, height)
+	sessionKey := getSessionCacheKey(serviceID, appAddr)
 
 	// Try to get from cache first
 	cfn.sessionsCache.mu.RLock()
@@ -446,8 +427,10 @@ func (cfn *cachingFullNode) GetSessionWithExtendedValidity(
 
 	logger.Debug().Msg("IS WITHIN GRACE PERIOD: Going to fetch previous session")
 
+	// TODO_UPNEXT(@adshmh): Support height-based session retrieval.
+	//
 	// Try to get previous session from cache
-	prevSessionKey := getSessionCacheKey(serviceID, appAddr, prevSessionEndHeight)
+	prevSessionKey := getSessionCacheKey(serviceID, appAddr)
 
 	cfn.sessionsCache.mu.RLock()
 	entry, exists := cfn.sessionsCache.sessions[prevSessionKey]
@@ -468,9 +451,9 @@ func (cfn *cachingFullNode) GetSessionWithExtendedValidity(
 	return prevSession, nil
 }
 
-// getSessionCacheKey builds a unique cache key for session: <prefix>:<serviceID>:<appAddr>:<height>
-func getSessionCacheKey(serviceID protocol.ServiceID, appAddr string, height int64) string {
-	return fmt.Sprintf("%s:%s:%s:%d", sessionCacheKeyPrefix, serviceID, appAddr, height)
+// getSessionCacheKey builds a unique cache key for session: <prefix>:<serviceID>:<appAddr>
+func getSessionCacheKey(serviceID protocol.ServiceID, appAddr string) string {
+	return fmt.Sprintf("%s:%s:%s", sessionCacheKeyPrefix, serviceID, appAddr)
 }
 
 // ValidateRelayResponse uses the SDK and the caching full node's account client for validation.
