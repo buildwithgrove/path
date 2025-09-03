@@ -284,6 +284,9 @@ func (rc requestContext) createResponseObservations() []*qosobservations.EVMRequ
 		// Create observations for both the request and its corresponding endpoint response
 		endpointObs := endpointResp.GetObservation()
 
+		// Ensure the endpoint address is always set in the observation
+		endpointObs.EndpointAddr = string(endpointResp.EndpointAddr)
+
 		observations = append(observations, &qosobservations.EVMRequestObservation{
 			JsonrpcRequest: jsonrpcReq.GetObservation(),
 			EndpointObservations: []*qosobservations.EVMEndpointObservation{
