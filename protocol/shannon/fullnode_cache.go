@@ -21,12 +21,8 @@ import (
 // ---------------- Cache Configuration ----------------
 const (
 	// TODO_IMPROVE: Make this configurable
-	sharedParamsCacheKey = "shared_params"
-	// TODO_IMPROVE: Make this configurable
 	sharedParamsCacheTTL = 2 * time.Minute // Shared params change infrequently
 
-	// TODO_IMPROVE: Make this configurable
-	blockHeightCacheKey = "block_height"
 	// TODO_IMPROVE: Make this configurable
 	blockHeightCacheTTL = 15 * time.Second // Block height changes frequently
 
@@ -336,7 +332,7 @@ func (cfn *cachingFullNode) fetchAllSessions() (map[string]sessionCacheEntry, er
 	}
 
 	if len(updatedSessions) == 0 {
-		return nil, fmt.Errorf("Failed to get any sessions")
+		return nil, fmt.Errorf("failed to get any sessions")
 	}
 
 	return updatedSessions, nil
@@ -509,7 +505,7 @@ func (cfn *cachingFullNode) GetSharedParams(ctx context.Context) (*sharedtypes.P
 	if params == nil {
 		// Cache not initialized yet, fetch directly
 		cfn.logger.Debug().Msg("Shared params cache not initialized, fetching from full node")
-		return nil, fmt.Errorf("Shared params not cached yet.")
+		return nil, fmt.Errorf("shared params not cached yet.")
 	}
 
 	return params, nil
@@ -523,7 +519,7 @@ func (cfn *cachingFullNode) GetCurrentBlockHeight(ctx context.Context) (int64, e
 
 	height := cfn.blockCache.height
 	if height == 0 {
-		return 0, fmt.Errorf("Height not fetched yet")
+		return 0, fmt.Errorf("height not fetched yet")
 	}
 
 	return height, nil

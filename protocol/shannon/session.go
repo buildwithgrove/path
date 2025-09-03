@@ -10,14 +10,15 @@ import (
 )
 
 var (
-	// TODO_UPNEXT(@olshansk): Experiment the difference between active and extended sessions.
-	// - Make this configurable at the gateway yaml level
-	// - Add metrics to track how active vs extended sessions are used
-	// - Evaluate the impact of active vs extended sessions on performance
-	// - Enable making two parallel requests: one with active session and one with extended session
-	// DEV_NOTE: As of PR #339, we are hard-coding this to prevent any business logic changes to enable
-	// faster iteration on main and prevent the outstanding PR from getting stale.
-	extendedSessionEnabled = false
+// TODO_UPNEXT(@olshansk): Experiment the difference between active and extended sessions.
+// - Make this configurable at the gateway yaml level
+// - Add metrics to track how active vs extended sessions are used
+// - Evaluate the impact of active vs extended sessions on performance
+// - Enable making two parallel requests: one with active session and one with extended session
+// DEV_NOTE: As of PR #339, we are hard-coding this to prevent any business logic changes to enable
+// faster iteration on main and prevent the outstanding PR from getting stale.
+
+// extendedSessionEnabled = false
 )
 
 // getSession returns the session for the app address provided.
