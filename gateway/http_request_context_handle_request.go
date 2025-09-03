@@ -37,6 +37,9 @@ type parallelRequestMetrics struct {
 	overallStartTime         time.Time
 }
 
+// TODO_TECHDEBT(@adshmh): Use a SINGLE protocol context to handle a relay request.
+// - Launching multiple parallel requests to multiple endpoints is an internal protocol decision.
+//
 // HandleRelayRequest sends a relay from the perspective of a gateway.
 //
 // It performs the following steps:
@@ -79,6 +82,12 @@ func (rc *requestContext) handleSingleRelayRequest() error {
 		return err
 	}
 
+	// TODO_TECHDEBT(@adshmh): Ensure the protocol returns exactly one response per service payload:
+	// - Define a struct to contain each service payload and its corresponding response.
+	// - protocol should return this new struct to clarify mapping of service payloads and the corresponding endpoint response.
+	// - QoS packages should use this new struct to prepare the user response.
+	// - Remove the individual endpoint response handling from the gateway package.
+	//
 	for _, endpointResponse := range endpointResponses {
 		rc.qosCtx.UpdateWithResponse(endpointResponse.EndpointAddr, endpointResponse.Bytes)
 	}
@@ -86,6 +95,10 @@ func (rc *requestContext) handleSingleRelayRequest() error {
 	return nil
 }
 
+// TODO_TECHDEBT(@adshmh): Remove this method:
+// Parallel requests are an internal detail of a protocol integration package
+// As of PR #388, `protocol/shannon` is the only protocol integration package.
+//
 // handleParallelRelayRequests orchestrates parallel relay requests and returns the first successful response.
 func (rc *requestContext) handleParallelRelayRequests() error {
 	metrics := &parallelRequestMetrics{

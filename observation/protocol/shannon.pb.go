@@ -1058,6 +1058,9 @@ type ShannonEndpointObservation struct {
 	EndpointBackendServiceHttpResponseStatusCode *int32 `protobuf:"varint,14,opt,name=endpoint_backend_service_http_response_status_code,json=endpointBackendServiceHttpResponseStatusCode,proto3,oneof" json:"endpoint_backend_service_http_response_status_code,omitempty"`
 	// HTTP Response payload size
 	EndpointBackendServiceHttpResponsePayloadSize *int64 `protobuf:"varint,15,opt,name=endpoint_backend_service_http_response_payload_size,json=endpointBackendServiceHttpResponsePayloadSize,proto3,oneof" json:"endpoint_backend_service_http_response_payload_size,omitempty"`
+	// TODO_TECHDEBT(@adshmh): Separate fallback endpoints into a separate message:
+	// Most of fields above (e.g. session_id) only apply to a Shannon endpoint.
+	//
 	// TODO_CONSIDERATION(@adshmh): Consider renaming to is_gateway_owned OR is_off_protocol.
 	//
 	// Tracks whether the endpoint is a fallback endpoint.

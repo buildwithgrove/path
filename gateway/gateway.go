@@ -128,6 +128,12 @@ func (g Gateway) handleHTTPServiceRequest(
 		return
 	}
 
+	// TODO_TECHDEBT(@adshmh): Build a single protocol context to handle a request.
+	// - Obtaining a response to the user's request is protocol context's main responsibility.
+	// - The protocol context can/should:
+	//   - Use fallback endpoints if needed.
+	//   - Launch parallel requests to multiple endpoints if appropriate.
+	//
 	// TODO_CHECK_IF_DONE(@adshmh): Enhance the protocol interface used by the gateway to provide explicit error classification.
 	// Implementation should:
 	//   1. Differentiate between user errors (e.g., invalid Service ID in request) and system errors (e.g., endpoint timeout)
