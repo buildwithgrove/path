@@ -2,7 +2,6 @@ package evm
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
 	"github.com/prometheus/client_golang/prometheus"
@@ -151,7 +150,7 @@ var (
 
 // PublishMetrics exports all EVM-related Prometheus metrics using observations reported by EVM QoS service.
 // It logs errors for unexpected conditions that should never occur in normal operation.
-func PublishMetrics(logger polylog.Logger, observations *qos.EVMRequestObservations) {
+func PublishMetrics(logger polylog.Logger, observations *qos.EVMRequestObservations, endpointDomain string) {
 	logger = logger.With("method", "PublishMetricsEVM")
 
 	// Skip if observations is nil.
@@ -199,8 +198,7 @@ func PublishMetrics(logger polylog.Logger, observations *qos.EVMRequestObservati
 		errorType = requestError.String()
 	}
 
-	// Extract endpoint domain from selected endpoint
-	endpointDomain := extractEndpointDomain(logger, interpreter)
+	// Use the provided endpoint domain
 
 	// Count each method as a separate request.
 	// This is required for batch requests.
@@ -254,7 +252,7 @@ func publishValidationMetricsFromMetadata(logger polylog.Logger, chainID, servic
 
 	// Process all validation results in a single loop
 	for _, result := range metadata.ValidationResults {
-		domain := extractDomainFromEndpointAddr(logger, result.EndpointAddr)
+		domain := metricshttp.ExtractDomainFromEndpointAddr(logger, result.EndpointAddr)
 
 		// Determine failure reason for failed validations
 		failureReason := ""
@@ -296,35 +294,6 @@ func calculateValidEndpointsCount(metadata *qos.EndpointSelectionMetadata) int {
 		}
 	}
 	return validCount
-}
-
-// extractDomainFromEndpointAddr extracts the eTLD+1 domain from an endpoint address.
-// Handles the format: "pokt1eetcwfv2agdl2nvpf4cprhe89rdq3cxdf037wq-https://relayminer.shannon-mainnet.eu.nodefleet.net"
-// Returns "unknown" if domain cannot be extracted.
-func extractDomainFromEndpointAddr(logger polylog.Logger, endpointAddr string) string {
-	// Split by dash to separate the address part from the URL part
-	parts := strings.Split(endpointAddr, "-")
-	if len(parts) < 2 {
-		// No dash found, try to extract domain directly from the entire string
-		if domain, err := metricshttp.ExtractEffectiveTLDPlusOne(endpointAddr); err == nil {
-			return domain
-		}
-		logger.Debug().Str("endpoint_addr", endpointAddr).Msg("Could not extract domain from endpoint address - no dash separator found")
-		return "unknown"
-	}
-
-	// Take everything after the first dash as the URL
-	urlPart := strings.Join(parts[1:], "-")
-
-	// Try to extract domain from the URL part
-	if domain, err := metricshttp.ExtractEffectiveTLDPlusOne(urlPart); err == nil {
-		return domain
-	}
-
-	logger.Debug().Str("endpoint_addr", endpointAddr).Str("url_part", urlPart).Msg("Could not extract eTLD+1 from URL part")
-
-	// If domain extraction failed, return unknown
-	return "unknown"
 }
 
 // extractChainID extracts the chain ID from the interpreter.
@@ -377,16 +346,3 @@ func extractEndpointSelectionMetadata(interpreter *qos.EVMObservationInterpreter
 	return &qos.EndpointSelectionMetadata{}
 }
 
-// extractEndpointDomain extracts the endpoint domain from the selected endpoint in observations.
-// Returns "unknown" if domain cannot be determined.
-func extractEndpointDomain(logger polylog.Logger, interpreter *qos.EVMObservationInterpreter) string {
-	// Get endpoint observations and extract domain from the last one used
-	endpointObservations, found := interpreter.GetEndpointObservations()
-	if !found || len(endpointObservations) == 0 {
-		return "unknown"
-	}
-
-	// Use the last endpoint observation (most recent endpoint used, similar to Shannon metrics pattern)
-	lastObs := endpointObservations[len(endpointObservations)-1]
-	return extractDomainFromEndpointAddr(logger, lastObs.GetEndpointAddr())
-}

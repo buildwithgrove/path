@@ -2,12 +2,10 @@ package cosmos
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
 	"github.com/prometheus/client_golang/prometheus"
 
-	metricshttp "github.com/buildwithgrove/path/metrics/http"
 	"github.com/buildwithgrove/path/observation/qos"
 )
 
@@ -70,7 +68,7 @@ var (
 // PublishMetrics:
 // - Exports all Cosmos SDK-related Prometheus metrics using observations from Cosmos SDK QoS service
 // - Logs errors for unexpected (should-never-happen) conditions
-func PublishMetrics(logger polylog.Logger, observations *qos.CosmosRequestObservations) {
+func PublishMetrics(logger polylog.Logger, observations *qos.CosmosRequestObservations, endpointDomain string) {
 	logger = logger.With("method", "PublishMetricsCosmosSDK")
 
 	// Skip if observations is nil.
@@ -86,8 +84,7 @@ func PublishMetrics(logger polylog.Logger, observations *qos.CosmosRequestObserv
 		Observations: observations,
 	}
 
-	// Extract endpoint domain
-	endpointDomain := extractEndpointDomain(logger, interpreter)
+	// Use the provided endpoint domain
 
 	// Increment request counters with all corresponding labels
 	requestsTotal.With(
@@ -104,47 +101,4 @@ func PublishMetrics(logger polylog.Logger, observations *qos.CosmosRequestObserv
 			"endpoint_domain":  endpointDomain,
 		},
 	).Inc()
-}
-
-// extractEndpointDomain extracts the endpoint domain from the selected endpoint in observations.
-// Returns "unknown" if domain cannot be determined.
-func extractEndpointDomain(logger polylog.Logger, interpreter *qos.CosmosSDKObservationInterpreter) string {
-	// Get endpoint observations and extract domain from the first available one
-	endpointObservations := interpreter.Observations.GetEndpointObservations()
-	if len(endpointObservations) == 0 {
-		return "unknown"
-	}
-
-	// Use the last endpoint observation (most recent/final endpoint used)
-	lastObs := endpointObservations[len(endpointObservations)-1]
-	return extractDomainFromEndpointAddr(logger, lastObs.GetEndpointAddr())
-}
-
-// extractDomainFromEndpointAddr extracts the eTLD+1 domain from an endpoint address.
-// Handles the format: "pokt1eetcwfv2agdl2nvpf4cprhe89rdq3cxdf037wq-https://relayminer.shannon-mainnet.eu.nodefleet.net"
-// Returns "unknown" if domain cannot be extracted.
-func extractDomainFromEndpointAddr(logger polylog.Logger, endpointAddr string) string {
-	// Split by dash to separate the address part from the URL part
-	parts := strings.Split(endpointAddr, "-")
-	if len(parts) < 2 {
-		// No dash found, try to extract domain directly from the entire string
-		if domain, err := metricshttp.ExtractEffectiveTLDPlusOne(endpointAddr); err == nil {
-			return domain
-		}
-		logger.Debug().Str("endpoint_addr", endpointAddr).Msg("Could not extract domain from endpoint address - no dash separator found")
-		return "unknown"
-	}
-
-	// Take everything after the first dash as the URL
-	urlPart := strings.Join(parts[1:], "-")
-
-	// Try to extract domain from the URL part
-	if domain, err := metricshttp.ExtractEffectiveTLDPlusOne(urlPart); err == nil {
-		return domain
-	}
-
-	logger.Debug().Str("endpoint_addr", endpointAddr).Str("url_part", urlPart).Msg("Could not extract eTLD+1 from URL part")
-
-	// If domain extraction failed, return unknown
-	return "unknown"
 }
