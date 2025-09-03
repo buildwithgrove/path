@@ -1,0 +1,209 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "description": "https://github.com/pokt-foundation/portal-workers",
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": 174,
+  "links": [],
+  "panels": [
+    {
+      "datasource": {
+        "type": "loki",
+        "uid": "P69CF4DA0F0915ED5"
+      },
+      "description": "ALL portal workers' logs from prd-portal-workers-us-west1\n",
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 17,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "id": 1,
+      "options": {
+        "dedupStrategy": "none",
+        "enableInfiniteScrolling": false,
+        "enableLogDetails": true,
+        "prettifyLogMessage": false,
+        "showCommonLabels": false,
+        "showLabels": false,
+        "showTime": false,
+        "sortOrder": "Descending",
+        "wrapLogMessage": false
+      },
+      "pluginVersion": "12.0.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "P69CF4DA0F0915ED5"
+          },
+          "direction": "backward",
+          "editorMode": "code",
+          "expr": "{cluster=\"portal-prd-us-west1\"} | logfmt | app_kubernetes_io_instance=`prd-portal-workers-us-west1`",
+          "key": "Q-de50064c-10c6-4a8a-b269-4e350bf5c81a-0",
+          "queryType": "range",
+          "refId": "A"
+        }
+      ],
+      "title": "Raw Portal Worker Logs",
+      "type": "logs"
+    },
+    {
+      "datasource": {
+        "type": "loki",
+        "uid": "P69CF4DA0F0915ED5"
+      },
+      "description": "All portal workers logs from prd-portal-workers-us-west1\n",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "msg"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 551
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 17,
+        "w": 24,
+        "x": 0,
+        "y": 17
+      },
+      "id": 2,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true,
+        "sortBy": []
+      },
+      "pluginVersion": "12.0.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "P69CF4DA0F0915ED5"
+          },
+          "direction": "backward",
+          "editorMode": "code",
+          "expr": "{cluster=\"portal-prd-us-west1\"} | logfmt | app_kubernetes_io_instance=`prd-portal-workers-us-west1`",
+          "key": "Q-de50064c-10c6-4a8a-b269-4e350bf5c81a-0",
+          "queryType": "range",
+          "refId": "A"
+        }
+      ],
+      "title": "Portal Worker Logs",
+      "transformations": [
+        {
+          "id": "extractFields",
+          "options": {
+            "delimiter": ",",
+            "keepTime": false,
+            "replace": true,
+            "source": "Line"
+          }
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {},
+            "includeByName": {},
+            "indexByName": {
+              "Line": 3,
+              "Time": 2,
+              "account_id": 10,
+              "accounts_with_usage": 15,
+              "end": 8,
+              "id": 5,
+              "labels": 1,
+              "level": 7,
+              "msg": 0,
+              "new_notifications": 14,
+              "start": 11,
+              "time": 6,
+              "total_app_relay_entries": 13,
+              "total_elapsed_seconds": 9,
+              "total_ms_elapsed": 12,
+              "tsNs": 4
+            },
+            "renameByName": {}
+          }
+        }
+      ],
+      "type": "table"
+    }
+  ],
+  "preload": false,
+  "schemaVersion": 41,
+  "tags": [],
+  "templating": {
+    "list": []
+  },
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "Portal Workers",
+  "uid": "2746322e-cacc-4f4e-bd3f-09b3fd97e98d",
+  "version": 6
+}
