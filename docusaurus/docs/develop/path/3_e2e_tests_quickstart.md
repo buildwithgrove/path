@@ -19,7 +19,7 @@ _tl;dr Fully featured E2E Tests to verify PATH works correctly._
 
 ## Quickstart
 
-⚠️ **Prerequisites**: Complete the [Quick Start](1_quick_start.md) and [Shannon Cheat Sheet](2_cheatsheet_shannon.md) guides.
+⚠️ **Prerequisites**: Complete the [Getting Started](1_getting_started.md) and [Pocket Cheat Sheet](2_cheatsheet_pocket.md) guides.
 
 First, prepare the Shannon E2E test config file:
 

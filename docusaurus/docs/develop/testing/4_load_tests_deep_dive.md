@@ -36,17 +36,17 @@ description: Deep dive into Load Tests for PATH
 
 PATH load tests support multiple modes of operation:
 
-| Mode               | Purpose                                               | How it Works                                                                                                                                              | Use Cases                                                                                                           |
-| ------------------ | ----------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| **Local PATH**     | HTTP performance testing against local PATH instances | 1. Requires completed [Quick Start](1_quick_start.md) and [Shannon Cheat Sheet](2_cheatsheet_shannon.md) setup <br/> 2. Tests against local PATH instance | - Local development testing <br/> - Feature validation <br/> - Development iteration                                |
-| **Grove Portal**   | HTTP performance testing against Grove Portal         | 1. Sends HTTP requests to Grove Portal gateway URL <br/> 2. Requires Grove Portal credentials or pre-configured files                                     | - Testing production gateway <br/> - Production performance validation <br/> - Benchmarking                         |
-| **WebSocket Only** | WebSocket-specific performance testing                | 1. Tests only WebSocket connections, skipping HTTP tests entirely <br/> 2. Available for WebSocket-compatible services (e.g., XRPLEVM)                    | - WebSocket-specific performance validation <br/> - Real-time connection testing <br/> - WebSocket scaling analysis |
+| Mode               | Purpose                                               | How it Works                                                                                                                                                                    | Use Cases                                                                                                           |
+| ------------------ | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| **Local PATH**     | HTTP performance testing against local PATH instances | 1. Requires completed [Getting Started](../path/1_getting_started.md) and [Pocket Cheat Sheet](../path/2_cheatsheet_pocket.md) setup <br/> 2. Tests against local PATH instance | - Local development testing <br/> - Feature validation <br/> - Development iteration                                |
+| **Grove Portal**   | HTTP performance testing against Grove Portal         | 1. Sends HTTP requests to Grove Portal gateway URL <br/> 2. Requires Grove Portal credentials or pre-configured files                                                           | - Testing production gateway <br/> - Production performance validation <br/> - Benchmarking                         |
+| **WebSocket Only** | WebSocket-specific performance testing                | 1. Tests only WebSocket connections, skipping HTTP tests entirely <br/> 2. Available for WebSocket-compatible services (e.g., XRPLEVM)                                          | - WebSocket-specific performance validation <br/> - Real-time connection testing <br/> - WebSocket scaling analysis |
 
 ### Local PATH Mode
 
 For local PATH load testing, you need:
 
-1. **Completed Setup**: Follow the [Getting Started](../path/1_getting_started.md) and [Shannon Cheat Sheet](../path/2_cheatsheet_pocket.md) guides
+1. **Completed Setup**: Follow the [Getting Started](../path/1_getting_started.md) and [Pocket Cheat Sheet](../path/2_cheatsheet_pocket.md) guides
 2. **Local PATH Instance**: Your local PATH instance should be running and configured
 3. **Default Configuration**: The system automatically targets your local PATH instance
 
