@@ -505,7 +505,7 @@ func (cfn *cachingFullNode) GetSharedParams(ctx context.Context) (*sharedtypes.P
 	if params == nil {
 		// Cache not initialized yet, fetch directly
 		cfn.logger.Debug().Msg("Shared params cache not initialized, fetching from full node")
-		return nil, fmt.Errorf("shared params not cached yet.")
+		return nil, fmt.Errorf("shared params not cached yet")
 	}
 
 	return params, nil
