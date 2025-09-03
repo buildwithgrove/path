@@ -100,7 +100,7 @@ func (ss *serviceState) filterValidEndpoints(availableEndpoints protocol.Endpoin
 
 		endpoint, found := ss.endpointStore.endpoints[availableEndpointAddr]
 		if !found {
-			logger.Error().Msgf("❓ SKIPPING endpoint %s because it was not found in PATH's endpoint store.", availableEndpointAddr)
+			logger.Warn().Msgf("❓ SKIPPING endpoint %s because it was not found in PATH's endpoint store.", availableEndpointAddr)
 			continue
 		}
 

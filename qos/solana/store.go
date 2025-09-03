@@ -118,7 +118,7 @@ func (es *EndpointStore) filterValidEndpoints(allAvailableEndpoints protocol.End
 
 		endpoint, found := es.endpoints[availableEndpointAddr]
 		if !found {
-			logger.Error().Msgf("❓ SKIPPING endpoint because it was not found in PATH's endpoint store: %s", availableEndpointAddr)
+			logger.Warn().Msgf("❓ SKIPPING endpoint because it was not found in PATH's endpoint store: %s", availableEndpointAddr)
 			continue
 		}
 
