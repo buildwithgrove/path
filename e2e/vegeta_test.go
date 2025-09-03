@@ -618,7 +618,7 @@ func calculateServiceSummary(
 		}
 
 		// Use the decoupled validation function
-		if !validateMethodResults(t, serviceId, metrics, methodTestConfig) {
+		if !validateMethodResults(t, serviceId, metrics, methodTestConfig, ts.ServiceParams) {
 			serviceTestFailed = true
 		}
 	}

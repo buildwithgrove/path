@@ -334,7 +334,7 @@ func validateWebSocketMethod(
 	}
 
 	// Use the existing validateMethodResults function from assertions_test.go
-	return validateMethodResults(t, protocol.ServiceID(serviceID), methodMetrics, config)
+	return validateMethodResults(t, protocol.ServiceID(serviceID), methodMetrics, config, ServiceParams{})
 }
 
 // validateAllWebSocketMethods validates all WebSocket methods using existing assertion logic
@@ -430,7 +430,7 @@ func runWebSocketServiceTest(
 		results[method] = metrics
 
 		// Validate individual WebSocket method results using existing assertion logic
-		if !validateMethodResults(t, ts.ServiceID, metrics, wsServiceConfig) {
+		if !validateMethodResults(t, ts.ServiceID, metrics, wsServiceConfig, ts.ServiceParams) {
 			serviceTestFailed = true
 		}
 	}

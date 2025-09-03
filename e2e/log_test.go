@@ -25,12 +25,15 @@
 package e2e
 
 import (
+	"encoding/json"
 	"fmt"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/buildwithgrove/path/protocol"
+	"github.com/buildwithgrove/path/qos/jsonrpc"
 	"github.com/cheggaaa/pb/v3"
 )
 
@@ -165,6 +168,245 @@ func getStatusCodeColor(code int) string {
 // formatLatency formats latency values to whole milliseconds
 func formatLatency(d time.Duration) string {
 	return fmt.Sprintf("%dms", d/time.Millisecond)
+}
+
+// ===== Method Metrics Printing =====
+
+// printMethodMetrics prints formatted metrics for a method
+func printMethodMetrics(
+	serviceID protocol.ServiceID,
+	m *methodMetrics,
+	config ServiceConfig,
+	serviceParams ServiceParams,
+) {
+	// Add a blank line before each test result for better readability
+	fmt.Println()
+
+	// Print metrics header with method name in blue
+	fmt.Printf("%s~~~~~~~~~~ %s - %s ~~~~~~~~%s\n", BOLD_CYAN, serviceID, m.method, RESET)
+
+	// Print the actual JSON-RPC request for this method
+	printJSONRPCRequest(m.method, serviceParams)
+
+	// Print HTTP success rate with color
+	successColor := getSuccessRateColor(m.successRate)
+	fmt.Printf("%sHTTP Success Rate%s: %s%.2f%%%s (%d/%d requests)\n",
+		BOLD, RESET, successColor, m.successRate*100, RESET, m.success, m.requestCount)
+
+	// Print latencies with color
+	p50Color := getLatencyColor(m.p50, config.MaxP50LatencyMS)
+	p95Color := getLatencyColor(m.p95, config.MaxP95LatencyMS)
+	p99Color := getLatencyColor(m.p99, config.MaxP99LatencyMS)
+	fmt.Printf("%sLatency P50%s: %s%s%s\n", BOLD, RESET, p50Color, formatLatency(m.p50), RESET)
+	fmt.Printf("%sLatency P95%s: %s%s%s\n", BOLD, RESET, p95Color, formatLatency(m.p95), RESET)
+	fmt.Printf("%sLatency P99%s: %s%s%s\n", BOLD, RESET, p99Color, formatLatency(m.p99), RESET)
+
+	// Print JSON-RPC metrics if applicable
+	printJSONRPCMetrics(m, config)
+
+	// Print status codes
+	printStatusCodes(m)
+
+	// Print errors if any
+	printErrors(m, config)
+}
+
+// printJSONRPCRequest constructs and displays the JSON-RPC request for a given method
+func printJSONRPCRequest(method string, serviceParams ServiceParams) {
+	var request jsonrpc.Request
+
+	// Construct the request based on method type
+	switch {
+	// Check if this is an EVM method
+	case isEVMMethod(method):
+		request = jsonrpc.Request{
+			JSONRPC: jsonrpc.Version2,
+			ID:      jsonrpc.IDFromInt(1),
+			Method:  jsonrpc.Method(method),
+			Params:  createEVMJsonRPCParams(jsonrpc.Method(method), serviceParams),
+		}
+	// Check if this is a Solana method
+	case isSolanaMethod(method):
+		request = jsonrpc.Request{
+			JSONRPC: jsonrpc.Version2,
+			ID:      jsonrpc.IDFromInt(1),
+			Method:  jsonrpc.Method(method),
+			Params:  createSolanaJsonRPCParams(jsonrpc.Method(method), serviceParams),
+		}
+	default:
+		// For unknown methods, just show basic structure
+		request = jsonrpc.Request{
+			JSONRPC: jsonrpc.Version2,
+			ID:      jsonrpc.IDFromInt(1),
+			Method:  jsonrpc.Method(method),
+			Params:  jsonrpc.Params{},
+		}
+	}
+
+	// Marshal to JSON for display (compact single-line format for easy copy-paste)
+	requestBytes, err := json.Marshal(request)
+	if err != nil {
+		fmt.Printf("%s{\"error\": \"failed to marshal request: %v\"}%s\n\n", YELLOW, err, RESET)
+		return
+	}
+
+	fmt.Printf("%s%s%s\n\n", CYAN, string(requestBytes), RESET)
+}
+
+// printJSONRPCMetrics prints JSON-RPC specific metrics
+func printJSONRPCMetrics(m *methodMetrics, config ServiceConfig) {
+	if m.jsonrpcResponses+m.jsonrpcUnmarshalErrors == 0 {
+		return
+	}
+
+	fmt.Printf("%sJSON-RPC Metrics:%s\n", BOLD, RESET)
+
+	if m.jsonrpcResponses > 0 {
+		// Unmarshal success rate
+		color := getRateColor(m.jsonrpcSuccessRate, config.SuccessRate)
+		fmt.Printf("  Unmarshal Success: %s%.2f%%%s (%d/%d responses)\n",
+			color, m.jsonrpcSuccessRate*100, RESET, m.jsonrpcResponses, m.jsonrpcResponses+m.jsonrpcUnmarshalErrors)
+
+		// Validation success rate
+		color = getRateColor(m.jsonrpcValidateRate, config.SuccessRate)
+		fmt.Printf("  Validation Success: %s%.2f%%%s (%d/%d responses)\n",
+			color, m.jsonrpcValidateRate*100, RESET, m.jsonrpcResponses-m.jsonrpcValidateErrors, m.jsonrpcResponses)
+
+		// Non-nil result rate
+		color = getRateColor(m.jsonrpcResultRate, config.SuccessRate)
+		fmt.Printf("  Has Result: %s%.2f%%%s (%d/%d responses)\n",
+			color, m.jsonrpcResultRate*100, RESET, m.jsonrpcResponses-m.jsonrpcNilResult, m.jsonrpcResponses)
+
+		// Error field absent rate
+		color = getRateColor(m.jsonrpcErrorFieldRate, config.SuccessRate)
+		fmt.Printf("  Does Not Have Error: %s%.2f%%%s (%d/%d responses)\n",
+			color, m.jsonrpcErrorFieldRate*100, RESET, m.jsonrpcResponses-m.jsonrpcErrorField, m.jsonrpcResponses)
+	}
+}
+
+// printStatusCodes prints HTTP status code distribution
+func printStatusCodes(m *methodMetrics) {
+	if len(m.statusCodes) == 0 {
+		return
+	}
+
+	statusText := "Status Codes:"
+	for code, count := range m.statusCodes {
+		codeColor := getStatusCodeColor(code)
+		statusText += fmt.Sprintf("\n  %s%d%s: %d", codeColor, code, RESET, count)
+	}
+	fmt.Println(statusText)
+}
+
+// printErrors prints top errors with appropriate coloring
+func printErrors(m *methodMetrics, config ServiceConfig) {
+	if len(m.errors) == 0 {
+		return
+	}
+
+	// Determine if the test passed
+	testPassed := m.successRate >= config.SuccessRate &&
+		m.p50 <= config.MaxP50LatencyMS &&
+		m.p95 <= config.MaxP95LatencyMS &&
+		m.p99 <= config.MaxP99LatencyMS
+
+	// Choose error color based on test status
+	errorColor := YELLOW // Yellow for warnings
+	if !testPassed {
+		errorColor = RED // Red for critical errors
+	}
+
+	fmt.Println("") // Add a new line before logging errors
+	fmt.Printf("%sTop errors:%s\n", errorColor, RESET)
+
+	// Sort errors by count (descending)
+	type errorEntry struct {
+		message string
+		count   int
+	}
+	var sortedErrors []errorEntry
+	for errMsg, count := range m.errors {
+		sortedErrors = append(sortedErrors, errorEntry{message: errMsg, count: count})
+	}
+	sort.Slice(sortedErrors, func(i, j int) bool {
+		return sortedErrors[i].count > sortedErrors[j].count
+	})
+
+	// Display top 5 errors
+	for i, err := range sortedErrors {
+		if i >= 5 {
+			break
+		}
+		fmt.Printf("  %d. %s%s%s: %d\n", i+1, errorColor, err.message, RESET, err.count)
+	}
+
+	if len(sortedErrors) > 5 {
+		fmt.Printf("  ... and %s%d%s more error types\n", errorColor, len(sortedErrors)-5, RESET)
+	}
+}
+
+// Helper functions to determine method types
+func isEVMMethod(method string) bool {
+	evmMethods := getEVMTestMethods()
+	for _, evmMethod := range evmMethods {
+		if evmMethod == method {
+			return true
+		}
+	}
+	return false
+}
+
+func isSolanaMethod(method string) bool {
+	solanaMethods := getSolanaTestMethods()
+	for _, solanaMethod := range solanaMethods {
+		if solanaMethod == method {
+			return true
+		}
+	}
+	return false
+}
+
+// ===== Service Summary Row Management =====
+
+// serviceRow represents a row in the service summary table
+type serviceRow struct {
+	service      string
+	status       string
+	totalReq     int
+	totalSuccess int
+	failuresStr  string
+	successRate  string
+	p50Latency   string
+	p90Latency   string
+	avgLatency   string
+}
+
+// sortServiceRows sorts service summary rows by success rate and latency
+func sortServiceRows(rows []serviceRow) {
+	sort.Slice(rows, func(i, j int) bool {
+		// Parse success rates
+		srI, _ := strconv.ParseFloat(strings.TrimSuffix(rows[i].successRate, "%"), 64)
+		srJ, _ := strconv.ParseFloat(strings.TrimSuffix(rows[j].successRate, "%"), 64)
+		if srI != srJ {
+			return srI > srJ // Descending success rate
+		}
+		// Parse P50 latency
+		p50I, _ := strconv.Atoi(strings.TrimSuffix(rows[i].p50Latency, "ms"))
+		p50J, _ := strconv.Atoi(strings.TrimSuffix(rows[j].p50Latency, "ms"))
+		if p50I != p50J {
+			return p50I < p50J // Ascending P50 latency
+		}
+		// Parse P90 latency
+		p90I, _ := strconv.Atoi(strings.TrimSuffix(rows[i].p90Latency, "ms"))
+		p90J, _ := strconv.Atoi(strings.TrimSuffix(rows[j].p90Latency, "ms"))
+		if p90I != p90J {
+			return p90I < p90J // Ascending P90 latency
+		}
+		// Parse avg latency
+		avgI, _ := strconv.Atoi(strings.TrimSuffix(rows[i].avgLatency, "ms"))
+		avgJ, _ := strconv.Atoi(strings.TrimSuffix(rows[j].avgLatency, "ms"))
+		return avgI < avgJ // Ascending avg latency
+	})
 }
 
 // ===== Progress Bar Management =====
