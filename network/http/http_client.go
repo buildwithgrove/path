@@ -262,7 +262,7 @@ func (h *HTTPClientWithDebugMetrics) readAndValidateResponse(resp *http.Response
 	}
 
 	// Validate HTTP status code
-	if err := CheckHTTPStatusCode(resp.StatusCode); err != nil {
+	if err := EnsureHTTPSuccess(resp.StatusCode); err != nil {
 		return nil, err
 	}
 
