@@ -638,17 +638,6 @@ func (rc *requestContext) deserializeRelayResponse(response *servicetypes.RelayR
 	return deserializedResponse, nil
 }
 
-// validateBackendServiceResponse validates that the backend service returned a successful HTTP status code.
-// Even though the relay miner responded correctly with a valid Shannon protocol response,
-// we should sanction endpoints whose backend services are returning non-2xx status codes.
-func (rc *requestContext) validateBackendServiceResponse(response protocol.Response) error {
-	if err := pathhttp.CheckHTTPStatusCode(response.HTTPStatusCode); err != nil {
-		return fmt.Errorf("%w: backend service returned status %d",
-			err, response.HTTPStatusCode)
-	}
-	return nil
-}
-
 func (rc *requestContext) signRelayRequest(unsignedRelayReq *servicetypes.RelayRequest, app apptypes.Application) (*servicetypes.RelayRequest, error) {
 	// Verify the relay request's metadata, specifically the session header.
 	// Note: cannot use the RelayRequest's ValidateBasic() method here, as it looks for a signature in the struct, which has not been added yet at this point.
