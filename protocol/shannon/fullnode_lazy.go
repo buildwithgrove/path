@@ -11,7 +11,6 @@ import (
 	"github.com/pokt-network/poktroll/pkg/polylog"
 	apptypes "github.com/pokt-network/poktroll/x/application/types"
 	servicetypes "github.com/pokt-network/poktroll/x/service/types"
-	sessiontypes "github.com/pokt-network/poktroll/x/session/types"
 	sharedtypes "github.com/pokt-network/poktroll/x/shared/types"
 	sdk "github.com/pokt-network/shannon-sdk"
 	sdktypes "github.com/pokt-network/shannon-sdk/types"
@@ -103,7 +102,7 @@ func (lfn *LazyFullNode) GetSession(
 	ctx context.Context,
 	serviceID protocol.ServiceID,
 	appAddr string,
-) (sessiontypes.Session, error) {
+) (hydratedSession, error) {
 	session, err := lfn.sessionClient.GetSession(
 		ctx,
 		appAddr,
@@ -112,23 +111,30 @@ func (lfn *LazyFullNode) GetSession(
 	)
 
 	if err != nil {
-		return sessiontypes.Session{},
+		return hydratedSession{},
 			fmt.Errorf("GetSession: error getting the session for service %s app %s: %w",
 				serviceID, appAddr, err,
 			)
 	}
 
 	if session == nil {
-		return sessiontypes.Session{},
+		return hydratedSession{},
 			fmt.Errorf("GetSession: got nil session for service %s app %s: %w",
 				serviceID, appAddr, err,
 			)
 	}
 
 	// Update session rollover boundaries for rollover monitoring
-	lfn.rolloverState.updateSessionRolloverBoundaries(*session)
+	lfn.rolloverState.updateSessionRolloverBoundaries(session)
 
-	return *session, nil
+	// TODO_UPNEXT(@adshmh): Log and handle potential errors.
+	// ============================================================
+	endpoints, _ := endpointsFromSession(session)
+
+	return hydratedSession{
+		session:   session,
+		endpoints: endpoints,
+	}, nil
 }
 
 // ValidateRelayResponse:
@@ -187,7 +193,7 @@ func (lfn *LazyFullNode) GetSessionWithExtendedValidity(
 	ctx context.Context,
 	serviceID protocol.ServiceID,
 	appAddr string,
-) (sessiontypes.Session, error) {
+) (hydratedSession, error) {
 	logger := lfn.logger.With(
 		"service_id", serviceID,
 		"app_addr", appAddr,
@@ -198,7 +204,7 @@ func (lfn *LazyFullNode) GetSessionWithExtendedValidity(
 	currentSession, err := lfn.GetSession(ctx, serviceID, appAddr)
 	if err != nil {
 		logger.Error().Err(err).Msg("failed to get current session")
-		return sessiontypes.Session{}, fmt.Errorf("error getting current session: %w", err)
+		return hydratedSession{}, fmt.Errorf("error getting current session: %w", err)
 	}
 
 	// Get shared parameters to determine grace period
@@ -216,15 +222,15 @@ func (lfn *LazyFullNode) GetSessionWithExtendedValidity(
 	}
 
 	// Calculate when the previous session's grace period would end
-	prevSessionEndHeight := currentSession.Header.SessionStartBlockHeight - 1
+	prevSessionEndHeight := currentSession.session.Header.SessionStartBlockHeight - 1
 	prevSessionEndHeightWithExtendedValidity := prevSessionEndHeight + int64(sharedParams.GracePeriodEndOffsetBlocks)
 
 	logger = logger.With(
 		"prev_session_end_height", prevSessionEndHeight,
 		"prev_session_end_height_with_extended_validity", prevSessionEndHeightWithExtendedValidity,
 		"current_height", currentHeight,
-		"current_session_start_height", currentSession.Header.SessionStartBlockHeight,
-		"current_session_end_height", currentSession.Header.SessionEndBlockHeight,
+		"current_session_start_height", currentSession.session.Header.SessionStartBlockHeight,
+		"current_session_end_height", currentSession.session.Header.SessionEndBlockHeight,
 	)
 
 	// If we're not within the grace period of the previous session, return the current session
@@ -241,10 +247,10 @@ func (lfn *LazyFullNode) GetSessionWithExtendedValidity(
 	}
 
 	// Update session rollover boundaries for rollover monitoring
-	lfn.rolloverState.updateSessionRolloverBoundaries(currentSession)
+	lfn.rolloverState.updateSessionRolloverBoundaries(currentSession.session)
 
 	// Return the previous session
-	return *prevSession, nil
+	return createHydratedSession(prevSession)
 }
 
 // IsInSessionRollover returns true if we're currently in a session rollover period.
