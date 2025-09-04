@@ -50,6 +50,10 @@ func getCosmosSDKVegetaTargets(
 				return nil, err
 			}
 			maps.Copy(targets, evmJSONRPCTargets)
+
+			// TODO_TECHDEBT(@commoddity): Temporarily disable batch requests for Cosmos services
+			// This will be fixed in the in-progress PR to enable batch requests for Cosmos SDK
+			delete(targets, batchRequest)
 		}
 	}
 
