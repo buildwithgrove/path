@@ -207,9 +207,11 @@ func classifyHttpError(logger polylog.Logger, err error) (protocolobservations.S
 		"err_preview", errStr[:min(100, len(errStr))],
 	).Warn().Msg("Unable to classify HTTP error - defaulting to internal error")
 
+	// TODO_CONSIDERATION(@adshmh): Should we sanction an endpoint due to an HTTP error which could not be categorized?
+	//
 	// SHANNON_ENDPOINT_ERROR_HTTP_UNKNOWN is the default if we have no details
 	return protocolobservations.ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_HTTP_UNKNOWN,
-		protocolobservations.ShannonSanctionType_SHANNON_SANCTION_SESSION
+		protocolobservations.ShannonSanctionType_SHANNON_SANCTION_DO_NOT_SANCTION
 }
 
 // classifyMalformedEndpointPayload classifies errors found in the malformed endpoint response payload
@@ -287,5 +289,8 @@ func classifyMalformedEndpointPayload(logger polylog.Logger, payloadContent stri
 	logger.With(
 		"endpoint_payload_preview", payloadContent[:min(100, len(payloadContent))],
 	).Warn().Msg("Unable to classify malformed endpoint payload - defaulting to internal error")
-	return protocolobservations.ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_UNKNOWN, protocolobservations.ShannonSanctionType_SHANNON_SANCTION_SESSION
+
+	// TODO_CONSIDERATION(@adshmh): Should we sanction an endpoint due to a malformed payload error which could not be categorized?
+	//
+	return protocolobservations.ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_UNKNOWN, protocolobservations.ShannonSanctionType_SHANNON_SANCTION_DO_NOT_SANCTION
 }
