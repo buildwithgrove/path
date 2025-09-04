@@ -269,14 +269,14 @@ func TestReadAndValidateResponse_ErrorCases(t *testing.T) {
 // TestEnsureHTTPSuccess_ErrorWrapping tests error wrapping behavior
 func TestEnsureHTTPSuccess_ErrorWrapping(t *testing.T) {
 	testCodes := []int{400, 500, 502, 503}
-	
+
 	for _, code := range testCodes {
 		t.Run(fmt.Sprintf("status_%d", code), func(t *testing.T) {
 			err := EnsureHTTPSuccess(code)
-			
+
 			require.Error(t, err)
 			require.ErrorIs(t, err, ErrRelayEndpointHTTPError)
-			
+
 			// Verify the error message contains the status code
 			require.Contains(t, err.Error(), fmt.Sprintf("%d", code))
 		})
