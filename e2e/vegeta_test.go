@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"strings"
 	"sync"
 	"testing"
@@ -323,7 +324,7 @@ func startResultsCollector(
 				continue
 			}
 			if processedCount < methodConfig.serviceConfig.RequestsPerMethod {
-				processResult(metrics, res, ts.serviceType, methodConfig.target.Body)
+				processResult(metrics, res, ts.serviceType, methodConfig.target)
 				processedCount++
 				if progressBar != nil && progressBar.Current() < int64(methodConfig.serviceConfig.RequestsPerMethod) {
 					progressBar.Increment()
@@ -542,7 +543,7 @@ func processResult(
 	m *methodMetrics,
 	result *vegeta.Result,
 	serviceType serviceType,
-	httpRequestBody []byte,
+	target vegeta.Target,
 ) {
 	// Skip "no targets to attack" errors (not actual requests)
 	if result.Error == "no targets to attack" {
@@ -557,11 +558,17 @@ func processResult(
 	// Track if this request should be considered successful
 	httpSuccess := result.Code >= 200 && result.Code < 300 && result.Error == ""
 
+	// Determine if this is a REST request by checking HTTP method
+	// This is more reliable than checking body length:
+	// - REST requests use GET method (Cosmos SDK REST endpoints)
+	// - JSON-RPC requests use POST method (EVM, Solana, CometBFT, etc.)
+	isJSONRPCRequest := isJSONRPCRequest(target.Method, target.Body)
+
 	// Track validation error counts before processing
 	preValidationErrors := m.jsonrpcUnmarshalErrors + m.jsonrpcValidateErrors + m.jsonrpcErrorField
 
-	// Process JSON-RPC validation if we have a successful HTTP response
-	if httpSuccess {
+	// Process JSON-RPC validation only for JSON-RPC requests (not REST)
+	if httpSuccess && isJSONRPCRequest {
 		if err := processJSONRPCResponse(result.Body, m, serviceType); err != nil {
 			m.jsonrpcUnmarshalErrors++
 
@@ -577,12 +584,38 @@ func processResult(
 	postValidationErrors := m.jsonrpcUnmarshalErrors + m.jsonrpcValidateErrors + m.jsonrpcErrorField
 	jsonrpcSuccess := httpSuccess && (postValidationErrors == preValidationErrors)
 
-	// Count as success only if both HTTP and JSON-RPC validation succeed
-	if jsonrpcSuccess {
-		m.success++
+	// For REST requests, count success based only on HTTP status
+	// For JSON-RPC requests, count success only if both HTTP and JSON-RPC validation succeed
+	if isJSONRPCRequest {
+		if jsonrpcSuccess {
+			m.success++
+		} else {
+			m.failed++
+		}
 	} else {
-		m.failed++
+		if httpSuccess {
+			m.success++
+		} else {
+			m.failed++
+		}
 	}
+}
+
+// isJSONRPCRequest determines if the incoming HTTP request is a JSONRPC request
+// Uses simple heuristics: POST method and specific content.
+func isJSONRPCRequest(httpMethod string, httpRequestBody []byte) bool {
+	// Stage 1: Non-POST requests are always REST
+	if httpMethod != http.MethodPost {
+		return false
+	}
+
+	// Stage 2: POST requests - check for JSONRPC payload
+	if strings.Contains(string(httpRequestBody), "jsonrpc") {
+		return true
+	}
+
+	// Stage 3: POST without jsonrpc field is REST
+	return false
 }
 
 // calculateServiceSummary validates method results, aggregates summary metrics, and updates the service summary.

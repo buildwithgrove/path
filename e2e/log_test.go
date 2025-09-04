@@ -211,8 +211,15 @@ func printMethodMetrics(
 	printErrors(m, config)
 }
 
-// printJSONRPCRequest constructs and displays the JSON-RPC request for a given method
+// printJSONRPCRequest constructs and displays the request for a given method
 func printJSONRPCRequest(method string, serviceParams ServiceParams) {
+	// Check if this is a REST endpoint (starts with "/")
+	if isRESTEndpoint(method) {
+		// For REST endpoints, show HTTP method and path
+		fmt.Printf("%sGET %s%s\n\n", CYAN, method, RESET)
+		return
+	}
+
 	var request jsonrpc.Request
 
 	// Construct the request based on method type
@@ -364,6 +371,11 @@ func isSolanaMethod(method string) bool {
 		}
 	}
 	return false
+}
+
+func isRESTEndpoint(method string) bool {
+	// REST endpoints start with "/" (e.g., "/cosmos/distribution/v1beta1/params")
+	return strings.HasPrefix(method, "/")
 }
 
 // ===== Service Summary Row Management =====
