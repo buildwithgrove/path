@@ -262,8 +262,8 @@ func (h *HTTPClientWithDebugMetrics) readAndValidateResponse(resp *http.Response
 	}
 
 	// Validate HTTP status code
-	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices {
-		return nil, fmt.Errorf("%w: %d", ErrRelayEndpointHTTPError, resp.StatusCode)
+	if err := EnsureHTTPSuccess(resp.StatusCode); err != nil {
+		return nil, err
 	}
 
 	return responseBody, nil
