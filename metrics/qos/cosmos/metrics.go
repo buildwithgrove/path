@@ -68,7 +68,7 @@ var (
 // PublishMetrics:
 // - Exports all Cosmos SDK-related Prometheus metrics using observations from Cosmos SDK QoS service
 // - Logs errors for unexpected (should-never-happen) conditions
-func PublishMetrics(logger polylog.Logger, observations *qos.CosmosRequestObservations, endpointDomain string) {
+func PublishMetrics(logger polylog.Logger, observations *qos.CosmosRequestObservations) {
 	logger = logger.With("method", "PublishMetricsCosmosSDK")
 
 	// Skip if observations is nil.
@@ -84,8 +84,6 @@ func PublishMetrics(logger polylog.Logger, observations *qos.CosmosRequestObserv
 		Observations: observations,
 	}
 
-	// Use the provided endpoint domain
-
 	// Increment request counters with all corresponding labels
 	requestsTotal.With(
 		prometheus.Labels{
@@ -98,7 +96,7 @@ func PublishMetrics(logger polylog.Logger, observations *qos.CosmosRequestObserv
 			"success":          fmt.Sprintf("%t", interpreter.IsRequestSuccessful()),
 			"error_type":       interpreter.GetRequestErrorType(),
 			"http_status_code": fmt.Sprintf("%d", interpreter.GetRequestHTTPStatus()),
-			"endpoint_domain":  endpointDomain,
+			"endpoint_domain":  interpreter.GetEndpointDomain(),
 		},
 	).Inc()
 }
