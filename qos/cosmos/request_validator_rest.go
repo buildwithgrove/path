@@ -7,7 +7,8 @@ import (
 	"github.com/pokt-network/poktroll/pkg/polylog"
 	sharedtypes "github.com/pokt-network/poktroll/x/shared/types"
 
-	"github.com/buildwithgrove/path/gateway"
+	gateway "github.com/buildwithgrove/path/gateway"
+	pathhttp "github.com/buildwithgrove/path/network/http"
 	qosobservations "github.com/buildwithgrove/path/observation/qos"
 	"github.com/buildwithgrove/path/protocol"
 	"github.com/buildwithgrove/path/qos"
@@ -174,8 +175,8 @@ func (rv *requestValidator) buildRESTRequestObservations(
 }
 
 // TODO_TECHDEBT(@adshmh): Review the expected user experience on protocol errors in REST requests.
-func buildRESTProtocolErrorResponse() func(logger polylog.Logger) gateway.HTTPResponse {
-	return func(logger polylog.Logger) gateway.HTTPResponse {
+func buildRESTProtocolErrorResponse() func(logger polylog.Logger) pathhttp.HTTPResponse {
+	return func(logger polylog.Logger) pathhttp.HTTPResponse {
 		// For REST requests, we return a JSON-RPC error response with null ID
 		// TODO_TECHDEBT(@adshmh): Consider returning proper REST error response format
 		errorResp := jsonrpc.NewErrResponseInternalErr(

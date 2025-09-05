@@ -11,6 +11,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	shannonmetrics "github.com/buildwithgrove/path/metrics/protocol/shannon"
+	pathhttp "github.com/buildwithgrove/path/network/http"
 	"github.com/buildwithgrove/path/observation"
 	protocolobservations "github.com/buildwithgrove/path/observation/protocol"
 	qosobservations "github.com/buildwithgrove/path/observation/qos"
@@ -87,7 +88,7 @@ type requestContext struct {
 
 	// presetFailureHTTPResponse, if set, is used to return a preconstructed error response to the user.
 	// For example, this is used to return an error if the specified target service ID is invalid.
-	presetFailureHTTPResponse HTTPResponse
+	presetFailureHTTPResponse pathhttp.HTTPResponse
 
 	// httpObservations stores the observations related to the HTTP request.
 	httpObservations observation.HTTPRequestObservations
@@ -247,7 +248,7 @@ func (rc *requestContext) WriteHTTPUserResponse(w http.ResponseWriter) {
 }
 
 // writeResponse uses the supplied http.ResponseWriter to write the supplied HTTP response.
-func (rc *requestContext) writeHTTPResponse(response HTTPResponse, w http.ResponseWriter) {
+func (rc *requestContext) writeHTTPResponse(response pathhttp.HTTPResponse, w http.ResponseWriter) {
 	for key, value := range response.GetHTTPHeaders() {
 		w.Header().Set(key, value)
 	}

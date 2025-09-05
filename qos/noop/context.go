@@ -6,6 +6,7 @@ import (
 	sharedtypes "github.com/pokt-network/poktroll/x/shared/types"
 
 	"github.com/buildwithgrove/path/gateway"
+	pathhttp "github.com/buildwithgrove/path/network/http"
 	qosobservations "github.com/buildwithgrove/path/observation/qos"
 	"github.com/buildwithgrove/path/protocol"
 )
@@ -49,7 +50,7 @@ type requestContext struct {
 
 // GetServicePayload returns the payload to be sent to a service endpoint.
 // Implements the gateway.RequestQoSContext interface.
-func (rc *requestContext) GetServicePayload() protocol.Payload {
+func (rc *requestContext) GetServicePayloads() []protocol.Payload {
 	payload := protocol.Payload{
 		Data:    string(rc.httpRequestBody),
 		Method:  rc.httpRequestMethod,
@@ -60,7 +61,7 @@ func (rc *requestContext) GetServicePayload() protocol.Payload {
 	if rc.httpRequestPath != "" {
 		payload.Path = rc.httpRequestPath
 	}
-	return payload
+	return []protocol.Payload{payload}
 }
 
 // UpdateWithResponse is used to inform the requestContext of the response to its underlying service request, returned from an endpoint.
@@ -70,11 +71,11 @@ func (rc *requestContext) UpdateWithResponse(endpointAddr protocol.EndpointAddr,
 	rc.receivedResponses = append(rc.receivedResponses, endpointResponse{EndpointAddr: endpointAddr, ResponseBytes: endpointSerializedResponse})
 }
 
-// GetHTTPResponse returns a user-facing response that fulfills the gateway.HTTPResponse interface.
+// GetHTTPResponse returns a user-facing response that fulfills the pathhttp.HTTPResponse interface.
 // Any preset failure responses, e.g. set during the construction of the requestContext instance, take priority.
 // After that, this method simply returns an HTTP response based on the most recently reported endpoint response.
 // Implements the gateway.RequestQoSContext interface.
-func (rc *requestContext) GetHTTPResponse() gateway.HTTPResponse {
+func (rc *requestContext) GetHTTPResponse() pathhttp.HTTPResponse {
 	if rc.presetFailureResponse != nil {
 		return rc.presetFailureResponse
 	}

@@ -59,7 +59,6 @@ func (eph *EndpointHydrator) performWebSocketChecks(serviceID protocol.ServiceID
 	)
 
 	// Passing a nil as the HTTP request, because we assume the hydrator uses "Centralized Operation Mode".
-	// This implies there is no need to specify a specific app.
 	// TODO_TECHDEBT(@adshmh): support specifying the app(s) used for sending/signing synthetic relay requests by the hydrator.
 	// TODO_FUTURE(@adshmh): consider publishing observations if endpoint lookup fails.
 	availableEndpoints, _, err := eph.AvailableEndpoints(context.TODO(), serviceID, nil)
@@ -111,13 +110,13 @@ func (eph *EndpointHydrator) performWebSocketChecks(serviceID protocol.ServiceID
 
 // performWebSocketConnectionCheck performs a WebSocket connection establishment check
 // for the given endpoint. It constructs a websocketRequestContext, attempts to establish
-// a connection, and immediately terminates it to test connectivity.
+// a connection to the endpoint, and immediately terminates it to test connectivity.
 //
 // This method:
-// 1. Creates a synthetic HTTP WebSocket upgrade request
-// 2. Builds a websocketRequestContext with a short timeout
-// 3. Attempts connection establishment
-// 4. Cancels the connection immediately after establishment (or timeout)
+// 1. Creates a synthetic websocket request context
+// 2. Builds the protocol context for the specific endpoint
+// 3. Uses StartWebSocketBridge with nil clientConn for synthetic connection testing
+// 4. Cancels the connection after a brief establishment check
 // 5. Broadcasts connection observations
 func (eph *EndpointHydrator) performWebSocketConnectionCheck(
 	serviceID protocol.ServiceID,
@@ -157,7 +156,15 @@ func (eph *EndpointHydrator) performWebSocketConnectionCheck(
 	// Ensure connection observations are broadcast when the check completes
 	defer func() {
 		logger.Debug().Msg("Broadcasting WebSocket connection check observations")
-		websocketRequestCtx.BroadcastWebsocketConnectionRequestObservations()
+		// Update gateway observations and broadcast final results
+		websocketRequestCtx.updateGatewayObservations(nil)
+		if websocketRequestCtx.metricsReporter != nil {
+			observations := &observation.RequestResponseObservations{
+				ServiceId: string(serviceID),
+				Gateway:   websocketRequestCtx.gatewayObservations,
+			}
+			websocketRequestCtx.metricsReporter.Publish(observations)
+		}
 
 		// Note: The bridge will close messageObservationsChan during its shutdown process,
 		// so we don't need to close it manually here to avoid double-close panics
@@ -170,6 +177,7 @@ func (eph *EndpointHydrator) performWebSocketConnectionCheck(
 	err := websocketRequestCtx.buildQoSContextFromHTTP(nil) // No HTTP request for synthetic connection check
 	if err != nil {
 		logger.Error().Err(err).Msg("Failed to build QoS context for WebSocket connection check")
+		websocketRequestCtx.updateGatewayObservations(err)
 		return err
 	}
 
@@ -177,53 +185,29 @@ func (eph *EndpointHydrator) performWebSocketConnectionCheck(
 	err = eph.buildWebSocketProtocolContextForEndpoint(websocketRequestCtx, endpointAddr)
 	if err != nil {
 		logger.Error().Err(err).Msg("Failed to build protocol context for WebSocket connection check")
+		websocketRequestCtx.updateGatewayObservations(err)
 		return err
 	}
 
-	// For hydrator checks, we only need to verify that the protocol context can be built
-	// and that the endpoint is available for WebSocket connections. We don't actually
-	// need to establish a full WebSocket connection with message handling.
-	// The protocol context setup already validates endpoint connectivity.
-
 	// Start a goroutine that will cancel the context after a brief delay
-	// This simulates a connection attempt timeout for testing endpoint responsiveness
+	// This allows time for the establishment observation to be sent, then cleans up the connection
 	go func() {
-		time.Sleep(5 * time.Second) // Give the setup 5 seconds to validate endpoint
+		time.Sleep(5 * time.Second) // Give 5 seconds for establishment observation to be sent
 		logger.Debug().Msg("Canceling WebSocket connection check after validation delay")
 		cancel()
 	}()
 
-	completionChan, protocolObservations, err := websocketRequestCtx.protocolCtx.StartWebSocketBridge(
-		websocketRequestCtx.context,
-		// Pass a nil client connection as the client conn is not used for a synthetic connection check.
-		nil,
-		websocketRequestCtx, // Pass the context as message processor
-		websocketRequestCtx.messageObservationsChan,
-	)
-
+	// Use the gateway's handleWebsocketRequest method which handles all observation logic
+	// Pass nil as clientConn since this is a synthetic connection check without a real client
+	err = websocketRequestCtx.handleWebsocketRequest(nil)
 	if err != nil && !isContextCancelledError(err) {
-		logger.Warn().Err(err).Msg("WebSocket connection check failed during bridge setup")
-		// Update protocol observations with the error
-		websocketRequestCtx.updateProtocolObservations(protocolObservations)
+		logger.Warn().Err(err).Msg("❌ WebSocket connection check failed")
+		websocketRequestCtx.updateGatewayObservations(err)
 		return err
 	}
 
-	// Update protocol observations with the setup results
-	websocketRequestCtx.updateProtocolObservations(protocolObservations)
+	logger.Info().Msg("✅ WebSocket connection check completed successfully")
 
-	// If bridge setup succeeded, wait briefly for potential connection establishment
-	// then cancel to avoid maintaining a persistent connection
-	if completionChan != nil {
-		select {
-		case <-completionChan:
-			// Bridge completed (likely due to our context cancellation)
-		case <-time.After(500 * time.Millisecond):
-			// Additional timeout to ensure we don't wait indefinitely
-			cancel()
-		}
-	}
-
-	logger.Info().Msg("WebSocket connection check completed successfully")
 	return nil
 }
 
@@ -236,7 +220,7 @@ func (eph *EndpointHydrator) buildWebSocketProtocolContextForEndpoint(
 	logger := websocketRequestCtx.logger.With("method", "buildWebSocketProtocolContextForEndpoint")
 
 	// Build protocol context for the specific endpoint (no selection needed)
-	protocolCtx, protocolCtxSetupErrObs, err := eph.Protocol.BuildWebsocketRequestContextForEndpoint(
+	protocolCtx, protocolCtxSetupErrObs, err := eph.BuildWebsocketRequestContextForEndpoint(
 		websocketRequestCtx.context,
 		websocketRequestCtx.serviceID,
 		endpointAddr,

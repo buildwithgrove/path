@@ -179,6 +179,19 @@ message ShannonWebsocketConnectionObservation {
 
   // Tracks whether the endpoint is a fallback endpoint
   bool is_fallback_endpoint = 11;
+
+  // Connection lifecycle timestamps
+  google.protobuf.Timestamp connection_established_timestamp = 12;
+  optional google.protobuf.Timestamp connection_closed_timestamp = 13;
+
+  // Connection event type to distinguish between establishment and closure
+  enum ConnectionEventType {
+    CONNECTION_EVENT_TYPE_UNSPECIFIED = 0;
+    CONNECTION_ESTABLISHED = 1;
+    CONNECTION_CLOSED = 2;
+    CONNECTION_ESTABLISHMENT_FAILED = 3;
+  }
+  ConnectionEventType event_type = 14;
 }
 
 // ShannonWebsocketMessageObservation stores observations from individual WebSocket messages
@@ -306,6 +319,9 @@ message ShannonEndpointObservation {
   // HTTP Response payload size
   optional int64 endpoint_backend_service_http_response_payload_size = 15;
 
+  // TODO_TECHDEBT(@adshmh): Separate fallback endpoints into a separate message:
+  // Most of fields above (e.g. session_id) only apply to a Shannon endpoint.
+  //
   // TODO_CONSIDERATION(@adshmh): Consider renaming to is_gateway_owned OR is_off_protocol.
   //
   // Tracks whether the endpoint is a fallback endpoint.

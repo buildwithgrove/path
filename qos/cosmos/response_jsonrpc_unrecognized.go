@@ -1,11 +1,12 @@
 package cosmos
 
 import (
-	"github.com/buildwithgrove/path/gateway"
+	"github.com/pokt-network/poktroll/pkg/polylog"
+
+	pathhttp "github.com/buildwithgrove/path/network/http"
 	qosobservations "github.com/buildwithgrove/path/observation/qos"
 	"github.com/buildwithgrove/path/qos"
 	"github.com/buildwithgrove/path/qos/jsonrpc"
-	"github.com/pokt-network/poktroll/pkg/polylog"
 )
 
 // jsonrpcUnrecognizedResponse handles unrecognized JSONRPC responses
@@ -19,7 +20,7 @@ type jsonrpcUnrecognizedResponse struct {
 
 // GetHTTPResponse builds the HTTP response to return to the client
 // Uses the existing QoS helper to build response from JSONRPC response
-func (r *jsonrpcUnrecognizedResponse) GetHTTPResponse() gateway.HTTPResponse {
+func (r *jsonrpcUnrecognizedResponse) GetHTTPResponse() pathhttp.HTTPResponse {
 	return qos.BuildHTTPResponseFromJSONRPCResponse(r.logger, r.jsonrpcResponse)
 }
 

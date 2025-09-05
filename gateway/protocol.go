@@ -19,8 +19,9 @@ import (
 type Protocol interface {
 	// AvailableEndpoints returns the list of available endpoints matching both the service ID
 	//
-	// (Shannon only: in Delegated mode, the staked application is passed in the request header, which
-	// filters the list of available endpoints. In all other modes, *http.Request will be nil.)
+	// If the Pocket Network Gateway is in delegated mode, the staked application is passed via
+	// the `App-Address` header. In all other modes, *http.Request will be nil.
+	//
 	// Context may contain a deadline that protocol should respect on best-effort basis.
 	// Return observation if endpoint lookup fails.
 	// Used as protocol observation for the request when no protocol context exists.
@@ -33,8 +34,8 @@ type Protocol interface {
 	// BuildRequestContextForEndpoint builds and returns a ProtocolRequestContext containing a single selected endpoint.
 	// One `ProtocolRequestContext` correspond to a single request, which is sent to a single endpoint.
 	//
-	// (Shannon only: in Delegated mode, the staked application is passed in the request header, which
-	// filters the list of available endpoints. In all other modes, *http.Request will be nil.)
+	// If the Pocket Network Gateway is in delegated mode, the staked application is passed via
+	// the `App-Address` header. In all other modes, *http.Request will be nil.
 	//
 	// Context may contain a deadline that protocol should respect on best-effort basis.
 	//
@@ -50,8 +51,8 @@ type Protocol interface {
 	// BuildWebsocketRequestContextForEndpoint builds and returns a ProtocolRequestContextWebsocket containing a single selected endpoint.
 	// One `ProtocolRequestContextWebsocket` corresponds to a single long-lived websocket connection to a single endpoint.
 	//
-	// (Shannon only: in Delegated mode, the staked application is passed in the request header, which
-	// filters the list of available endpoints. In all other modes, *http.Request will be nil.)
+	// If the Pocket Network Gateway is in delegated mode, the staked application is passed via
+	// the `App-Address` header. In all other modes, *http.Request will be nil.
 	//
 	// Return observation if the context setup fails.
 	// Used as protocol observation for the connection when no protocol context exists.
@@ -101,7 +102,7 @@ type Protocol interface {
 type ProtocolRequestContext interface {
 	// HandleServiceRequest sends the supplied payload to the endpoint selected using the above SelectEndpoint method,
 	// and receives and verifies the response.
-	HandleServiceRequest(protocol.Payload) (protocol.Response, error)
+	HandleServiceRequest([]protocol.Payload) ([]protocol.Response, error)
 
 	// GetObservations builds and returns the set of protocol-specific observations using the current context.
 	//
@@ -123,13 +124,14 @@ type ProtocolRequestContextWebsocket interface {
 	// StartWebSocketBridge creates and starts a WebSocket bridge between client and endpoint.
 	// It handles all protocol-specific setup including headers, URL generation, and connection establishment.
 	// The messageProcessor handles the actual message processing (typically the gateway's websocketRequestContext).
-	// Returns a completion channel that signals when the bridge shuts down and observations for the connection.
+	// This method sends establishment observation immediately, blocks until bridge completes, then sends closure observation.
 	StartWebSocketBridge(
 		ctx context.Context,
 		clientConn *websocket.Conn,
 		messageProcessor websockets.WebsocketMessageProcessor,
 		messageObservationsChan chan *observation.RequestResponseObservations,
-	) (<-chan struct{}, *protocolobservations.Observations, error)
+		establishmentObservationsChan, closureObservationsChan chan *protocolobservations.Observations,
+	) error
 
 	// ProcessProtocolClientWebsocketMessage processes a message from the client.
 	ProcessProtocolClientWebsocketMessage([]byte) ([]byte, error)

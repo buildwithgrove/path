@@ -64,10 +64,6 @@ type websocketRequestContext struct {
 	// gatewayObservations stores gateway related observations.
 	gatewayObservations *observation.GatewayObservations
 
-	// protocolConnectionObservations stores protocol-level observations specific to the initial WebSocket connection establishment.
-	// This is separate from message-level observations and tracks connection lifecycle events (success/failure).
-	protocolConnectionObservations *protocolobservations.Observations
-
 	// Channel for receiving message processing notifications from the bridge
 	messageObservationsChan chan *observation.RequestResponseObservations
 }
@@ -175,26 +171,31 @@ func (wrc *websocketRequestContext) buildProtocolContextFromHTTPRequest(
 func (wrc *websocketRequestContext) handleWebsocketRequest(clientConn *websocket.Conn) error {
 	logger := wrc.logger.With("method", "handleWebsocketRequest")
 
+	// Create separate channels for establishment and closure observations
+	establishmentObservationsChan := make(chan *protocolobservations.Observations, 1)
+	closureObservationsChan := make(chan *protocolobservations.Observations, 1)
+
+	// Start listening for connection observations in separate goroutines
+	go wrc.listenForEstablishmentObservations(establishmentObservationsChan)
+	go wrc.listenForClosureObservations(closureObservationsChan)
+
 	// Delegate to the protocol context to start the WebSocket bridge
 	// The protocol context handles all protocol-specific setup
 	// We pass ourselves (wrc) as the messageProcessor to handle message processing
-	completionChan, protocolObservations, err := wrc.protocolCtx.StartWebSocketBridge(
+	err := wrc.protocolCtx.StartWebSocketBridge(
 		wrc.context,
 		clientConn,
 		wrc, // Pass the websocketRequestContext as the message processor
 		wrc.messageObservationsChan,
+		establishmentObservationsChan,
+		closureObservationsChan,
 	)
 	if err != nil {
 		// Update gateway observations with the error
 		wrc.updateGatewayObservations(fmt.Errorf("%w: %s", errWebsocketConnectionFailed, err.Error()))
-		// Update protocol observations with the error observations from the protocol
-		wrc.updateProtocolObservations(protocolObservations)
 		logger.Error().Err(err).Msg("Failed to start WebSocket bridge")
 		return err
 	}
-
-	// Update protocol observations with the success observations from the protocol.
-	wrc.updateProtocolObservations(protocolObservations)
 
 	// Set the received_time in gateway observations to mark connection establishment
 	wrc.gatewayObservations.ReceivedTime = timestamppb.New(time.Now())
@@ -202,11 +203,7 @@ func (wrc *websocketRequestContext) handleWebsocketRequest(clientConn *websocket
 	// Start listening for message processing notifications from the bridge.
 	go wrc.listenForMessageNotifications()
 
-	// Wait for the bridge to complete (blocks until WebSocket connection terminates)
-	// in order to allow publishing observations for the connection duration.
-	<-completionChan
-
-	logger.Info().Msg("🔌 WebSocket connection terminated, broadcasting final connection observations")
+	logger.Info().Msg("🔌 WebSocket connection completed successfully")
 
 	return nil
 }
@@ -234,6 +231,30 @@ func (wrc *websocketRequestContext) listenForMessageNotifications() {
 			wrc.logger.Debug().Msg("Message notification listener stopped due to context cancellation")
 			return
 		}
+	}
+}
+
+// listenForEstablishmentObservations listens for connection establishment observations
+// from the protocol layer and broadcasts them immediately.
+func (wrc *websocketRequestContext) listenForEstablishmentObservations(observationChan <-chan *protocolobservations.Observations) {
+	for protocolObs := range observationChan {
+		if protocolObs == nil {
+			continue
+		}
+		wrc.logger.Debug().Msg("Received connection establishment observation from protocol layer")
+		wrc.broadcastWebsocketConnectionEstablished(protocolObs)
+	}
+}
+
+// listenForClosureObservations listens for connection closure observations
+// from the protocol layer and broadcasts them immediately.
+func (wrc *websocketRequestContext) listenForClosureObservations(observationChan <-chan *protocolobservations.Observations) {
+	for protocolObs := range observationChan {
+		if protocolObs == nil {
+			continue
+		}
+		wrc.logger.Debug().Msg("Received connection closure observation from protocol layer")
+		wrc.broadcastWebsocketConnectionClosed(protocolObs)
 	}
 }
 
@@ -343,16 +364,33 @@ func (wrc *websocketRequestContext) initializeMessageObservations() *observation
 
 // ---------- WebSocket Connection Observations ----------
 
-// TODO_TECHDEBT(@commoddity): This is a temporary method to log the observations.
-// The Websocket-specific connection observations are not being set in the protocol/shannon/protocol.go
-// file. We will need a refactor of the Shannon protocol code to handle websocket-specific logic
-// without overly burdening the existing single `requestContext` struct with logic that does
-// not apply to HTTP.
-//
-// BroadcastWebsocketConnectionRequestObservations broadcasts a single connection-level observation.
-// This method combines protocol observations with gateway observations and publishes them.
-// This method should be called from a defer in handleWebSocketRequest.
-func (wrc *websocketRequestContext) BroadcastWebsocketConnectionRequestObservations() {
+// broadcastWebsocketConnectionEstablished broadcasts a protocol-level observation specifically
+// for connection establishment to inform the metrics system that a WebSocket connection was established.
+// This method only publishes to the metrics reporter, not the data reporter.
+func (wrc *websocketRequestContext) broadcastWebsocketConnectionEstablished(protocolObservations *protocolobservations.Observations) {
+	// Create a protocol-only observation for connection establishment
+	observations := &observation.RequestResponseObservations{
+		ServiceId: string(wrc.serviceID),
+		Protocol:  protocolObservations,
+	}
+
+	// Apply protocol observations to the protocol instance.
+	if protocolObservations := observations.GetProtocol(); protocolObservations != nil {
+		err := wrc.protocol.ApplyObservations(protocolObservations)
+		if err != nil {
+			wrc.logger.Warn().Err(err).Msg("error applying protocol observations for websocket connection.")
+		}
+	}
+
+	// Only publish to metrics reporter for connection tracking
+	if wrc.metricsReporter != nil {
+		wrc.metricsReporter.Publish(observations)
+	}
+}
+
+// broadcastWebsocketConnectionClosed broadcasts a connection closure observation.
+// This method publishes closure events to BOTH metrics and data pipeline.
+func (wrc *websocketRequestContext) broadcastWebsocketConnectionClosed(protocolObservations *protocolobservations.Observations) {
 	wrc.updateGatewayObservations(nil)
 
 	// Update protocol observations to get final connection state
@@ -361,7 +399,7 @@ func (wrc *websocketRequestContext) BroadcastWebsocketConnectionRequestObservati
 	// Combine all observations into the standard RequestResponseObservations format
 	observations := &observation.RequestResponseObservations{
 		Gateway:  wrc.gatewayObservations,
-		Protocol: wrc.protocolConnectionObservations,
+		Protocol: protocolObservations,
 		// TODO_IMPROVE: add QoS observations for WebSocket connection observations.
 		Qos: nil,
 	}
@@ -394,18 +432,15 @@ func (wrc *websocketRequestContext) updateProtocolObservations(
 ) {
 	// protocol connection observation already set: skip.
 	// This happens when a protocol context setup observation was reported earlier.
-	if wrc.protocolConnectionObservations != nil {
-		fmt.Println("protocol connection observations already set")
+	if protocolConnectionObservations != nil {
 		return
 	}
 
 	// protocol context setup error observation is set: use it.
 	if protocolConnectionObservations != nil {
-		fmt.Println("protocol connection observations is not nil")
-		wrc.logger.Info().
-			Str("protocolConnectionObservations", protocolConnectionObservations.String()).
+		wrc.logger.Debug().
+			Str("protocol_connection_observations", protocolConnectionObservations.String()).
 			Msg("Setting protocol connection observations")
-		wrc.protocolConnectionObservations = protocolConnectionObservations
 		return
 	}
 

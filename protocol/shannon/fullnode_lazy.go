@@ -16,6 +16,7 @@ import (
 	sdk "github.com/pokt-network/shannon-sdk"
 	sdktypes "github.com/pokt-network/shannon-sdk/types"
 
+	"github.com/buildwithgrove/path/network/grpc"
 	"github.com/buildwithgrove/path/protocol"
 )
 
@@ -290,15 +291,14 @@ func embedHttpRequest(reqToEmbed *http.Request) (*servicetypes.RelayRequest, err
 // - Deserialization is handled here (see sdktypes.DeserializeHTTPResponse below).
 //
 // Links:
-// - Relay miner serializing the service response:
-//   https://github.com/pokt-network/poktroll/blob/e5024ea5d28cc94d09e531f84701a85cefb9d56f/pkg/relayer/proxy/synchronous.go#L361-L363
-// - Relay response validation (potential package for serialization/deserialization):
-//   https://github.com/pokt-network/poktroll/blob/e5024ea5d28cc94d09e531f84701a85cefb9d56f/x/service/types/relay.go#L68
-//
+//   - Relay miner serializing the service response:
+//     https://github.com/pokt-network/poktroll/blob/e5024ea5d28cc94d09e531f84701a85cefb9d56f/pkg/relayer/proxy/synchronous.go#L361-L363
+//   - Relay response validation (potential package for serialization/deserialization):
+//     https://github.com/pokt-network/poktroll/blob/e5024ea5d28cc94d09e531f84701a85cefb9d56f/x/service/types/relay.go#L68
+
 // deserializeRelayResponse:
 // - Uses the Shannon sdk to deserialize the relay response payload received from an endpoint into a protocol.Response.
 // - Required because the relay miner (the endpoint serving the relay) returns the HTTP response in serialized format in its payload.
-
 func deserializeRelayResponse(bz []byte) (protocol.Response, error) {
 	poktHttpResponse, err := sdktypes.DeserializeHTTPResponse(bz)
 	if err != nil {
@@ -311,8 +311,8 @@ func deserializeRelayResponse(bz []byte) (protocol.Response, error) {
 	}, nil
 }
 
-func newSessionClient(config GRPCConfig) (*sdk.SessionClient, error) {
-	conn, err := connectGRPC(config)
+func newSessionClient(config grpc.GRPCConfig) (*sdk.SessionClient, error) {
+	conn, err := grpc.ConnectGRPC(config)
 	if err != nil {
 		return nil, fmt.Errorf("could not create new Shannon session client: error establishing grpc connection to %s: %w", config.HostPort, err)
 	}
@@ -334,8 +334,8 @@ func newBlockClient(fullNodeURL string) (*sdk.BlockClient, error) {
 	return &sdk.BlockClient{PoktNodeStatusFetcher: nodeStatusFetcher}, nil
 }
 
-func newAppClient(config GRPCConfig) (*sdk.ApplicationClient, error) {
-	appConn, err := connectGRPC(config)
+func newAppClient(config grpc.GRPCConfig) (*sdk.ApplicationClient, error) {
+	appConn, err := grpc.ConnectGRPC(config)
 	if err != nil {
 		return nil, fmt.Errorf("NewSdk: error creating new GRPC connection at url %s: %w", config.HostPort, err)
 	}
@@ -343,8 +343,8 @@ func newAppClient(config GRPCConfig) (*sdk.ApplicationClient, error) {
 	return &sdk.ApplicationClient{QueryClient: apptypes.NewQueryClient(appConn)}, nil
 }
 
-func newAccClient(config GRPCConfig) (*sdk.AccountClient, error) {
-	conn, err := connectGRPC(config)
+func newAccClient(config grpc.GRPCConfig) (*sdk.AccountClient, error) {
+	conn, err := grpc.ConnectGRPC(config)
 	if err != nil {
 		return nil, fmt.Errorf("newAccClient: error creating new GRPC connection for account client at url %s: %w", config.HostPort, err)
 	}
@@ -352,8 +352,8 @@ func newAccClient(config GRPCConfig) (*sdk.AccountClient, error) {
 	return &sdk.AccountClient{PoktNodeAccountFetcher: sdk.NewPoktNodeAccountFetcher(conn)}, nil
 }
 
-func newSharedClient(config GRPCConfig) (*sdk.SharedClient, error) {
-	conn, err := connectGRPC(config)
+func newSharedClient(config grpc.GRPCConfig) (*sdk.SharedClient, error) {
+	conn, err := grpc.ConnectGRPC(config)
 	if err != nil {
 		return nil, fmt.Errorf("newSharedClient: error creating new GRPC connection for shared client at url %s: %w", config.HostPort, err)
 	}

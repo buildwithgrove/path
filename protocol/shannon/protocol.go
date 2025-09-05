@@ -12,6 +12,7 @@ import (
 	"github.com/buildwithgrove/path/gateway"
 	"github.com/buildwithgrove/path/health"
 	"github.com/buildwithgrove/path/metrics/devtools"
+	pathhttp "github.com/buildwithgrove/path/network/http"
 	protocolobservations "github.com/buildwithgrove/path/observation/protocol"
 	"github.com/buildwithgrove/path/protocol"
 )
@@ -55,7 +56,7 @@ type Protocol struct {
 	sanctionedEndpointsStore *sanctionedEndpointsStore
 
 	// HTTP client used for sending relay requests to endpoints while also capturing & publishing various debug metrics.
-	httpClient *httpClientWithDebugMetrics
+	httpClient *pathhttp.HTTPClientWithDebugMetrics
 
 	// serviceFallbackMap contains the service fallback config per service.
 	//
@@ -109,7 +110,7 @@ func NewProtocol(
 		ownedApps: ownedApps,
 
 		// HTTP client with embedded tracking of debug metrics.
-		httpClient: newDefaultHTTPClientWithDebugMetrics(),
+		httpClient: pathhttp.NewDefaultHTTPClientWithDebugMetrics(),
 
 		// serviceFallbacks contains the fallback information for each service.
 		serviceFallbackMap: config.getServiceFallbackMap(),
@@ -203,8 +204,8 @@ func (p *Protocol) BuildHTTPRequestContextForEndpoint(
 		"endpoint_addr", selectedEndpointAddr,
 	)
 
-	// Select the endpoint that matches the pre-selected address.
-	selectedEndpoint, err := p.getSelectedEndpoint(
+	// Retrieve the endpoint that matches the pre-selected address.
+	selectedEndpoint, err := p.retrieveEndpointForSelectedEndpointAddr(
 		ctx, logger, httpReq, serviceID, selectedEndpointAddr,
 	)
 	if err != nil {
@@ -248,12 +249,6 @@ func (p *Protocol) BuildHTTPRequestContextForEndpoint(
 //   - serviceID: The unique identifier of the target service.
 //   - selectedEndpointAddr: The address of the endpoint to use for the request.
 //   - httpReq: ONLY used in Delegated mode to extract the selected app from headers.
-//
-// Behavior:
-//   - Selects the endpoint that matches the pre-selected address.
-//   - Obtains the relay request signer appropriate for the current gateway mode.
-//   - Returns a fully initialized WebSocket request context for use in downstream protocol operations.
-//   - On failure, logs the error, returns a context setup observation, and a non-nil error.
 func (p *Protocol) BuildWebsocketRequestContextForEndpoint(
 	ctx context.Context,
 	serviceID protocol.ServiceID,
@@ -265,8 +260,8 @@ func (p *Protocol) BuildWebsocketRequestContextForEndpoint(
 		"endpoint_addr", selectedEndpointAddr,
 	)
 
-	// Get the selected endpoint for the service ID and endpoint address.
-	selectedEndpoint, err := p.getSelectedEndpoint(
+	// Retrieve the selected endpoint for the service ID and endpoint address.
+	selectedEndpoint, err := p.retrieveEndpointForSelectedEndpointAddr(
 		ctx, logger, httpReq, serviceID, selectedEndpointAddr,
 	)
 	if err != nil {
@@ -342,17 +337,12 @@ func (p *Protocol) IsAlive() bool {
 	return p.IsHealthy()
 }
 
-// getSelectedEndpoint returns the selected endpoint for a given service ID and endpoint address.
-//
-// Behavior:
-//   - Retrieves active sessions for the given service ID from the full node.
-//   - Retrieves unique endpoints available across all active sessions
-//   - Filters out sanctioned endpoints from list of unique endpoints.
+// retrieveEndpointForSelectedEndpointAddr returns the selected endpoint for a given service ID and endpoint address.
 //
 // This function coordinates between session endpoints and fallback endpoints:
 //   - If configured to send all traffic to fallback, returns fallback endpoints only
 //   - Otherwise, attempts to get session endpoints and falls back to fallback endpoints if needed
-func (p *Protocol) getSelectedEndpoint(
+func (p *Protocol) retrieveEndpointForSelectedEndpointAddr(
 	ctx context.Context,
 	logger polylog.Logger,
 	httpReq *http.Request,

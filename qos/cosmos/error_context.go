@@ -7,6 +7,7 @@ import (
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
 	"github.com/buildwithgrove/path/gateway"
+	pathhttp "github.com/buildwithgrove/path/network/http"
 	qosobservations "github.com/buildwithgrove/path/observation/qos"
 	"github.com/buildwithgrove/path/protocol"
 	"github.com/buildwithgrove/path/qos/jsonrpc"
@@ -42,7 +43,7 @@ type errorContext struct {
 
 // GetHTTPResponse formats the stored JSONRPC error as an HTTP response
 // Implements the gateway.RequestQoSContext interface.
-func (ec *errorContext) GetHTTPResponse() gateway.HTTPResponse {
+func (ec *errorContext) GetHTTPResponse() pathhttp.HTTPResponse {
 	bz, err := json.Marshal(ec.response)
 	if err != nil {
 		// TODO_IMPROVE(@adshmh): Standardize logger labels across packages
@@ -79,9 +80,9 @@ func (ec *errorContext) GetObservations() qosobservations.Observations {
 // GetServicePayload should never be called.
 // It logs a warning and returns nil.
 // Implements the gateway.RequestQoSContext interface.
-func (ec *errorContext) GetServicePayload() protocol.Payload {
-	ec.logger.Warn().Msg("SHOULD NEVER HAPPEN: errorContext.GetServicePayload() should never be called.")
-	return protocol.EmptyErrorPayload()
+func (ec *errorContext) GetServicePayloads() []protocol.Payload {
+	ec.logger.Warn().Msg("SHOULD NEVER HAPPEN: errorContext.GetServicePayloads() should never be called.")
+	return []protocol.Payload{protocol.EmptyErrorPayload()}
 }
 
 // UpdateWithResponse should never be called.

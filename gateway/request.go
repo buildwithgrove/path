@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 
+	pathhttp "github.com/buildwithgrove/path/network/http"
 	"github.com/buildwithgrove/path/protocol"
 )
 
@@ -15,7 +16,7 @@ type HTTPRequestParser interface {
 
 	// GetHTTPErrorResponse returns an HTTP response using the supplied error.
 	// It will only be called if the GetQoSService method above returns an error.
-	GetHTTPErrorResponse(context.Context, error) HTTPResponse
+	GetHTTPErrorResponse(context.Context, error) pathhttp.HTTPResponse
 }
 
 // TODO_INCOMPLETE: implement the HTTPRequestParser in a separate package, e.g. `request`.

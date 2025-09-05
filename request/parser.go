@@ -14,6 +14,7 @@ import (
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
 	"github.com/buildwithgrove/path/gateway"
+	pathhttp "github.com/buildwithgrove/path/network/http"
 	"github.com/buildwithgrove/path/protocol"
 	"github.com/buildwithgrove/path/qos/noop"
 )
@@ -80,7 +81,7 @@ func (p *Parser) getServiceID(req *http.Request) (protocol.ServiceID, error) {
 
 // GetHTTPErrorResponse returns an HTTP response with the appropriate status code and
 // error message, which ensures the error response is returned in a valid JSON format.
-func (p *Parser) GetHTTPErrorResponse(ctx context.Context, err error) gateway.HTTPResponse {
+func (p *Parser) GetHTTPErrorResponse(ctx context.Context, err error) pathhttp.HTTPResponse {
 	if errors.Is(err, errNoServiceIDProvided) {
 		return &parserErrorResponse{err: err.Error(), code: http.StatusBadRequest}
 	}

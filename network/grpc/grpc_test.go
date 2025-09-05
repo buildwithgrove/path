@@ -1,4 +1,4 @@
-package shannon
+package grpc
 
 import (
 	"testing"
@@ -49,7 +49,7 @@ func Test_connectGRPC(t *testing.T) {
 			if test.config.HostPort == "bufnet" {
 				test.config.HostPort = lis.Addr().String()
 			}
-			conn, err := connectGRPC(test.config)
+			conn, err := ConnectGRPC(test.config)
 			c.NoError(err)
 
 			if conn != nil {

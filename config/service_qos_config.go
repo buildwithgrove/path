@@ -655,6 +655,12 @@ var shannonServices = []ServiceQoSConfig{
 		sharedtypes.RPCType_JSON_RPC: {},
 	}),
 
+	// Hey
+	// TODO_TECHDEBT(@olshansk): Either remove or format this correctly
+	evm.NewEVMServiceQoSConfig("hey", defaultEVMChainID, nil, map[sharedtypes.RPCType]struct{}{
+		sharedtypes.RPCType_JSON_RPC: {},
+	}),
+
 	// TODO_TECHDEBT: Add support for Radix QoS
 	// Radix
 	// radix.NewRadixServiceQoSConfig("radix", "", nil),
@@ -898,3 +904,32 @@ var shannonServices = []ServiceQoSConfig{
 	// Solana
 	solana.NewSolanaServiceQoSConfig("solana", "solana"),
 }
+
+// TODO(@olshansk): Make sure all of these are supported
+// sonieum
+// atomone
+// akash
+// fetch
+// persistence
+// router
+// seda
+// shentu
+// arkeo
+// babylon
+// celestia
+// cheqd
+// chihuahua
+// cosmoshub
+// elys-network
+// jackal
+// juno
+// kyve
+// namada
+// neutron
+// nillion
+// passage
+// provenance
+// quicksilver
+// side-protol
+// stargaze
+// stride

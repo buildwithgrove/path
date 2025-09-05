@@ -16,7 +16,7 @@ import (
 // defaultDataReporterPostTimeoutMillisec defines the default timeout for HTTP POST operations in milliseconds (10 seconds)
 const defaultDataReporterPostTimeoutMillisec = 20_000
 
-// DataReporterHTTP exports observations to an external components over HTTP (e.g. Flentd HTTP Plugin, a Messaging system, or a database)
+// DataReporterHTTP exports observations to an external components over HTTP (e.g. Fluentd HTTP Plugin, a Messaging system, or a database)
 var _ gateway.RequestResponseReporter = &DataReporterHTTP{}
 
 // DataReporterHTTP sends the observation for each handled request to an HTTP endpoint.
@@ -37,25 +37,34 @@ type DataReporterHTTP struct {
 }
 
 // Publish the supplied observations:
-// - Build the expected data record.
-// - Send to the configured URL.
+// - Build the expected data records.
+// - Send each record to the configured URL.
 func (drh *DataReporterHTTP) Publish(observations *observation.RequestResponseObservations) {
 	logger := drh.hydrateLogger(observations)
 
 	// TODO_MVP(@adshmh): Replace this with the new DataRecord struct once the data pipeline is updated.
-	// convert to legacy-formatted data record
-	legacyDataRecord := buildLegacyDataRecord(logger, observations)
+	// convert to legacy-formatted data records (may be multiple for EVM batch requests)
+	legacyDataRecords := buildLegacyDataRecords(logger, observations)
 
-	// Marshal the data record.
-	serializedRecord, err := json.Marshal(legacyDataRecord)
-	if err != nil {
-		logger.Warn().Err(err).Msg("Failed to serialize the data record. Skip reporting.")
-		return
-	}
+	// Process each legacy data record as a single relay for data pipeline and metering purposes.
+	//
+	// If the observations are for an EVM batch request, legacyDataRecords will contain multiple records.
+	// As of PR #388 all other QoS observations are expected to be single records.
+	// Reference: https://github.com/buildwithgrove/path/pull/388
+	for i, legacyDataRecord := range legacyDataRecords {
+		recordLogger := logger.With("record_index", i, "total_records", len(legacyDataRecords))
 
-	// Send the marshaled data record to the data processor.
-	if err := drh.sendRecordOverHTTP(serializedRecord); err != nil {
-		logger.Warn().Err(err).Msg("Failed to send the data record over HTTP. Skip reporting.")
+		// Marshal the data record.
+		serializedRecord, err := json.Marshal(legacyDataRecord)
+		if err != nil {
+			recordLogger.Warn().Err(err).Msg("Failed to serialize the data record. Skip reporting this record.")
+			continue
+		}
+
+		// Send the marshaled data record to the data processor.
+		if err := drh.sendRecordOverHTTP(serializedRecord); err != nil {
+			recordLogger.Warn().Err(err).Msg("Failed to send the data record over HTTP. Skip reporting this record.")
+		}
 	}
 }
 

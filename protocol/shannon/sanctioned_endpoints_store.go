@@ -83,6 +83,7 @@ func (ses *sanctionedEndpointsStore) ApplyObservations(shannonObservations []*pr
 		// Process WebSocket connection observations
 		websocketConnectionObs := observationSet.GetWebsocketConnectionObservation()
 		if websocketConnectionObs != nil {
+			logger.Debug().Msg("Processing WebSocket connection observation for sanctions")
 			ses.processWebSocketConnectionObservationForSanctions(logger, websocketConnectionObs)
 		}
 

@@ -9,6 +9,7 @@ import (
 	sharedtypes "github.com/pokt-network/poktroll/x/shared/types"
 
 	"github.com/buildwithgrove/path/gateway"
+	pathhttp "github.com/buildwithgrove/path/network/http"
 	qosobservations "github.com/buildwithgrove/path/observation/qos"
 	"github.com/buildwithgrove/path/protocol"
 	"github.com/buildwithgrove/path/qos"
@@ -70,22 +71,25 @@ type requestContext struct {
 	endpointResponses []endpointResponse
 }
 
+// TODO_NEXT(@commoddity): handle batch requests for Solana
 // TODO_MVP(@adshmh): Ensure the JSONRPC request struct
 // can handle all valid service requests.
-func (rc requestContext) GetServicePayload() protocol.Payload {
+func (rc requestContext) GetServicePayloads() []protocol.Payload {
 	reqBz, err := json.Marshal(rc.JSONRPCReq)
 	if err != nil {
 		rc.logger.Error().Err(err).Msg("SHOULD RARELY HAPPEN: requestContext.GetServicePayload() should never fail marshaling the JSONRPC request.")
-		return protocol.EmptyErrorPayload()
+		return []protocol.Payload{protocol.EmptyErrorPayload()}
 	}
 
-	return protocol.Payload{
+	payload := protocol.Payload{
 		Data:    string(reqBz),
 		Method:  http.MethodPost, // Method is alway POST for Solana.
 		Path:    "",              // Path field is not used for Solana.
 		Headers: map[string]string{},
 		RPCType: sharedtypes.RPCType_JSON_RPC,
 	}
+
+	return []protocol.Payload{payload}
 }
 
 // UpdateWithResponse is NOT safe for concurrent use
@@ -110,7 +114,7 @@ func (rc *requestContext) UpdateWithResponse(endpointAddr protocol.EndpointAddr,
 // TODO_MVP(@adshmh): add `Content-Type: application/json` header.
 // GetHTTPResponse builds the HTTP response that should be returned for
 // a Solana blockchain service request.
-func (rc requestContext) GetHTTPResponse() gateway.HTTPResponse {
+func (rc requestContext) GetHTTPResponse() pathhttp.HTTPResponse {
 	// No responses received: this is an internal error:
 	// e.g. protocol-level errors like endpoint timing out.
 	if len(rc.endpointResponses) == 0 {

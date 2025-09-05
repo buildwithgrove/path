@@ -1,9 +1,10 @@
 package cosmos
 
 import (
-	"github.com/buildwithgrove/path/gateway"
-	qosobservations "github.com/buildwithgrove/path/observation/qos"
 	"github.com/pokt-network/poktroll/pkg/polylog"
+
+	pathhttp "github.com/buildwithgrove/path/network/http"
+	qosobservations "github.com/buildwithgrove/path/observation/qos"
 )
 
 // responseRESTUnrecognized handles unrecognized REST endpoint responses
@@ -16,7 +17,7 @@ type responseRESTUnrecognized struct {
 
 // GetHTTPResponse builds the HTTP response to return to the client
 // Returns the endpoint response payload as-is with HTTP 200 status
-func (r responseRESTUnrecognized) GetHTTPResponse() gateway.HTTPResponse {
+func (r responseRESTUnrecognized) GetHTTPResponse() pathhttp.HTTPResponse {
 	// TODO_UPNEXT(@adshmh): Propagate endpoint HTTP response code
 	return httpResponse{
 		responsePayload: r.endpointResponseBz,
