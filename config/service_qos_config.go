@@ -377,6 +377,10 @@ var shannonServices = []ServiceQoSConfig{
 	// Sei
 	evm.NewEVMServiceQoSConfig("sei", "0x531", nil),
 
+	// Hey
+	// TODO_TECHDEBT(@olshansk): Either remove or format this correctly
+	evm.NewEVMServiceQoSConfig("hey", defaultEVMChainID, nil),
+
 	// TODO_TECHDEBT: Add support for Radix QoS
 	// Radix
 	// radix.NewRadixServiceQoSConfig("radix", "", nil),
@@ -620,3 +624,32 @@ var shannonServices = []ServiceQoSConfig{
 	// Solana
 	solana.NewSolanaServiceQoSConfig("solana", "solana"),
 }
+
+// TODO(@olshansk): Make sure all of these are supported
+// sonieum
+// atomone
+// akash
+// fetch
+// persistence
+// router
+// seda
+// shentu
+// arkeo
+// babylon
+// celestia
+// cheqd
+// chihuahua
+// cosmoshub
+// elys-network
+// jackal
+// juno
+// kyve
+// namada
+// neutron
+// nillion
+// passage
+// provenance
+// quicksilver
+// side-protol
+// stargaze
+// stride
