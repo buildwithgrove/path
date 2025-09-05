@@ -99,10 +99,10 @@ func (r responseToBlockNumber) GetObservation() qosobservations.EVMEndpointObser
 
 // GetHTTPResponse builds and returns the httpResponse matching the responseToBlockNumber instance.
 // Implements the response interface.
-func (r responseToBlockNumber) GetHTTPResponse() httpResponse {
-	return httpResponse{
-		responsePayload: r.getResponsePayload(),
-		httpStatusCode:  r.getHTTPStatusCode(),
+func (r responseToBlockNumber) GetHTTPResponse() jsonrpc.HTTPResponse {
+	return jsonrpc.HTTPResponse{
+		ResponsePayload: r.getResponsePayload(),
+		HTTPStatusCode:  r.getHTTPStatusCode(),
 	}
 }
 
@@ -121,10 +121,4 @@ func (r responseToBlockNumber) getResponsePayload() []byte {
 // DEV_NOTE: This is an opinionated mapping following best practice but not enforced by any specifications or standards.
 func (r responseToBlockNumber) getHTTPStatusCode() int {
 	return r.jsonRPCResponse.GetRecommendedHTTPStatusCode()
-}
-
-// GetJSONRPCID returns the JSONRPC ID of the response.
-// Implements the response interface.
-func (r responseToBlockNumber) GetJSONRPCID() jsonrpc.ID {
-	return r.jsonRPCResponse.ID
 }

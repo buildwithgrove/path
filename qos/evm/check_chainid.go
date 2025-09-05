@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/buildwithgrove/path/protocol"
 	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
 
@@ -37,12 +38,19 @@ type endpointCheckChainID struct {
 	expiresAt time.Time
 }
 
+func (e *endpointCheckChainID) getRequestID() jsonrpc.ID {
+	return jsonrpc.IDFromInt(idChainIDCheck)
+}
+
 // getRequest returns a JSONRPC request to check the chain ID.
 // eg. '{"jsonrpc":"2.0","id":1,"method":"eth_chainId"}'
-func (e *endpointCheckChainID) getRequest() jsonrpc.Request {
-	return jsonrpc.Request{
+func (e *endpointCheckChainID) getServicePayload() protocol.Payload {
+	req := jsonrpc.Request{
 		JSONRPC: jsonrpc.Version2,
 		ID:      jsonrpc.IDFromInt(idChainIDCheck),
 		Method:  jsonrpc.Method(methodChainID),
 	}
+	// Hardcoded request will never fail to build the payload
+	payload, _ := req.BuildPayload()
+	return payload
 }

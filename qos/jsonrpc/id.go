@@ -90,3 +90,30 @@ func IDFromInt(id int) ID {
 func IDFromStr(id string) ID {
 	return ID{strID: &id}
 }
+
+// Equal returns true if two IDs represent the same value.
+// Compares the underlying values, not pointer addresses.
+func (id ID) Equal(other ID) bool {
+	// Both are unset
+	if id.IsEmpty() && other.IsEmpty() {
+		return true
+	}
+
+	// One is unset, the other isn't
+	if id.IsEmpty() != other.IsEmpty() {
+		return false
+	}
+
+	// Both have int values
+	if id.intID != nil && other.intID != nil {
+		return *id.intID == *other.intID
+	}
+
+	// Both have string values
+	if id.strID != nil && other.strID != nil {
+		return *id.strID == *other.strID
+	}
+
+	// Different types (one int, one string) - not equal
+	return false
+}
