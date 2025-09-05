@@ -82,8 +82,6 @@ func PublishMetrics(logger polylog.Logger, observations *qos.SolanaRequestObserv
 		Observations: observations,
 	}
 
-	// Use the provided endpoint domain
-
 	// Increment request counters with all corresponding labels
 	requestsTotal.With(
 		prometheus.Labels{

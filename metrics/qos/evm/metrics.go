@@ -7,6 +7,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/buildwithgrove/path/observation/qos"
+	"github.com/buildwithgrove/path/protocol"
 )
 
 const (
@@ -197,8 +198,6 @@ func PublishMetrics(logger polylog.Logger, observations *qos.EVMRequestObservati
 		errorType = requestError.String()
 	}
 
-	// Use the provided endpoint domain
-
 	// Count each method as a separate request.
 	// This is required for batch requests.
 	for _, method := range methods {
@@ -252,6 +251,14 @@ func publishValidationMetricsFromMetadata(logger polylog.Logger, chainID, servic
 	// Process all validation results in a single loop
 	for _, result := range metadata.ValidationResults {
 
+		// Extract domain information from endpoint address
+		endpointDomain, err := protocol.EndpointAddr(result.EndpointAddr).GetDomain()
+		if err != nil {
+			// Log error and use empty string as fallback
+			logger.Warn().Err(err).Str("endpoint_addr", result.EndpointAddr).Msg("Failed to extract domain from endpoint address")
+			endpointDomain = ""
+		}
+
 		// Determine failure reason for failed validations
 		failureReason := ""
 		if !result.Success && result.FailureReason != nil {
@@ -261,9 +268,9 @@ func publishValidationMetricsFromMetadata(logger polylog.Logger, chainID, servic
 		// Track validation result
 		endpointValidationsTotal.With(
 			prometheus.Labels{
-				"chain_id":   chainID,
-				"service_id": serviceID,
-				// "endpoint_domain":           metadata.EndpointDomain,
+				"chain_id":                  chainID,
+				"service_id":                serviceID,
+				"endpoint_domain":           endpointDomain,
 				"success":                   fmt.Sprintf("%t", result.Success),
 				"validation_failure_reason": failureReason,
 			},
