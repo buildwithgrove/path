@@ -22,14 +22,14 @@ RUN apk add --no-cache \
 # Install ajv-cli (for validating config.yaml against config.schema.yaml)
 RUN npm install -g ajv-cli
 
-# Install Go 1.23
+# Install Go 1.24.3
 RUN set -ex && \
     case "${TARGETPLATFORM:-linux/$(uname -m)}" in \
     "linux/amd64") ARCH="amd64" ;; \
     "linux/arm64") ARCH="arm64" ;; \
     *) echo "Unsupported platform: ${TARGETPLATFORM:-linux/$(uname -m)}" && exit 1 ;; \
     esac && \
-    FILENAME="go1.23.0.linux-${ARCH}.tar.gz" && \
+    FILENAME="go1.24.3.linux-${ARCH}.tar.gz" && \
     curl -L -o ${FILENAME} https://go.dev/dl/${FILENAME} && \
     rm -rf /usr/local/go && \
     tar -C /usr/local -xzf ${FILENAME} && \
@@ -77,6 +77,18 @@ RUN set -ex && \
 
 # Install Helm
 RUN curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash
+
+# Install k9s
+RUN set -ex && \
+    case "${TARGETPLATFORM:-linux/$(uname -m)}" in \
+    "linux/amd64") ARCH="amd64" ;; \
+    "linux/arm64") ARCH="arm64" ;; \
+    *) echo "Unsupported platform: ${TARGETPLATFORM:-linux/$(uname -m)}" && exit 1 ;; \
+    esac && \
+    K9S_VERSION=$(curl -s https://api.github.com/repos/derailed/k9s/releases/latest | grep tag_name | cut -d '"' -f4) && \
+    curl -L "https://github.com/derailed/k9s/releases/download/${K9S_VERSION}/k9s_Linux_${ARCH}.tar.gz" | tar -xz k9s && \
+    mv k9s /usr/local/bin/ && \
+    chmod +x /usr/local/bin/k9s
 
 # Create an integrated startup script that includes both Docker daemon and the path/local/start.sh functionality
 # It also validates the config.yaml against the config.schema.yaml before starting anything else
