@@ -111,14 +111,16 @@ message EVMRequestObservations {
   EndpointSelectionMetadata endpoint_selection_metadata = 9;
 }
 
+// EVMRequestObservation stores a single observation from an endpoint servicing the protocol response.
+// This is necessary to support batch requests.
 message EVMRequestObservation {
-   // The EVM blockchain service's JSON-RPC request.
+  // The EVM blockchain service's JSON-RPC request.
   // This field will be populated only if request validation succeeds.
   // If there is an error reading the HTTP request, there will be no jsonrpc_request.
   // TODO_TECHDEBT: Assumes EVM chains only support JSON-RPC. May need refactoring to support other protocols.
   JsonRpcRequest jsonrpc_request = 5;
 
-    // EVM-specific observations from endpoint(s) that responded to the service request.
+  // EVM-specific observations from endpoint(s) that responded to the service request.
   // Multiple observations may occur when:
   // * Original endpoint fails
   // * Request is sent to additional endpoints for data collection
