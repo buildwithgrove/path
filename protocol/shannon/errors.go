@@ -67,6 +67,9 @@ var (
 	// Helps track more fine-grained metrics on endpoint errors.
 	errMalformedEndpointPayload = errors.New("endpoint returned malformed payload")
 
+	// The endpoint returned a non-2XX response.
+	errEndpointNon2XXHTTPStatusCode = errors.New("endpoint returned non-2xx HTTP status code")
+
 	// ** WebSocket errors **
 
 	// Error creating a WebSocket connection.
