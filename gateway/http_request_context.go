@@ -292,6 +292,12 @@ func (rc *requestContext) writeHTTPResponse(response pathhttp.HTTPResponse, w ht
 //   - Protocol-level observations; e.g. "maxed-out" endpoints.
 //   - Gateway-level observations; e.g. the request ID.
 func (rc *requestContext) BroadcastAllObservations() {
+	// TODO_DELETE(@adshmh)
+	// Skip observations on hey service.
+	if rc.serviceID == "hey" {
+		return
+	}
+
 	// observation-related tasks are called in Goroutines to avoid potentially blocking the HTTP handler.
 	go func() {
 		// update gateway-level observations: no request error encountered.
