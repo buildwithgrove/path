@@ -47,14 +47,14 @@ type parallelRequestMetrics struct {
 //  2. Sends the relay to multiple selected endpoints in parallel, using the protocol contexts
 //  3. Processes the first successful endpoint's response using the QoS context
 //
-// HandleRelayRequest is written as a template method to allow the customization of key steps,
+// handleRelayRequest is written as a template method to allow the customization of key steps,
 // e.g. endpoint selection and protocol-specific details of sending a relay.
 // See the following link for more details:
 // https://en.wikipedia.org/wiki/Template_method_pattern
-func (rc *requestContext) HandleRelayRequest() error {
+func (rc *requestContext) handleRelayRequest() error {
 	logger := rc.logger.
 		With("service_id", rc.serviceID).
-		With("method", "HandleRelayRequest").
+		With("method", "handleRelayRequest").
 		With("num_protocol_contexts", len(rc.protocolContexts))
 
 	// Track whether this is a parallel or single request

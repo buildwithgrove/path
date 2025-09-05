@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/gorilla/websocket"
 	"github.com/pokt-network/poktroll/pkg/polylog"
 	"github.com/pokt-network/poktroll/pkg/relayer/proxy"
 	servicetypes "github.com/pokt-network/poktroll/x/service/types"
@@ -54,8 +55,7 @@ type websocketRequestContext struct {
 // This method sends establishment observation immediately, blocks until bridge completes, then sends closure observation.
 func (wrc *websocketRequestContext) StartWebSocketBridge(
 	ctx context.Context,
-	httpRequest *http.Request,
-	httpResponseWriter http.ResponseWriter,
+	clientConn *websocket.Conn,
 	messageProcessor websockets.WebsocketMessageProcessor,
 	messageObservationsChan chan *observation.RequestResponseObservations,
 	establishmentObservationsChan, closureObservationsChan chan *protocolobservations.Observations,
@@ -65,6 +65,7 @@ func (wrc *websocketRequestContext) StartWebSocketBridge(
 	// Get the websocket-specific URL from the selected endpoint.
 	websocketEndpointURL, err := wrc.getWebsocketEndpointURL()
 	if err != nil {
+		err = fmt.Errorf("%w: %s", errCreatingWebSocketConnection, err.Error())
 		// Build error observation for connection failure
 		errorObs := wrc.getWebsocketConnectionErrorObservation(err, "selected endpoint does not support websocket RPC type")
 		wrc.logger.Error().Err(err).Msg("❌ Selected endpoint does not support websocket RPC type")
@@ -77,6 +78,7 @@ func (wrc *websocketRequestContext) StartWebSocketBridge(
 	// Get the headers for the websocket connection that will be sent to the endpoint.
 	endpointConnectionHeaders, err := wrc.getWebsocketConnectionHeaders()
 	if err != nil {
+		err = fmt.Errorf("%w: %s", errCreatingWebSocketConnection, err.Error())
 		// Build error observation for connection failure
 		errorObs := wrc.getWebsocketConnectionErrorObservation(err, "failed to get websocket connection headers")
 		wrc.logger.Error().Err(err).Msg("❌ Failed to get websocket connection headers")
@@ -90,14 +92,14 @@ func (wrc *websocketRequestContext) StartWebSocketBridge(
 	bridgeCompletionChan, err := websockets.StartBridge(
 		ctx,
 		wrc.logger,
-		httpRequest,
-		httpResponseWriter,
+		clientConn,
 		websocketEndpointURL,
 		endpointConnectionHeaders,
 		messageProcessor,
 		messageObservationsChan,
 	)
 	if err != nil {
+		err = fmt.Errorf("%w: %s", errCreatingWebSocketConnection, err.Error())
 		// Build error observation for connection failure
 		errorObs := wrc.getWebsocketConnectionErrorObservation(err, "failed to start websocket bridge")
 		wrc.logger.Error().Err(err).Msg("Failed to start WebSocket bridge")

@@ -22,6 +22,7 @@ import (
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
 	"github.com/buildwithgrove/path/observation"
+	"github.com/buildwithgrove/path/websockets"
 )
 
 // Gateway handles end-to-end service requests via HandleHTTPServiceRequest:
@@ -151,7 +152,7 @@ func (g Gateway) handleHTTPServiceRequest(
 	// Use the gateway request context to process the relay(s) corresponding to the HTTP request.
 	// Any returned errors are ignored here and processed by the gateway context in the deferred calls.
 	// See the `BroadcastAllObservations` method of `gateway.requestContext` struct for details.
-	err = gatewayRequestCtx.HandleRelayRequest()
+	err = gatewayRequestCtx.handleRelayRequest()
 	if err != nil {
 		logger.Error().Err(err).Msg("❌ Error processing relay request")
 		return
@@ -161,7 +162,7 @@ func (g Gateway) handleHTTPServiceRequest(
 // handleWebSocketRequest handles WebSocket connection requests.
 func (g Gateway) handleWebSocketRequest(
 	httpReq *http.Request,
-	w http.ResponseWriter,
+	responseWriter http.ResponseWriter,
 ) {
 	logger := g.Logger.With("method", "handleWebSocketRequest")
 
@@ -210,9 +211,15 @@ func (g Gateway) handleWebSocketRequest(
 		return
 	}
 
+	clientConn, err := websockets.UpgradeClientWebsocketConnection(logger, httpReq, responseWriter)
+	if err != nil {
+		logger.Error().Err(err).Msg("❌ Error upgrading client websocket connection")
+		return
+	}
+
 	// Handle the websocket connection request using the websocket request context.
 	// This method blocks until the WebSocket bridge completely shuts down.
-	err = websocketRequestCtx.handleWebsocketRequest(httpReq, w)
+	err = websocketRequestCtx.handleWebsocketRequest(clientConn)
 	if err != nil {
 		logger.Error().Err(err).Msg("❌ Error processing websocket request")
 		return

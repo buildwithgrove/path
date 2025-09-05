@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/gorilla/websocket"
 	"github.com/pokt-network/poktroll/pkg/polylog"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
@@ -167,10 +168,7 @@ func (wrc *websocketRequestContext) buildProtocolContextFromHTTPRequest(
 // It also starts a goroutine to listen for message processing notifications from the bridge.
 //
 // This method blocks until the WebSocket connection terminates.
-func (wrc *websocketRequestContext) handleWebsocketRequest(
-	httpRequest *http.Request,
-	httpResponseWriter http.ResponseWriter,
-) error {
+func (wrc *websocketRequestContext) handleWebsocketRequest(clientConn *websocket.Conn) error {
 	logger := wrc.logger.With("method", "handleWebsocketRequest")
 
 	// Create separate channels for establishment and closure observations
@@ -186,8 +184,7 @@ func (wrc *websocketRequestContext) handleWebsocketRequest(
 	// We pass ourselves (wrc) as the messageProcessor to handle message processing
 	err := wrc.protocolCtx.StartWebSocketBridge(
 		wrc.context,
-		httpRequest,
-		httpResponseWriter,
+		clientConn,
 		wrc, // Pass the websocketRequestContext as the message processor
 		wrc.messageObservationsChan,
 		establishmentObservationsChan,
@@ -377,6 +374,14 @@ func (wrc *websocketRequestContext) broadcastWebsocketConnectionEstablished(prot
 		Protocol:  protocolObservations,
 	}
 
+	// Apply protocol observations to the protocol instance.
+	if protocolObservations := observations.GetProtocol(); protocolObservations != nil {
+		err := wrc.protocol.ApplyObservations(protocolObservations)
+		if err != nil {
+			wrc.logger.Warn().Err(err).Msg("error applying protocol observations for websocket connection.")
+		}
+	}
+
 	// Only publish to metrics reporter for connection tracking
 	if wrc.metricsReporter != nil {
 		wrc.metricsReporter.Publish(observations)
@@ -399,7 +404,15 @@ func (wrc *websocketRequestContext) broadcastWebsocketConnectionClosed(protocolO
 		Qos: nil,
 	}
 
-	// Broadcast the combined observations to BOTH metrics and data pipeline
+	// Apply protocol observations to the protocol instance.
+	if protocolObservations := observations.GetProtocol(); protocolObservations != nil {
+		err := wrc.protocol.ApplyObservations(protocolObservations)
+		if err != nil {
+			wrc.logger.Warn().Err(err).Msg("error applying protocol observations for websocket connection.")
+		}
+	}
+
+	// Broadcast the combined observations
 	if wrc.metricsReporter != nil {
 		wrc.metricsReporter.Publish(observations)
 	}

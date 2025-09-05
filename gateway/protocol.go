@@ -4,6 +4,8 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/gorilla/websocket"
+
 	"github.com/buildwithgrove/path/health"
 	"github.com/buildwithgrove/path/metrics/devtools"
 	"github.com/buildwithgrove/path/observation"
@@ -125,8 +127,7 @@ type ProtocolRequestContextWebsocket interface {
 	// This method sends establishment observation immediately, blocks until bridge completes, then sends closure observation.
 	StartWebSocketBridge(
 		ctx context.Context,
-		httpRequest *http.Request,
-		httpResponseWriter http.ResponseWriter,
+		clientConn *websocket.Conn,
 		messageProcessor websockets.WebsocketMessageProcessor,
 		messageObservationsChan chan *observation.RequestResponseObservations,
 		establishmentObservationsChan, closureObservationsChan chan *protocolobservations.Observations,

@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
+	sharedtypes "github.com/pokt-network/poktroll/x/shared/types"
 
 	"github.com/buildwithgrove/path/gateway"
 	"github.com/buildwithgrove/path/metrics/devtools"
@@ -58,6 +59,12 @@ type serviceState struct {
 // the gateway package to augment endpoints' quality data,
 // using synthetic service requests.
 var _ gateway.QoSEndpointCheckGenerator = &serviceState{}
+
+// CheckWebsocketConnection returns true if the endpoint supports WebSocket connections.
+func (ss *serviceState) CheckWebsocketConnection() bool {
+	_, supportsWebsockets := ss.serviceQoSConfig.getSupportedAPIs()[sharedtypes.RPCType_WEBSOCKET]
+	return supportsWebsockets
+}
 
 // GetRequiredQualityChecks returns the list of quality checks required for an endpoint.
 // It is called in the `gateway/hydrator.go` file on each run of the hydrator.
@@ -151,14 +158,14 @@ func (ss *serviceState) updateFromEndpoints(updatedEndpoints map[protocol.Endpoi
 
 		// Do not update the perceived block number if the chain ID is invalid.
 		if err := ss.isChainIDValid(endpoint.checkChainID); err != nil {
-			logger.Error().Err(err).Msgf("❌ Skipping endpoint because it has an invalid chain id: %s", endpointAddr)
+			logger.Info().Err(err).Msgf("❕ SKIPPING endpoint '%s' with invalid chain id", endpointAddr)
 			continue
 		}
 
 		// Retrieve the block number from the endpoint.
 		blockNumber, err := endpoint.checkBlockNumber.getBlockNumber()
 		if err != nil {
-			logger.Error().Err(err).Msgf("❌ Skipping endpoint because it has an invalid block number: %s", endpointAddr)
+			logger.Info().Err(err).Msgf("❕ SKIPPING endpoint '%s' with invalid block number", endpointAddr)
 			continue
 		}
 
@@ -206,7 +213,8 @@ func (ss *serviceState) getDisqualifiedEndpointsResponse(serviceID protocol.Serv
 
 			// Endpoint is disqualified due to a missing or invalid block number.
 			case errors.Is(err, errNoBlockNumberObs),
-				errors.Is(err, errInvalidBlockNumberObs):
+				errors.Is(err, errInvalidBlockNumberObs),
+				errors.Is(err, errOutsideSyncAllowanceBlockNumberObs):
 				qosLevelDataResponse.BlockNumberCheckErrorsCount++
 
 			// Endpoint is disqualified due to a missing or invalid chain ID.

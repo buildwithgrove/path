@@ -386,3 +386,33 @@ func buildWebsocketConnectionErrorObservation(
 		EventType:                      eventType,
 	}
 }
+
+// buildEndpointFromWebSocketConnectionObservation builds a protocol endpoint from a WebSocket connection observation.
+// Used to identify an endpoint for applying sanctions.
+func buildEndpointFromWebSocketConnectionObservation(
+	observation *protocolobservations.ShannonWebsocketConnectionObservation,
+) endpoint {
+	session := buildSessionFromWebSocketConnectionObservation(observation)
+	return &protocolEndpoint{
+		session:  session,
+		supplier: observation.GetSupplier(),
+		url:      observation.GetEndpointUrl(),
+	}
+}
+
+// builds the details of a session from a WebSocket connection observation.
+// Used to identify an endpoint for applying sanctions.
+func buildSessionFromWebSocketConnectionObservation(
+	observation *protocolobservations.ShannonWebsocketConnectionObservation,
+) sessiontypes.Session {
+	return sessiontypes.Session{
+		// Only Session Header is required for processing observations.
+		Header: &sessiontypes.SessionHeader{
+			ApplicationAddress:      observation.GetEndpointAppAddress(),
+			ServiceId:               observation.GetSessionServiceId(),
+			SessionId:               observation.GetSessionId(),
+			SessionStartBlockHeight: observation.GetSessionStartHeight(),
+			SessionEndBlockHeight:   observation.GetSessionEndHeight(),
+		},
+	}
+}
