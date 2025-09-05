@@ -25,8 +25,10 @@ func classifyRelayError(logger polylog.Logger, err error) (protocolobservations.
 			protocolobservations.ShannonSanctionType_SHANNON_SANCTION_UNSPECIFIED
 	}
 
-	// Classify shannon-sdk errors
+	// Classify the errors and handle them appropriately.
+	// Errors make come from the SDK, HTTP, internal, etc....
 	switch {
+
 	// HTTP relay errors - check first to handle HTTP-specific classifications
 	case errors.Is(err, errSendHTTPRelay):
 		return classifyHttpError(logger, err)
@@ -110,11 +112,12 @@ func classifyRelayError(logger polylog.Logger, err error) (protocolobservations.
 		return protocolobservations.ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_TIMEOUT,
 			protocolobservations.ShannonSanctionType_SHANNON_SANCTION_SESSION
 
-	// Endpoint's backend service returned a non 2xx HTTP status code.
+	// Backend service returned non-2xx HTTP status (4xx, 5xx errors)
+	// Session-level sanction allows recovery when service stabilizes
 	case pathhttp.ErrRelayEndpointHTTPError:
-		// TODO_IMPROVE: Make this a sanction that just lasts a few blocks
+		// TODO_IMPROVE(#381): Make this a sanction that just lasts a few blocks
 		return protocolobservations.ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_HTTP_BAD_RESPONSE,
-			protocolobservations.ShannonSanctionType_SHANNON_SANCTION_UNSPECIFIED
+			protocolobservations.ShannonSanctionType_SHANNON_SANCTION_SESSION
 
 	case errContextCanceled:
 		return protocolobservations.ShannonEndpointErrorType_SHANNON_ENDPOINT_REQUEST_CANCELED_BY_PATH,
@@ -138,11 +141,12 @@ func classifyRelayError(logger polylog.Logger, err error) (protocolobservations.
 func classifyHttpError(logger polylog.Logger, err error) (protocolobservations.ShannonEndpointErrorType, protocolobservations.ShannonSanctionType) {
 	logger = logger.With("error_message", err.Error())
 
-	// Endpoint returned non 2xx HTTP Status code
+	// Backend service returned non-2xx HTTP status code
+	// Session-level sanction allows temporary failures to recover
 	if errors.Is(err, pathhttp.ErrRelayEndpointHTTPError) {
-		// TODO_IMPROVE: Make this a sanction that just lasts a few blocks
+		// TODO_IMPROVE(#381): Make this a sanction that just lasts a few blocks
 		return protocolobservations.ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_HTTP_NON_2XX_STATUS,
-			protocolobservations.ShannonSanctionType_SHANNON_SANCTION_UNSPECIFIED
+			protocolobservations.ShannonSanctionType_SHANNON_SANCTION_SESSION
 	}
 
 	errStr := err.Error()
@@ -203,9 +207,11 @@ func classifyHttpError(logger polylog.Logger, err error) (protocolobservations.S
 		"err_preview", errStr[:min(100, len(errStr))],
 	).Warn().Msg("Unable to classify HTTP error - defaulting to internal error")
 
+	// TODO_CONSIDERATION(@adshmh): Should we sanction an endpoint due to an HTTP error which could not be categorized?
+	//
 	// SHANNON_ENDPOINT_ERROR_HTTP_UNKNOWN is the default if we have no details
 	return protocolobservations.ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_HTTP_UNKNOWN,
-		protocolobservations.ShannonSanctionType_SHANNON_SANCTION_SESSION
+		protocolobservations.ShannonSanctionType_SHANNON_SANCTION_DO_NOT_SANCTION
 }
 
 // classifyMalformedEndpointPayload classifies errors found in the malformed endpoint response payload
@@ -283,5 +289,8 @@ func classifyMalformedEndpointPayload(logger polylog.Logger, payloadContent stri
 	logger.With(
 		"endpoint_payload_preview", payloadContent[:min(100, len(payloadContent))],
 	).Warn().Msg("Unable to classify malformed endpoint payload - defaulting to internal error")
-	return protocolobservations.ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_UNKNOWN, protocolobservations.ShannonSanctionType_SHANNON_SANCTION_SESSION
+
+	// TODO_CONSIDERATION(@adshmh): Should we sanction an endpoint due to a malformed payload error which could not be categorized?
+	//
+	return protocolobservations.ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_UNKNOWN, protocolobservations.ShannonSanctionType_SHANNON_SANCTION_DO_NOT_SANCTION
 }

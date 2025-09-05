@@ -291,15 +291,14 @@ func embedHttpRequest(reqToEmbed *http.Request) (*servicetypes.RelayRequest, err
 // - Deserialization is handled here (see sdktypes.DeserializeHTTPResponse below).
 //
 // Links:
-// - Relay miner serializing the service response:
-//   https://github.com/pokt-network/poktroll/blob/e5024ea5d28cc94d09e531f84701a85cefb9d56f/pkg/relayer/proxy/synchronous.go#L361-L363
-// - Relay response validation (potential package for serialization/deserialization):
-//   https://github.com/pokt-network/poktroll/blob/e5024ea5d28cc94d09e531f84701a85cefb9d56f/x/service/types/relay.go#L68
-//
+//   - Relay miner serializing the service response:
+//     https://github.com/pokt-network/poktroll/blob/e5024ea5d28cc94d09e531f84701a85cefb9d56f/pkg/relayer/proxy/synchronous.go#L361-L363
+//   - Relay response validation (potential package for serialization/deserialization):
+//     https://github.com/pokt-network/poktroll/blob/e5024ea5d28cc94d09e531f84701a85cefb9d56f/x/service/types/relay.go#L68
+
 // deserializeRelayResponse:
 // - Uses the Shannon sdk to deserialize the relay response payload received from an endpoint into a protocol.Response.
 // - Required because the relay miner (the endpoint serving the relay) returns the HTTP response in serialized format in its payload.
-
 func deserializeRelayResponse(bz []byte) (protocol.Response, error) {
 	poktHttpResponse, err := sdktypes.DeserializeHTTPResponse(bz)
 	if err != nil {

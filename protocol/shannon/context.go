@@ -322,7 +322,7 @@ func (rc *requestContext) setSelectedEndpoint(endpoint endpoint) {
 //  2. Network conditions (session rollover periods)
 func (rc *requestContext) executeRelayRequestStrategy(payload protocol.Payload) (protocol.Response, error) {
 	selectedEndpoint := rc.getSelectedEndpoint()
-	rc.hydratedLogger("executeRelayRequestStrategy")
+	rc.hydrateLogger("executeRelayRequestStrategy")
 
 	switch {
 	// ** Priority 1: Check Endpoint type **
@@ -375,7 +375,7 @@ func buildHeaders(payload protocol.Payload) map[string]string {
 // - Updates the request context's selectedEndpoint for use by logging, metrics, and data logic.
 // TODO_TECHDEBT(@adshmh): This is an interim solution to be replaced with intelligent fallback.
 func (rc *requestContext) sendRelayWithFallback(payload protocol.Payload) (protocol.Response, error) {
-	rc.hydratedLogger("sendRelayWithFallback")
+	rc.hydrateLogger("sendRelayWithFallback")
 
 	// Convert timeout to time.Duration
 	relayTimeout := time.Duration(maxWaitBeforeFallbackMillisecond) * time.Millisecond
@@ -436,7 +436,7 @@ func (rc *requestContext) sendRelayToARandomFallbackEndpoint(payload protocol.Pa
 		return protocol.Response{}, fmt.Errorf("no fallback endpoints available")
 	}
 
-	rc.hydratedLogger("sendRelayToARandomFallbackEndpoint")
+	rc.hydrateLogger("sendRelayToARandomFallbackEndpoint")
 
 	// Select random fallback endpoint:
 	// - Convert map to slice for random selection
@@ -475,7 +475,7 @@ func (rc *requestContext) sendRelayToARandomFallbackEndpoint(payload protocol.Pa
 //   - Captures RelayMinerError data for reporting (but doesn't use it for classification).
 //   - Required to fulfill the FullNode interface.
 func (rc *requestContext) sendProtocolRelay(payload protocol.Payload) (protocol.Response, error) {
-	rc.hydratedLogger("sendProtocolRelay")
+	rc.hydrateLogger("sendProtocolRelay")
 	rc.logger = hydrateLoggerWithPayload(rc.logger, &payload)
 
 	selectedEndpoint := rc.getSelectedEndpoint()
@@ -500,7 +500,7 @@ func (rc *requestContext) sendProtocolRelay(payload protocol.Payload) (protocol.
 	// Build and sign the relay request
 	signedRelayReq, err := rc.buildAndSignRelayRequest(payload, app)
 	if err != nil {
-		return defaultResponse, fmt.Errorf("SHOULD NEVER HAPPEN: failed to build and sign relay request: %w", err)
+		return defaultResponse, err
 	}
 
 	// Marshal relay request to bytes
@@ -526,8 +526,18 @@ func (rc *requestContext) sendProtocolRelay(payload protocol.Payload) (protocol.
 	if err != nil {
 		return defaultResponse, err
 	}
-
+	// Hydrate the response with the endpoint address
 	deserializedResponse.EndpointAddr = selectedEndpoint.Addr()
+
+	// Ensure that serialized response contains a valid HTTP status code.
+	// Do not return non 2xx responses from the endpoint to the client.
+	responseHTTPStatusCode := deserializedResponse.HTTPStatusCode
+	if err := pathhttp.EnsureHTTPSuccess(responseHTTPStatusCode); err != nil {
+		errMsg := fmt.Sprintf("Backend service returned status non-2xx: %d", responseHTTPStatusCode)
+		rc.logger.Error().Err(err).Msg(errMsg)
+		return defaultResponse, fmt.Errorf("%w: %s", err, errMsg)
+	}
+
 	return deserializedResponse, nil
 }
 
@@ -726,7 +736,7 @@ func (rc *requestContext) trackRelayMinerError(relayResponse *servicetypes.Relay
 	}
 
 	relayMinerErr := relayResponse.RelayMinerError
-	rc.hydratedLogger("trackRelayMinerError")
+	rc.hydrateLogger("trackRelayMinerError")
 
 	// Log RelayMinerError details for visibility
 	rc.logger.With(
@@ -749,7 +759,7 @@ func (rc *requestContext) trackRelayMinerError(relayResponse *servicetypes.Relay
 //   - Records internal error on request for observations.
 //   - Logs error entry.
 func (rc *requestContext) handleInternalError(internalErr error) (protocol.Response, error) {
-	rc.hydratedLogger("handleInternalError")
+	rc.hydrateLogger("handleInternalError")
 
 	// Log the internal error.
 	rc.logger.Error().Err(internalErr).Msg("Internal error occurred. This should be investigated as a bug.")
@@ -771,7 +781,7 @@ func (rc *requestContext) handleEndpointError(
 	endpointQueryTime time.Time,
 	endpointErr error,
 ) (protocol.Response, error) {
-	rc.hydratedLogger("handleEndpointError")
+	rc.hydrateLogger("handleEndpointError")
 	selectedEndpoint := rc.getSelectedEndpoint()
 	selectedEndpointAddr := selectedEndpoint.Addr()
 
@@ -818,7 +828,7 @@ func (rc *requestContext) handleEndpointSuccess(
 	endpointQueryTime time.Time,
 	endpointResponse *protocol.Response,
 ) error {
-	rc.hydratedLogger("handleEndpointSuccess")
+	rc.hydrateLogger("handleEndpointSuccess")
 	rc.logger = rc.logger.With("endpoint_response_payload_len", len(endpointResponse.Bytes))
 	rc.logger.Debug().Msg("Successfully deserialized the response received from the selected endpoint.")
 
@@ -889,14 +899,14 @@ func prepareURLFromPayload(endpointURL string, payload protocol.Payload) string 
 	return url
 }
 
-// hydratedLogger:
+// hydrateLogger:
 // - Enhances the base logger with information from the request context.
 // - Includes:
 //   - Method name
 //   - Service ID
 //   - Selected endpoint supplier
 //   - Selected endpoint URL
-func (rc *requestContext) hydratedLogger(methodName string) {
+func (rc *requestContext) hydrateLogger(methodName string) {
 	logger := rc.logger.With(
 		"request_type", "http",
 		"method", methodName,
