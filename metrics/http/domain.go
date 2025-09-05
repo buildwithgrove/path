@@ -1,7 +1,7 @@
 package http
 
 import (
-	"fmt"
+	"errors"
 	"net/url"
 
 	"golang.org/x/net/publicsuffix"
@@ -24,7 +24,7 @@ func ExtractEffectiveTLDPlusOne(rawURL string) (string, error) {
 
 	host := parsedURL.Hostname()
 	if host == "" {
-		return "", fmt.Errorf(EmptyHostDomain)
+		return "", errors.New(EmptyHostDomain)
 	}
 
 	etld, err := publicsuffix.EffectiveTLDPlusOne(host)
