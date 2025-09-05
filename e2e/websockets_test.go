@@ -27,7 +27,6 @@ import (
 
 	"github.com/gorilla/websocket"
 
-	"github.com/buildwithgrove/path/protocol"
 	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
 
@@ -160,25 +159,6 @@ func (c *websocketTestClient) sendEVMRequest(
 	return c.sendJSONRPCRequest(ctx, req)
 }
 
-// sendEVMRequestsFromServiceParams sends multiple EVM requests based on service parameters
-func (c *websocketTestClient) sendEVMRequestsFromServiceParams(ctx context.Context, sp ServiceParams) (map[string]*jsonrpc.Response, error) {
-	methods := getEVMTestMethods()
-	results := make(map[string]*jsonrpc.Response)
-
-	for _, method := range methods {
-		params := createEVMJsonRPCParams(jsonrpc.Method(method), sp)
-
-		resp, err := c.sendEVMRequest(ctx, method, params)
-		if err != nil {
-			return nil, fmt.Errorf("failed to send %s request: %w", method, err)
-		}
-
-		results[method] = resp
-	}
-
-	return results, nil
-}
-
 // close closes the WebSocket connection
 func (c *websocketTestClient) close() error {
 	c.mutex.Lock()
@@ -208,13 +188,6 @@ func (c *websocketTestClient) close() error {
 	}
 
 	return c.conn.Close()
-}
-
-// isConnected returns true if the WebSocket connection is open
-func (c *websocketTestClient) isConnected() bool {
-	c.mutex.RLock()
-	defer c.mutex.RUnlock()
-	return !c.closed && c.conn != nil
 }
 
 // convertToWebSocketURL converts an HTTP/HTTPS URL to WS/WSS URL
@@ -304,60 +277,6 @@ func validateWebSocketResults(results []*websocketTestResult, serviceID string) 
 	}
 
 	return metrics
-}
-
-// validateWebSocketMethod validates a single WebSocket method using existing assertion logic
-func validateWebSocketMethod(
-	t *testing.T,
-	serviceID string,
-	method string,
-	results []*websocketTestResult,
-	config ServiceConfig,
-) bool {
-	// Filter results for this specific method
-	methodResults := make([]*websocketTestResult, 0)
-	for _, result := range results {
-		if result.Method == method {
-			methodResults = append(methodResults, result)
-		}
-	}
-
-	if len(methodResults) == 0 {
-		return true // No results to validate
-	}
-
-	// Convert to metrics using existing validation logic
-	allMetrics := validateWebSocketResults(methodResults, serviceID)
-	methodMetrics, exists := allMetrics[method]
-	if !exists {
-		return true // No metrics found
-	}
-
-	// Use the existing validateMethodResults function from assertions_test.go
-	return validateMethodResults(t, protocol.ServiceID(serviceID), methodMetrics, config, ServiceParams{})
-}
-
-// validateAllWebSocketMethods validates all WebSocket methods using existing assertion logic
-func validateAllWebSocketMethods(
-	t *testing.T,
-	serviceID string,
-	results []*websocketTestResult,
-	config ServiceConfig,
-) bool {
-	// Group results by method
-	methodResults := make(map[string][]*websocketTestResult)
-	for _, result := range results {
-		methodResults[result.Method] = append(methodResults[result.Method], result)
-	}
-
-	allPassed := true
-	for method, methodRes := range methodResults {
-		if !validateWebSocketMethod(t, serviceID, method, methodRes, config) {
-			allPassed = false
-		}
-	}
-
-	return allPassed
 }
 
 // runWebSocketServiceTest runs WebSocket-based E2E tests for a single service.

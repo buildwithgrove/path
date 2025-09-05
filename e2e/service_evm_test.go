@@ -170,6 +170,11 @@ func getEVMVegetaTargets(
 
 		// Handle batch request specially
 		if method == batchRequest {
+			// TODO_TECHDEBT(@commoddity): Temporarily disable batch requests for non-EVM services
+			// This will be fixed in the in-progress PR to enable batch requests for non-EVM services
+			if ts.ServiceType != serviceTypeEVM {
+				continue
+			}
 			body, err = createEVMBatchRequest()
 			if err != nil {
 				return nil, fmt.Errorf("failed to create batch request for service '%s': %w", ts.ServiceID, err)
