@@ -274,9 +274,10 @@ func (i *EVMObservationInterpreter) GetEndpointDomain() string {
 	}
 
 	// Use the first observed endpoint address for domain extraction
-	domain, err := protocol.EndpointAddr(endpointAddrs[0]).GetDomain()
+	endpointAddr := endpointAddrs[0]
+	domain, err := protocol.EndpointAddr(endpointAddr).GetDomain()
 	if err != nil {
-		i.Logger.Error().Err(err).Msg("SHOULD NEVER HAPPEN: Cannot get endpoint domain: empty endpoint observations")
+		i.Logger.Error().Err(err).Msgf("SHOULD NEVER HAPPEN: Cannot get endpoint domain from endpoint address: %s", endpointAddr)
 	}
 	return domain
 }
