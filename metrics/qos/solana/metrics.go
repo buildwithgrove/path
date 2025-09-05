@@ -66,7 +66,7 @@ var (
 // PublishMetrics:
 // - Exports all Solana-related Prometheus metrics using observations from Solana QoS service
 // - Logs errors for unexpected (should-never-happen) conditions
-func PublishMetrics(logger polylog.Logger, observations *qos.SolanaRequestObservations, endpointDomain string) {
+func PublishMetrics(logger polylog.Logger, observations *qos.SolanaRequestObservations) {
 	logger = logger.With("method", "PublishMetricsSolana")
 
 	// Skip if observations is nil.
@@ -94,7 +94,7 @@ func PublishMetrics(logger polylog.Logger, observations *qos.SolanaRequestObserv
 			"success":          fmt.Sprintf("%t", interpreter.IsRequestSuccessful()),
 			"error_type":       interpreter.GetRequestErrorType(),
 			"http_status_code": fmt.Sprintf("%d", interpreter.GetRequestHTTPStatus()),
-			"endpoint_domain":  endpointDomain,
+			"endpoint_domain":  interpreter.GetEndpointDomain(),
 		},
 	).Inc()
 }

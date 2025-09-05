@@ -24,8 +24,7 @@ func PublishQoSMetrics(
 
 	// Publish EVM metrics.
 	if evmObservations := qosObservations.GetEvm(); evmObservations != nil {
-		endpointDomain := extractEndpointDomainFromEVM(hydratedLogger, evmObservations)
-		evm.PublishMetrics(hydratedLogger, evmObservations, endpointDomain)
+		evm.PublishMetrics(hydratedLogger, evmObservations)
 		hydratedLogger.Debug().Msg("published EVM metrics.")
 		return
 	}
@@ -39,8 +38,7 @@ func PublishQoSMetrics(
 
 	// Publish Solana metrics.
 	if solanaObservations := qosObservations.GetSolana(); solanaObservations != nil {
-		endpointDomain := extractEndpointDomainFromSolana(hydratedLogger, solanaObservations)
-		solana.PublishMetrics(hydratedLogger, solanaObservations, endpointDomain)
+		solana.PublishMetrics(hydratedLogger, solanaObservations)
 		hydratedLogger.Debug().Msg("published Solana metrics.")
 		return
 	}

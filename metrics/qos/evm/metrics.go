@@ -6,7 +6,6 @@ import (
 	"github.com/pokt-network/poktroll/pkg/polylog"
 	"github.com/prometheus/client_golang/prometheus"
 
-	metricshttp "github.com/buildwithgrove/path/metrics/http"
 	"github.com/buildwithgrove/path/observation/qos"
 )
 
@@ -150,7 +149,7 @@ var (
 
 // PublishMetrics exports all EVM-related Prometheus metrics using observations reported by EVM QoS service.
 // It logs errors for unexpected conditions that should never occur in normal operation.
-func PublishMetrics(logger polylog.Logger, observations *qos.EVMRequestObservations, endpointDomain string) {
+func PublishMetrics(logger polylog.Logger, observations *qos.EVMRequestObservations) {
 	logger = logger.With("method", "PublishMetricsEVM")
 
 	// Skip if observations is nil.
@@ -215,7 +214,7 @@ func PublishMetrics(logger polylog.Logger, observations *qos.EVMRequestObservati
 				"error_type":               errorType,
 				"http_status_code":         fmt.Sprintf("%d", statusCode),
 				"random_endpoint_fallback": fmt.Sprintf("%t", endpointSelectionMetadata.RandomEndpointFallback),
-				"endpoint_domain":          endpointDomain,
+				"endpoint_domain":          interpreter.GetEndpointDomain(),
 			},
 		).Inc()
 	}
@@ -252,7 +251,6 @@ func publishValidationMetricsFromMetadata(logger polylog.Logger, chainID, servic
 
 	// Process all validation results in a single loop
 	for _, result := range metadata.ValidationResults {
-		domain := metricshttp.ExtractDomainFromEndpointAddr(logger, result.EndpointAddr)
 
 		// Determine failure reason for failed validations
 		failureReason := ""
@@ -263,9 +261,9 @@ func publishValidationMetricsFromMetadata(logger polylog.Logger, chainID, servic
 		// Track validation result
 		endpointValidationsTotal.With(
 			prometheus.Labels{
-				"chain_id":                  chainID,
-				"service_id":                serviceID,
-				"endpoint_domain":           domain,
+				"chain_id":   chainID,
+				"service_id": serviceID,
+				// "endpoint_domain":           metadata.EndpointDomain,
 				"success":                   fmt.Sprintf("%t", result.Success),
 				"validation_failure_reason": failureReason,
 			},
@@ -345,4 +343,3 @@ func extractEndpointSelectionMetadata(interpreter *qos.EVMObservationInterpreter
 	// Return empty metadata if not set
 	return &qos.EndpointSelectionMetadata{}
 }
-

@@ -143,17 +143,19 @@ func (i *CosmosSDKObservationInterpreter) GetRequestHTTPStatus() int32 {
 //
 // If multiple endpoint observations are present, it returns the domain of the first endpoint observation.
 // If no endpoint observations are present, it returns an empty string.
+//
+// TODO_TECHDEBT: Consolidate this with the business logic of other "GetEndpointDomain" implementations.
 func (i *CosmosSDKObservationInterpreter) GetEndpointDomain() string {
 	// Ensure observations are not nil
 	if i.Observations == nil {
-		i.Logger.ProbabilisticDebugInfo(polylog.ProbabilisticDebugInfoProb).Msg("SHOULD NEVER HAPPEN: Cannot get endpoint domain: nil observations")
+		i.Logger.ProbabilisticDebugInfo(polylog.ProbabilisticDebugInfoProb).Msg("SHOULD RARELY HAPPEN: Cosmos observations are nil")
 		return ""
 	}
 
 	// Ensure endpoint observations are not empty
 	endpointObservations := i.Observations.GetEndpointObservations()
 	if len(endpointObservations) == 0 {
-		i.Logger.ProbabilisticDebugInfo(polylog.ProbabilisticDebugInfoProb).Msg("SHOULD NEVER HAPPEN: Cannot get endpoint domain: empty endpoint observations")
+		i.Logger.ProbabilisticDebugInfo(polylog.ProbabilisticDebugInfoProb).Msg("SHOULD RARELY HAPPEN: Cosmos endpoint observations are empty")
 		return ""
 	}
 
