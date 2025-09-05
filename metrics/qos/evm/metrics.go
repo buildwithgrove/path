@@ -2,13 +2,12 @@ package evm
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
 	"github.com/prometheus/client_golang/prometheus"
 
-	metricshttp "github.com/buildwithgrove/path/metrics/http"
 	"github.com/buildwithgrove/path/observation/qos"
+	"github.com/buildwithgrove/path/protocol"
 )
 
 const (
@@ -50,6 +49,7 @@ var (
 	//   - error_type: Type of error if request failed (or "" for successful requests)
 	//   - http_status_code: The HTTP status code returned to the user
 	//   - random_endpoint_fallback: Random endpoint selected when all failed validation
+	//   - endpoint_domain: Effective TLD+1 domain of the endpoint that served the request
 	//
 	// Use to analyze:
 	//   - Request volume by chain and method
@@ -59,13 +59,14 @@ var (
 	//   - Error types by JSON-RPC method and chain
 	//   - HTTP status code distribution
 	//   - Service degradation when random endpoint fallback is used
+	//   - Performance and reliability by endpoint domain
 	requestsTotal = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Subsystem: pathProcess,
 			Name:      requestsTotalMetric,
 			Help:      "Total number of requests processed by EVM QoS instance(s)",
 		},
-		[]string{"chain_id", "service_id", "request_origin", "request_method", "is_batch_request", "success", "error_type", "http_status_code", "random_endpoint_fallback"},
+		[]string{"chain_id", "service_id", "request_origin", "request_method", "is_batch_request", "success", "error_type", "http_status_code", "random_endpoint_fallback", "endpoint_domain"},
 	)
 
 	// availableEndpoints tracks the number of available endpoints per service.
@@ -115,7 +116,7 @@ var (
 	// Labels:
 	//   - chain_id: Target EVM chain identifier
 	//   - service_id: Service ID of the EVM QoS instance
-	//   - domain: eTLD+1 of endpoint URL for provider analysis (extracted from endpoint_addr)
+	//   - endpoint_domain: eTLD+1 of endpoint URL for provider analysis (extracted from endpoint_addr)
 	//   - success: "true" for successful validations, "false" for failed validations
 	//   - validation_failure_reason: Specific failure reason for failed validations (empty for successful ones)
 	//
@@ -131,8 +132,8 @@ var (
 	//   - "ENDPOINT_VALIDATION_FAILURE_REASON_UNKNOWN"
 	//
 	// Use to analyze:
-	//   - Validation success rate: sum(success="true") / sum(all) by domain
-	//   - Validation failure rate: sum(success="false") / sum(all) by domain
+	//   - Validation success rate: sum(success="true") / sum(all) by endpoint_domain
+	//   - Validation failure rate: sum(success="false") / sum(all) by endpoint_domain
 	//   - Most common failure types: sum by (validation_failure_reason) where success="false"
 	//   - Provider reliability comparison across domains
 	//   - Service capacity utilization per provider
@@ -143,7 +144,7 @@ var (
 			Name:      endpointValidationsTotalMetric,
 			Help:      "Total endpoint validation attempts with success status and failure reasons at EVM QoS level",
 		},
-		[]string{"chain_id", "service_id", "domain", "success", "validation_failure_reason"},
+		[]string{"chain_id", "service_id", "endpoint_domain", "success", "validation_failure_reason"},
 	)
 )
 
@@ -212,6 +213,7 @@ func PublishMetrics(logger polylog.Logger, observations *qos.EVMRequestObservati
 				"error_type":               errorType,
 				"http_status_code":         fmt.Sprintf("%d", statusCode),
 				"random_endpoint_fallback": fmt.Sprintf("%t", endpointSelectionMetadata.RandomEndpointFallback),
+				"endpoint_domain":          interpreter.GetEndpointDomain(),
 			},
 		).Inc()
 	}
@@ -248,7 +250,14 @@ func publishValidationMetricsFromMetadata(logger polylog.Logger, chainID, servic
 
 	// Process all validation results in a single loop
 	for _, result := range metadata.ValidationResults {
-		domain := extractDomainFromEndpointAddr(logger, result.EndpointAddr)
+
+		// Extract domain information from endpoint address
+		endpointDomain, err := protocol.EndpointAddr(result.EndpointAddr).GetDomain()
+		if err != nil {
+			// Log error and use empty string as fallback
+			logger.Warn().Err(err).Str("endpoint_addr", result.EndpointAddr).Msg("Failed to extract domain from endpoint address")
+			endpointDomain = ""
+		}
 
 		// Determine failure reason for failed validations
 		failureReason := ""
@@ -261,7 +270,7 @@ func publishValidationMetricsFromMetadata(logger polylog.Logger, chainID, servic
 			prometheus.Labels{
 				"chain_id":                  chainID,
 				"service_id":                serviceID,
-				"domain":                    domain,
+				"endpoint_domain":           endpointDomain,
 				"success":                   fmt.Sprintf("%t", result.Success),
 				"validation_failure_reason": failureReason,
 			},
@@ -290,35 +299,6 @@ func calculateValidEndpointsCount(metadata *qos.EndpointSelectionMetadata) int {
 		}
 	}
 	return validCount
-}
-
-// extractDomainFromEndpointAddr extracts the eTLD+1 domain from an endpoint address.
-// Handles the format: "pokt1eetcwfv2agdl2nvpf4cprhe89rdq3cxdf037wq-https://relayminer.shannon-mainnet.eu.nodefleet.net"
-// Returns "unknown" if domain cannot be extracted.
-func extractDomainFromEndpointAddr(logger polylog.Logger, endpointAddr string) string {
-	// Split by dash to separate the address part from the URL part
-	parts := strings.Split(endpointAddr, "-")
-	if len(parts) < 2 {
-		// No dash found, try to extract domain directly from the entire string
-		if domain, err := metricshttp.ExtractEffectiveTLDPlusOne(endpointAddr); err == nil {
-			return domain
-		}
-		logger.Debug().Str("endpoint_addr", endpointAddr).Msg("Could not extract domain from endpoint address - no dash separator found")
-		return "unknown"
-	}
-
-	// Take everything after the first dash as the URL
-	urlPart := strings.Join(parts[1:], "-")
-
-	// Try to extract domain from the URL part
-	if domain, err := metricshttp.ExtractEffectiveTLDPlusOne(urlPart); err == nil {
-		return domain
-	}
-
-	logger.Debug().Str("endpoint_addr", endpointAddr).Str("url_part", urlPart).Msg("Could not extract eTLD+1 from URL part")
-
-	// If domain extraction failed, return unknown
-	return "unknown"
 }
 
 // extractChainID extracts the chain ID from the interpreter.
