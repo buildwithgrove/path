@@ -108,7 +108,6 @@ func createSolanaJsonRPCParams(method jsonrpc.Method, sp ServiceParams) jsonrpc.
 
 func getSolanaVegetaTargets(
 	ts *TestService,
-	methods []string,
 	gatewayURL string,
 ) (map[string]vegeta.Target, error) {
 	headers := getRequestHeaders(ts.ServiceID)
@@ -121,7 +120,7 @@ func getSolanaVegetaTargets(
 	ts.ServiceParams.blockNumber = blockNumber
 
 	targets := make(map[string]vegeta.Target)
-	for _, method := range methods {
+	for _, method := range getSolanaTestMethods() {
 		// Create JSON-RPC request with appropriate parameters
 		jsonrpcReq := jsonrpc.Request{
 			JSONRPC: jsonrpc.Version2,
@@ -236,14 +235,14 @@ func getCurrentSlotNumber(client *http.Client, gatewayURL string, headers http.H
 	}
 
 	// Parse JSONRPC response
-	var jsonRPC jsonrpc.Response
-	if err := json.NewDecoder(resp.Body).Decode(&jsonRPC); err != nil {
+	var jsonrpc jsonrpc.Response
+	if err := json.NewDecoder(resp.Body).Decode(&jsonrpc); err != nil {
 		return 0, err
 	}
 
 	// Unmarshal the result into getEpochInfoResponse
 	var epochInfo getEpochInfoResponse
-	if err := jsonRPC.UnmarshalResult(&epochInfo); err != nil {
+	if err := jsonrpc.UnmarshalResult(&epochInfo); err != nil {
 		return 0, fmt.Errorf("failed to unmarshal epoch info: %w", err)
 	}
 

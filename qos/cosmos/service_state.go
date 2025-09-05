@@ -82,14 +82,14 @@ func (ss *serviceState) updateFromEndpoints(updatedEndpoints map[protocol.Endpoi
 		// Note that this does not check the block height sync allowance as the perceived block number
 		// may not yet be set, causing a scenario where the perceived block number is never set.
 		if err := ss.isCometBFTStatusValid(endpoint.checkCometBFTStatus); err != nil {
-			logger.Error().Err(err).Msgf("❌ Skipping endpoint '%s' with invalid status", endpointAddr)
+			logger.Warn().Err(err).Msgf("⚠️ SKIPPING endpoint '%s' with invalid status", endpointAddr)
 			continue
 		}
 
 		// Retrieve the block number from the endpoint.
 		blockNumber, err := endpoint.checkCometBFTStatus.GetLatestBlockHeight()
 		if err != nil {
-			logger.Error().Err(err).Msgf("❌ Skipping endpoint '%s' with invalid block height", endpointAddr)
+			logger.Warn().Err(err).Msgf("⚠️ SKIPPING endpoint '%s' with invalid block height", endpointAddr)
 			continue
 		}
 

@@ -93,7 +93,7 @@ func Test_LoadGatewayConfigFromYAML(t *testing.T) {
 					SystemOverheadAllowanceDuration: defaultSystemOverheadAllowanceDuration,
 				},
 				Logger: LoggerConfig{
-					Level: defaultLogLevel,
+					Level: "error",
 				},
 			},
 			wantErr: false,
