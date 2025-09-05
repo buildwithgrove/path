@@ -3,6 +3,7 @@ package shannon
 import (
 	"errors"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
@@ -149,6 +150,13 @@ func classifyHttpError(logger polylog.Logger, err error) (protocolobservations.S
 			protocolobservations.ShannonSanctionType_SHANNON_SANCTION_SESSION
 	}
 
+	// RelayMiner returned non-2xx HTTP status code.
+	if errors.Is(err, errEndpointNon2XXHTTPStatusCode) {
+		return getNon2XXHTTPStatusCodeObservation(err),
+			// TODO_UPNEXT(@adshmh): Make this a sanction that lasts a few blocks.
+			protocolobservations.ShannonSanctionType_SHANNON_SANCTION_DO_NOT_SANCTION
+	}
+
 	errStr := err.Error()
 
 	// Connection establishment failures
@@ -293,4 +301,50 @@ func classifyMalformedEndpointPayload(logger polylog.Logger, payloadContent stri
 	// TODO_CONSIDERATION(@adshmh): Should we sanction an endpoint due to a malformed payload error which could not be categorized?
 	//
 	return protocolobservations.ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_UNKNOWN, protocolobservations.ShannonSanctionType_SHANNON_SANCTION_DO_NOT_SANCTION
+}
+
+// getNon2XXHTTPStatusCodeObservation returns ShannonEndpointErrorType based on HTTP status code:
+//   - 4xx: SHANNON_ENDPOINT_ERROR_RELAY_MINER_HTTP_4XX
+//   - 5xx: SHANNON_ENDPOINT_ERROR_RELAY_MINER_HTTP_5XX
+//   - other/parse error: SHANNON_ENDPOINT_ERROR_HTTP_UNKNOWN
+func getNon2XXHTTPStatusCodeObservation(non2XXHTTPStatusCodeErr error) protocolobservations.ShannonEndpointErrorType {
+	statusCode, ok := extractHTTPStatusCode(non2XXHTTPStatusCodeErr)
+	if !ok {
+		return protocolobservations.ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_HTTP_UNKNOWN
+	}
+
+	switch {
+	case statusCode >= 400 && statusCode < 500:
+		return protocolobservations.ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_RELAY_MINER_HTTP_4XX
+	case statusCode >= 500 && statusCode < 600:
+		return protocolobservations.ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_RELAY_MINER_HTTP_5XX
+	default:
+		return protocolobservations.ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_HTTP_UNKNOWN
+	}
+}
+
+// extractHTTPStatusCode extracts the HTTP status code from the error message.
+// Expects the status code to be at the end of the error string after ": ".
+func extractHTTPStatusCode(err error) (int, bool) {
+	errStr := err.Error()
+
+	// Look for ": " followed by 3 digits at the end of the string
+	re := regexp.MustCompile(`: (\d{3})$`)
+	matches := re.FindStringSubmatch(errStr)
+
+	if len(matches) < 2 {
+		return 0, false
+	}
+
+	statusCode, parseErr := strconv.Atoi(matches[1])
+	if parseErr != nil {
+		return 0, false
+	}
+
+	// Basic validation that it's a valid HTTP status code
+	if statusCode < 100 || statusCode > 599 {
+		return 0, false
+	}
+
+	return statusCode, true
 }
