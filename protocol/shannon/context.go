@@ -338,7 +338,9 @@ func (rc *requestContext) executeRelayRequestStrategy(payload protocol.Payload) 
 	// Session rollover periods
 	// - Protocol relay with fallback protection during session rollover periods
 	// - Sends requests in parallel to ensure reliability during network transitions
-	case rc.fullNode.IsInSessionRollover():
+	//
+	// TODO_DELETE(@adshmh): No session rollover fallback for hey service.
+	case rc.fullNode.IsInSessionRollover() && rc.serviceID != "hey":
 		rc.logger.Debug().Msg("Executing protocol relay with fallback protection during session rollover periods")
 		// TODO_TECHDEBT(@adshmh): Separate error handling for fallback and Shannon endpoints.
 		return rc.sendRelayWithFallback(payload)
