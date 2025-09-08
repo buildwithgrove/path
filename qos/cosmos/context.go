@@ -25,6 +25,9 @@ type requestContext struct {
 	// Its structure differs depending on the request type:
 	//   - JSONRPC: map of request IDs to service payloads.
 	//   - REST: single service payload.
+	//
+	// DEV_NOTE: jsonrpc.ID is used as the map key for consistency with the batch request logic in
+	// the JSON-RPC package. Once the TODO_TECHDEBT is addressed, this should no longer be necessary.
 	servicePayloads map[jsonrpc.ID]protocol.Payload
 
 	// Whether the request is a batch request.
