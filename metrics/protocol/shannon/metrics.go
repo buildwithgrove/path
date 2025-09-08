@@ -16,9 +16,6 @@ import (
 // - Message size percentiles (distribution of message payload sizes)
 // - Subscription event rates (frequency of subscription events per connection)
 
-// TODO_IMPROVE(@olshansky): Consider adding probabilistic debug logging back for endpoint errors
-// to provide more context during debugging while controlling log volume
-
 const (
 	// The POSIX process that emits metrics
 	pathProcess = "path"
@@ -633,9 +630,10 @@ func processSanctionsByDomain(
 		}
 
 		// Extract effective TLD+1 from endpoint URL.
-		endpointDomain, err := ExtractDomainOrHost(endpointObs.GetEndpointUrl())
+		endpointUrl := endpointObs.GetEndpointUrl()
+		endpointDomain, err := ExtractDomainOrHost(endpointUrl)
 		if err != nil {
-			logger.Error().Err(err).Msgf("Could not extract domain from endpoint URL %s.", endpointObs.GetEndpointUrl())
+			logger.Error().Err(err).Msgf("Could not extract domain from endpoint URL %s.", endpointUrl)
 			endpointDomain = ErrDomain
 		}
 
@@ -810,7 +808,7 @@ func recordWebsocketConnectionTotal(
 	endpointURL := wsConnectionObs.GetEndpointUrl()
 	endpointDomain, err := ExtractDomainOrHost(endpointURL)
 	if err != nil {
-		logger.Error().Err(err).Msgf("Could not extract domain from Shannon endpoint URL %s for relay errors metric", endpointURL)
+		logger.Error().Err(err).Msgf("Could not extract domain from endpoint URL %s.", endpointURL)
 		endpointDomain = ErrDomain
 	}
 
@@ -862,7 +860,7 @@ func recordWebsocketMessageTotal(
 	endpointURL := wsMessageObs.GetEndpointUrl()
 	endpointDomain, err := ExtractDomainOrHost(endpointURL)
 	if err != nil {
-		logger.Error().Err(err).Msgf("Could not extract domain from WebSocket endpoint URL %s for message errors metric", endpointURL)
+		logger.Error().Err(err).Msgf("Could not extract domain from endpoint URL %s.", endpointURL)
 		endpointDomain = ErrDomain
 	}
 
@@ -951,9 +949,10 @@ func processWebsocketMessageErrors(
 	}
 
 	// Extract effective TLD+1 from endpoint URL.
-	endpointDomain, err := ExtractDomainOrHost(wsMessageObs.GetEndpointUrl())
+	endpointUrl := wsMessageObs.GetEndpointUrl()
+	endpointDomain, err := ExtractDomainOrHost(endpointUrl)
 	if err != nil {
-		logger.Error().Err(err).Msgf("Could not extract domain from endpoint URL %s.", wsMessageObs.GetEndpointUrl())
+		logger.Error().Err(err).Msgf("Could not extract domain from endpoint URL %s.", endpointUrl)
 		endpointDomain = ErrDomain
 	}
 
