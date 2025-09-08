@@ -128,7 +128,7 @@ var (
 			Name:      relaysErrorsTotalMetric,
 			Help:      "Total relay errors by service, endpoint domain, error type, and sanction type",
 		},
-		[]string{"service_id", "error_type", "sanction_type", "endpoint_domain", },
+		[]string{"service_id", "error_type", "sanction_type", "endpoint_domain"},
 	)
 
 	// activeRelays tracks the current number of active Shannon HTTP requests.
@@ -621,7 +621,7 @@ func processEndpointErrors(
 				"sanction_type":   sanctionType,
 				"endpoint_domain": endpointDomain,
 			},
-		)
+		).Inc()
 	}
 }
 
@@ -830,7 +830,7 @@ func recordWebsocketConnectionTotal(
 	endpointDomain, err := ExtractDomainOrHost(endpointURL)
 	if err != nil {
 		logger.Error().Err(err).Msgf("Could not extract domain from Shannon endpoint URL %s for relay errors metric", endpointURL)
-		endpointDomain = "error_extracting_domain"
+		endpointDomain = errDomain
 	}
 
 	// Record WebSocket connection total
@@ -882,7 +882,7 @@ func recordWebsocketMessageTotal(
 	endpointDomain, err := ExtractDomainOrHost(endpointURL)
 	if err != nil {
 		logger.ProbabilisticDebugInfo(polylog.ProbabilisticDebugInfoProb).Err(err).Msgf("Could not extract domain from WebSocket endpoint URL %s for message errors metric", endpointURL)
-		endpointDomain = "error_extracting_domain"
+		endpointDomain = errDomain
 	}
 
 	// Record WebSocket message total
@@ -925,14 +925,6 @@ func processWebsocketConnectionErrors(
 		sanctionType = wsConnectionObs.RecommendedSanction.String()
 	}
 
-	// Extract endpoint URL for exemplars
-	endpointURL := wsConnectionObs.EndpointUrl
-	endpointDomain, err := ExtractDomainOrHost(endpointURL)
-	if err != nil {
-		logger.ProbabilisticDebugInfo(polylog.ProbabilisticDebugInfoProb).Err(err).Msgf("Could not extract domain from WebSocket endpoint URL %s for connection errors metric", endpointURL)
-		endpointDomain = "error_extracting_domain"
-	}
-
 	// Record WebSocket connection error
 	websocketConnectionErrors.With(
 		prometheus.Labels{
@@ -940,7 +932,8 @@ func processWebsocketConnectionErrors(
 			"endpoint_domain": endpointDomain,
 			"error_type":      errorType,
 			"sanction_type":   sanctionType,
-		}.Inc()
+		},
+	).Inc()
 
 	// Record sanction if recommended
 	if wsConnectionObs.RecommendedSanction != nil {
@@ -1000,14 +993,6 @@ func processWebsocketMessageErrors(
 		sanctionType = wsMessageObs.RecommendedSanction.String()
 	}
 
-	// Extract endpoint URL for exemplars
-	endpointURL := wsMessageObs.EndpointUrl
-	endpointDomain, err := ExtractDomainOrHost(endpointURL)
-	if err != nil {
-		logger.ProbabilisticDebugInfo(polylog.ProbabilisticDebugInfoProb).Err(err).Msgf("Could not extract domain from WebSocket endpoint URL %s for message errors metric", endpointURL)
-		endpointDomain = "error_extracting_domain"
-	}
-
 	// Record WebSocket message error
 	websocketMessageErrors.With(
 		prometheus.Labels{
@@ -1015,7 +1000,9 @@ func processWebsocketMessageErrors(
 			"endpoint_domain": endpointDomain,
 			"error_type":      errorType,
 			"sanction_type":   sanctionType,
-		}.Inc()
+			"used_fallback":   fmt.Sprintf("%t", wsMessageObs.GetIsFallbackEndpoint()),
+		},
+	).Inc()
 
 	// Record sanction if recommended
 	if wsMessageObs.RecommendedSanction != nil {
