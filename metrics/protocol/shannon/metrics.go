@@ -29,8 +29,8 @@ const (
 	relaysActiveRequestsMetric = "shannon_relays_active"
 
 	// WebSocket connection metrics
-	websocketConnectionsTotalMetric = "shannon_websocket_connections_total"
-	websocketConnectionErrorsMetric = "shannon_websocket_connection_errors_total"
+	websocketConnectionsTotalMetric  = "shannon_websocket_connections_total"
+	websocketConnectionErrorsMetric  = "shannon_websocket_connection_errors_total"
 	websocketConnectionsActiveMetric = "shannon_websocket_connections_active"
 
 	// WebSocket message metrics
@@ -107,6 +107,8 @@ var (
 		[]string{"service_id", "success", "error_type", "used_fallback"},
 	)
 
+	// TODO_IMPROVE(@adshmh): This should be called endpointErrorsTotal
+	//
 	// relaysErrorsTotal tracks relay errors from Shannon protocol
 	// Labels:
 	//   - service_id: Target service identifier
@@ -364,8 +366,23 @@ func PublishMetrics(
 
 	// Process each observation for metrics
 	for _, observationSet := range shannonObservations {
+
+		// Check for request processing errors.
+		// e.g. error fetching a session for the target service.
+		if observationSet.GetRequestError() != nil {
+			// Record the relay total with success/failure status
+			recordRelayTotal(logger, observationSet)
+
+			// Request processing encountered error.
+			// Skip endpoint observations.
+			continue
+		}
+
+		// TODO_IMPROVE(@adshmh): Replace dynamic type casts with nil checks.
+		//
 		// Handle different types of observations based on the oneof field
 		switch obsData := observationSet.GetObservationData().(type) {
+
 		case *protocolobservations.ShannonRequestObservations_HttpObservations:
 			// HTTP observations - existing metrics processing
 			httpObservations := obsData.HttpObservations

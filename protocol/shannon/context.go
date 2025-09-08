@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"maps"
 	"math/rand"
+	"net/http"
 	"strconv"
 	"sync"
 	"time"
@@ -337,7 +338,9 @@ func (rc *requestContext) executeRelayRequestStrategy(payload protocol.Payload) 
 	// Session rollover periods
 	// - Protocol relay with fallback protection during session rollover periods
 	// - Sends requests in parallel to ensure reliability during network transitions
-	case rc.fullNode.IsInSessionRollover():
+	//
+	// TODO_DELETE(@adshmh): No session rollover fallback for hey service.
+	case rc.fullNode.IsInSessionRollover() && rc.serviceID != "hey":
 		rc.logger.Debug().Msg("Executing protocol relay with fallback protection during session rollover periods")
 		// TODO_TECHDEBT(@adshmh): Separate error handling for fallback and Shannon endpoints.
 		return rc.sendRelayWithFallback(payload)
@@ -509,10 +512,21 @@ func (rc *requestContext) sendProtocolRelay(payload protocol.Payload) (protocol.
 		return defaultResponse, fmt.Errorf("SHOULD NEVER HAPPEN: failed to marshal relay request: %w", err)
 	}
 
+	// TODO_TECHDEBT(@adshmh): Add a new struct to track details about the HTTP call.
+	// It should contain at-least:
+	// - endpoint payload
+	// - HTTP status code
+	// Use the new struct to pass data around for logging/metrics/etc.
+	//
 	// Send the HTTP request to the protocol endpoint.
-	httpRelayResponseBz, _, err := rc.sendHTTPRequest(payload, selectedEndpoint.PublicURL(), relayRequestBz)
+	httpRelayResponseBz, httpStatusCode, err := rc.sendHTTPRequest(payload, selectedEndpoint.PublicURL(), relayRequestBz)
 	if err != nil {
 		return defaultResponse, err
+	}
+
+	// Non-2xx HTTP status code received from the endpoint: build and return an error
+	if httpStatusCode != http.StatusOK {
+		return defaultResponse, fmt.Errorf("%w %w: %d", errSendHTTPRelay, errEndpointNon2XXHTTPStatusCode, httpStatusCode)
 	}
 
 	// Validate and process the response
@@ -709,10 +723,21 @@ func (rc *requestContext) sendFallbackRelay(
 		fallbackURL,
 		[]byte(payload.Data),
 	)
+
 	if err != nil {
 		return protocol.Response{
 			EndpointAddr: fallbackEndpoint.Addr(),
 		}, err
+	}
+
+	// TODO_CONSIDERATION(@adshmh): Are there any scenarios where a fallback endpoint should return a non-2xx HTTP status code?
+	// Examples: a fallback endpoint for a RESTful service.
+	//
+	// Non-2xx HTTP status code: build and return an error.
+	if httpStatusCode != http.StatusOK {
+		return protocol.Response{
+			EndpointAddr: fallbackEndpoint.Addr(),
+		}, fmt.Errorf("%w %w: %d", errSendHTTPRelay, errEndpointNon2XXHTTPStatusCode, httpStatusCode)
 	}
 
 	// Build and return the fallback response

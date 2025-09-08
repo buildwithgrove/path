@@ -144,16 +144,27 @@ func (rc *requestContext) UpdateWithResponse(endpointAddr protocol.EndpointAddr,
 func (rc requestContext) GetHTTPResponse() pathhttp.HTTPResponse {
 	// Use a noResponses struct if no responses were reported by the protocol from any endpoints.
 	if len(rc.endpointResponses) == 0 {
+		rc.logger.Warn().Msg("No responses received from any endpoints. Returning generic non-response.")
 		responseNoneObj := responseNone{
 			logger:      rc.logger,
 			jsonrpcReqs: rc.jsonrpcReqs,
 		}
-
 		return responseNoneObj.GetHTTPResponse()
 	}
 
-	if len(rc.jsonrpcReqs) == 1 {
-		// return the only endpoint response reported to the context for single requests.
+	numJSONRPCRequests := len(rc.jsonrpcReqs)
+	numEndpointResponses := len(rc.endpointResponses)
+
+	if numJSONRPCRequests != numEndpointResponses {
+		rc.logger.Warn().Msgf("TODO_INVESTIGATE: The number of JSON-RPC requests (%d) does not match the number of endpoint responses (%d). This should not happen.", numJSONRPCRequests, numEndpointResponses)
+	}
+
+	// Non-batch requests.
+	// Return the only endpoint response reported to the context for single requests.
+	if numJSONRPCRequests == 1 {
+		if numEndpointResponses != 1 {
+			rc.logger.Warn().Msgf("TODO_INVESTIGATE: Expected exactly one endpoint response for single JSON-RPC request, but received %d. Only using the first response for now.", numEndpointResponses)
+		}
 		return rc.endpointResponses[0].GetHTTPResponse()
 	}
 

@@ -124,6 +124,12 @@ enum ShannonEndpointErrorType {
 
   // The relay request sent to the endpoint via WebSocket failed to validate the relay response.
   SHANNON_ENDPOINT_ERROR_WEBSOCKET_RELAY_RESPONSE_VALIDATION_FAILED = 41;
+
+  // RelayMiner returned a 4XX HTTP status code
+  SHANNON_ENDPOINT_ERROR_RELAY_MINER_HTTP_4XX = 42;
+
+  // RelayMiner returned a 5XX HTTP status code
+  SHANNON_ENDPOINT_ERROR_RELAY_MINER_HTTP_5XX = 43;
 }
 
 // ShannonSanctionType specifies the duration type for endpoint sanctions
