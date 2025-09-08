@@ -114,7 +114,7 @@ func setLegacyFieldsFromHTTPObservations(
 	// Empty value if parsing the URL above failed.
 	endpointDomain, err := shannonmetrics.ExtractDomainOrHost(endpointObservation.GetEndpointUrl())
 	if err != nil {
-		logger.With("endpoint_url", endpointObservation.EndpointUrl).Warn().Err(err).Msg("Could not extract domain from Shannon endpoint URL")
+		logger.Error().Err(err).Msg("Could not extract domain from Shannon endpoint URL")
 		return legacyRecord
 	}
 	legacyRecord.NodeDomain = endpointDomain
@@ -145,12 +145,11 @@ func setLegacyFieldsFromWebsocketConnectionObservation(
 	// Set endpoint address to the supplier address.
 	legacyRecord.NodeAddress = wsConnectionObs.GetSupplier()
 
-	// Extract and set the endpoint's domain from its URL.
-	// Empty value if parsing the URL above failed.
-	endpointDomain, err := shannonmetrics.ExtractDomainOrHost(wsConnectionObs.GetEndpointUrl())
+	// Extract effective TLD+1 from endpoint URL.
+	endpointDomain, err := ExtractDomainOrHost(endpointObs.GetEndpointUrl())
 	if err != nil {
-		logger.With("endpoint_url", wsConnectionObs.EndpointUrl).Warn().Err(err).Msg("Could not extract domain from WebSocket endpoint URL")
-		return legacyRecord
+		logger.Error().Err(err).Msgf("Could not extract domain from endpoint URL %s.", endpointObs.GetEndpointUrl())
+		endpointDomain = errDomain
 	}
 	legacyRecord.NodeDomain = endpointDomain
 
@@ -184,10 +183,11 @@ func setLegacyFieldsFromWebsocketMessageObservation(
 
 	// Extract and set the endpoint's domain from its URL.
 	// Empty value if parsing the URL above failed.
-	endpointDomain, err := shannonmetrics.ExtractDomainOrHost(wsMessageObs.GetEndpointUrl())
+	endpointUrl := wsMessageObs.GetEndpointUrl()
+	endpointDomain, err := shannonmetrics.ExtractDomainOrHost(endpointUrl)
 	if err != nil {
-		logger.With("endpoint_url", wsMessageObs.EndpointUrl).Warn().Err(err).Msg("Could not extract domain from WebSocket message endpoint URL")
-		return legacyRecord
+		logger.Error().Err(err).Msg("Could not extract domain from WebSocket message endpoint URL")
+		endpointDomain = shannonmetrics.errDomain
 	}
 	legacyRecord.NodeDomain = endpointDomain
 

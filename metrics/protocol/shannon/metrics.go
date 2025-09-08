@@ -10,10 +10,7 @@ import (
 	protocolobservations "github.com/buildwithgrove/path/observation/protocol"
 )
 
-// TODO_TECHDEBT: Replace 'endpoint_domain' in the metrics to align with 'endpoint_url'
-// used through the codebase or vice versa.
-//
-// TODO_METRICS: Add additional WebSocket-specific metrics
+// TODO_METRICS(@commoddity): Add additional WebSocket-specific metrics
 // - Message latency distribution (time between request and response for each message)
 // - Connection duration histogram (time from connection establishment to termination)
 // - Message size percentiles (distribution of message payload sizes)
@@ -592,16 +589,11 @@ func processEndpointErrors(
 			continue
 		}
 
-		// Extract effective TLD+1 from endpoint URL
-		// This function handles edge cases like IP addresses, localhost, invalid URLs
+		// Extract effective TLD+1 from endpoint URL.
 		endpointDomain, err := ExtractDomainOrHost(endpointObs.GetEndpointUrl())
 		if err != nil {
-			logger.With(
-				"endpoint_url", endpointObs.EndpointUrl,
-			).
-				ProbabilisticDebugInfo(polylog.ProbabilisticDebugInfoProb).
-				Err(err).Msg("SHOULD NEVER HAPPEN: Could not extract domain from Shannon endpoint URL for relay errors metric")
-			continue
+			logger.Error().Err(err).Msgf("Could not extract domain from Shannon endpoint URL %s for relay errors metric", endpointObs.GetEndpointUrl())
+			endpointDomain = errDomain
 		}
 
 		// Extract low-cardinality labels (based on trusted error classification)
@@ -637,16 +629,11 @@ func processSanctionsByDomain(
 			continue
 		}
 
-		// Extract effective domain from endpoint URL
+		// Extract effective TLD+1 from endpoint URL.
 		endpointDomain, err := ExtractDomainOrHost(endpointObs.GetEndpointUrl())
-		// error extracting TLD+1, skip.
 		if err != nil {
-			logger.With(
-				"endpoint_url", endpointObs.GetEndpointUrl(),
-			).
-				ProbabilisticDebugInfo(polylog.ProbabilisticDebugInfoProb).
-				Err(err).Msg("SHOULD NEVER HAPPEN: Could not extract domain from Shannon endpoint URL")
-			continue
+			logger.Error().Err(err).Msgf("Could not extract domain from endpoint URL %s.", endpointObs.GetEndpointUrl())
+			endpointDomain = errDomain
 		}
 
 		// Extract the sanction reason from the endpoint error type (trusted classification)
@@ -688,6 +675,14 @@ func processEndpointLatency(
 			continue
 		}
 
+		// Extract effective TLD+1 from endpoint URL.
+		endpointUrl := endpointObs.GetEndpointUrl()
+		endpointDomain, err := ExtractDomainOrHost(endpointUrl)
+		if err != nil {
+			logger.Error().Err(err).Msgf("Could not extract domain from endpoint URL %s.", endpointUrl)
+			endpointDomain = errDomain
+		}
+
 		// Calculate latency in seconds
 		queryTimestamp := queryTime.AsTime()
 		responseTimestamp := responseTime.AsTime()
@@ -695,21 +690,7 @@ func processEndpointLatency(
 
 		// Skip negative latencies (invalid timestamps)
 		if latencySeconds < 0 {
-			logger.With(
-				"endpoint_url", endpointObs.GetEndpointUrl(),
-				"latency_seconds", latencySeconds,
-			).ProbabilisticDebugInfo(polylog.ProbabilisticDebugInfoProb).
-				Msg("SHOULD RARELY HAPPEN: Negative latency detected, skipping metric")
-			continue
-		}
-
-		// Extract effective domain from endpoint URL
-		endpointDomain, err := ExtractDomainOrHost(endpointObs.GetEndpointUrl())
-		if err != nil {
-			logger.With(
-				"endpoint_url", endpointObs.GetEndpointUrl(),
-			).ProbabilisticDebugInfo(polylog.ProbabilisticDebugInfoProb).
-				Err(err).Msg("SHOULD NEVER HAPPEN: Could not extract domain from Shannon endpoint URL for latency metric")
+			logger.Error().Err(fmt.Errorf("negative latency detected")).Msgf("SHOULD NEVER HAPPEN: Negative latency (%f) detected, skipping metric for endpoint %s", latencySeconds, endpointUrl)
 			continue
 		}
 
@@ -745,14 +726,11 @@ func processRelayMinerErrors(
 		}
 
 		// Extract effective domain from endpoint URL
-		endpointDomain, err := ExtractDomainOrHost(endpointObs.GetEndpointUrl())
+		endpointUrl := endpointObs.GetEndpointUrl()
+		endpointDomain, err := ExtractDomainOrHost(endpointUrl)
 		if err != nil {
-			logger.With(
-				"endpoint_url", endpointObs.GetEndpointUrl(),
-			).
-				ProbabilisticDebugInfo(polylog.ProbabilisticDebugInfoProb).
-				Err(err).Msg("SHOULD NEVER HAPPEN: Could not extract domain from Shannon endpoint URL for RelayMinerError metric")
-			continue
+			logger.Error().Err(err).Msgf("Could not extract domain from endpoint URL %s.", endpointUrl)
+			endpointDomain = errDomain
 		}
 
 		// Extract RelayMinerError details
@@ -769,10 +747,10 @@ func processRelayMinerErrors(
 		relayMinerErrorsTotal.With(
 			prometheus.Labels{
 				"service_id":            serviceID,
-				"endpoint_domain":       endpointDomain,
 				"endpoint_error_type":   endpointErrorType,
 				"relay_miner_codespace": relayMinerCodespace,
 				"relay_miner_code":      relayMinerCode,
+				"endpoint_domain":       endpointDomain,
 			},
 		).Inc()
 	}
@@ -881,7 +859,7 @@ func recordWebsocketMessageTotal(
 	endpointURL := wsMessageObs.GetEndpointUrl()
 	endpointDomain, err := ExtractDomainOrHost(endpointURL)
 	if err != nil {
-		logger.ProbabilisticDebugInfo(polylog.ProbabilisticDebugInfoProb).Err(err).Msgf("Could not extract domain from WebSocket endpoint URL %s for message errors metric", endpointURL)
+		logger.Error().Err(err).Msgf("Could not extract domain from WebSocket endpoint URL %s for message errors metric", endpointURL)
 		endpointDomain = errDomain
 	}
 
@@ -907,15 +885,12 @@ func processWebsocketConnectionErrors(
 		return
 	}
 
-	// Extract effective TLD+1 from endpoint URL
-	endpointDomain, err := ExtractDomainOrHost(wsConnectionObs.GetEndpointUrl())
+	// Extract effective TLD+1 from endpoint URL.
+	endpointUrl := wsConnectionObs.GetEndpointUrl()
+	endpointDomain, err := ExtractDomainOrHost(endpointUrl)
 	if err != nil {
-		logger.With(
-			"endpoint_url", wsConnectionObs.EndpointUrl,
-		).
-			ProbabilisticDebugInfo(polylog.ProbabilisticDebugInfoProb).
-			Err(err).Msg("Could not extract domain from WebSocket endpoint URL for connection errors metric")
-		return
+		logger.Error().Err(err).Msgf("Could not extract domain from endpoint URL %s.", endpointUrl)
+		endpointDomain = errDomain
 	}
 
 	// Extract error information
@@ -929,22 +904,20 @@ func processWebsocketConnectionErrors(
 	websocketConnectionErrors.With(
 		prometheus.Labels{
 			"service_id":      serviceID,
-			"endpoint_domain": endpointDomain,
 			"error_type":      errorType,
 			"sanction_type":   sanctionType,
-		},
-	).Inc()
+			"endpoint_domain": endpointDomain,
+		}).Inc()
 
 	// Record sanction if recommended
 	if wsConnectionObs.RecommendedSanction != nil {
 		sanctionsByDomain.With(
 			prometheus.Labels{
 				"service_id":      serviceID,
-				"endpoint_domain": endpointDomain,
 				"sanction_type":   sanctionType,
 				"sanction_reason": errorType,
-			},
-		).Inc()
+				"endpoint_domain": endpointDomain,
+			}).Inc()
 	}
 
 	// Record RelayMinerError if present
@@ -955,12 +928,11 @@ func processWebsocketConnectionErrors(
 		relayMinerErrorsTotal.With(
 			prometheus.Labels{
 				"service_id":            serviceID,
-				"endpoint_domain":       endpointDomain,
 				"endpoint_error_type":   errorType,
 				"relay_miner_codespace": relayMinerCodespace,
 				"relay_miner_code":      relayMinerCode,
-			},
-		).Inc()
+				"endpoint_domain":       endpointDomain,
+			}).Inc()
 	}
 }
 
@@ -975,15 +947,11 @@ func processWebsocketMessageErrors(
 		return
 	}
 
-	// Extract effective TLD+1 from endpoint URL
+	// Extract effective TLD+1 from endpoint URL.
 	endpointDomain, err := ExtractDomainOrHost(wsMessageObs.GetEndpointUrl())
 	if err != nil {
-		logger.With(
-			"endpoint_url", wsMessageObs.EndpointUrl,
-		).
-			ProbabilisticDebugInfo(polylog.ProbabilisticDebugInfoProb).
-			Err(err).Msg("Could not extract domain from WebSocket endpoint URL for message errors metric")
-		return
+		logger.Error().Err(err).Msgf("Could not extract domain from endpoint URL %s.", wsMessageObs.GetEndpointUrl())
+		endpointDomain = errDomain
 	}
 
 	// Extract error information
@@ -997,23 +965,21 @@ func processWebsocketMessageErrors(
 	websocketMessageErrors.With(
 		prometheus.Labels{
 			"service_id":      serviceID,
-			"endpoint_domain": endpointDomain,
 			"error_type":      errorType,
 			"sanction_type":   sanctionType,
 			"used_fallback":   fmt.Sprintf("%t", wsMessageObs.GetIsFallbackEndpoint()),
-		},
-	).Inc()
+			"endpoint_domain": endpointDomain,
+		}).Inc()
 
 	// Record sanction if recommended
 	if wsMessageObs.RecommendedSanction != nil {
 		sanctionsByDomain.With(
 			prometheus.Labels{
 				"service_id":      serviceID,
-				"endpoint_domain": endpointDomain,
 				"sanction_type":   sanctionType,
 				"sanction_reason": errorType,
-			},
-		).Inc()
+				"endpoint_domain": endpointDomain,
+			}).Inc()
 	}
 
 	// Record RelayMinerError if present
@@ -1024,11 +990,10 @@ func processWebsocketMessageErrors(
 		relayMinerErrorsTotal.With(
 			prometheus.Labels{
 				"service_id":            serviceID,
-				"endpoint_domain":       endpointDomain,
 				"endpoint_error_type":   errorType,
 				"relay_miner_codespace": relayMinerCodespace,
 				"relay_miner_code":      relayMinerCode,
-			},
-		).Inc()
+				"endpoint_domain":       endpointDomain,
+			}).Inc()
 	}
 }
