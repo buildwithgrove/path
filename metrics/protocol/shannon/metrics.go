@@ -43,6 +43,9 @@ const (
 	// Latency metrics (currently HTTP only)
 	endpointLatencyMetric       = "shannon_endpoint_latency_seconds"
 	relayMinerErrorsTotalMetric = "shannon_relay_miner_errors_total"
+
+	// The default value for a domain if it cannot be extracted from an endpoint URL
+	errDomain = "error_extracting_domain"
 )
 
 var (
@@ -85,9 +88,7 @@ var (
 	//   - success: Whether the relay was successful (true if at least one endpoint had no error)
 	//   - error_type: type of error encountered processing the request
 	//   - used_fallback: Whether the request was served using a fallback endpoint.
-	//
-	// Exemplars:
-	//   - endpoint_url: URL of the endpoint (from the last entry in observations list)
+	//   - endpoint_domain: Effective TLD+1 domain extracted from endpoint URL
 	//
 	// Low-cardinality labels are used for core metrics while high-cardinality data is
 	// moved to exemplars to reduce Prometheus storage and query overhead while still
@@ -104,7 +105,7 @@ var (
 			Name:      relaysTotalMetric,
 			Help:      "Total number of relays processed by Shannon protocol instance(s)",
 		},
-		[]string{"service_id", "success", "error_type", "used_fallback"},
+		[]string{"service_id", "success", "error_type", "used_fallback", "endpoint_domain"},
 	)
 
 	// TODO_IMPROVE(@adshmh): This should be called endpointErrorsTotal
@@ -112,12 +113,9 @@ var (
 	// relaysErrorsTotal tracks relay errors from Shannon protocol
 	// Labels:
 	//   - service_id: Target service identifier
-	//   - endpoint_domain: Effective TLD+1 domain extracted from endpoint URL
 	//   - error_type: Type of error encountered (based on trusted classification)
 	//   - sanction_type: Type of sanction recommended (based on trusted classification)
-	//
-	// Exemplars:
-	//   - endpoint_url: URL of the endpoint
+	//   - endpoint_domain: Effective TLD+1 domain extracted from endpoint URL
 	//
 	// Use to analyze:
 	//   - Shannon protocol errors by service and type
@@ -130,7 +128,7 @@ var (
 			Name:      relaysErrorsTotalMetric,
 			Help:      "Total relay errors by service, endpoint domain, error type, and sanction type",
 		},
-		[]string{"service_id", "endpoint_domain", "error_type", "sanction_type"},
+		[]string{"service_id", "error_type", "sanction_type", "endpoint_domain", },
 	)
 
 	// activeRelays tracks the current number of active Shannon HTTP requests.
@@ -157,9 +155,7 @@ var (
 	//   - success: Whether the connection was successful (true if no connection error)
 	//   - error_type: type of error encountered during connection setup
 	//   - used_fallback: Whether the connection used a fallback endpoint.
-	//
-	// Exemplars:
-	//   - endpoint_url: URL of the WebSocket endpoint
+	//   - endpoint_domain: Effective TLD+1 domain extracted from endpoint URL
 	//
 	// Use to analyze:
 	//   - WebSocket connection volume by service
@@ -171,19 +167,16 @@ var (
 			Name:      websocketConnectionsTotalMetric,
 			Help:      "Total number of WebSocket connections processed by Shannon protocol instance(s)",
 		},
-		[]string{"service_id", "success", "error_type", "used_fallback"},
+		[]string{"service_id", "success", "error_type", "used_fallback", "endpoint_domain"},
 	)
 
 	// websocketConnectionErrors tracks WebSocket connection establishment errors
 	// Labels:
 	//   - service_id: Target service identifier
-	//   - endpoint_domain: Effective TLD+1 domain extracted from endpoint URL
 	//   - error_type: Type of connection error encountered (based on trusted classification)
 	//   - sanction_type: Type of sanction recommended (based on trusted classification)
-	//
-	// Exemplars:
-	//   - endpoint_url: URL of the WebSocket endpoint
-	//
+	//   - endpoint_domain: Effective TLD+1 domain extracted from endpoint URL
+
 	// Use to analyze:
 	//   - WebSocket connection errors by service and type
 	//   - Sanctions recommended for connection failures
@@ -193,7 +186,7 @@ var (
 			Name:      websocketConnectionErrorsMetric,
 			Help:      "Total WebSocket connection errors by service, endpoint domain, error type, and sanction type",
 		},
-		[]string{"service_id", "endpoint_domain", "error_type", "sanction_type"},
+		[]string{"service_id", "error_type", "sanction_type", "endpoint_domain"},
 	)
 
 	// websocketMessagesTotal tracks the total WebSocket messages processed.
@@ -202,9 +195,7 @@ var (
 	//   - success: Whether the message was processed successfully (true if no message error)
 	//   - error_type: type of error encountered processing the message
 	//   - used_fallback: Whether the message was processed using a fallback endpoint.
-	//
-	// Exemplars:
-	//   - endpoint_url: URL of the WebSocket endpoint
+	//   - endpoint_domain: Effective TLD+1 domain extracted from endpoint URL
 	//
 	// Use to analyze:
 	//   - WebSocket message volume by service
@@ -216,18 +207,15 @@ var (
 			Name:      websocketMessagesTotalMetric,
 			Help:      "Total number of WebSocket messages processed by Shannon protocol instance(s)",
 		},
-		[]string{"service_id", "success", "error_type", "used_fallback"},
+		[]string{"service_id", "success", "error_type", "used_fallback", "endpoint_domain"},
 	)
 
 	// websocketMessageErrors tracks WebSocket message processing errors
 	// Labels:
 	//   - service_id: Target service identifier
-	//   - endpoint_domain: Effective TLD+1 domain extracted from endpoint URL
 	//   - error_type: Type of message error encountered (based on trusted classification)
 	//   - sanction_type: Type of sanction recommended (based on trusted classification)
-	//
-	// Exemplars:
-	//   - endpoint_url: URL of the WebSocket endpoint
+	//   - endpoint_domain: Effective TLD+1 domain extracted from endpoint URL
 	//
 	// Use to analyze:
 	//   - WebSocket message errors by service and type
@@ -238,7 +226,7 @@ var (
 			Name:      websocketMessageErrorsMetric,
 			Help:      "Total WebSocket message errors by service, endpoint domain, error type, and sanction type",
 		},
-		[]string{"service_id", "endpoint_domain", "error_type", "sanction_type"},
+		[]string{"service_id", "error_type", "sanction_type", "used_fallback", "endpoint_domain"},
 	)
 
 	// activeWebsocketConnections tracks the current number of active WebSocket connections.
@@ -261,16 +249,16 @@ var (
 	// sanctionsByDomain tracks sanctions applied by domain.
 	// Labels:
 	//   - service_id: Target service identifier
-	//   - endpoint_domain: Effective TLD+1 domain extracted from endpoint URL
 	//   - sanction_type: Type of sanction (based on trusted classification)
 	//   - sanction_reason: The endpoint error type that caused the sanction (trusted)
+	//   - endpoint_domain: Effective TLD+1 domain extracted from endpoint URL
 	sanctionsByDomain = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Subsystem: pathProcess,
 			Name:      sanctionsByDomainMetric,
 			Help:      "Total sanctions by service, endpoint domain (TLD+1), sanction type, and reason",
 		},
-		[]string{"service_id", "endpoint_domain", "sanction_type", "sanction_reason"},
+		[]string{"service_id", "sanction_type", "sanction_reason", "endpoint_domain"},
 	)
 
 	// endpointLatency tracks the latency distribution of endpoint responses.
@@ -449,6 +437,7 @@ func recordRelayTotal(
 
 	serviceID := observations.GetServiceId()
 
+	// === FAILED RELAY ===
 	// Relay request failed before reaching out to any endpoints.
 	// e.g. there were no available endpoints.
 	// Skip processing endpoint observations.
@@ -467,6 +456,8 @@ func recordRelayTotal(
 		// Request has an error: no endpoint observations to process.
 		return
 	}
+
+	// === SUCCESSFUL RELAY ===
 
 	// Extract endpoint observations and metrics data based on observation type
 	var endpointURL string
@@ -518,28 +509,27 @@ func recordRelayTotal(
 		return
 	}
 
-	// Create exemplar with high-cardinality data
-	// Truncate to 128 runes (Prometheus exemplar limit)
-	// See `ExemplarMaxRunes` below:
-	// https://pkg.go.dev/github.com/prometheus/client_golang/prometheus#pkg-constants
-	exLabels := prometheus.Labels{
-		"endpoint_url": endpointURL[:min(len(endpointURL), 128)],
+	// Extract effective TLD+1 from endpoint URL
+	// This function handles edge cases like IP addresses, localhost, invalid URLs
+	endpointDomain, err := ExtractDomainOrHost(endpointURL)
+	if err != nil {
+		logger.Error().Err(err).Msgf("Could not extract domain from Shannon endpoint URL %s for relay errors metric", endpointURL)
+		endpointDomain = errDomain
 	}
 
 	// Increment the relay total counter with exemplars
 	relaysTotal.With(
 		prometheus.Labels{
-			"service_id":    serviceID,
-			"success":       fmt.Sprintf("%t", success),
-			"error_type":    "",
-			"used_fallback": fmt.Sprintf("%t", usedFallbackEndpoint),
+			"service_id":      serviceID,
+			"success":         fmt.Sprintf("%t", success),
+			"error_type":      "",
+			"used_fallback":   fmt.Sprintf("%t", usedFallbackEndpoint),
+			"endpoint_domain": endpointDomain,
 		},
-	// This dynamic type cast is safe:
-	// https://pkg.go.dev/github.com/prometheus/client_golang@v1.22.0/prometheus#NewCounter
-	).(prometheus.ExemplarAdder).AddWithExemplar(float64(1), exLabels)
+	).Add(1)
 }
 
-// extractRequestError  extracts from the observations the stauts (success/failure) and the first encountered error, if any.
+// extractRequestError  extracts from the observations the status (success/failure) and the first encountered error, if any.
 // Returns:
 // - false, "" if the relay was successful.
 // - true, error_type if the relay failed.
@@ -623,24 +613,15 @@ func processEndpointErrors(
 			sanctionType = endpointObs.RecommendedSanction.String()
 		}
 
-		// Extract high-cardinality values for exemplars
-		endpointURL := endpointObs.EndpointUrl
-
-		// Create exemplar with high-cardinality data
-		// Truncate to 128 runes (Prometheus exemplar limit)
-		exLabels := prometheus.Labels{
-			"endpoint_url": endpointURL[:min(len(endpointURL), 128)],
-		}
-
 		// Record relay error
 		relaysErrorsTotal.With(
 			prometheus.Labels{
 				"service_id":      serviceID,
-				"endpoint_domain": endpointDomain,
 				"error_type":      errorType,
 				"sanction_type":   sanctionType,
+				"endpoint_domain": endpointDomain,
 			},
-		).(prometheus.ExemplarAdder).AddWithExemplar(float64(1), exLabels)
+		)
 	}
 }
 
@@ -678,9 +659,9 @@ func processSanctionsByDomain(
 		sanctionsByDomain.With(
 			prometheus.Labels{
 				"service_id":      serviceID,
-				"endpoint_domain": endpointDomain,
 				"sanction_type":   endpointObs.GetRecommendedSanction().String(),
 				"sanction_reason": sanctionReason,
+				"endpoint_domain": endpointDomain,
 			},
 		).Inc()
 	}
@@ -736,8 +717,8 @@ func processEndpointLatency(
 		endpointLatency.With(
 			prometheus.Labels{
 				"service_id":      serviceID,
-				"endpoint_domain": endpointDomain,
 				"success":         fmt.Sprintf("%t", success),
+				"endpoint_domain": endpointDomain,
 			}).Observe(latencySeconds)
 
 		// Record response size
@@ -745,8 +726,8 @@ func processEndpointLatency(
 		endpointResponseSize.With(
 			prometheus.Labels{
 				"service_id":      serviceID,
-				"endpoint_domain": endpointDomain,
 				"success":         fmt.Sprintf("%t", success),
+				"endpoint_domain": endpointDomain,
 			}).Observe(responseSize)
 	}
 }
@@ -846,19 +827,22 @@ func recordWebsocketConnectionTotal(
 
 	// Extract endpoint URL for exemplars
 	endpointURL := wsConnectionObs.GetEndpointUrl()
-	exLabels := prometheus.Labels{
-		"endpoint_url": endpointURL[:min(len(endpointURL), 128)],
+	endpointDomain, err := ExtractDomainOrHost(endpointURL)
+	if err != nil {
+		logger.Error().Err(err).Msgf("Could not extract domain from Shannon endpoint URL %s for relay errors metric", endpointURL)
+		endpointDomain = "error_extracting_domain"
 	}
 
 	// Record WebSocket connection total
 	websocketConnectionsTotal.With(
 		prometheus.Labels{
-			"service_id":    serviceID,
-			"success":       fmt.Sprintf("%t", success),
-			"error_type":    "",
-			"used_fallback": fmt.Sprintf("%t", usedFallbackEndpoint),
+			"service_id":      serviceID,
+			"success":         fmt.Sprintf("%t", success),
+			"error_type":      "",
+			"used_fallback":   fmt.Sprintf("%t", usedFallbackEndpoint),
+			"endpoint_domain": endpointDomain,
 		},
-	).(prometheus.ExemplarAdder).AddWithExemplar(1, exLabels)
+	).Add(1)
 }
 
 // recordWebsocketMessageTotal tracks WebSocket message counts.
@@ -895,19 +879,21 @@ func recordWebsocketMessageTotal(
 
 	// Extract endpoint URL for exemplars
 	endpointURL := wsMessageObs.GetEndpointUrl()
-	exLabels := prometheus.Labels{
-		"endpoint_url": endpointURL[:min(len(endpointURL), 128)],
+	endpointDomain, err := ExtractDomainOrHost(endpointURL)
+	if err != nil {
+		logger.ProbabilisticDebugInfo(polylog.ProbabilisticDebugInfoProb).Err(err).Msgf("Could not extract domain from WebSocket endpoint URL %s for message errors metric", endpointURL)
+		endpointDomain = "error_extracting_domain"
 	}
 
 	// Record WebSocket message total
 	websocketMessagesTotal.With(
 		prometheus.Labels{
-			"service_id":    serviceID,
-			"success":       fmt.Sprintf("%t", success),
-			"error_type":    "",
-			"used_fallback": fmt.Sprintf("%t", usedFallbackEndpoint),
-		},
-	).(prometheus.ExemplarAdder).AddWithExemplar(1, exLabels)
+			"service_id":      serviceID,
+			"success":         fmt.Sprintf("%t", success),
+			"error_type":      "",
+			"used_fallback":   fmt.Sprintf("%t", usedFallbackEndpoint),
+			"endpoint_domain": endpointDomain,
+		}).Inc()
 }
 
 // processWebsocketConnectionErrors records WebSocket connection error metrics.
@@ -941,8 +927,10 @@ func processWebsocketConnectionErrors(
 
 	// Extract endpoint URL for exemplars
 	endpointURL := wsConnectionObs.EndpointUrl
-	exLabels := prometheus.Labels{
-		"endpoint_url": endpointURL[:min(len(endpointURL), 128)],
+	endpointDomain, err := ExtractDomainOrHost(endpointURL)
+	if err != nil {
+		logger.ProbabilisticDebugInfo(polylog.ProbabilisticDebugInfoProb).Err(err).Msgf("Could not extract domain from WebSocket endpoint URL %s for connection errors metric", endpointURL)
+		endpointDomain = "error_extracting_domain"
 	}
 
 	// Record WebSocket connection error
@@ -952,8 +940,7 @@ func processWebsocketConnectionErrors(
 			"endpoint_domain": endpointDomain,
 			"error_type":      errorType,
 			"sanction_type":   sanctionType,
-		},
-	).(prometheus.ExemplarAdder).AddWithExemplar(float64(1), exLabels)
+		}.Inc()
 
 	// Record sanction if recommended
 	if wsConnectionObs.RecommendedSanction != nil {
@@ -1015,8 +1002,10 @@ func processWebsocketMessageErrors(
 
 	// Extract endpoint URL for exemplars
 	endpointURL := wsMessageObs.EndpointUrl
-	exLabels := prometheus.Labels{
-		"endpoint_url": endpointURL[:min(len(endpointURL), 128)],
+	endpointDomain, err := ExtractDomainOrHost(endpointURL)
+	if err != nil {
+		logger.ProbabilisticDebugInfo(polylog.ProbabilisticDebugInfoProb).Err(err).Msgf("Could not extract domain from WebSocket endpoint URL %s for message errors metric", endpointURL)
+		endpointDomain = "error_extracting_domain"
 	}
 
 	// Record WebSocket message error
@@ -1026,8 +1015,7 @@ func processWebsocketMessageErrors(
 			"endpoint_domain": endpointDomain,
 			"error_type":      errorType,
 			"sanction_type":   sanctionType,
-		},
-	).(prometheus.ExemplarAdder).AddWithExemplar(float64(1), exLabels)
+		}.Inc()
 
 	// Record sanction if recommended
 	if wsMessageObs.RecommendedSanction != nil {
