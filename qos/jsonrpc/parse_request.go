@@ -10,8 +10,6 @@ import (
 	"github.com/buildwithgrove/path/log"
 )
 
-// TODO_IN_THIS_PR(@commoddity): Should this return protocol.Payload instead of Request?
-
 // TODO_MVP(@adshmh): Add a JSON-RPC request validator to reject invalid/unsupported
 // method calls early in request flow.
 //
