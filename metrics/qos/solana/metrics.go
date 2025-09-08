@@ -93,6 +93,5 @@ func PublishMetrics(logger polylog.Logger, observations *qos.SolanaRequestObserv
 			"error_type":       interpreter.GetRequestErrorType(),
 			"http_status_code": fmt.Sprintf("%d", interpreter.GetRequestHTTPStatus()),
 			"endpoint_domain":  interpreter.GetEndpointDomain(),
-		},
-	).Inc()
+		}).Inc()
 }
