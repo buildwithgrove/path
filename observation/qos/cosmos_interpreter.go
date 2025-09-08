@@ -2,8 +2,11 @@ package qos
 
 import (
 	"errors"
+	"strings"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
+
+	"github.com/buildwithgrove/path/protocol"
 )
 
 // CosmosSDKObservationInterpreter extracts and interprets data from CosmosSDK request observations.
@@ -183,7 +186,7 @@ func (i *CosmosSDKObservationInterpreter) GetTotalRequestPayloadLength() uint32 
 // GetRequestStatus interprets the observations to determine request status information.
 // Returns: (httpStatusCode, requestError, err)
 // - httpStatusCode: the suggested HTTP status code to return to the client
-// - requestError: error details (nil if successful)  
+// - requestError: error details (nil if successful)
 // - err: error if interpreter cannot determine status (e.g., nil observations)
 func (i *CosmosSDKObservationInterpreter) GetRequestStatus() (int32, *RequestError, error) {
 	if i.Observations == nil {
@@ -197,7 +200,7 @@ func (i *CosmosSDKObservationInterpreter) GetRequestStatus() (int32, *RequestErr
 
 	// If no request-level error, check endpoint observations for response errors
 	httpStatusCode := i.GetRequestHTTPStatus()
-	
+
 	// Request is successful if no request-level error and HTTP status indicates success
 	if httpStatusCode >= 200 && httpStatusCode < 300 {
 		return httpStatusCode, nil, nil
@@ -207,4 +210,53 @@ func (i *CosmosSDKObservationInterpreter) GetRequestStatus() (int32, *RequestErr
 	// Note: Unlike EVM, Cosmos doesn't have specific error categorization yet
 	// TODO_TECHDEBT: Add specific Cosmos error categorization similar to EVM
 	return httpStatusCode, nil, nil
+}
+
+// GetEndpointDomain returns the domain of the endpoint that served the request.
+//
+// If multiple endpoint observations are present, it returns the domain of the first endpoint observation.
+// If no endpoint observations are present, it returns an empty string.
+//
+// TODO_TECHDEBT: Consolidate this with the business logic of other "GetEndpointDomain" implementations.
+func (i *CosmosSDKObservationInterpreter) GetEndpointDomain() string {
+	// Ensure observations are not nil
+	if i.Observations == nil {
+		i.Logger.ProbabilisticDebugInfo(polylog.ProbabilisticDebugInfoProb).Msg("SHOULD RARELY HAPPEN: Cosmos observations are nil")
+		return ""
+	}
+
+	// Ensure endpoint observations are not empty
+	endpointObservations := i.Observations.GetEndpointObservations()
+	if len(endpointObservations) == 0 {
+		i.Logger.ProbabilisticDebugInfo(polylog.ProbabilisticDebugInfoProb).Msg("SHOULD RARELY HAPPEN: Cosmos endpoint observations are empty")
+		return ""
+	}
+
+	// Build a set of unique endpoint addresses
+	uniqueEndpointAddrs := make(map[string]struct{})
+	endpointAddrs := make([]string, 0, len(endpointObservations))
+	for _, eo := range endpointObservations {
+		endpointAddr := eo.GetEndpointAddr()
+		if _, seen := uniqueEndpointAddrs[endpointAddr]; !seen {
+			uniqueEndpointAddrs[endpointAddr] = struct{}{}
+			endpointAddrs = append(endpointAddrs, endpointAddr)
+		}
+	}
+
+	// If multiple endpoint addresses are observed, log a warning and use the first one for domain extraction
+	// TODO_DISCUSS: Decide how we want to handle this case in the future.
+	numUniqueEndpointAddrs := len(uniqueEndpointAddrs)
+	if numUniqueEndpointAddrs > 1 {
+		i.Logger.With(
+			"num_unique_endpoint_addrs", numUniqueEndpointAddrs,
+			"unique_endpoint_addrs", strings.Join(endpointAddrs, ", "),
+		).Warn().Msg("Multiple endpoint addresses observed for a single request. Using the first one for metrics domain.")
+	}
+
+	// Use the first observed endpoint address for domain extraction
+	domain, err := protocol.EndpointAddr(endpointAddrs[0]).GetDomain()
+	if err != nil {
+		i.Logger.Error().Err(err).Msg("SHOULD NEVER HAPPEN: Cannot get endpoint domain from endpoint address")
+	}
+	return domain
 }

@@ -1,10 +1,13 @@
 package protocol
 
-import "strings"
+import (
+	"fmt"
+	"strings"
+
+	metricshttp "github.com/buildwithgrove/path/metrics/http"
+)
 
 // EndpointAddr is used as the unique identifier for a service endpoint.
-//
-// In Shannon, the endpoint address is the concatenation of the supplier's
 // operator address and the endpoint's URL, separated by a "-" character.
 //
 // For example:
@@ -36,10 +39,6 @@ type EndpointSelector interface {
 	SelectMultiple(EndpointAddrList, uint) (EndpointAddrList, error)
 }
 
-func (e EndpointAddr) String() string {
-	return string(e)
-}
-
 func (e EndpointAddrList) String() string {
 	// Converts each EndpointAddr to string and joins them with a comma
 	addrs := make([]string, len(e))
@@ -47,4 +46,38 @@ func (e EndpointAddrList) String() string {
 		addrs[i] = string(addr)
 	}
 	return strings.Join(addrs, ", ")
+}
+
+func (e EndpointAddr) String() string {
+	return string(e)
+}
+
+// GetDomain returns the effective TLD+1 domain of the endpoint address.
+// For example:
+// - Given the endpoint address "pokt1eetcwfv2agdl2nvpf4cprhe89rdq3cxdf037wq-https://relayminer.shannon-mainnet.eu.nodefleet.net"
+// - Would return "relayminer.shannon-mainnet.eu.nodefleet.net"
+func (e EndpointAddr) GetDomain() (string, error) {
+	// Split by dash to separate the address part from the URL part
+	endpointAddrParts := strings.Split(e.String(), "-")
+	if len(endpointAddrParts) < 2 {
+		return "", fmt.Errorf("endpoint address %s does not contain a dash separator", e.String())
+	}
+
+	// Take everything after the first dash as the URL
+	return metricshttp.ExtractEffectiveTLDPlusOne(endpointAddrParts[1])
+}
+
+// GetAddress returns the address of the endpoint.
+// For example:
+// - Given the endpoint address "pokt1eetcwfv2agdl2nvpf4cprhe89rdq3cxdf037wq-https://relayminer.shannon-mainnet.eu.nodefleet.net"
+// - Would return "pokt1eetcwfv2agdl2nvpf4cprhe89rdq3cxdf037wq"
+func (e EndpointAddr) GetAddress() (string, error) {
+	// Split by dash to separate the address part from the URL part
+	endpointAddrParts := strings.Split(e.String(), "-")
+	if len(endpointAddrParts) < 2 {
+		return "", fmt.Errorf("endpoint address %s does not contain a dash separator", e.String())
+	}
+
+	// Take everything before the first dash as the address
+	return endpointAddrParts[0], nil
 }

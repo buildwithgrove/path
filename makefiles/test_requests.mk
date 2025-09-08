@@ -52,17 +52,6 @@ check_path_up_envoy:
 		exit 1; \
 	fi
 
-.PHONY: check_relay_util
-# Internal helper: Checks if relay-util is installed locally
-check_relay_util:
-	@if ! command -v relay-util &> /dev/null; then \
-		echo "####################################################################################################"; \
-		echo "Relay Util is not installed." \
-		echo "To use any Relay Util make targets to send load testing requests please install Relay Util with:"; \
-		echo "go install github.com/commoddity/relay-util/v2@latest"; \
-		echo "####################################################################################################"; \
-	fi
-
 ###################################
 #### PATH binary Test Requests ####
 ###################################
