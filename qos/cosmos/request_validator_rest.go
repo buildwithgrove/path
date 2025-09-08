@@ -15,6 +15,11 @@ import (
 	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
 
+// restRequestID is a dummy string value used as the request ID for REST requests.
+// REST requests do not support batching, so we use a hardcoded string ID to match
+// the the response to the request in the servicePayloads map.
+const restRequestID = "rest_request"
+
 // validateRESTRequest validates a REST request by:
 // 1. Validating HTTP method and path
 // 2. Determining the specific RPC type from the path
@@ -101,9 +106,11 @@ func (rv *requestValidator) buildRESTRequestContext(
 
 	// Create specialized REST context
 	return &requestContext{
-		logger:                       logger,
-		serviceState:                 rv.serviceState,
-		servicePayload:               servicePayload,
+		logger:       logger,
+		serviceState: rv.serviceState,
+		servicePayloads: map[jsonrpc.ID]protocol.Payload{
+			jsonrpc.IDFromStr(restRequestID): servicePayload,
+		},
 		observations:                 requestObservation,
 		endpointResponseValidator:    getRESTRequestEndpointResponseValidator(httpRequestURL.Path),
 		protocolErrorResponseBuilder: buildRESTProtocolErrorResponse(),
@@ -157,17 +164,19 @@ func (rv *requestValidator) buildRESTRequestObservations(
 		EvmChainId:    rv.evmChainID,
 		ServiceId:     string(rv.serviceID),
 		RequestOrigin: requestOrigin,
-		RequestProfile: &qosobservations.CosmosRequestProfile{
-			BackendServiceDetails: &qosobservations.BackendServiceDetails{
-				BackendServiceType: convertToProtoBackendServiceType(rpcType),
-				SelectionReason:    "REST path detection",
-			},
-			ParsedRequest: &qosobservations.CosmosRequestProfile_RestRequest{
-				RestRequest: &qosobservations.RESTRequest{
-					ApiPath:       httpRequestURL.Path,
-					HttpMethod:    httpRequestMethod,
-					ContentType:   contentType,
-					PayloadLength: uint32(len(httpRequestBody)),
+		RequestProfiles: []*qosobservations.CosmosRequestProfile{
+			{
+				BackendServiceDetails: &qosobservations.BackendServiceDetails{
+					BackendServiceType: convertToProtoBackendServiceType(rpcType),
+					SelectionReason:    "REST path detection",
+				},
+				ParsedRequest: &qosobservations.CosmosRequestProfile_RestRequest{
+					RestRequest: &qosobservations.RESTRequest{
+						ApiPath:       httpRequestURL.Path,
+						HttpMethod:    httpRequestMethod,
+						ContentType:   contentType,
+						PayloadLength: uint32(len(httpRequestBody)),
+					},
 				},
 			},
 		},
@@ -232,17 +241,19 @@ func (rv *requestValidator) createRESTUnsupportedRPCTypeObservation(
 		EvmChainId:    rv.evmChainID,
 		ServiceId:     string(rv.serviceID),
 		RequestOrigin: qosobservations.RequestOrigin_REQUEST_ORIGIN_ORGANIC,
-		RequestProfile: &qosobservations.CosmosRequestProfile{
-			BackendServiceDetails: &qosobservations.BackendServiceDetails{
-				BackendServiceType: convertToProtoBackendServiceType(rpcType),
-				SelectionReason:    "REST path detection (unsupported)",
-			},
-			ParsedRequest: &qosobservations.CosmosRequestProfile_RestRequest{
-				RestRequest: &qosobservations.RESTRequest{
-					ApiPath:       httpRequestURL.Path,
-					HttpMethod:    httpRequestMethod,
-					ContentType:   "", // Not available at this point
-					PayloadLength: uint32(len(httpRequestBody)),
+		RequestProfiles: []*qosobservations.CosmosRequestProfile{
+			{
+				BackendServiceDetails: &qosobservations.BackendServiceDetails{
+					BackendServiceType: convertToProtoBackendServiceType(rpcType),
+					SelectionReason:    "REST path detection (unsupported)",
+				},
+				ParsedRequest: &qosobservations.CosmosRequestProfile_RestRequest{
+					RestRequest: &qosobservations.RESTRequest{
+						ApiPath:       httpRequestURL.Path,
+						HttpMethod:    httpRequestMethod,
+						ContentType:   "", // Not available at this point
+						PayloadLength: uint32(len(httpRequestBody)),
+					},
 				},
 			},
 		},

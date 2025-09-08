@@ -11,7 +11,7 @@ import "path/qos/request_error.proto";
 
 // CosmosRequestObservations captures all observations made while serving a single Cosmos blockchain service request.
 message CosmosRequestObservations {
-    // Next free index: 9
+    // Next free index: 10
 
     // string chain_id = 1;
     reserved 1;
@@ -29,8 +29,13 @@ message CosmosRequestObservations {
     // The origin of the request
     RequestOrigin request_origin = 3;
 
-    // Profile of the request: backend service selection and format determination
-    CosmosRequestProfile request_profile = 4;
+    // CosmosRequestProfile request_profile = 4;
+    reserved 4;
+    reserved "request_profile";
+
+    // Profiles of the requests: backend service selection and format determination
+    // This field supports batch requests where multiple request profiles can be processed
+    repeated CosmosRequestProfile request_profiles = 9;
 
     // Request-level error, i.e. failed without any endpoint responses.
     // Examples:

@@ -33,81 +33,86 @@ func (rv *requestValidator) validateJSONRPCRequest(
 
 	logger := rv.logger.With("validator", "JSONRPC")
 
-	// Parse JSONRPC request
-	var jsonrpcReq jsonrpc.Request
-	if err := json.Unmarshal(body, &jsonrpcReq); err != nil {
-		logger.Warn().Err(err).Msg("Failed to parse JSONRPC request")
+	// Parse and validate the JSONRPC request(s) - handles both single and batch requests
+	jsonrpcReqs, isBatch, err := jsonrpc.ParseJSONRPCFromRequestBody(logger, body)
+	if err != nil {
+		// If no requests parsed or empty ID, requestID will be zero value (empty)
 		return rv.createJSONRPCParseFailureContext(err), false
-	}
-
-	// Determine service type based on JSONRPC request's method
-	method := string(jsonrpcReq.Method)
-	rpcType := detectJSONRPCServiceType(method)
-
-	// Hydrate the logger with data extracted from the request.
-	logger = logger.With(
-		"rpc_type", rpcType.String(),
-		"jsonrpc_method", method,
-	)
-
-	// Check if this RPC type is supported by the service
-	if _, supported := rv.supportedAPIs[rpcType]; !supported {
-		logger.Warn().Msg("Request uses unsupported RPC type")
-		return rv.createJSONRPCUnsupportedRPCTypeContext(jsonrpcReq, rpcType), false
 	}
 
 	// Build and return the request context
 	return rv.buildJSONRPCRequestContext(
-		rpcType,
-		jsonrpcReq,
+		jsonrpcReqs,
+		isBatch,
 		qosobservations.RequestOrigin_REQUEST_ORIGIN_ORGANIC,
 	)
 }
 
+func (rv *requestValidator) buildJSONRPCServicePayloadsFromRequests(
+	jsonrpcReqs map[jsonrpc.ID]jsonrpc.Request,
+) (map[jsonrpc.ID]protocol.Payload, error) {
+	servicePayloads := make(map[jsonrpc.ID]protocol.Payload)
+
+	for reqID, req := range jsonrpcReqs {
+		method := string(req.Method)
+		rpcType := detectJSONRPCServiceType(method)
+
+		// Hydrate the logger with data extracted from the request.
+		logger := rv.logger.With(
+			"rpc_type", rpcType.String(),
+			"jsonrpc_method", method,
+		)
+
+		// Check if this RPC type is supported by the service
+		if _, supported := rv.supportedAPIs[rpcType]; !supported {
+			logger.Warn().Msg("Request uses unsupported RPC type")
+			return servicePayloads, errors.New("request uses unsupported RPC type")
+		}
+
+		servicePayload, err := buildJSONRPCServicePayload(rpcType, req)
+		if err != nil {
+			return servicePayloads, err
+		}
+		servicePayloads[reqID] = servicePayload
+	}
+
+	return servicePayloads, nil
+}
+
 func (rv *requestValidator) buildJSONRPCRequestContext(
-	rpcType sharedtypes.RPCType,
-	jsonrpcReq jsonrpc.Request,
+	jsonrpcReqs map[jsonrpc.ID]jsonrpc.Request,
+	isBatch bool,
 	requestOrigin qosobservations.RequestOrigin,
 ) (gateway.RequestQoSContext, bool) {
 	logger := rv.logger.With(
 		"method", "buildJSONRPCRequestContext",
 	)
 
-	// Build service payload
-	servicePayload, err := buildJSONRPCServicePayload(rpcType, jsonrpcReq)
+	// Build service payloads
+	servicePayloads, err := rv.buildJSONRPCServicePayloadsFromRequests(jsonrpcReqs)
 	if err != nil {
 		logger.Warn().Err(err).Msg("SHOULD NEVER HAPPEN: failed to marshal JSONRPC service payload")
-
-		return rv.createJSONRPCServicePayloadBuildFailureContext(jsonrpcReq, err), false
+		// For batch failure, use helper to get appropriate ID for error response
+		errorID := getJsonRpcIDForErrorResponse(jsonrpcReqs)
+		return rv.createJSONRPCServicePayloadBuildFailureContext(errorID, err), false
 	}
 
 	// Generate the QoS observation for the request.
 	// requestContext will amend this with endpoint observation(s).
 	requestObservation := rv.buildJSONRPCRequestObservations(
-		rpcType,
-		jsonrpcReq,
-		servicePayload,
+		jsonrpcReqs,
 		requestOrigin,
-	)
-
-	logger.Debug().
-		Str("id", jsonrpcReq.ID.String()).
-		Int("payload_length", len(servicePayload.Data)).
-		Msg("JSONRPC request validation successful.")
-
-	// Hydrate the logger with JSONRPC method.
-	logger = logger.With(
-		"jsonrpc_request", jsonrpcReq,
 	)
 
 	// Create specialized JSONRPC context
 	return &requestContext{
 		logger:                       logger,
 		serviceState:                 rv.serviceState,
-		servicePayload:               servicePayload,
+		servicePayloads:              servicePayloads,
+		isBatch:                      isBatch,
 		observations:                 requestObservation,
-		endpointResponseValidator:    getJSONRPCRequestEndpointResponseValidator(jsonrpcReq),
-		protocolErrorResponseBuilder: buildJSONRPCProtocolErrorResponse(jsonrpcReq.ID),
+		endpointResponseValidator:    getJSONRPCRequestEndpointResponseValidator(jsonrpcReqs),
+		protocolErrorResponseBuilder: buildJSONRPCProtocolErrorResponse(getJsonRpcIDForErrorResponse(jsonrpcReqs)),
 		// Protocol-level request error observation is the same for JSONRPC and REST.
 		protocolErrorObservationBuilder: buildProtocolErrorObservation,
 	}, true
@@ -133,12 +138,12 @@ func buildJSONRPCServicePayload(rpcType sharedtypes.RPCType, jsonrpcReq jsonrpc.
 }
 
 func getJSONRPCRequestEndpointResponseValidator(
-	jsonrpcReq jsonrpc.Request,
+	jsonrpcReqs map[jsonrpc.ID]jsonrpc.Request,
 ) func(polylog.Logger, []byte) response {
 
 	// Delegate the unmarshaling/validation of endpoint response to the specialized JSONRPC unmarshaler.
 	return func(logger polylog.Logger, endpointResponseBz []byte) response {
-		return unmarshalJSONRPCRequestEndpointResponse(logger, jsonrpcReq, endpointResponseBz)
+		return unmarshalJSONRPCRequestEndpointResponse(logger, jsonrpcReqs, endpointResponseBz)
 	}
 }
 
@@ -155,18 +160,17 @@ func buildJSONRPCProtocolErrorResponse(
 }
 
 func (rv *requestValidator) buildJSONRPCRequestObservations(
-	rpcType sharedtypes.RPCType,
-	jsonrpcReq jsonrpc.Request,
-	servicePayload protocol.Payload,
+	jsonrpcReqs map[jsonrpc.ID]jsonrpc.Request,
 	requestOrigin qosobservations.RequestOrigin,
 ) *qosobservations.CosmosRequestObservations {
+	// Build request profiles for each JSON-RPC request
+	var requestProfiles []*qosobservations.CosmosRequestProfile
 
-	return &qosobservations.CosmosRequestObservations{
-		CosmosChainId: rv.cosmosChainID,
-		EvmChainId:    rv.evmChainID,
-		ServiceId:     string(rv.serviceID),
-		RequestOrigin: requestOrigin,
-		RequestProfile: &qosobservations.CosmosRequestProfile{
+	for _, jsonrpcReq := range jsonrpcReqs {
+		method := string(jsonrpcReq.Method)
+		rpcType := detectJSONRPCServiceType(method)
+
+		requestProfile := &qosobservations.CosmosRequestProfile{
 			BackendServiceDetails: &qosobservations.BackendServiceDetails{
 				BackendServiceType: convertToProtoBackendServiceType(rpcType),
 				SelectionReason:    "JSONRPC method detection",
@@ -174,7 +178,16 @@ func (rv *requestValidator) buildJSONRPCRequestObservations(
 			ParsedRequest: &qosobservations.CosmosRequestProfile_JsonrpcRequest{
 				JsonrpcRequest: jsonrpcReq.GetObservation(),
 			},
-		},
+		}
+		requestProfiles = append(requestProfiles, requestProfile)
+	}
+
+	return &qosobservations.CosmosRequestObservations{
+		CosmosChainId:   rv.cosmosChainID,
+		EvmChainId:      rv.evmChainID,
+		ServiceId:       string(rv.serviceID),
+		RequestOrigin:   requestOrigin,
+		RequestProfiles: requestProfiles,
 	}
 }
 
@@ -267,13 +280,15 @@ func (rv *requestValidator) createJSONRPCUnsupportedRPCTypeObservation(
 		EvmChainId:    rv.evmChainID,
 		ServiceId:     string(rv.serviceID),
 		RequestOrigin: qosobservations.RequestOrigin_REQUEST_ORIGIN_ORGANIC,
-		RequestProfile: &qosobservations.CosmosRequestProfile{
-			BackendServiceDetails: &qosobservations.BackendServiceDetails{
-				BackendServiceType: convertToProtoBackendServiceType(rpcType),
-				SelectionReason:    "JSONRPC method detection (unsupported)",
-			},
-			ParsedRequest: &qosobservations.CosmosRequestProfile_JsonrpcRequest{
-				JsonrpcRequest: jsonrpcReq.GetObservation(),
+		RequestProfiles: []*qosobservations.CosmosRequestProfile{
+			{
+				BackendServiceDetails: &qosobservations.BackendServiceDetails{
+					BackendServiceType: convertToProtoBackendServiceType(rpcType),
+					SelectionReason:    "JSONRPC method detection (unsupported)",
+				},
+				ParsedRequest: &qosobservations.CosmosRequestProfile_JsonrpcRequest{
+					JsonrpcRequest: jsonrpcReq.GetObservation(),
+				},
 			},
 		},
 		RequestLevelError: &qosobservations.RequestError{
@@ -285,12 +300,12 @@ func (rv *requestValidator) createJSONRPCUnsupportedRPCTypeObservation(
 }
 
 // createJSONRPCServicePayloadBuildFailureContext creates an error context for service payload build failures
-func (rv *requestValidator) createJSONRPCServicePayloadBuildFailureContext(jsonrpcReq jsonrpc.Request, err error) gateway.RequestQoSContext {
+func (rv *requestValidator) createJSONRPCServicePayloadBuildFailureContext(jsonrpcID jsonrpc.ID, err error) gateway.RequestQoSContext {
 	// Create the JSON-RPC error response
-	response := jsonrpc.NewErrResponseInternalErr(jsonrpcReq.ID, err)
+	response := jsonrpc.NewErrResponseInternalErr(jsonrpcID, err)
 
 	// Create the observations object with the payload build failure observation
-	observations := rv.createJSONRPCServicePayloadBuildFailureObservation(jsonrpcReq, err, response)
+	observations := rv.createJSONRPCServicePayloadBuildFailureObservation(jsonrpcID, err, response)
 
 	// Build and return the error context
 	return &qos.RequestErrorContext{
@@ -305,7 +320,7 @@ func (rv *requestValidator) createJSONRPCServicePayloadBuildFailureContext(jsonr
 }
 
 func (rv *requestValidator) createJSONRPCServicePayloadBuildFailureObservation(
-	jsonrpcReq jsonrpc.Request,
+	jsonrpcID jsonrpc.ID,
 	err error,
 	jsonrpcResponse jsonrpc.Response,
 ) *qosobservations.CosmosRequestObservations {
@@ -314,11 +329,6 @@ func (rv *requestValidator) createJSONRPCServicePayloadBuildFailureObservation(
 		EvmChainId:    rv.evmChainID,
 		ServiceId:     string(rv.serviceID),
 		RequestOrigin: qosobservations.RequestOrigin_REQUEST_ORIGIN_ORGANIC,
-		RequestProfile: &qosobservations.CosmosRequestProfile{
-			ParsedRequest: &qosobservations.CosmosRequestProfile_JsonrpcRequest{
-				JsonrpcRequest: jsonrpcReq.GetObservation(),
-			},
-		},
 		RequestLevelError: &qosobservations.RequestError{
 			ErrorKind:      qosobservations.RequestErrorKind_REQUEST_ERROR_INTERNAL_JSONRPC_PAYLOAD_BUILD_ERROR,
 			ErrorDetails:   truncateErrorMessage(err.Error()),

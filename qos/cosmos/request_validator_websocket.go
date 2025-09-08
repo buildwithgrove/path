@@ -78,10 +78,12 @@ func (rv *requestValidator) buildWebsocketRequestObservations(
 		CosmosChainId: rv.cosmosChainID,
 		ServiceId:     string(rv.serviceID),
 		RequestOrigin: requestOrigin,
-		RequestProfile: &qosobservations.CosmosRequestProfile{
-			BackendServiceDetails: &qosobservations.BackendServiceDetails{
-				BackendServiceType: convertToProtoBackendServiceType(rpcType),
-				SelectionReason:    "WebSocket upgrade request detection",
+		RequestProfiles: []*qosobservations.CosmosRequestProfile{
+			{
+				BackendServiceDetails: &qosobservations.BackendServiceDetails{
+					BackendServiceType: convertToProtoBackendServiceType(rpcType),
+					SelectionReason:    "WebSocket upgrade request detection",
+				},
 			},
 		},
 	}
@@ -116,10 +118,12 @@ func (rv *requestValidator) createWebsocketUnsupportedRPCTypeObservation(
 		ServiceId:     string(rv.serviceID),
 		CosmosChainId: rv.cosmosChainID,
 		RequestOrigin: qosobservations.RequestOrigin_REQUEST_ORIGIN_ORGANIC,
-		RequestProfile: &qosobservations.CosmosRequestProfile{
-			BackendServiceDetails: &qosobservations.BackendServiceDetails{
-				BackendServiceType: convertToProtoBackendServiceType(rpcType),
-				SelectionReason:    "WebSocket upgrade request detection (unsupported)",
+		RequestProfiles: []*qosobservations.CosmosRequestProfile{
+			{
+				BackendServiceDetails: &qosobservations.BackendServiceDetails{
+					BackendServiceType: convertToProtoBackendServiceType(rpcType),
+					SelectionReason:    "WebSocket upgrade request detection (unsupported)",
+				},
 			},
 		},
 		RequestLevelError: &qosobservations.RequestError{
