@@ -16,6 +16,9 @@ import (
 // - Message size percentiles (distribution of message payload sizes)
 // - Subscription event rates (frequency of subscription events per connection)
 
+// TODO_IMPROVE(@olshansky): Consider adding probabilistic debug logging back for endpoint errors
+// to provide more context during debugging while controlling log volume
+
 const (
 	// The POSIX process that emits metrics
 	pathProcess = "path"
@@ -42,7 +45,7 @@ const (
 	relayMinerErrorsTotalMetric = "shannon_relay_miner_errors_total"
 
 	// The default value for a domain if it cannot be extracted from an endpoint URL
-	errDomain = "error_extracting_domain"
+	ErrDomain = "error_extracting_domain"
 )
 
 var (
@@ -223,7 +226,7 @@ var (
 			Name:      websocketMessageErrorsMetric,
 			Help:      "Total WebSocket message errors by service, endpoint domain, error type, and sanction type",
 		},
-		[]string{"service_id", "error_type", "sanction_type", "used_fallback", "endpoint_domain"},
+		[]string{"service_id", "error_type", "sanction_type", "endpoint_domain"},
 	)
 
 	// activeWebsocketConnections tracks the current number of active WebSocket connections.
@@ -511,7 +514,7 @@ func recordRelayTotal(
 	endpointDomain, err := ExtractDomainOrHost(endpointURL)
 	if err != nil {
 		logger.Error().Err(err).Msgf("Could not extract domain from Shannon endpoint URL %s for relay errors metric", endpointURL)
-		endpointDomain = errDomain
+		endpointDomain = ErrDomain
 	}
 
 	// Increment the relay total counter with exemplars
@@ -593,7 +596,7 @@ func processEndpointErrors(
 		endpointDomain, err := ExtractDomainOrHost(endpointObs.GetEndpointUrl())
 		if err != nil {
 			logger.Error().Err(err).Msgf("Could not extract domain from Shannon endpoint URL %s for relay errors metric", endpointObs.GetEndpointUrl())
-			endpointDomain = errDomain
+			endpointDomain = ErrDomain
 		}
 
 		// Extract low-cardinality labels (based on trusted error classification)
@@ -633,7 +636,7 @@ func processSanctionsByDomain(
 		endpointDomain, err := ExtractDomainOrHost(endpointObs.GetEndpointUrl())
 		if err != nil {
 			logger.Error().Err(err).Msgf("Could not extract domain from endpoint URL %s.", endpointObs.GetEndpointUrl())
-			endpointDomain = errDomain
+			endpointDomain = ErrDomain
 		}
 
 		// Extract the sanction reason from the endpoint error type (trusted classification)
@@ -680,7 +683,7 @@ func processEndpointLatency(
 		endpointDomain, err := ExtractDomainOrHost(endpointUrl)
 		if err != nil {
 			logger.Error().Err(err).Msgf("Could not extract domain from endpoint URL %s.", endpointUrl)
-			endpointDomain = errDomain
+			endpointDomain = ErrDomain
 		}
 
 		// Calculate latency in seconds
@@ -690,7 +693,7 @@ func processEndpointLatency(
 
 		// Skip negative latencies (invalid timestamps)
 		if latencySeconds < 0 {
-			logger.Error().Err(fmt.Errorf("negative latency detected")).Msgf("SHOULD NEVER HAPPEN: Negative latency (%f) detected, skipping metric for endpoint %s", latencySeconds, endpointUrl)
+			logger.Error().Msgf("SHOULD NEVER HAPPEN: Negative latency (%f) detected, skipping metric for endpoint %s", latencySeconds, endpointUrl)
 			continue
 		}
 
@@ -730,7 +733,7 @@ func processRelayMinerErrors(
 		endpointDomain, err := ExtractDomainOrHost(endpointUrl)
 		if err != nil {
 			logger.Error().Err(err).Msgf("Could not extract domain from endpoint URL %s.", endpointUrl)
-			endpointDomain = errDomain
+			endpointDomain = ErrDomain
 		}
 
 		// Extract RelayMinerError details
@@ -808,7 +811,7 @@ func recordWebsocketConnectionTotal(
 	endpointDomain, err := ExtractDomainOrHost(endpointURL)
 	if err != nil {
 		logger.Error().Err(err).Msgf("Could not extract domain from Shannon endpoint URL %s for relay errors metric", endpointURL)
-		endpointDomain = errDomain
+		endpointDomain = ErrDomain
 	}
 
 	// Record WebSocket connection total
@@ -860,7 +863,7 @@ func recordWebsocketMessageTotal(
 	endpointDomain, err := ExtractDomainOrHost(endpointURL)
 	if err != nil {
 		logger.Error().Err(err).Msgf("Could not extract domain from WebSocket endpoint URL %s for message errors metric", endpointURL)
-		endpointDomain = errDomain
+		endpointDomain = ErrDomain
 	}
 
 	// Record WebSocket message total
@@ -890,7 +893,7 @@ func processWebsocketConnectionErrors(
 	endpointDomain, err := ExtractDomainOrHost(endpointUrl)
 	if err != nil {
 		logger.Error().Err(err).Msgf("Could not extract domain from endpoint URL %s.", endpointUrl)
-		endpointDomain = errDomain
+		endpointDomain = ErrDomain
 	}
 
 	// Extract error information
@@ -951,7 +954,7 @@ func processWebsocketMessageErrors(
 	endpointDomain, err := ExtractDomainOrHost(wsMessageObs.GetEndpointUrl())
 	if err != nil {
 		logger.Error().Err(err).Msgf("Could not extract domain from endpoint URL %s.", wsMessageObs.GetEndpointUrl())
-		endpointDomain = errDomain
+		endpointDomain = ErrDomain
 	}
 
 	// Extract error information
@@ -967,7 +970,6 @@ func processWebsocketMessageErrors(
 			"service_id":      serviceID,
 			"error_type":      errorType,
 			"sanction_type":   sanctionType,
-			"used_fallback":   fmt.Sprintf("%t", wsMessageObs.GetIsFallbackEndpoint()),
 			"endpoint_domain": endpointDomain,
 		}).Inc()
 

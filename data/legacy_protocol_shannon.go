@@ -146,10 +146,11 @@ func setLegacyFieldsFromWebsocketConnectionObservation(
 	legacyRecord.NodeAddress = wsConnectionObs.GetSupplier()
 
 	// Extract effective TLD+1 from endpoint URL.
-	endpointDomain, err := ExtractDomainOrHost(endpointObs.GetEndpointUrl())
+	endpointUrl := wsConnectionObs.GetEndpointUrl()
+	endpointDomain, err := shannonmetrics.ExtractDomainOrHost(endpointUrl)
 	if err != nil {
-		logger.Error().Err(err).Msgf("Could not extract domain from endpoint URL %s.", endpointObs.GetEndpointUrl())
-		endpointDomain = errDomain
+		logger.Error().Err(err).Msgf("Could not extract domain from endpoint URL %s.", endpointUrl)
+		endpointDomain = shannonmetrics.ErrDomain
 	}
 	legacyRecord.NodeDomain = endpointDomain
 
@@ -187,7 +188,7 @@ func setLegacyFieldsFromWebsocketMessageObservation(
 	endpointDomain, err := shannonmetrics.ExtractDomainOrHost(endpointUrl)
 	if err != nil {
 		logger.Error().Err(err).Msg("Could not extract domain from WebSocket message endpoint URL")
-		endpointDomain = shannonmetrics.errDomain
+		endpointDomain = shannonmetrics.ErrDomain
 	}
 	legacyRecord.NodeDomain = endpointDomain
 
