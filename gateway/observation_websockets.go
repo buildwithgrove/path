@@ -29,7 +29,7 @@ func buildConnectionEstablishmentFailureObservation(
 							Supplier:     "", // Unknown at this point
 							EndpointUrl:  string(selectedEndpoint),
 							EventType:    protocolobservations.ShannonWebsocketConnectionObservation_CONNECTION_ESTABLISHMENT_FAILED,
-							ErrorType:    &[]protocolobservations.ShannonEndpointErrorType{protocolobservations.ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_INTERNAL}[0],
+							ErrorType:    &[]protocolobservations.ShannonEndpointErrorType{protocolobservations.ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_UNKNOWN}[0],
 							ErrorDetails: &[]string{fmt.Sprintf("failed to build protocol context and start bridge: %v", err)}[0],
 						},
 					},
