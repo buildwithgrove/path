@@ -75,6 +75,22 @@ func getEVMTestMethods() []string {
 	}
 }
 
+// getEVMTestMethodsForWebSocket returns all EVM JSON-RPC methods for WebSocket testing.
+// This includes all EVM JSON-RPC methods except batchRequest.
+func getEVMTestMethodsForWebSocket() []string {
+	return []string{
+		eth_blockNumber,
+		eth_chainId,
+		eth_gasPrice,
+		eth_getBalance,
+		eth_getBlockByNumber,
+		eth_getTransactionCount,
+		eth_getTransactionReceipt,
+		eth_getTransactionByHash,
+		eth_call,
+	}
+}
+
 // createEVMJsonRPCParams builds RPC params for each EVM method using the provided service parameters.
 func createEVMJsonRPCParams(method jsonrpc.Method, sp ServiceParams) jsonrpc.Params {
 	switch method {
@@ -153,7 +169,6 @@ func createEVMBatchRequest() ([]byte, error) {
 
 func getEVMVegetaTargets(
 	ts *TestService,
-	methods []string,
 	gatewayURL string,
 ) (map[string]vegeta.Target, error) {
 	headers := getRequestHeaders(ts.ServiceID)
@@ -165,12 +180,17 @@ func getEVMVegetaTargets(
 	ts.ServiceParams.blockNumber = blockNumber
 
 	targets := make(map[string]vegeta.Target)
-	for _, method := range methods {
+	for _, method := range getEVMTestMethods() {
 		var body []byte
 		var err error
 
 		// Handle batch request specially
 		if method == batchRequest {
+			// TODO_TECHDEBT(@commoddity): Temporarily disable batch requests for non-EVM services
+			// This will be fixed in the in-progress PR to enable batch requests for non-EVM services
+			if ts.ServiceType != serviceTypeEVM {
+				continue
+			}
 			body, err = createEVMBatchRequest()
 			if err != nil {
 				return nil, fmt.Errorf("failed to create batch request for service '%s': %w", ts.ServiceID, err)
@@ -313,14 +333,14 @@ func getCurrentBlockHeight(client *http.Client, gatewayURL string, headers http.
 	}
 
 	// Parse response
-	var jsonRPC jsonrpc.Response
-	if err := json.NewDecoder(resp.Body).Decode(&jsonRPC); err != nil {
+	var jsonrpc jsonrpc.Response
+	if err := json.NewDecoder(resp.Body).Decode(&jsonrpc); err != nil {
 		return 0, fmt.Errorf("Error getting current block height: %w", err)
 	}
 
 	// Unmarshal the result into a string
 	var hexString string
-	if err := jsonRPC.UnmarshalResult(&hexString); err != nil {
+	if err := jsonrpc.UnmarshalResult(&hexString); err != nil {
 		return 0, fmt.Errorf("Error unmarshaling block number result: %w", err)
 	}
 

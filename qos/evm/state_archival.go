@@ -147,7 +147,7 @@ func (as *archivalState) updateExpectedBalance(updatedEndpoints map[protocol.End
 			defer wg.Done()
 			balance, err := updatedEndpoint.checkArchival.getArchivalBalance()
 			if err != nil {
-				as.logger.Error().Err(err).Msgf("❌ Skipping endpoint because it has no observed archival balance: %s", endpointAddr)
+				as.logger.Warn().Err(err).Msgf("⚠️ SKIPPING endpoint because it has no observed archival balance: %s", endpointAddr)
 				return
 			}
 			balanceCh <- balance
