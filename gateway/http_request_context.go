@@ -328,7 +328,6 @@ func (rc *requestContext) BroadcastAllObservations() {
 		if rc.metricsReporter != nil {
 			rc.metricsReporter.Publish(observations)
 		}
-
 		// Need to account for an empty `data_reporter_config` field in the YAML config file.
 		// E.g. This can happen when running the Gateway in a local environment.
 		// TODO_DELETE: Skip data reporting for "hey" service

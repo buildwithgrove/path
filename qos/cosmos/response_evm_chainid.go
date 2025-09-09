@@ -28,7 +28,7 @@ func responseValidatorEVMChainID(logger polylog.Logger, jsonrpcResponse jsonrpc.
 
 		return &responseEVMChainID{
 			logger:          logger,
-			jsonRPCResponse: jsonrpcResponse,
+			jsonrpcResponse: jsonrpcResponse,
 		}
 	}
 
@@ -42,7 +42,7 @@ func responseValidatorEVMChainID(logger polylog.Logger, jsonrpcResponse jsonrpc.
 		// Return error response but still include the original JSONRPC response
 		return &responseEVMChainID{
 			logger:          logger,
-			jsonRPCResponse: jsonrpcResponse,
+			jsonrpcResponse: jsonrpcResponse,
 		}
 	}
 
@@ -57,7 +57,7 @@ func responseValidatorEVMChainID(logger polylog.Logger, jsonrpcResponse jsonrpc.
 		// Return error response but still include the original JSONRPC response
 		return &responseEVMChainID{
 			logger:          logger,
-			jsonRPCResponse: jsonrpcResponse,
+			jsonrpcResponse: jsonrpcResponse,
 		}
 	}
 
@@ -67,7 +67,7 @@ func responseValidatorEVMChainID(logger polylog.Logger, jsonrpcResponse jsonrpc.
 
 	return &responseEVMChainID{
 		logger:          logger,
-		jsonRPCResponse: jsonrpcResponse,
+		jsonrpcResponse: jsonrpcResponse,
 		evmChainID:      evmChainID,
 	}
 }
@@ -77,8 +77,8 @@ func responseValidatorEVMChainID(logger polylog.Logger, jsonrpcResponse jsonrpc.
 type responseEVMChainID struct {
 	logger polylog.Logger
 
-	// jsonRPCResponse stores the JSONRPC response parsed from an endpoint's response bytes.
-	jsonRPCResponse jsonrpc.Response
+	// jsonrpcResponse stores the JSONRPC response parsed from an endpoint's response bytes.
+	jsonrpcResponse jsonrpc.Response
 
 	// evmChainID captures the `result` field of a JSONRPC response to an `eth_chainId` request.
 	evmChainID string
@@ -91,7 +91,7 @@ func (r responseEVMChainID) GetObservation() qosobservations.CosmosEndpointObser
 	return qosobservations.CosmosEndpointObservation{
 		EndpointResponseValidationResult: &qosobservations.CosmosEndpointResponseValidationResult{
 			ResponseValidationType: qosobservations.CosmosResponseValidationType_COSMOS_RESPONSE_VALIDATION_TYPE_JSONRPC,
-			HttpStatusCode:         int32(r.jsonRPCResponse.GetRecommendedHTTPStatusCode()),
+			HttpStatusCode:         int32(r.jsonrpcResponse.GetRecommendedHTTPStatusCode()),
 			ValidationError:        nil, // No validation error for successfully processed responses
 			ParsedResponse: &qosobservations.CosmosEndpointResponseValidationResult_ResponseEvmJsonrpcChainId{
 				ResponseEvmJsonrpcChainId: &qosobservations.CosmosResponseEVMJSONRPCChainID{
@@ -106,11 +106,11 @@ func (r responseEVMChainID) GetObservation() qosobservations.CosmosEndpointObser
 // GetHTTPResponse builds and returns the HTTP response
 // Implements the response interface
 func (r responseEVMChainID) GetHTTPResponse() pathhttp.HTTPResponse {
-	return qos.BuildHTTPResponseFromJSONRPCResponse(r.logger, r.jsonRPCResponse)
+	return qos.BuildHTTPResponseFromJSONRPCResponse(r.logger, r.jsonrpcResponse)
 }
 
 // getHTTPStatusCode returns an HTTP status code corresponding to the underlying JSON-RPC response code.
 // DEV_NOTE: This is an opinionated mapping following best practice but not enforced by any specifications or standards.
 func (r responseEVMChainID) getHTTPStatusCode() int {
-	return r.jsonRPCResponse.GetRecommendedHTTPStatusCode()
+	return r.jsonrpcResponse.GetRecommendedHTTPStatusCode()
 }
