@@ -135,7 +135,6 @@ const (
 	cosmosSDKEndpointStatus        = "/cosmos/base/node/v1beta1/status"    // Get node status
 	cosmosSDKEndpointAuthParams    = "/cosmos/auth/v1beta1/params"         // Get auth module parameters
 	cosmosSDKEndpointBankParams    = "/cosmos/bank/v1beta1/params"         // Get bank module parameters
-	cosmosSDKEndpointMintParams    = "/cosmos/mint/v1beta1/params"         // Get minting parameters
 	cosmosSDKEndpointDistribParams = "/cosmos/distribution/v1beta1/params" // Get distribution parameters
 )
 
@@ -145,7 +144,6 @@ func getCosmosSDKRESTTestURLPaths() []string {
 		cosmosSDKEndpointStatus,
 		cosmosSDKEndpointAuthParams,
 		cosmosSDKEndpointBankParams,
-		cosmosSDKEndpointMintParams,
 		cosmosSDKEndpointDistribParams,
 	}
 }
