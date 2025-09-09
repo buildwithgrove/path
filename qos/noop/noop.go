@@ -56,10 +56,7 @@ func (NoOpQoS) GetRequiredQualityChecks(_ protocol.EndpointAddr) []gateway.Reque
 // The returned requestContext will returns a user-facing HTTP request with the supplied error when it GetHTTPResponse method is called.
 func requestContextFromError(err error) *requestContext {
 	return &requestContext{
-		presetFailureResponse: &HTTPResponse{
-			httpStatusCode: http.StatusOK,
-			payload:        []byte(fmt.Sprintf("Error processing the request: %v", err)),
-		},
+		presetFailureResponse: getRequestProcessingError(err),
 	}
 }
 

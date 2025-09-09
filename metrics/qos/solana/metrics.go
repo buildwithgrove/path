@@ -43,6 +43,7 @@ var (
 	//   - success: Whether a valid response was received
 	//   - error_type: Type of error if request failed (empty for success)
 	//   - http_status_code: HTTP status code returned to user
+	//   - endpoint_domain: Effective TLD+1 domain of the endpoint that served the request
 	//
 	// - Use cases:
 	//   - Analyze request volume by chain and method
@@ -51,13 +52,14 @@ var (
 	//   - Measure end-to-end request success rates
 	//   - Review error types by method and chain
 	//   - Examine HTTP status code distribution
+	//   - Performance and reliability by endpoint domain
 	requestsTotal = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Subsystem: pathProcess,
 			Name:      requestsTotalMetric,
 			Help:      "Total number of requests processed by Solana QoS instance(s)",
 		},
-		[]string{"chain_id", "service_id", "request_origin", "request_method", "success", "error_type", "http_status_code"},
+		[]string{"chain_id", "service_id", "request_origin", "request_method", "success", "error_type", "http_status_code", "endpoint_domain"},
 	)
 )
 
@@ -90,6 +92,6 @@ func PublishMetrics(logger polylog.Logger, observations *qos.SolanaRequestObserv
 			"success":          fmt.Sprintf("%t", interpreter.IsRequestSuccessful()),
 			"error_type":       interpreter.GetRequestErrorType(),
 			"http_status_code": fmt.Sprintf("%d", interpreter.GetRequestHTTPStatus()),
-		},
-	).Inc()
+			"endpoint_domain":  interpreter.GetEndpointDomain(),
+		}).Inc()
 }
