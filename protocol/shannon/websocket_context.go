@@ -44,6 +44,77 @@ type websocketRequestContext struct {
 	selectedEndpoint endpoint
 }
 
+// ---------- Websocket Request Context Setup  ----------
+
+// BuildWebsocketRequestContextForEndpoint creates a new WebSocket protocol request context for a specified service and endpoint.
+//
+// Parameters:
+//   - ctx: Context for cancellation, deadlines, and logging.
+//   - serviceID: The unique identifier of the target service.
+//   - selectedEndpointAddr: The address of the endpoint to use for the request.
+//   - httpReq: ONLY used in Delegated mode to extract the selected app from headers.
+func (p *Protocol) BuildWebsocketRequestContextForEndpoint(
+	ctx context.Context,
+	serviceID protocol.ServiceID,
+	selectedEndpointAddr protocol.EndpointAddr,
+	httpReq *http.Request,
+) (gateway.ProtocolRequestContextWebsocket, protocolobservations.Observations, error) {
+	logger := p.logger.With(
+		"method", "BuildWebsocketRequestContextForEndpoint",
+		"service_id", serviceID,
+		"endpoint_addr", selectedEndpointAddr,
+	)
+
+	activeSessions, err := p.getActiveGatewaySessions(ctx, serviceID, httpReq)
+	if err != nil {
+		logger.Error().Err(err).Msgf("Relay request will fail due to error retrieving active sessions for service %s", serviceID)
+		return nil, buildProtocolContextSetupErrorObservation(serviceID, err), err
+	}
+
+	// Retrieve the list of endpoints (i.e. backend service URLs by external operators)
+	// that can service RPC requests for the given service ID for the given apps.
+	// This includes fallback logic if session endpoints are unavailable.
+	// The final boolean parameter sets whether to filter out sanctioned endpoints.
+	endpoints, err := p.getUniqueEndpoints(ctx, serviceID, activeSessions, true)
+	if err != nil {
+		logger.Error().Err(err).Msg(err.Error())
+		return nil, buildProtocolContextSetupErrorObservation(serviceID, err), err
+	}
+
+	// Select the endpoint that matches the pre-selected address.
+	// This ensures QoS checks are performed on the selected endpoint.
+	selectedEndpoint, ok := endpoints[selectedEndpointAddr]
+	if !ok {
+		// Wrap the context setup error.
+		// Used to generate the observation.
+		err := fmt.Errorf("%w: service %s endpoint %s", errRequestContextSetupInvalidEndpointSelected, serviceID, selectedEndpointAddr)
+		logger.Error().Err(err).Msg("Selected endpoint is not available.")
+		return nil, buildProtocolContextSetupErrorObservation(serviceID, err), err
+	}
+
+	// Retrieve the relay request signer for the current gateway mode.
+	permittedSigner, err := p.getGatewayModePermittedRelaySigner(p.gatewayMode)
+	if err != nil {
+		// Wrap the context setup error.
+		// Used to generate the observation.
+		err = fmt.Errorf("%w: gateway mode %s: %w", errRequestContextSetupErrSignerSetup, p.gatewayMode, err)
+		return nil, buildProtocolContextSetupErrorObservation(serviceID, err), err
+	}
+
+	// Return new WebSocket request context for the pre-selected endpoint
+	return &websocketRequestContext{
+			logger:             logger,
+			fullNode:           p.FullNode,
+			selectedEndpoint:   selectedEndpoint,
+			serviceID:          serviceID,
+			relayRequestSigner: permittedSigner,
+		},
+		// If successful, return an empty observation list.
+		// Websocket connection success observations are added when
+		// the Bridge is started successfully in `StartWebSocketBridge`.
+		protocolobservations.Observations{}, nil
+}
+
 // ---------- Connection Establishment ----------
 
 // StartWebSocketBridge creates and starts a WebSocket bridge between client and endpoint.
