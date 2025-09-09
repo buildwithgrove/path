@@ -105,13 +105,6 @@ func (g Gateway) handleHTTPServiceRequest(
 		dataReporter:        g.DataReporter,
 	}
 
-	// Initialize the GatewayRequestContext struct using the HTTP request.
-	// e.g. extract the target service ID from the HTTP request.
-	err := gatewayRequestCtx.InitFromHTTPRequest(httpReq)
-	if err != nil {
-		return
-	}
-
 	defer func() {
 		// Write the user-facing HTTP response.
 		gatewayRequestCtx.WriteHTTPUserResponse(responseWriter)
@@ -119,6 +112,13 @@ func (g Gateway) handleHTTPServiceRequest(
 		// Broadcast all observations, e.g. protocol-level, QoS-level, etc. contained in the gateway request context.
 		gatewayRequestCtx.BroadcastAllObservations()
 	}()
+
+	// Initialize the GatewayRequestContext struct using the HTTP request.
+	// e.g. extract the target service ID from the HTTP request.
+	err := gatewayRequestCtx.InitFromHTTPRequest(httpReq)
+	if err != nil {
+		return
+	}
 
 	// TODO_CHECK_IF_DONE(@adshmh): Pass the context with deadline to QoS once it can handle deadlines.
 	// Build the QoS context for the target service ID using the HTTP request's payload.

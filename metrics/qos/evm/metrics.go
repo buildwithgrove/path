@@ -214,8 +214,7 @@ func PublishMetrics(logger polylog.Logger, observations *qos.EVMRequestObservati
 				"http_status_code":         fmt.Sprintf("%d", statusCode),
 				"random_endpoint_fallback": fmt.Sprintf("%t", endpointSelectionMetadata.RandomEndpointFallback),
 				"endpoint_domain":          interpreter.GetEndpointDomain(),
-			},
-		).Inc()
+			}).Inc()
 	}
 
 	// Update endpoint count gauges (calculated from validation results)
@@ -270,11 +269,10 @@ func publishValidationMetricsFromMetadata(logger polylog.Logger, chainID, servic
 			prometheus.Labels{
 				"chain_id":                  chainID,
 				"service_id":                serviceID,
-				"endpoint_domain":           endpointDomain,
 				"success":                   fmt.Sprintf("%t", result.Success),
 				"validation_failure_reason": failureReason,
-			},
-		).Inc()
+				"endpoint_domain":           endpointDomain,
+			}).Inc()
 	}
 }
 
