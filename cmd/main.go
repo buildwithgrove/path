@@ -12,9 +12,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/pokt-network/poktroll/pkg/polylog"
-	"github.com/pokt-network/poktroll/pkg/polylog/polyzero"
-
 	configpkg "github.com/buildwithgrove/path/config"
 	"github.com/buildwithgrove/path/gateway"
 	"github.com/buildwithgrove/path/health"
@@ -56,10 +53,9 @@ func main() {
 
 	// Initialize the logger
 	log.Printf(`{"level":"info","message":"Initializing PATH logger with level: %s"}`, config.Logger.Level)
-	loggerOpts := []polylog.LoggerOption{
-		polyzero.WithLevel(polyzero.ParseLevel(config.Logger.Level)),
-	}
-	logger := polyzero.NewLogger(loggerOpts...)
+
+	// TODO_HACK(@adshmh): Revert to using polylog.
+	logger := NewNoOpLogger()
 
 	// Log the config path
 	logger.Info().Msgf("Starting PATH using config file: %s", configPath)

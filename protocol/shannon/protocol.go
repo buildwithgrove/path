@@ -7,7 +7,6 @@ import (
 	"net/http"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
-	sessiontypes "github.com/pokt-network/poktroll/x/session/types"
 
 	"github.com/buildwithgrove/path/gateway"
 	"github.com/buildwithgrove/path/health"
@@ -162,6 +161,7 @@ func (p *Protocol) AvailableEndpoints(
 	// endpoints will be used to populate the list of endpoints.
 	//
 	// The final boolean parameter sets whether to filter out sanctioned endpoints.
+
 	endpoints, err := p.getUniqueEndpoints(ctx, serviceID, activeSessions, true)
 	if err != nil {
 		logger.Error().Err(err).Msg(err.Error())
@@ -327,7 +327,7 @@ func (p *Protocol) IsAlive() bool {
 func (p *Protocol) getUniqueEndpoints(
 	ctx context.Context,
 	serviceID protocol.ServiceID,
-	activeSessions []sessiontypes.Session,
+	activeSessions []hydratedSession,
 	filterSanctioned bool,
 ) (map[protocol.EndpointAddr]endpoint, error) {
 	logger := p.logger.With(
@@ -380,7 +380,7 @@ func (p *Protocol) getUniqueEndpoints(
 func (p *Protocol) getSessionsUniqueEndpoints(
 	_ context.Context,
 	serviceID protocol.ServiceID,
-	activeSessions []sessiontypes.Session,
+	activeSessions []hydratedSession,
 	filterSanctioned bool, // will be true for calls made by service request handling.
 ) (map[protocol.EndpointAddr]endpoint, error) {
 	logger := p.logger.With(
@@ -396,29 +396,24 @@ func (p *Protocol) getSessionsUniqueEndpoints(
 	endpoints := make(map[protocol.EndpointAddr]endpoint)
 
 	// Iterate over all active sessions for the service ID.
-	for _, session := range activeSessions {
-		app := session.Application
+	for _, hydratedSession := range activeSessions {
+		app := hydratedSession.session.Application
 
 		// Using a single iteration scope for this logger.
 		// Avoids adding all apps in the loop to the logger's fields.
 		// Hydrate the logger with session details.
 		logger := logger.With("valid_app_address", app.Address).With("method", "getSessionsUniqueEndpoints")
-		logger = hydrateLoggerWithSession(logger, &session)
-		logger.ProbabilisticDebugInfo(polylog.ProbabilisticDebugInfoProb).Msgf("Finding unique endpoints for session %s for app %s for service %s.", session.SessionId, app.Address, serviceID)
+		logger = hydrateLoggerWithSession(logger, hydratedSession.session)
+		logger.ProbabilisticDebugInfo(polylog.ProbabilisticDebugInfoProb).Msgf("Finding unique endpoints for session %s for app %s for service %s.", hydratedSession.session.SessionId, app.Address, serviceID)
 
 		// Retrieve all endpoints for the session.
-		sessionEndpoints, err := endpointsFromSession(session)
-		if err != nil {
-			logger.Error().Err(err).Msgf("Internal error: error getting all endpoints for service %s app %s and session: skipping the app.", serviceID, app.Address)
-			continue
-		}
+		qualifiedEndpoints := hydratedSession.endpoints
 
-		qualifiedEndpoints := sessionEndpoints
 		// Filter out sanctioned endpoints if requested.
 		if filterSanctioned {
 			logger.Debug().Msgf(
 				"app %s has %d endpoints before filtering sanctioned endpoints.",
-				app.Address, len(sessionEndpoints),
+				app.Address, len(hydratedSession.endpoints),
 			)
 
 			// Filter out any sanctioned endpoints
@@ -427,7 +422,7 @@ func (p *Protocol) getSessionsUniqueEndpoints(
 			if len(filteredEndpoints) == 0 {
 				logger.Error().Msgf(
 					"All %d session endpoints are sanctioned for service %s, app %s. Skipping the app.",
-					len(sessionEndpoints), serviceID, app.Address,
+					len(hydratedSession.endpoints), serviceID, app.Address,
 				)
 				continue
 			}
@@ -437,13 +432,13 @@ func (p *Protocol) getSessionsUniqueEndpoints(
 		}
 
 		// Log the number of endpoints before and after filtering
-		logger.Info().Msgf("Filtered session endpoints for app %s from %d to %d.", app.Address, len(sessionEndpoints), len(qualifiedEndpoints))
+		logger.Info().Msgf("Filtered session endpoints for app %s from %d to %d.", app.Address, len(hydratedSession.endpoints), len(qualifiedEndpoints))
 
 		maps.Copy(endpoints, qualifiedEndpoints)
 
 		logger.Info().Msgf(
 			"Successfully fetched %d endpoints for session %s for application %s for service %s.",
-			len(qualifiedEndpoints), session.SessionId, app.Address, serviceID,
+			len(qualifiedEndpoints), hydratedSession.session.SessionId, app.Address, serviceID,
 		)
 	}
 
