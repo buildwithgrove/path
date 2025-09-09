@@ -446,7 +446,8 @@ func recordRelayTotal(
 				"error_type": requestErrorType,
 				// Relay request failed before reaching out to any endpoints so no fallback was used.
 				// Must be set to avoid inconsistent label cardinality error
-				"used_fallback": "false",
+				"used_fallback":   "false",
+				"endpoint_domain": ErrDomain,
 			},
 		).Inc()
 
@@ -785,10 +786,11 @@ func recordWebsocketConnectionTotal(
 	if requestHasErr, requestErrorType := extractRequestError(observations); requestHasErr {
 		websocketConnectionsTotal.With(
 			prometheus.Labels{
-				"service_id":    serviceID,
-				"success":       "false",
-				"error_type":    requestErrorType,
-				"used_fallback": "false",
+				"service_id":      serviceID,
+				"success":         "false",
+				"error_type":      requestErrorType,
+				"used_fallback":   "false",
+				"endpoint_domain": ErrDomain,
 			},
 		).Inc()
 		return
@@ -837,10 +839,11 @@ func recordWebsocketMessageTotal(
 	if requestHasErr, requestErrorType := extractRequestError(observations); requestHasErr {
 		websocketMessagesTotal.With(
 			prometheus.Labels{
-				"service_id":    serviceID,
-				"success":       "false",
-				"error_type":    requestErrorType,
-				"used_fallback": "false",
+				"service_id":      serviceID,
+				"success":         "false",
+				"error_type":      requestErrorType,
+				"used_fallback":   "false",
+				"endpoint_domain": ErrDomain,
 			},
 		).Inc()
 		return
