@@ -3,7 +3,6 @@ package cosmos
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"net/http"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
@@ -244,56 +243,6 @@ func (rv *requestValidator) createJSONRPCParseFailureObservation(
 		RequestLevelError: &qosobservations.RequestError{
 			ErrorKind:      qosobservations.RequestErrorKind_REQUEST_ERROR_USER_ERROR_JSONRPC_PARSE_ERROR,
 			ErrorDetails:   truncateErrorMessage(err.Error()),
-			HttpStatusCode: int32(jsonrpcResponse.GetRecommendedHTTPStatusCode()),
-		},
-	}
-}
-
-// createJSONRPCUnsupportedRPCTypeContext creates an error context for unsupported RPC type
-func (rv *requestValidator) createJSONRPCUnsupportedRPCTypeContext(jsonrpcReq jsonrpc.Request, rpcType sharedtypes.RPCType) gateway.RequestQoSContext {
-	// Create the JSON-RPC error response
-	err := errors.New("unsupported RPC type: " + rpcType.String())
-	response := jsonrpc.NewErrResponseInvalidRequest(jsonrpcReq.ID, err)
-
-	// Create the observations object with the unsupported RPC type observation
-	observations := rv.createJSONRPCUnsupportedRPCTypeObservation(jsonrpcReq, rpcType, response)
-
-	// Build and return the error context
-	return &qos.RequestErrorContext{
-		Logger:   rv.logger,
-		Response: response,
-		Observations: &qosobservations.Observations{
-			ServiceObservations: &qosobservations.Observations_Cosmos{
-				Cosmos: observations,
-			},
-		},
-	}
-}
-
-func (rv *requestValidator) createJSONRPCUnsupportedRPCTypeObservation(
-	jsonrpcReq jsonrpc.Request,
-	rpcType sharedtypes.RPCType,
-	jsonrpcResponse jsonrpc.Response,
-) *qosobservations.CosmosRequestObservations {
-	return &qosobservations.CosmosRequestObservations{
-		CosmosChainId: rv.cosmosChainID,
-		EvmChainId:    rv.evmChainID,
-		ServiceId:     string(rv.serviceID),
-		RequestOrigin: qosobservations.RequestOrigin_REQUEST_ORIGIN_ORGANIC,
-		RequestProfiles: []*qosobservations.CosmosRequestProfile{
-			{
-				BackendServiceDetails: &qosobservations.BackendServiceDetails{
-					BackendServiceType: convertToProtoBackendServiceType(rpcType),
-					SelectionReason:    "JSONRPC method detection (unsupported)",
-				},
-				ParsedRequest: &qosobservations.CosmosRequestProfile_JsonrpcRequest{
-					JsonrpcRequest: jsonrpcReq.GetObservation(),
-				},
-			},
-		},
-		RequestLevelError: &qosobservations.RequestError{
-			ErrorKind:      qosobservations.RequestErrorKind_REQUEST_ERROR_USER_ERROR_JSONRPC_UNSUPPORTED_RPC_TYPE,
-			ErrorDetails:   fmt.Sprintf("Unsupported RPC type %s for service %s", rpcType.String(), string(rv.serviceID)),
 			HttpStatusCode: int32(jsonrpcResponse.GetRecommendedHTTPStatusCode()),
 		},
 	}
