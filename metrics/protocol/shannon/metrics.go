@@ -425,22 +425,7 @@ func PublishMetrics(
 			}
 
 			// Handle different connection events
-			switch wsConnectionObs.GetEventType() {
-			case protocolobservations.ShannonWebsocketConnectionObservation_CONNECTION_ESTABLISHED:
-				// Record WebSocket connection establishment metrics
-				recordWebsocketConnectionTotal(logger, observationSet)
-				processWebsocketConnectionErrors(logger, observationSet.GetServiceId(), wsConnectionObs)
-
-			case protocolobservations.ShannonWebsocketConnectionObservation_CONNECTION_ESTABLISHMENT_FAILED:
-				// Record WebSocket connection establishment failure metrics
-				recordWebsocketConnectionTotal(logger, observationSet)
-				processWebsocketConnectionErrors(logger, observationSet.GetServiceId(), wsConnectionObs)
-
-			case protocolobservations.ShannonWebsocketConnectionObservation_CONNECTION_CLOSED:
-				// Record connection closure metrics AND duration
-				recordWebsocketConnectionTotal(logger, observationSet)
-				recordWebsocketConnectionDuration(logger, observationSet.GetServiceId(), wsConnectionObs)
-			}
+			handleWebSocketConnectionObservation(logger, wsConnectionObs, observationSet)
 
 		case *protocolobservations.ShannonRequestObservations_WebsocketMessageObservation:
 			// WebSocket message observation - new metrics processing
@@ -457,6 +442,32 @@ func PublishMetrics(
 		default:
 			logger.Warn().Msg("❌ SHOULD NEVER HAPPEN: received unknown observation type")
 		}
+	}
+}
+
+// handleWebSocketConnectionObservation handles different connection events for WebSocket connection observations.
+// For example, it handles the CONNECTION_ESTABLISHED, CONNECTION_ESTABLISHMENT_FAILED, and CONNECTION_CLOSED events separately.
+func handleWebSocketConnectionObservation(
+	logger polylog.Logger,
+	wsConnectionObs *protocolobservations.ShannonWebsocketConnectionObservation,
+	observationSet *protocolobservations.ShannonRequestObservations,
+) {
+	// Handle different connection events
+	switch wsConnectionObs.GetEventType() {
+	case protocolobservations.ShannonWebsocketConnectionObservation_CONNECTION_ESTABLISHED:
+		// Record WebSocket connection establishment metrics
+		recordWebsocketConnectionTotal(logger, observationSet)
+		processWebsocketConnectionErrors(logger, observationSet.GetServiceId(), wsConnectionObs)
+
+	case protocolobservations.ShannonWebsocketConnectionObservation_CONNECTION_ESTABLISHMENT_FAILED:
+		// Record WebSocket connection establishment failure metrics
+		recordWebsocketConnectionTotal(logger, observationSet)
+		processWebsocketConnectionErrors(logger, observationSet.GetServiceId(), wsConnectionObs)
+
+	case protocolobservations.ShannonWebsocketConnectionObservation_CONNECTION_CLOSED:
+		// Record connection closure metrics AND duration
+		recordWebsocketConnectionTotal(logger, observationSet)
+		recordWebsocketConnectionDuration(logger, observationSet.GetServiceId(), wsConnectionObs)
 	}
 }
 
