@@ -75,6 +75,22 @@ func getEVMTestMethods() []string {
 	}
 }
 
+// getEVMTestMethodsForWebSocket returns all EVM JSON-RPC methods for WebSocket testing.
+// This includes all EVM JSON-RPC methods except batchRequest.
+func getEVMTestMethodsForWebSocket() []string {
+	return []string{
+		eth_blockNumber,
+		eth_chainId,
+		eth_gasPrice,
+		eth_getBalance,
+		eth_getBlockByNumber,
+		eth_getTransactionCount,
+		eth_getTransactionReceipt,
+		eth_getTransactionByHash,
+		eth_call,
+	}
+}
+
 // createEVMJsonRPCParams builds RPC params for each EVM method using the provided service parameters.
 func createEVMJsonRPCParams(method jsonrpc.Method, sp ServiceParams) jsonrpc.Params {
 	switch method {

@@ -143,22 +143,6 @@ func (c *websocketTestClient) sendJSONRPCRequest(ctx context.Context, req jsonrp
 	return &resp, nil
 }
 
-// sendEVMRequest sends an EVM JSON-RPC request with the specified method and parameters
-func (c *websocketTestClient) sendEVMRequest(
-	ctx context.Context,
-	method string,
-	params jsonrpc.Params,
-) (*jsonrpc.Response, error) {
-	req := jsonrpc.Request{
-		JSONRPC: jsonrpc.Version2,
-		ID:      jsonrpc.IDFromInt(1),
-		Method:  jsonrpc.Method(method),
-		Params:  params,
-	}
-
-	return c.sendJSONRPCRequest(ctx, req)
-}
-
 // close closes the WebSocket connection
 func (c *websocketTestClient) close() error {
 	c.mutex.Lock()
@@ -291,7 +275,7 @@ func runWebSocketServiceTest(
 	fmt.Printf("\n%s🔌 Starting WebSocket tests for %s%s\n", BOLD_CYAN, ts.ServiceID, RESET)
 
 	// Get only EVM methods for WebSocket testing
-	evmMethods := getEVMTestMethods()
+	evmMethods := getEVMTestMethodsForWebSocket()
 
 	// Get the service config from any method (they all share the same config)
 	var serviceConfig testMethodConfig
