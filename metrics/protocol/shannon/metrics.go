@@ -873,6 +873,7 @@ func recordWebsocketConnectionTotal(
 			"success":         fmt.Sprintf("%t", success),
 			"error_type":      "",
 			"used_fallback":   fmt.Sprintf("%t", usedFallbackEndpoint),
+			"event_type":      eventType,
 			"endpoint_domain": endpointDomain,
 		},
 	).Add(1)
