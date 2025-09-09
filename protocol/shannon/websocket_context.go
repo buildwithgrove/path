@@ -63,6 +63,7 @@ func (p *Protocol) BuildWebsocketRequestContextForEndpoint(
 	websocketMessageProcessor websockets.WebsocketMessageProcessor,
 	httpReq *http.Request,
 	httpResponseWriter http.ResponseWriter,
+	// TODO_TECHDEBT(@commoddity): this channel should be created here, not passed to it, as protocol is the producer side of the channel.
 	messageObservationsChan chan *observation.RequestResponseObservations,
 ) (gateway.ProtocolRequestContextWebsocket, <-chan *protocolobservations.Observations, error) {
 	logger := p.logger.With(
