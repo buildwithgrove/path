@@ -48,18 +48,23 @@ type Protocol interface {
 
 	// BuildWebsocketRequestContextForEndpoint builds and returns a ProtocolRequestContextWebsocket containing a single selected endpoint.
 	// One `ProtocolRequestContextWebsocket` corresponds to a single long-lived websocket connection to a single endpoint.
+	// This method immediately establishes the WebSocket connection and starts the bridge.
 	//
 	// If the Pocket Network Gateway is in delegated mode, the staked application is passed via
 	// the `App-Address` header. In all other modes, *http.Request will be nil.
 	//
-	// Return observation if the context setup fails.
-	// Used as protocol observation for the connection when no protocol context exists.
+	// Return observation channel for connection-level observations (establishment, closure, errors).
+	// Message observations are sent through the provided messageObservationsChan.
+	// Return error if the context setup or connection establishment fails.
 	BuildWebsocketRequestContextForEndpoint(
 		context.Context,
 		protocol.ServiceID,
 		protocol.EndpointAddr,
+		websockets.WebsocketMessageProcessor,
 		*http.Request,
-	) (ProtocolRequestContextWebsocket, protocolobservations.Observations, error)
+		http.ResponseWriter,
+		chan *observation.RequestResponseObservations, // messageObservationsChan
+	) (ProtocolRequestContextWebsocket, <-chan *protocolobservations.Observations, error)
 
 	// SupportedGatewayModes returns the Gateway modes supported by the protocol instance.
 	// See protocol/gateway_mode.go for more details.
@@ -119,19 +124,6 @@ type ProtocolRequestContext interface {
 // ProtocolRequestContextWebsocket defines the functionality expected by the gateway from the protocol,
 // specifically for websocket requests
 type ProtocolRequestContextWebsocket interface {
-	// StartWebSocketBridge creates and starts a WebSocket bridge between client and endpoint.
-	// It handles all protocol-specific setup including headers, URL generation, and connection establishment.
-	// The messageProcessor handles the actual message processing (typically the gateway's websocketRequestContext).
-	// This method sends establishment observation immediately, blocks until bridge completes, then sends closure observation.
-	StartWebSocketBridge(
-		ctx context.Context,
-		httpRequest *http.Request,
-		httpResponseWriter http.ResponseWriter,
-		messageProcessor websockets.WebsocketMessageProcessor,
-		messageObservationsChan chan *observation.RequestResponseObservations,
-		establishmentObservationsChan, closureObservationsChan chan *protocolobservations.Observations,
-	) error
-
 	// ProcessProtocolClientWebsocketMessage processes a message from the client.
 	ProcessProtocolClientWebsocketMessage([]byte) ([]byte, error)
 

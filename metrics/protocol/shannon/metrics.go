@@ -168,7 +168,7 @@ var (
 			Name:      websocketConnectionsTotalMetric,
 			Help:      "Total number of WebSocket connection events processed by Shannon protocol instance(s)",
 		},
-		[]string{"service_id", "success", "error_type", "used_fallback", "endpoint_domain"},
+		[]string{"service_id", "success", "error_type", "used_fallback", "event_type", "endpoint_domain"},
 	)
 
 	// websocketConnectionErrors tracks WebSocket connection establishment errors

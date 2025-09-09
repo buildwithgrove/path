@@ -203,15 +203,8 @@ func (g Gateway) handleWebSocketRequest(
 		return
 	}
 
-	// Build the protocol context for the websocket request.
-	err = websocketRequestCtx.buildProtocolContextFromHTTPRequest(httpReq)
-	if err != nil {
-		logger.Error().Err(err).Msg("❌ Error building protocol context for websocket request")
-		return
-	}
-
 	// Handle the websocket connection request using the websocket request context.
-	// This method blocks until the WebSocket bridge completely shuts down.
+	// This builds the protocol context, starts the bridge, and handles observations.
 	err = websocketRequestCtx.handleWebsocketRequest(httpReq, w)
 	if err != nil {
 		logger.Error().Err(err).Msg("❌ Error processing websocket request")
