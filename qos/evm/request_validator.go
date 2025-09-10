@@ -1,16 +1,12 @@
 package evm
 
 import (
-	"bytes"
-	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
 	"github.com/buildwithgrove/path/gateway"
-	"github.com/buildwithgrove/path/log"
 	qosobservations "github.com/buildwithgrove/path/observation/qos"
 	"github.com/buildwithgrove/path/protocol"
 	"github.com/buildwithgrove/path/qos/jsonrpc"
@@ -50,15 +46,16 @@ func (erv *evmRequestValidator) validateHTTPRequest(req *http.Request) (gateway.
 	}
 
 	// Parse and validate the JSONRPC request(s) - handles both single and batch requests
-	jsonrpcReqs, err := parseJSONRPCFromRequestBody(logger, body)
+	jsonrpcReqs, isBatch, err := jsonrpc.ParseJSONRPCFromRequestBody(logger, body)
 	if err != nil {
-		requestID := getJsonRpcIDForErrorResponse(jsonrpcReqs)
 		// If no requests parsed or empty ID, requestID will be zero value (empty)
-		return erv.createRequestUnmarshalingFailureContext(requestID, err), false
+		return erv.createRequestUnmarshalingFailureContext(jsonrpc.ID{}, err), false
 	}
 
 	// TODO_MVP(@adshmh): Add JSON-RPC request validation to block invalid requests
 	// TODO_IMPROVE(@adshmh): Add method-specific JSONRPC request validation
+
+	servicePayloads := erv.buildServicePayloads(jsonrpcReqs)
 
 	// Request is valid, return a fully initialized requestContext
 	return &requestContext{
@@ -66,11 +63,30 @@ func (erv *evmRequestValidator) validateHTTPRequest(req *http.Request) (gateway.
 		chainID:              erv.chainID,
 		serviceID:            erv.serviceID,
 		requestPayloadLength: uint(len(body)),
-		jsonrpcReqs:          jsonrpcReqs,
+		servicePayloads:      servicePayloads,
+		isBatch:              isBatch,
 		serviceState:         erv.serviceState,
 		// Set the origin of the request as ORGANIC (i.e. from a user).
 		requestOrigin: qosobservations.RequestOrigin_REQUEST_ORIGIN_ORGANIC,
 	}, true
+}
+
+func (erv *evmRequestValidator) buildServicePayloads(
+	jsonrpcReqs map[jsonrpc.ID]jsonrpc.Request,
+) map[jsonrpc.ID]protocol.Payload {
+	payloads := make(map[jsonrpc.ID]protocol.Payload)
+
+	for reqID, req := range jsonrpcReqs {
+		payload, err := req.BuildPayload()
+		if err != nil {
+			erv.logger.Error().Err(err).Msg("SHOULD RARELY HAPPEN: requestContext.GetServicePayload() should never fail building the JSONRPC request.")
+			payloads[reqID] = protocol.EmptyErrorPayload()
+			continue
+		}
+		payloads[reqID] = payload
+	}
+
+	return payloads
 }
 
 // createHTTPBodyReadFailureContext creates an error context for HTTP body read failures.
@@ -89,7 +105,7 @@ func (erv *evmRequestValidator) createHTTPBodyReadFailureContext(err error) gate
 	return &errorContext{
 		logger:                 erv.logger,
 		response:               response,
-		responseHTTPStatusCode: httpStatusRequestValidationFailureReadHTTPBodyFailure,
+		responseHTTPStatusCode: jsonrpc.HTTPStatusRequestValidationFailureReadHTTPBodyFailure,
 		evmObservations:        observations,
 	}
 }
@@ -106,7 +122,7 @@ func (erv *evmRequestValidator) createRequestUnmarshalingFailureContext(id jsonr
 	return &errorContext{
 		logger:                 erv.logger,
 		response:               response,
-		responseHTTPStatusCode: httpStatusRequestValidationFailureUnmarshalFailure,
+		responseHTTPStatusCode: jsonrpc.HTTPStatusRequestValidationFailureUnmarshalFailure,
 		evmObservations:        observations,
 	}
 }
@@ -138,7 +154,7 @@ func createRequestUnmarshalingFailureObservation(
 			ChainId:   chainID,
 			RequestValidationFailure: &qosobservations.EVMRequestObservations_EvmRequestUnmarshalingFailure{
 				EvmRequestUnmarshalingFailure: &qosobservations.EVMRequestUnmarshalingFailure{
-					HttpStatusCode:  httpStatusRequestValidationFailureUnmarshalFailure,
+					HttpStatusCode:  jsonrpc.HTTPStatusRequestValidationFailureUnmarshalFailure,
 					ValidationError: qosobservations.EVMRequestValidationError_EVM_REQUEST_VALIDATION_ERROR_REQUEST_UNMARSHALING_FAILURE,
 					ErrorDetails:    &errorDetails,
 				},
@@ -170,187 +186,11 @@ func (erv *evmRequestValidator) createHTTPBodyReadFailureObservation(
 			ServiceId: string(erv.serviceID),
 			RequestValidationFailure: &qosobservations.EVMRequestObservations_EvmHttpBodyReadFailure{
 				EvmHttpBodyReadFailure: &qosobservations.EVMHTTPBodyReadFailure{
-					HttpStatusCode:  httpStatusRequestValidationFailureReadHTTPBodyFailure,
+					HttpStatusCode:  jsonrpc.HTTPStatusRequestValidationFailureReadHTTPBodyFailure,
 					ValidationError: qosobservations.EVMRequestValidationError_EVM_REQUEST_VALIDATION_ERROR_HTTP_BODY_READ_FAILURE,
 					ErrorDetails:    &errorDetails,
 				},
 			},
 		},
 	}
-}
-
-// jsonrpcRequestFormat represents the detected format of a JSON-RPC request
-type jsonrpcRequestFormat int
-
-const (
-	jsonrpcInvalidFormat jsonrpcRequestFormat = iota
-	jsonrpcSingleRequest
-	jsonrpcBatchRequest
-)
-
-// TODO_TECHDEBT(@adshmh): JSONRPC handling should be done in the qos/jsonrpc package:
-// - Parse a []byte into a JSONRPC request: detect whether it is a single or a batch request.
-// - Validate the request: e.g. no duplicate IDs in a batch request.
-// - Determine the response format: e.g. response to a single request formatted as a batch must also be formatted as a batch.
-// - Support building observations.
-//
-// TODO_MVP(@adshmh): Add a JSON-RPC request validator to reject invalid/unsupported
-// method calls early in request flow.
-//
-// parseJSONRPCFromRequestBody is the main entry point for parsing HTTP request bodies into
-// JSON-RPC request structures. It orchestrates the parsing process by:
-//  1. Validating the request body format
-//  2. Detecting whether it's a single request or batch request
-//  3. Delegating to appropriate parsing methods
-//  4. Returning a normalized map of JSON-RPC requests keyed by ID
-//  5. Validating no duplicate IDs exist in batch requests
-//
-// Supports both single requests and batch requests according to the JSON-RPC 2.0 specification.
-// Reference: https://www.jsonrpc.org/specification#batch
-func parseJSONRPCFromRequestBody(
-	logger polylog.Logger,
-	requestBody []byte,
-) (map[string]jsonrpc.Request, error) {
-	// Step 1: Validate the request body format
-	trimmedBody, err := validateRequestBody(logger, requestBody)
-	if err != nil {
-		return nil, err
-	}
-
-	// TODO_TECHDEBT(@adshmh): Move the parsing logic to qos/jsonrpc package.
-	//
-	// Step 2: Detect request format (batch vs single)
-	requestFormat := detectRequestFormat(trimmedBody)
-
-	// Step 3: Parse based on detected format
-	switch requestFormat {
-	case jsonrpcBatchRequest:
-		return parseBatchRequest(logger, requestBody)
-	case jsonrpcSingleRequest:
-		return parseSingleRequest(logger, requestBody)
-	default:
-		return handleInvalidFormat(logger, requestBody)
-	}
-}
-
-// TODO_TECHDEBT(@adshmh): Move this to qos/jsonrpc package.
-// Parsing (via encoding/json) should handle this without the need for extra validation logic.
-//
-// validateRequestBody performs initial validation on the HTTP request body.
-// It trims whitespace and ensures the body is not empty.
-//
-// Returns:
-//   - trimmedBody: the request body with leading/trailing whitespace removed
-//   - error: validation error if the body is empty or invalid
-func validateRequestBody(logger polylog.Logger, requestBody []byte) ([]byte, error) {
-	trimmedBody := bytes.TrimSpace(requestBody)
-	if len(trimmedBody) == 0 {
-		logger.Error().Msg("❌ Request failed JSON-RPC validation - empty request body")
-		return nil, fmt.Errorf("empty request body")
-	}
-	return trimmedBody, nil
-}
-
-// TODO_TECHDEBT(@adshmh): Handle all the parsing in qos/jsonrpc package:
-// - No need to check for specific characters.
-// - encoding/json Unmarshaling can handle different cases: single vs. batch.
-//
-// detectRequestFormat analyzes the trimmed request body to determine if it represents
-// a single JSON-RPC request or a batch request.
-//
-// According to JSON-RPC 2.0 specification:
-//   - Single request: JSON object starting with '{'
-//   - Batch request: JSON array starting with '['
-//
-// Returns the detected format type for routing to appropriate parsing logic.
-func detectRequestFormat(trimmedBody []byte) jsonrpcRequestFormat {
-	if len(trimmedBody) == 0 {
-		return jsonrpcInvalidFormat
-	}
-
-	switch trimmedBody[0] {
-	case '[':
-		return jsonrpcBatchRequest
-	case '{':
-		return jsonrpcSingleRequest
-	default:
-		return jsonrpcInvalidFormat
-	}
-}
-
-// TODO_TECHDEBT(@adshmh): move any validation to the qos/jsonrpc package.
-//
-// parseBatchRequest handles parsing of JSON-RPC batch requests (JSON arrays).
-// Performs validation to ensure:
-//   - The array can be unmarshaled into JSON-RPC request structures
-//   - The batch is not empty (per JSON-RPC 2.0 specification requirement)
-//   - No duplicate IDs exist (to ensure proper request-response correlation)
-//
-// Returns a map of JSON-RPC requests keyed by ID on success, or an error with diagnostic information.
-func parseBatchRequest(logger polylog.Logger, requestBody []byte) (map[string]jsonrpc.Request, error) {
-	var jsonrpcRequests []jsonrpc.Request
-	err := json.Unmarshal(requestBody, &jsonrpcRequests)
-	if err != nil {
-		requestPreview := log.Preview(string(requestBody))
-		logger.Error().Err(err).Msgf("❌ Batch request failed JSON-RPC validation - returning generic error response. Request preview: %s", requestPreview)
-		return nil, err
-	}
-
-	// Validate that batch is not empty (per JSON-RPC spec)
-	if len(jsonrpcRequests) == 0 {
-		logger.Error().Msg("❌ Empty batch request not allowed per JSON-RPC specification")
-		return nil, fmt.Errorf("empty batch request not allowed")
-	}
-
-	// Convert slice to map and validate no duplicate IDs exist during conversion
-	jsonrpcReqsMap := make(map[string]jsonrpc.Request)
-	for i, req := range jsonrpcRequests {
-		// Check for duplicate IDs (skip notifications which have empty IDs)
-		if !req.ID.IsEmpty() {
-			if _, exists := jsonrpcReqsMap[req.ID.String()]; exists {
-				logger.Error().
-					Str("duplicate_id", req.ID.String()).
-					Int("request_index", i).
-					Msg("❌ Duplicate ID found in batch request")
-				return nil, fmt.Errorf("duplicate ID '%s' found in batch request - IDs must be unique for proper request-response correlation", req.ID.String())
-			}
-		}
-		jsonrpcReqsMap[req.ID.String()] = req
-	}
-
-	logger.Debug().Int("batch_size", len(jsonrpcRequests)).Msg("Parsed JSON-RPC batch request")
-	return jsonrpcReqsMap, nil
-}
-
-// parseSingleRequest handles parsing of single JSON-RPC requests (JSON objects).
-// Unmarshals the request body into a JSON-RPC request structure and returns it
-// in a map for consistent return type with batch requests.
-//
-// Returns a single-element map containing the parsed JSON-RPC request keyed by ID.
-func parseSingleRequest(logger polylog.Logger, requestBody []byte) (map[string]jsonrpc.Request, error) {
-	var jsonrpcRequest jsonrpc.Request
-	err := json.Unmarshal(requestBody, &jsonrpcRequest)
-	if err != nil {
-		requestPreview := log.Preview(string(requestBody))
-		logger.Error().Err(err).Msgf("❌ Request failed JSON-RPC validation - returning generic error response. Request preview: %s", requestPreview)
-		return nil, err
-	}
-
-	// Create a map with the single request
-	jsonrpcReqsMap := map[string]jsonrpc.Request{
-		jsonrpcRequest.ID.String(): jsonrpcRequest,
-	}
-
-	logger.Debug().Msg("Parsed single JSON-RPC request")
-	return jsonrpcReqsMap, nil
-}
-
-// handleInvalidFormat processes request bodies that don't conform to valid JSON-RPC format.
-// This handles cases where the request body doesn't start with '{' (object) or '[' (array).
-//
-// Returns an error with diagnostic information including a preview of the invalid content.
-func handleInvalidFormat(logger polylog.Logger, requestBody []byte) (map[string]jsonrpc.Request, error) {
-	requestPreview := log.Preview(string(requestBody))
-	logger.Error().Msgf("❌ Invalid JSON-RPC format - must start with '{' or '['. Request preview: %s", requestPreview)
-	return nil, fmt.Errorf("invalid JSON-RPC format - must be JSON object or array")
 }

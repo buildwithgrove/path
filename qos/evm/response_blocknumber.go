@@ -99,10 +99,10 @@ func (r responseToBlockNumber) GetObservation() qosobservations.EVMEndpointObser
 
 // GetHTTPResponse builds and returns the httpResponse matching the responseToBlockNumber instance.
 // Implements the response interface.
-func (r responseToBlockNumber) GetHTTPResponse() httpResponse {
-	return httpResponse{
-		responsePayload: r.getResponsePayload(),
-		httpStatusCode:  r.getHTTPStatusCode(),
+func (r responseToBlockNumber) GetHTTPResponse() jsonrpc.HTTPResponse {
+	return jsonrpc.HTTPResponse{
+		ResponsePayload: r.getResponsePayload(),
+		HTTPStatusCode:  r.getHTTPStatusCode(),
 	}
 }
 

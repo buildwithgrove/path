@@ -102,10 +102,10 @@ func (r responseToGetBalance) GetObservation() qosobservations.EVMEndpointObserv
 
 // GetHTTPResponse returns the HTTP response corresponding to the JSON-RPC response.
 // Implements the response interface.
-func (r responseToGetBalance) GetHTTPResponse() httpResponse {
-	return httpResponse{
-		responsePayload: r.getResponsePayload(),
-		httpStatusCode:  r.getHTTPStatusCode(),
+func (r responseToGetBalance) GetHTTPResponse() jsonrpc.HTTPResponse {
+	return jsonrpc.HTTPResponse{
+		ResponsePayload: r.getResponsePayload(),
+		HTTPStatusCode:  r.getHTTPStatusCode(),
 	}
 }
 
@@ -148,10 +148,4 @@ func getRequestParams(req jsonrpc.Request) [2]string {
 	}
 
 	return paramsArray
-}
-
-// GetJSONRPCID returns the JSONRPC ID of the response.
-// Implements the response interface.
-func (r responseToGetBalance) GetJSONRPCID() jsonrpc.ID {
-	return r.jsonrpcResponse.ID
 }

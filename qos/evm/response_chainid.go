@@ -104,10 +104,10 @@ func (r responseToChainID) GetObservation() qosobservations.EVMEndpointObservati
 //
 // GetHTTPResponse builds and returns the httpResponse matching the responseToChainID instance.
 // Implements the response interface.
-func (r responseToChainID) GetHTTPResponse() httpResponse {
-	return httpResponse{
-		responsePayload: r.getResponsePayload(),
-		httpStatusCode:  r.getHTTPStatusCode(),
+func (r responseToChainID) GetHTTPResponse() jsonrpc.HTTPResponse {
+	return jsonrpc.HTTPResponse{
+		ResponsePayload: r.getResponsePayload(),
+		HTTPStatusCode:  r.getHTTPStatusCode(),
 	}
 }
 
@@ -125,10 +125,4 @@ func (r responseToChainID) getResponsePayload() []byte {
 // DEV_NOTE: This is an opinionated mapping following best practice but not enforced by any specifications or standards.
 func (r responseToChainID) getHTTPStatusCode() int {
 	return r.jsonrpcResponse.GetRecommendedHTTPStatusCode()
-}
-
-// GetJSONRPCID returns the JSONRPC ID of the response.
-// Implements the response interface.
-func (r responseToChainID) GetJSONRPCID() jsonrpc.ID {
-	return r.jsonrpcResponse.ID
 }

@@ -6,6 +6,7 @@ import (
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
 	qosobservations "github.com/buildwithgrove/path/observation/qos"
+	"github.com/buildwithgrove/path/protocol"
 	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
 
@@ -17,8 +18,8 @@ var _ response = responseNone{}
 // responseNone represents the absence of any endpoint response.
 // This can occur due to protocol-level failures or when no endpoint was selected.
 type responseNone struct {
-	logger      polylog.Logger
-	jsonrpcReqs map[string]jsonrpc.Request
+	logger          polylog.Logger
+	servicePayloads map[jsonrpc.ID]protocol.Payload
 }
 
 // GetObservation returns an observation indicating no endpoint provided a response.
@@ -39,17 +40,17 @@ func (r responseNone) GetObservation() qosobservations.EVMEndpointObservation {
 
 // GetHTTPResponse creates and returns a predefined httpResponse for cases when QoS has received no responses from the protocol.
 // Implements the response interface.
-func (r responseNone) GetHTTPResponse() httpResponse {
-	return httpResponse{
-		responsePayload: r.getResponsePayload(),
-		httpStatusCode:  r.getHTTPStatusCode(),
+func (r responseNone) GetHTTPResponse() jsonrpc.HTTPResponse {
+	return jsonrpc.HTTPResponse{
+		ResponsePayload: r.getResponsePayload(),
+		HTTPStatusCode:  r.getHTTPStatusCode(),
 	}
 }
 
 // getResponsePayload constructs a JSONRPC error response indicating no endpoint response was received.
 // Uses request ID in response per JSONRPC spec: https://www.jsonrpc.org/specification#response_object
 func (r responseNone) getResponsePayload() []byte {
-	userResponse := newErrResponseNoEndpointResponse(getJsonRpcIDForErrorResponse(r.jsonrpcReqs))
+	userResponse := jsonrpc.NewErrResponseNoEndpointResponse(getJsonRpcIDForErrorResponse(r.servicePayloads))
 	bz, err := json.Marshal(userResponse)
 	if err != nil {
 		// This should never happen: log an entry but return the response anyway.
@@ -61,11 +62,5 @@ func (r responseNone) getResponsePayload() []byte {
 // getHTTPStatusCode returns the HTTP status code to be returned to the client.
 // Always a 500 Internal Server Error for the responseNone struct.
 func (r responseNone) getHTTPStatusCode() int {
-	return httpStatusResponseValidationFailureNoResponse
-}
-
-// GetJSONRPCID returns the JSONRPC ID of the response.
-// Implements the response interface.
-func (r responseNone) GetJSONRPCID() jsonrpc.ID {
-	return getJsonRpcIDForErrorResponse(r.jsonrpcReqs)
+	return jsonrpc.HTTPStatusResponseValidationFailureNoResponse
 }

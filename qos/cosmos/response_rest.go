@@ -35,7 +35,10 @@ func unmarshalRESTRequestEndpointResponse(
 			ID:     jsonrpcIdForRESTResponses,
 			Method: "status",
 		}
-		return unmarshalJSONRPCRequestEndpointResponse(logger, jsonrpcReq, endpointResponseBz)
+		jsonRpcReqs := map[jsonrpc.ID]jsonrpc.Request{
+			jsonrpcIdForRESTResponses: jsonrpcReq,
+		}
+		return unmarshalJSONRPCRequestEndpointResponse(logger, jsonRpcReqs, endpointResponseBz)
 
 	// CometBFT /health endpoint returns a JSONRPC response.
 	// Reference: https://docs.cometbft.com/v1.0/spec/rpc/#health
@@ -45,7 +48,10 @@ func unmarshalRESTRequestEndpointResponse(
 			ID:     jsonrpcIdForRESTResponses,
 			Method: "health",
 		}
-		return unmarshalJSONRPCRequestEndpointResponse(logger, jsonrpcReq, endpointResponseBz)
+		jsonRpcReqs := map[jsonrpc.ID]jsonrpc.Request{
+			jsonrpcIdForRESTResponses: jsonrpcReq,
+		}
+		return unmarshalJSONRPCRequestEndpointResponse(logger, jsonRpcReqs, endpointResponseBz)
 
 	// Cosmos SDK /cosmos/base/node/v1beta1/status endpoint returns a REST JSON response.
 	// Reference: https://docs.cosmos.network/api#tag/Service/operation/Status

@@ -5,7 +5,6 @@ import (
 	"net/http"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
-	sharedtypes "github.com/pokt-network/poktroll/x/shared/types"
 
 	"github.com/buildwithgrove/path/gateway"
 	pathhttp "github.com/buildwithgrove/path/network/http"
@@ -42,9 +41,7 @@ type response interface {
 	GetObservation() qosobservations.EVMEndpointObservation
 
 	// GetHTTPResponse returns the HTTP response to be sent back to the client.
-	GetHTTPResponse() httpResponse
-
-	GetJSONRPCID() jsonrpc.ID
+	GetHTTPResponse() jsonrpc.HTTPResponse
 }
 
 var _ response = &endpointResponse{}
@@ -80,7 +77,12 @@ type requestContext struct {
 	serviceState *serviceState
 
 	// JSON-RPC requests - supports both single and batch requests per JSON-RPC 2.0 spec
-	jsonrpcReqs map[string]jsonrpc.Request
+	servicePayloads map[jsonrpc.ID]protocol.Payload
+
+	// Whether the request is a batch request.
+	// Necessary to distinguish between a batch request of length 1 and a single request.
+	// In the case of a batch request of length 1, the response must be returned as an array.
+	isBatch bool
 
 	// endpointResponses is the set of responses received from one or
 	// more endpoints as part of handling this service request.
@@ -99,22 +101,9 @@ type requestContext struct {
 // TODO_MVP(@adshmh): Ensure the JSONRPC request struct can handle all valid service requests.
 func (rc requestContext) GetServicePayloads() []protocol.Payload {
 	var payloads []protocol.Payload
-
-	for _, req := range rc.jsonrpcReqs {
-		reqBz, err := json.Marshal(req)
-		if err != nil {
-			rc.logger.Error().Err(err).Msg("SHOULD RARELY HAPPEN: requestContext.GetServicePayload() should never fail marshaling the JSONRPC request.")
-			return []protocol.Payload{protocol.EmptyErrorPayload()}
-		}
-
-		payloads = append(payloads, protocol.Payload{
-			Data:    string(reqBz),
-			Method:  http.MethodPost, // Method is always POST for EVM-based blockchains.
-			Headers: map[string]string{},
-			RPCType: sharedtypes.RPCType_JSON_RPC,
-		})
+	for _, payload := range rc.servicePayloads {
+		payloads = append(payloads, payload)
 	}
-
 	return payloads
 }
 
@@ -129,7 +118,9 @@ func (rc *requestContext) UpdateWithResponse(endpointAddr protocol.EndpointAddr,
 	// This would be an extra safety measure, as the caller should have checked the returned value
 	// indicating the validity of the request when calling on QoS instance's ParseHTTPRequest
 
-	response, err := unmarshalResponse(rc.logger, rc.jsonrpcReqs, responseBz, endpointAddr)
+	response, err := unmarshalResponse(
+		rc.logger, rc.servicePayloads, responseBz, endpointAddr,
+	)
 
 	rc.endpointResponses = append(rc.endpointResponses, endpointResponse{
 		EndpointAddr: endpointAddr,
@@ -146,31 +137,32 @@ func (rc requestContext) GetHTTPResponse() pathhttp.HTTPResponse {
 	if len(rc.endpointResponses) == 0 {
 		rc.logger.Warn().Msg("No responses received from any endpoints. Returning generic non-response.")
 		responseNoneObj := responseNone{
-			logger:      rc.logger,
-			jsonrpcReqs: rc.jsonrpcReqs,
+			logger:          rc.logger,
+			servicePayloads: rc.servicePayloads,
 		}
 		return responseNoneObj.GetHTTPResponse()
 	}
 
-	numJSONRPCRequests := len(rc.jsonrpcReqs)
+	numJSONRPCRequests := len(rc.servicePayloads)
 	numEndpointResponses := len(rc.endpointResponses)
 
-	if numJSONRPCRequests != numEndpointResponses {
-		rc.logger.Warn().Msgf("TODO_INVESTIGATE: The number of JSON-RPC requests (%d) does not match the number of endpoint responses (%d). This should not happen.", numJSONRPCRequests, numEndpointResponses)
+	// Handle batch requests according to JSON-RPC 2.0 specification
+	// https://www.jsonrpc.org/specification#batch
+	if rc.isBatch {
+		if numJSONRPCRequests != numEndpointResponses {
+			rc.logger.Warn().Msgf("TODO_INVESTIGATE: The number of JSON-RPC requests (%d) does not match the number of endpoint responses (%d). This should not happen.", numJSONRPCRequests, numEndpointResponses)
+		}
+
+		return rc.getBatchHTTPResponse()
+	}
+
+	if numEndpointResponses != 1 {
+		rc.logger.Warn().Msgf("TODO_INVESTIGATE: Expected exactly one endpoint response for single JSON-RPC request, but received %d. Only using the first response for now.", numEndpointResponses)
 	}
 
 	// Non-batch requests.
 	// Return the only endpoint response reported to the context for single requests.
-	if numJSONRPCRequests == 1 {
-		if numEndpointResponses != 1 {
-			rc.logger.Warn().Msgf("TODO_INVESTIGATE: Expected exactly one endpoint response for single JSON-RPC request, but received %d. Only using the first response for now.", numEndpointResponses)
-		}
-		return rc.endpointResponses[0].GetHTTPResponse()
-	}
-
-	// Handle batch requests according to JSON-RPC 2.0 specification
-	// https://www.jsonrpc.org/specification#batch
-	return rc.getBatchHTTPResponse()
+	return rc.endpointResponses[0].GetHTTPResponse()
 }
 
 // getBatchHTTPResponse handles batch requests by combining individual JSON-RPC responses
@@ -179,13 +171,9 @@ func (rc requestContext) GetHTTPResponse() pathhttp.HTTPResponse {
 func (rc requestContext) getBatchHTTPResponse() pathhttp.HTTPResponse {
 	// Collect individual response payloads
 	var individualResponses []json.RawMessage
-
-	// Process each endpoint response
 	for _, endpointResp := range rc.endpointResponses {
-		individualHTTPResp := endpointResp.GetHTTPResponse()
-
 		// Extract the JSON payload from each response
-		payload := individualHTTPResp.GetPayload()
+		payload := endpointResp.GetHTTPResponse().GetPayload()
 		if len(payload) > 0 {
 			individualResponses = append(individualResponses, json.RawMessage(payload))
 		}
@@ -196,23 +184,28 @@ func (rc requestContext) getBatchHTTPResponse() pathhttp.HTTPResponse {
 	// This can happen when all requests in the batch are notifications (which don't get responses)
 	// or when all individual responses are empty/invalid.
 	if len(individualResponses) == 0 {
-		emptyBatchResponse := getGenericResponseBatchEmpty(rc.logger)
-		return emptyBatchResponse.GetHTTPResponse()
+		// Create a responseGeneric for empty batch response and return its HTTP response
+		errorResponse := getGenericResponseBatchEmpty(rc.logger)
+		return errorResponse.GetHTTPResponse()
 	}
 
-	// Combine individual responses into a JSON array
-	batchResponse, err := json.Marshal(individualResponses)
+	// Validate and construct batch response using jsonrpc package
+	batchResponse, err := jsonrpc.ValidateAndBuildBatchResponse(
+		rc.logger,
+		individualResponses,
+		rc.servicePayloads,
+	)
 	if err != nil {
-		// Create a responseGeneric for batch marshaling failure and return its HTTP response
+		// Create a responseGeneric for batch validation failure and return its HTTP response
 		errorResponse := getGenericJSONRPCErrResponseBatchMarshalFailure(rc.logger, err)
 		return errorResponse.GetHTTPResponse()
 	}
 
-	return httpResponse{
-		responsePayload: batchResponse,
+	return jsonrpc.HTTPResponse{
+		ResponsePayload: batchResponse,
 		// According to the JSON-RPC 2.0 specification, even if individual responses
 		// in a batch contain errors, the entire batch should still return HTTP 200 OK.
-		httpStatusCode: http.StatusOK,
+		HTTPStatusCode: http.StatusOK,
 	}
 }
 
@@ -261,8 +254,8 @@ func (rc requestContext) createRequestObservations() []*qosobservations.EVMReque
 // The observation includes all JSON-RPC requests from the batch but no endpoint observations.
 func (rc requestContext) createNoResponseObservations() []*qosobservations.EVMRequestObservation {
 	responseNoneObj := responseNone{
-		logger:      rc.logger,
-		jsonrpcReqs: rc.jsonrpcReqs,
+		logger:          rc.logger,
+		servicePayloads: rc.servicePayloads,
 	}
 	responseNoneObs := responseNoneObj.GetObservation()
 
@@ -283,14 +276,25 @@ func (rc requestContext) createResponseObservations() []*qosobservations.EVMRequ
 	var observations []*qosobservations.EVMRequestObservation
 
 	for _, endpointResp := range rc.endpointResponses {
-		responseIDStr := endpointResp.GetJSONRPCID().String()
+		var jsonrpcResponse jsonrpc.Response
+		err := json.Unmarshal(endpointResp.GetHTTPResponse().GetPayload(), &jsonrpcResponse)
+		if err != nil {
+			rc.logger.Error().Err(err).Msg("SHOULD RARELY HAPPEN: requestContext.createResponseObservations() should never fail to unmarshal the JSONRPC response.")
+			continue
+		}
 
 		// Look up the original JSON-RPC request using the response ID
 		// This correlation is critical for batch requests where multiple requests/responses
 		// need to be properly matched
-		jsonrpcReq, ok := rc.jsonrpcReqs[responseIDStr]
+		servicePayload, ok := rc.findServicePayload(jsonrpcResponse.ID)
 		if !ok {
-			rc.logger.Error().Msgf("SHOULD RARELY HAPPEN: requestContext.createResponseObservations() should never fail to find the JSONRPC request for response ID: %s", responseIDStr)
+			rc.logger.Error().Msgf("SHOULD RARELY HAPPEN: requestContext.createResponseObservations() should never fail to find the JSONRPC request for response ID: %s", jsonrpcResponse.ID.String())
+			continue
+		}
+
+		jsonrpcReq, err := jsonrpc.GetJsonRpcReqFromServicePayload(servicePayload)
+		if err != nil {
+			rc.logger.Error().Err(err).Msg("SHOULD RARELY HAPPEN: requestContext.createResponseObservations() should never fail to get the JSONRPC request from the service payload.")
 			continue
 		}
 
@@ -346,4 +350,16 @@ func (rc *requestContext) Select(allEndpoints protocol.EndpointAddrList) (protoc
 // Implements the protocol.EndpointSelector interface.
 func (rc *requestContext) SelectMultiple(allEndpoints protocol.EndpointAddrList, numEndpoints uint) (protocol.EndpointAddrList, error) {
 	return rc.serviceState.SelectMultiple(allEndpoints, numEndpoints)
+}
+
+// findServicePayload finds a service payload by ID using value-based comparison.
+// This handles the case where JSON unmarshaling creates new ID structs with different
+// pointer addresses but equivalent values.
+func (rc *requestContext) findServicePayload(targetID jsonrpc.ID) (protocol.Payload, bool) {
+	for id, payload := range rc.servicePayloads {
+		if id.Equal(targetID) {
+			return payload, true
+		}
+	}
+	return protocol.Payload{}, false
 }

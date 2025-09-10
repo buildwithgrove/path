@@ -84,18 +84,36 @@ func PublishMetrics(logger polylog.Logger, observations *qos.CosmosRequestObserv
 		Observations: observations,
 	}
 
-	// Increment request counters with all corresponding labels
-	requestsTotal.With(
-		prometheus.Labels{
-			"cosmos_chain_id":  interpreter.GetCosmosChainID(),
-			"evm_chain_id":     interpreter.GetEVMChainID(),
-			"service_id":       interpreter.GetServiceID(),
-			"request_origin":   observations.GetRequestOrigin().String(),
-			"rpc_type":         interpreter.GetRPCType(),
-			"request_method":   interpreter.GetRequestMethod(),
-			"success":          fmt.Sprintf("%t", interpreter.IsRequestSuccessful()),
-			"error_type":       interpreter.GetRequestErrorType(),
-			"http_status_code": fmt.Sprintf("%d", interpreter.GetRequestHTTPStatus()),
-			"endpoint_domain":  interpreter.GetEndpointDomain(),
-		}).Inc()
+	methods := extractRequestMethods(logger, interpreter)
+
+	for _, method := range methods {
+		// Increment request counters with all corresponding labels
+		requestsTotal.With(
+			prometheus.Labels{
+				"cosmos_chain_id":  interpreter.GetCosmosChainID(),
+				"evm_chain_id":     interpreter.GetEVMChainID(),
+				"service_id":       interpreter.GetServiceID(),
+				"request_origin":   observations.GetRequestOrigin().String(),
+				"rpc_type":         interpreter.GetRPCType(),
+				"request_method":   method,
+				"success":          fmt.Sprintf("%t", interpreter.IsRequestSuccessful()),
+				"error_type":       interpreter.GetRequestErrorType(),
+				"http_status_code": fmt.Sprintf("%d", interpreter.GetRequestHTTPStatus()),
+				"endpoint_domain":  interpreter.GetEndpointDomain(),
+			},
+		).Inc()
+	}
+}
+
+// extractRequestMethods extracts the request methods from the interpreter.
+// Returns empty string if method cannot be determined.
+func extractRequestMethods(logger polylog.Logger, interpreter *qos.CosmosSDKObservationInterpreter) []string {
+	methods, methodsFound := interpreter.GetRequestMethods()
+	if !methodsFound {
+		// For clarity in metrics, use empty string as the default value when method can't be determined
+		methods = []string{}
+		// This can happen for invalid requests, but we should still log it
+		logger.Debug().Msgf("Should happen very rarely: Unable to determine request method for EVM metrics: %+v", interpreter)
+	}
+	return methods
 }

@@ -122,9 +122,14 @@ func (rv *requestValidator) getJSONRPCRequestContextFromRequest(
 	rpcType sharedtypes.RPCType,
 	jsonrpcReq jsonrpc.Request,
 ) gateway.RequestQoSContext {
+	// Create a map with single request for consistency with batch handling
+	jsonrpcReqs := map[jsonrpc.ID]jsonrpc.Request{
+		jsonrpcReq.ID: jsonrpcReq,
+	}
+
 	context, ok := rv.buildJSONRPCRequestContext(
-		rpcType,
-		jsonrpcReq,
+		jsonrpcReqs,
+		false, // isBatch = false for single request
 		qosobservations.RequestOrigin_REQUEST_ORIGIN_SYNTHETIC,
 	)
 	if !ok {

@@ -76,7 +76,8 @@ func getEVMTestMethods() []string {
 }
 
 // getEVMTestMethodsForWebSocket returns all EVM JSON-RPC methods for WebSocket testing.
-// This includes all EVM JSON-RPC methods except batchRequest.
+// This includes all EVM JSON-RPC methods except batchRequest as EVM websocket connections
+// go not support batch requests.
 func getEVMTestMethodsForWebSocket() []string {
 	return []string{
 		eth_blockNumber,
@@ -186,11 +187,6 @@ func getEVMVegetaTargets(
 
 		// Handle batch request specially
 		if method == batchRequest {
-			// TODO_TECHDEBT(@commoddity): Temporarily disable batch requests for non-EVM services
-			// This will be fixed in the in-progress PR to enable batch requests for non-EVM services
-			if ts.ServiceType != serviceTypeEVM {
-				continue
-			}
 			body, err = createEVMBatchRequest()
 			if err != nil {
 				return nil, fmt.Errorf("failed to create batch request for service '%s': %w", ts.ServiceID, err)

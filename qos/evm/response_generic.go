@@ -66,11 +66,11 @@ func (r responseGeneric) GetObservation() qosobservations.EVMEndpointObservation
 
 // GetHTTPResponse builds and returns the httpResponse matching the responseGeneric instance.
 // Implements the response interface.
-func (r responseGeneric) GetHTTPResponse() httpResponse {
-	return httpResponse{
-		responsePayload: r.getResponsePayload(),
+func (r responseGeneric) GetHTTPResponse() jsonrpc.HTTPResponse {
+	return jsonrpc.HTTPResponse{
+		ResponsePayload: r.getResponsePayload(),
 		// Use the HTTP status code recommended by for the underlying JSONRPC response by the jsonrpc package.
-		httpStatusCode: r.getHTTPStatusCode(),
+		HTTPStatusCode: r.getHTTPStatusCode(),
 	}
 }
 
@@ -144,7 +144,7 @@ func getGenericJSONRPCErrResponseBatchMarshalFailure(logger polylog.Logger, err 
 	logger.Error().Err(err).Msg("Failed to marshal batch response")
 
 	// Create the batch marshal failure response using the error function
-	jsonrpcResponse := newErrResponseBatchMarshalFailure(err)
+	jsonrpcResponse := jsonrpc.NewErrResponseBatchMarshalFailure(err)
 
 	// No validation error since this is an internal processing issue, not an endpoint issue
 	return responseGeneric{
@@ -167,12 +167,6 @@ func getGenericResponseBatchEmpty(logger polylog.Logger) responseGeneric {
 		jsonrpcResponse: jsonrpc.Response{}, // Empty response - will marshal to empty JSON object
 		validationError: nil,                // No validation error - this is valid JSON-RPC behavior
 	}
-}
-
-// GetJSONRPCID returns the JSONRPC ID of the response.
-// Implements the response interface.
-func (r responseGeneric) GetJSONRPCID() jsonrpc.ID {
-	return r.jsonrpcResponse.ID
 }
 
 // TODO_INCOMPLETE: Handle the string `null`, as it could be returned

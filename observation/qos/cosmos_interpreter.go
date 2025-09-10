@@ -1,6 +1,7 @@
 package qos
 
 import (
+	"errors"
 	"strings"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
@@ -45,33 +46,39 @@ func (i *CosmosSDKObservationInterpreter) GetServiceID() string {
 	return i.Observations.ServiceId
 }
 
+// TODO_TECHDEBT: For batch requests, this will only return one of the methods in the batch.
 // GetRequestMethod returns the CosmosSDK RPC method name from the request profile.
-func (i *CosmosSDKObservationInterpreter) GetRequestMethod() string {
+func (i *CosmosSDKObservationInterpreter) GetRequestMethods() ([]string, bool) {
 	if i.Observations == nil {
 		i.Logger.ProbabilisticDebugInfo(polylog.ProbabilisticDebugInfoProb).Msg("SHOULD RARELY HAPPEN: Cannot get request method: nil observations")
-		return ""
+		return nil, false
 	}
 
-	// Check if request profile is available
-	if i.Observations.RequestProfile == nil {
-		return ""
+	// Check if request profiles are available
+	if len(i.Observations.RequestProfiles) == 0 {
+		return nil, false
 	}
 
-	// Handle different request types
-	switch req := i.Observations.RequestProfile.ParsedRequest.(type) {
-	case *CosmosRequestProfile_RestRequest:
-		if req.RestRequest != nil {
-			// For REST requests, use the API path as the method
-			return req.RestRequest.ApiPath
+	requestMethods := []string{}
+
+	// Iterate over each request profile
+	for _, requestProfile := range i.Observations.RequestProfiles {
+		// Handle different request types
+		switch req := requestProfile.ParsedRequest.(type) {
+		case *CosmosRequestProfile_RestRequest:
+			if req.RestRequest != nil {
+				// For REST requests, use the API path as the method
+				requestMethods = append(requestMethods, req.RestRequest.ApiPath)
+			}
+		case *CosmosRequestProfile_JsonrpcRequest:
+			if req.JsonrpcRequest != nil {
+				// For JSON-RPC requests, use the method name
+				requestMethods = append(requestMethods, req.JsonrpcRequest.Method)
+			}
 		}
-	case *CosmosRequestProfile_JsonrpcRequest:
-		if req.JsonrpcRequest != nil {
-			// For JSON-RPC requests, use the method name
-			return req.JsonrpcRequest.Method
-		}
 	}
 
-	return ""
+	return requestMethods, true
 }
 
 // IsRequestSuccessful determines if the request completed without errors.
@@ -107,12 +114,18 @@ func (i *CosmosSDKObservationInterpreter) GetRPCType() string {
 		return ""
 	}
 
-	// Check if request profile and backend service details are available
-	if i.Observations.RequestProfile == nil || i.Observations.RequestProfile.BackendServiceDetails == nil {
+	// Check if request profiles are available
+	if len(i.Observations.RequestProfiles) == 0 {
 		return ""
 	}
 
-	return i.Observations.RequestProfile.BackendServiceDetails.BackendServiceType.String()
+	// Use the first request profile for RPC type extraction
+	requestProfile := i.Observations.RequestProfiles[0]
+	if requestProfile == nil || requestProfile.BackendServiceDetails == nil {
+		return ""
+	}
+
+	return requestProfile.BackendServiceDetails.BackendServiceType.String()
 }
 
 // GetRequestHTTPStatus returns the HTTP status code from the request error or endpoint responses.
@@ -137,6 +150,66 @@ func (i *CosmosSDKObservationInterpreter) GetRequestHTTPStatus() int32 {
 
 	// Default to 200 for successful requests with no specific status
 	return 200
+}
+
+// GetTotalRequestPayloadLength calculates the total payload length across all request profiles.
+// For Cosmos SDK requests, this aggregates payload lengths from both REST and JSON-RPC requests.
+func (i *CosmosSDKObservationInterpreter) GetTotalRequestPayloadLength() uint32 {
+	if i.Observations == nil {
+		i.Logger.ProbabilisticDebugInfo(polylog.ProbabilisticDebugInfoProb).Msg("SHOULD RARELY HAPPEN: Cannot get payload length: nil observations")
+		return 0
+	}
+
+	var totalLength uint32
+	for _, requestProfile := range i.Observations.RequestProfiles {
+		if requestProfile == nil {
+			continue
+		}
+
+		// Handle different request types
+		switch req := requestProfile.ParsedRequest.(type) {
+		case *CosmosRequestProfile_RestRequest:
+			if req.RestRequest != nil {
+				totalLength += req.RestRequest.PayloadLength
+			}
+		case *CosmosRequestProfile_JsonrpcRequest:
+			// JSON-RPC requests don't have explicit payload length in the current structure
+			// The payload length would need to be calculated from the serialized request
+			// For now, we'll use a nominal value or skip
+			// TODO_TECHDEBT: Add payload length tracking to JSON-RPC requests if needed
+		}
+	}
+
+	return totalLength
+}
+
+// GetRequestStatus interprets the observations to determine request status information.
+// Returns: (httpStatusCode, requestError, err)
+// - httpStatusCode: the suggested HTTP status code to return to the client
+// - requestError: error details (nil if successful)
+// - err: error if interpreter cannot determine status (e.g., nil observations)
+func (i *CosmosSDKObservationInterpreter) GetRequestStatus() (int32, *RequestError, error) {
+	if i.Observations == nil {
+		return 0, nil, errors.New("no observations available")
+	}
+
+	// Check for request-level error first
+	if i.Observations.RequestLevelError != nil {
+		return i.Observations.RequestLevelError.HttpStatusCode, i.Observations.RequestLevelError, nil
+	}
+
+	// If no request-level error, check endpoint observations for response errors
+	httpStatusCode := i.GetRequestHTTPStatus()
+
+	// Request is successful if no request-level error and HTTP status indicates success
+	if httpStatusCode >= 200 && httpStatusCode < 300 {
+		return httpStatusCode, nil, nil
+	}
+
+	// For non-success status codes, create a generic error
+	// Note: Unlike EVM, Cosmos doesn't have specific error categorization yet
+	// TODO_TECHDEBT: Add specific Cosmos error categorization similar to EVM
+	return httpStatusCode, nil, nil
 }
 
 // GetEndpointDomain returns the domain of the endpoint that served the request.
