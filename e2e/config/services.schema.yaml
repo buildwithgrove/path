@@ -15,7 +15,7 @@ properties:
       oneOf:
         - $ref: "#/definitions/evm_service"
         - $ref: "#/definitions/solana_service"
-        - $ref: "#/definitions/cometbft_service"
+        - $ref: "#/definitions/cosmos_sdk_service"
         - $ref: "#/definitions/anvil_service"
 
 definitions:
@@ -27,6 +27,7 @@ definitions:
       - name
       - service_id
       - service_type
+      - evm_chain_id
       - service_params
     properties:
       name:
@@ -42,12 +43,24 @@ definitions:
         type: string
         enum: ["evm"]
         examples: ["evm"]
+      evm_chain_id:
+        description: "EVM chain ID in hexadecimal format"
+        type: string
+        pattern: "^0x[a-fA-F0-9]+$"
+        examples: ["0x1", "0xa4b1", "0x15f900"]
+      cosmos_sdk_chain_id:
+        description: "(Optional) Cosmos SDK chain ID for EVM chains that also support Cosmos SDK APIs (e.g., XRPLEVM)"
+        type: string
+        examples: ["xrplevm_1440000-1", "xrplevm_1449000-1"]
       alias:
         description: "(Optional) Alias for the service, used for subdomain routing or test aliasing. Only present if different from shannonServiceId."
         type: string
         examples: ["arbitrum-one", "eth-mainnet"]
       archival:
         description: "Whether this is an archival test (historical data access)"
+        type: boolean
+      websockets:
+        description: "Whether this service should run WebSocket tests in addition to HTTP tests"
         type: boolean
       service_params:
         $ref: "#/definitions/evm_service_params"
@@ -115,6 +128,9 @@ definitions:
         description: "(Optional) Alias for the service, used for subdomain routing or test aliasing. Only present if different from shannonServiceId."
         type: string
         examples: ["solana-mainnet"]
+      websockets:
+        description: "Whether this service should run WebSocket tests in addition to HTTP tests"
+        type: boolean
       service_params:
         $ref: "#/definitions/solana_service_params"
   solana_service_params:
@@ -137,50 +153,87 @@ definitions:
             "4XqrV7zHtv8mHZqsPxueeYc1NodL9nxkdeZJYPtAuw67LszjdYxVgHwUJgBVubuE63ZCToBawe22c8DAAuRdipKs",
           ]
 
-  cometbft_service:
-    description: "CometBFT service definition"
+  cosmos_sdk_service:
+    description: "Cosmos SDK service definition"
     type: object
     additionalProperties: false
     required:
       - name
       - service_id
       - service_type
+      - cosmos_sdk_chain_id
+      - supported_apis
     properties:
       name:
         description: "Name of the service"
         type: string
+        examples: ["Shannon - osmosis (Osmosis) Test", "Shannon - pocket (Pocket) Test"]
       service_id:
         description: "Service ID to test - identifies the specific blockchain service"
         type: string
+        examples: ["osmosis", "pocket", "xrplevm", "pocket-beta1"]
       service_type:
         description: "Type of service to test"
         type: string
-        enum: ["cometbft"]
-        examples: ["cometbft"]
+        enum: ["cosmos_sdk"]
+        examples: ["cosmos_sdk"]
+      cosmos_sdk_chain_id:
+        description: "Cosmos SDK chain ID"
+        type: string
+        examples: ["osmosis", "pocket", "pocket-beta1", "cosmoshub-4"]
+      evm_chain_id:
+        description: "EVM chain ID in hexadecimal format"
+        type: string
+        pattern: "^0x[a-fA-F0-9]+$"
+        examples: ["0x1", "0xa4b1", "0x15f900"]
+      supported_apis:
+        description: "List of supported API types"
+        type: array
+        items:
+          type: string
+          enum: ["json_rpc", "rest", "comet_bft", "websocket"]
+        examples: [["rest", "comet_bft"], ["comet_bft"]]
       alias:
         description: "(Optional) Alias for the service, used for subdomain routing or test aliasing. Only present if different from shannonServiceId."
         type: string
+      websockets:
+        description: "Whether this service should run WebSocket tests in addition to HTTP tests"
+        type: boolean
+      # Some Cosmos SDK services have EVM-like parameters, so we use the same schema for them
+      service_params:
+        $ref: "#/definitions/evm_service_params"
 
   anvil_service:
-    description: "Anvil service definition"
+    description: "Anvil service definition (local Ethereum development)"
     type: object
     additionalProperties: false
     required:
       - name
       - service_id
       - service_type
+      - evm_chain_id
     properties:
       name:
         description: "Name of the service"
         type: string
+        examples: ["Shannon - anvil (Anvil Local Development) Test"]
       service_id:
         description: "Service ID to test - identifies the specific blockchain service"
         type: string
+        examples: ["anvil"]
       service_type:
         description: "Type of service to test"
         type: string
         enum: ["anvil"]
         examples: ["anvil"]
+      evm_chain_id:
+        description: "EVM chain ID in hexadecimal format"
+        type: string
+        pattern: "^0x[a-fA-F0-9]+$"
+        examples: ["0x7a69"]
       alias:
         description: "(Optional) Alias for the service, used for subdomain routing or test aliasing. Only present if different from shannonServiceId."
         type: string
+      websockets:
+        description: "Whether this service should run WebSocket tests in addition to HTTP tests"
+        type: boolean

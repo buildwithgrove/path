@@ -176,6 +176,19 @@ var shannonServices = []ServiceQoSConfig{
 		15_000_000,
 	)),
 
+	// Giwa
+	// TODO_NEXT(@commoddity): Update to use correct EVM chain ID once `giwa` mainnet is live.
+	// TODO_NEXT(@commoddity): Add archival check config for Giwa once `giwa` mainnet is live.
+	evm.NewEVMServiceQoSConfig("giwa", "0x1", nil),
+
+	// Giwa Sepolia Testnet
+	evm.NewEVMServiceQoSConfig("giwa-sepolia-testnet", "0x164ce", evm.NewEVMArchivalCheckConfig(
+		// https://sepolia-explorer.giwa.io/address/0xA2a51Cca837B8ebc00dA2810e72F386Ee0dD08a0
+		"0xA2a51Cca837B8ebc00dA2810e72F386Ee0dD08a0",
+		// Contract start block
+		3_456_000,
+	)),
+
 	// Gnosis
 	evm.NewEVMServiceQoSConfig("gnosis", "0x64", evm.NewEVMArchivalCheckConfig(
 		// https://gnosisscan.io/address/0xe91d153e0b41518a2ce8dd3d7944fa863463a97d

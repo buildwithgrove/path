@@ -68,7 +68,7 @@ func unmarshalResponse(
 			"unmarshal_err", err,
 			"raw_payload", log.Preview(payloadStr),
 			"endpoint_addr", endpointAddr,
-		).Debug().Msg("Failed to unmarshal response payload as JSON-RPC")
+		).Error().Msg("❌ Failed to unmarshal response payload as JSON-RPC")
 
 		return getGenericJSONRPCErrResponse(logger, getJsonRpcIDForErrorResponse(servicePayloads), data, err), err
 	}

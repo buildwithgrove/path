@@ -183,11 +183,21 @@ message ShannonWebsocketConnectionObservation {
   // Recommended sanction type based on the error
   optional ShannonSanctionType recommended_sanction = 10;
 
-  // RelayMiner error details if the endpoint returned a RelayMinerError during connection lifecycle
-  optional ShannonRelayMinerError relay_miner_error = 11;
-
   // Tracks whether the endpoint is a fallback endpoint
-  bool is_fallback_endpoint = 12;
+  bool is_fallback_endpoint = 11;
+
+  // Connection lifecycle timestamps
+  google.protobuf.Timestamp connection_established_timestamp = 12;
+  optional google.protobuf.Timestamp connection_closed_timestamp = 13;
+
+  // Connection event type to distinguish between establishment and closure
+  enum ConnectionEventType {
+    CONNECTION_EVENT_TYPE_UNSPECIFIED = 0;
+    CONNECTION_ESTABLISHED = 1;
+    CONNECTION_CLOSED = 2;
+    CONNECTION_ESTABLISHMENT_FAILED = 3;
+  }
+  ConnectionEventType event_type = 14;
 }
 
 // ShannonWebsocketMessageObservation stores observations from individual WebSocket messages

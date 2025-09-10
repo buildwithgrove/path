@@ -30,10 +30,12 @@ const (
 	websocketConnectionErrorsMetric  = "shannon_websocket_connection_errors_total"
 	websocketConnectionsActiveMetric = "shannon_websocket_connections_active"
 
+	// WebSocket connection duration metrics
+	websocketConnectionDurationMetric = "shannon_websocket_connection_duration_seconds"
+
 	// WebSocket message metrics
 	websocketMessagesTotalMetric = "shannon_websocket_messages_total"
 	websocketMessageErrorsMetric = "shannon_websocket_message_errors_total"
-
 	// Sanctions metrics (shared across HTTP and WebSocket)
 	sanctionsByDomainMetric = "shannon_sanctions_by_domain"
 
@@ -68,6 +70,7 @@ func init() {
 	prometheus.MustRegister(websocketMessagesTotal)
 	prometheus.MustRegister(websocketMessageErrors)
 	prometheus.MustRegister(activeWebsocketConnections)
+	prometheus.MustRegister(websocketConnectionDuration)
 
 	// Sanctions metrics (shared across HTTP and WebSocket)
 	prometheus.MustRegister(sanctionsByDomain)
@@ -146,7 +149,7 @@ var (
 		[]string{"request_type"},
 	)
 
-	// websocketConnectionsTotal tracks the total WebSocket connection attempts processed.
+	// websocketConnectionsTotal tracks the total WebSocket connection events processed.
 	// Labels:
 	//   - service_id: Target service identifier (i.e. chain id in Shannon)
 	//   - success: Whether the connection was successful (true if no connection error)
@@ -155,16 +158,17 @@ var (
 	//   - endpoint_domain: Effective TLD+1 domain extracted from endpoint URL
 	//
 	// Use to analyze:
-	//   - WebSocket connection volume by service
+	//   - WebSocket connection volume by service and event type
 	//   - Connection success rates by service
+	//   - Active connections (established - closed)
 	//   - Distribution between protocol and fallback endpoints for WebSocket connections
 	websocketConnectionsTotal = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Subsystem: pathProcess,
 			Name:      websocketConnectionsTotalMetric,
-			Help:      "Total number of WebSocket connections processed by Shannon protocol instance(s)",
+			Help:      "Total number of WebSocket connection events processed by Shannon protocol instance(s)",
 		},
-		[]string{"service_id", "success", "error_type", "used_fallback", "endpoint_domain"},
+		[]string{"service_id", "success", "error_type", "used_fallback", "event_type", "endpoint_domain"},
 	)
 
 	// websocketConnectionErrors tracks WebSocket connection establishment errors
@@ -241,6 +245,27 @@ var (
 			Name:      websocketConnectionsActiveMetric,
 			Help:      "Current number of active Shannon WebSocket connections",
 		},
+	)
+
+	// websocketConnectionDuration tracks the duration of WebSocket connections.
+	// Labels:
+	//   - service_id: Target service identifier
+	//   - endpoint_domain: Effective TLD+1 domain extracted from endpoint URL
+	//   - success: Whether the connection completed successfully (not prematurely closed due to errors)
+	//   - close_reason: Reason for connection closure (normal, error, timeout, etc.)
+	//
+	// Use to analyze:
+	//   - Connection duration patterns and stability
+	//   - Session length distribution by service and endpoint
+	//   - Connection health and disconnect patterns
+	websocketConnectionDuration = prometheus.NewHistogramVec(
+		prometheus.HistogramOpts{
+			Subsystem: pathProcess,
+			Name:      websocketConnectionDurationMetric,
+			Help:      "Histogram of WebSocket connection durations in seconds",
+			Buckets:   []float64{1, 5, 10, 30, 60, 300, 600, 1800, 3600}, // 1s to 1h
+		},
+		[]string{"service_id", "endpoint_domain", "success", "close_reason"},
 	)
 
 	// sanctionsByDomain tracks sanctions applied by domain.
@@ -399,9 +424,8 @@ func PublishMetrics(
 				continue
 			}
 
-			// Record WebSocket connection metrics
-			recordWebsocketConnectionTotal(logger, observationSet)
-			processWebsocketConnectionErrors(logger, observationSet.GetServiceId(), wsConnectionObs)
+			// Handle different connection events
+			handleWebSocketConnectionObservation(logger, wsConnectionObs, observationSet)
 
 		case *protocolobservations.ShannonRequestObservations_WebsocketMessageObservation:
 			// WebSocket message observation - new metrics processing
@@ -418,6 +442,32 @@ func PublishMetrics(
 		default:
 			logger.Warn().Msg("❌ SHOULD NEVER HAPPEN: received unknown observation type")
 		}
+	}
+}
+
+// handleWebSocketConnectionObservation handles different connection events for WebSocket connection observations.
+// For example, it handles the CONNECTION_ESTABLISHED, CONNECTION_ESTABLISHMENT_FAILED, and CONNECTION_CLOSED events separately.
+func handleWebSocketConnectionObservation(
+	logger polylog.Logger,
+	wsConnectionObs *protocolobservations.ShannonWebsocketConnectionObservation,
+	observationSet *protocolobservations.ShannonRequestObservations,
+) {
+	// Handle different connection events
+	switch wsConnectionObs.GetEventType() {
+	case protocolobservations.ShannonWebsocketConnectionObservation_CONNECTION_ESTABLISHED:
+		// Record WebSocket connection establishment metrics
+		recordWebsocketConnectionTotal(logger, observationSet)
+		processWebsocketConnectionErrors(logger, observationSet.GetServiceId(), wsConnectionObs)
+
+	case protocolobservations.ShannonWebsocketConnectionObservation_CONNECTION_ESTABLISHMENT_FAILED:
+		// Record WebSocket connection establishment failure metrics
+		recordWebsocketConnectionTotal(logger, observationSet)
+		processWebsocketConnectionErrors(logger, observationSet.GetServiceId(), wsConnectionObs)
+
+	case protocolobservations.ShannonWebsocketConnectionObservation_CONNECTION_CLOSED:
+		// Record connection closure metrics AND duration
+		recordWebsocketConnectionTotal(logger, observationSet)
+		recordWebsocketConnectionDuration(logger, observationSet.GetServiceId(), wsConnectionObs)
 	}
 }
 
@@ -806,6 +856,19 @@ func recordWebsocketConnectionTotal(
 	success := isWebsocketConnectionSuccessful(wsConnectionObs)
 	usedFallbackEndpoint := wsConnectionObs.GetIsFallbackEndpoint()
 
+	// Determine event type from the observation
+	var eventType string
+	switch wsConnectionObs.GetEventType() {
+	case protocolobservations.ShannonWebsocketConnectionObservation_CONNECTION_ESTABLISHED:
+		eventType = "established"
+	case protocolobservations.ShannonWebsocketConnectionObservation_CONNECTION_CLOSED:
+		eventType = "closed"
+	case protocolobservations.ShannonWebsocketConnectionObservation_CONNECTION_ESTABLISHMENT_FAILED:
+		eventType = "failed"
+	default:
+		eventType = "unknown"
+	}
+
 	// Extract endpoint URL for exemplars
 	endpointURL := wsConnectionObs.GetEndpointUrl()
 	endpointDomain, err := ExtractDomainOrHost(endpointURL)
@@ -821,6 +884,7 @@ func recordWebsocketConnectionTotal(
 			"success":         fmt.Sprintf("%t", success),
 			"error_type":      "",
 			"used_fallback":   fmt.Sprintf("%t", usedFallbackEndpoint),
+			"event_type":      eventType,
 			"endpoint_domain": endpointDomain,
 		},
 	).Add(1)
@@ -923,21 +987,6 @@ func processWebsocketConnectionErrors(
 				"endpoint_domain": endpointDomain,
 			}).Inc()
 	}
-
-	// Record RelayMinerError if present
-	if wsConnectionObs.RelayMinerError != nil {
-		relayMinerCodespace := wsConnectionObs.RelayMinerError.GetCodespace()
-		relayMinerCode := fmt.Sprintf("%d", wsConnectionObs.RelayMinerError.GetCode())
-
-		relayMinerErrorsTotal.With(
-			prometheus.Labels{
-				"service_id":            serviceID,
-				"endpoint_error_type":   errorType,
-				"relay_miner_codespace": relayMinerCodespace,
-				"relay_miner_code":      relayMinerCode,
-				"endpoint_domain":       endpointDomain,
-			}).Inc()
-	}
 }
 
 // processWebsocketMessageErrors records WebSocket message error metrics.
@@ -1000,4 +1049,51 @@ func processWebsocketMessageErrors(
 				"endpoint_domain":       endpointDomain,
 			}).Inc()
 	}
+}
+
+// recordWebsocketConnectionDuration records the duration of a WebSocket connection when it closes.
+// Only processes CONNECTION_CLOSED events with both establishment and closure timestamps.
+func recordWebsocketConnectionDuration(
+	logger polylog.Logger,
+	serviceID string,
+	wsConnectionObs *protocolobservations.ShannonWebsocketConnectionObservation,
+) {
+	// Only record duration for CONNECTION_CLOSED events
+	if wsConnectionObs.GetEventType() != protocolobservations.ShannonWebsocketConnectionObservation_CONNECTION_CLOSED {
+		return
+	}
+
+	establishedTime := wsConnectionObs.GetConnectionEstablishedTimestamp()
+	closedTime := wsConnectionObs.GetConnectionClosedTimestamp()
+
+	if establishedTime == nil || closedTime == nil {
+		logger.Warn().Msg("Missing timestamps for WebSocket connection duration, skipping metric")
+		return
+	}
+
+	duration := closedTime.AsTime().Sub(establishedTime.AsTime()).Seconds()
+	if duration < 0 {
+		logger.Warn().Msg("Negative connection duration detected, skipping metric")
+		return
+	}
+
+	// Extract domain for labeling
+	endpointDomain, err := ExtractDomainOrHost(wsConnectionObs.GetEndpointUrl())
+	if err != nil {
+		logger.Warn().Err(err).Msg("Could not extract domain for connection duration metric")
+		return
+	}
+
+	// Determine success based on whether connection had errors
+	success := wsConnectionObs.GetErrorType() == protocolobservations.ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_UNSPECIFIED
+
+	// Default close reason since we removed the close_reason field per user request
+	closeReason := "normal"
+
+	websocketConnectionDuration.With(prometheus.Labels{
+		"service_id":      serviceID,
+		"endpoint_domain": endpointDomain,
+		"success":         fmt.Sprintf("%t", success),
+		"close_reason":    closeReason,
+	}).Observe(duration)
 }

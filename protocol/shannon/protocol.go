@@ -180,7 +180,7 @@ func (p *Protocol) AvailableEndpoints(
 	return endpointAddrs, buildSuccessfulEndpointLookupObservation(serviceID), nil
 }
 
-// BuildRequestContextForEndpoint creates a new protocol request context for a specified service and endpoint.
+// BuildHTTPRequestContextForEndpoint creates a new protocol request context for a specified service and endpoint.
 //
 // Parameters:
 //   - ctx: Context for cancellation, deadlines, and logging.
@@ -198,14 +198,14 @@ func (p *Protocol) AvailableEndpoints(
 //   - On failure, logs the error, returns a context setup observation, and a non-nil error.
 //
 // Implements the gateway.Protocol interface.
-func (p *Protocol) BuildRequestContextForEndpoint(
+func (p *Protocol) BuildHTTPRequestContextForEndpoint(
 	ctx context.Context,
 	serviceID protocol.ServiceID,
 	selectedEndpointAddr protocol.EndpointAddr,
 	httpReq *http.Request,
 ) (gateway.ProtocolRequestContext, protocolobservations.Observations, error) {
 	logger := p.logger.With(
-		"method", "BuildRequestContextForEndpoint",
+		"method", "BuildHTTPRequestContextForEndpoint",
 		"service_id", serviceID,
 		"endpoint_addr", selectedEndpointAddr,
 	)
@@ -426,7 +426,7 @@ func (p *Protocol) getSessionsUniqueEndpoints(
 			// All endpoints are sanctioned: log a warning and skip this app.
 			if len(filteredEndpoints) == 0 {
 				logger.Error().Msgf(
-					"All %d session endpoints are sanctioned for service %s, app %s. Skipping the app.",
+					"❌ All %d session endpoints are sanctioned for service %s, app %s. SKIPPING the app.",
 					len(sessionEndpoints), serviceID, app.Address,
 				)
 				continue

@@ -1,5 +1,32 @@
 //go:build e2e
 
+// Package e2e provides End-to-End and Load testing for PATH services.
+//
+// This package supports both HTTP and WebSocket protocols with configurable load testing
+// capabilities using Vegeta and custom WebSocket clients.
+//
+// TESTING MODES:
+// - E2E Mode: Spins up local PATH instance, tests against localhost (HTTP or WebSocket)
+// - Load Mode: Tests against remote PATH deployment with configurable RPS (HTTP or WebSocket)
+// - Fallback Mode: E2E tests with external fallback URL configuration
+//
+// SUPPORTED PROTOCOLS:
+// - EVM JSON-RPC (HTTP + WebSocket): Ethereum-compatible blockchain interactions
+// - Cosmos SDK REST (HTTP): RESTful API endpoints for Cosmos-based chains
+// - CometBFT JSON-RPC (HTTP): Tendermint consensus and node status endpoints
+// - Solana JSON-RPC (HTTP): Solana-specific blockchain methods
+//
+// PACKAGE ARCHITECTURE:
+// - main_test.go: Test orchestration and coordination
+// - vegeta_test.go: HTTP testing using Vegeta library
+// - websockets_test.go: WebSocket testing with persistent connections
+// - assertions_test.go: Shared validation logic (transport-agnostic)
+// - calculations_test.go: Metrics calculation functions
+// - log_test.go: Progress bars and formatted output
+// - config_test.go: Configuration and environment parsing
+// - service_test.go: Service definitions and target generation
+// - service_*_test.go: Protocol-specific request builders
+// - docker_test.go: Local PATH instance management
 package e2e
 
 import (
@@ -7,6 +34,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"sync"
 	"testing"
 	"time"
 
@@ -21,12 +49,17 @@ import (
 //   https://path.grove.city/develop/path/e2e_tests
 //
 // Example Usage - E2E tests:
-//   - make e2e_test_all             # Run all E2E tests for all services
-//   - make e2e_test <service IDs>   # Run all E2E tests for the specified services
+//   - make e2e_test_all             # Run all HTTP E2E tests for all services
+//   - make e2e_test <service IDs>   # Run HTTP E2E tests for the specified services
+//   - make e2e_test_websocket_all   # Run WebSocket E2E tests for all compatible services
+//   - make e2e_test_websocket <IDs> # Run WebSocket E2E tests for specified services
+//   - make e2e_test_eth_fallback <URL> # Run E2E test with ETH fallback URL enabled
 //
 // Example Usage - Load tests:
-//   - make load_test_all            # Run all load tests for all services
-//   - make load_test <service IDs>  # Run all load tests for the specified services
+//   - make load_test_all            # Run all HTTP load tests for all services
+//   - make load_test <service IDs>  # Run all HTTP load tests for the specified services
+//   - make load_test_websocket_all  # Run all WebSocket load tests for all compatible services
+//   - make load_test_websocket <IDs> # Run all WebSocket load tests for specified services
 // -----------------------------------------------------------------------------
 
 // -------------------- Test Configuration Initialization --------------------
@@ -46,8 +79,9 @@ func init() {
 // -------------------- Test Function --------------------
 
 func Test_PATH_E2E(t *testing.T) {
-	// Initialize test context
-	ctx, cancel := context.WithCancel(context.Background())
+	// Initialize test context with a reasonable timeout to prevent hanging
+	// Each method gets maxDuration which is typically ~10-20 seconds, so 5 minutes should be plenty
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 	setupSIGINTHandler(cancel)
 
@@ -71,6 +105,25 @@ func Test_PATH_E2E(t *testing.T) {
 
 	// Assign test service configs to each test service
 	testServiceConfigs := setTestServiceConfigs(testServices)
+
+	// Filter test services for WebSocket-only mode if enabled
+	if cfg.isWebSocketsOnly() {
+		filteredServices := make([]*TestService, 0)
+		for _, ts := range testServices {
+			if ts.supportsEVMWebSockets() {
+				filteredServices = append(filteredServices, ts)
+			}
+		}
+		testServices = filteredServices
+
+		if len(testServices) == 0 {
+			fmt.Printf("%s⚠️  No services support WebSocket tests in WebSocket-only mode%s\n", YELLOW, RESET)
+			return
+		}
+
+		fmt.Printf("\n%s🔌 WebSocket-only mode enabled - filtered to %d WebSocket-compatible service(s)%s\n",
+			BOLD_CYAN, len(testServices), RESET)
+	}
 
 	// Log the test service IDs
 	logTestServiceIDs(testServices)
@@ -96,17 +149,14 @@ func Test_PATH_E2E(t *testing.T) {
 			)
 		}
 
-		// Get methods to test
-		methodsToTest := ts.getTestMethods()
-
 		// Generate targets for this service
-		targets, err := ts.getVegetaTargets(methodsToTest, serviceGatewayURL)
+		targets, err := ts.getVegetaTargets(serviceGatewayURL)
 		if err != nil {
 			t.Fatalf("❌ Failed to get vegeta targets: %v", err)
 		}
 
 		// Create summary for this service
-		serviceSummaries[ts.ServiceID] = newServiceSummary(ts.ServiceID, serviceConfig, methodsToTest)
+		serviceSummaries[ts.ServiceID] = newServiceSummary(ts.ServiceID, serviceConfig, ts.testMethodsMap)
 
 		// Assign all relevant fields to the test service
 		ts.hydrate(serviceConfig, ts.ServiceType, targets, serviceSummaries[ts.ServiceID])
@@ -114,11 +164,75 @@ func Test_PATH_E2E(t *testing.T) {
 		// Log service specific info
 		logTestServiceInfo(ts, serviceGatewayURL, serviceConfig)
 
-		// Run the service test
-		runServiceTest(t, ctx, ts)
+		// Run the service tests (HTTP and/or WebSocket based on configuration)
+		runAllServiceTests(t, ctx, ts)
 	}
 
 	printServiceSummaries(serviceSummaries)
+}
+
+// runAllServiceTests orchestrates either HTTP or WebSocket tests based on test mode.
+// This function runs either HTTP tests OR WebSocket tests, never both.
+func runAllServiceTests(t *testing.T, ctx context.Context, ts *TestService) {
+	results := make(map[string]*methodMetrics)
+	var resultsMutex sync.Mutex
+
+	if cfg.isWebSocketsOnly() {
+		runWebSocketTestsForService(t, ctx, ts, results, &resultsMutex)
+	} else {
+		runHTTPTestsForService(t, ctx, ts, results, &resultsMutex)
+	}
+}
+
+// runWebSocketTestsForService executes WebSocket tests and handles validation
+func runWebSocketTestsForService(t *testing.T, ctx context.Context, ts *TestService, results map[string]*methodMetrics, resultsMutex *sync.Mutex) {
+	// Validate WebSocket support before running tests
+	if !ts.supportsEVMWebSockets() {
+		t.Errorf("❌ Service %s does not support WebSocket tests but TEST_WEBSOCKETS=true was set", ts.ServiceID)
+		return
+	}
+
+	// Execute WebSocket tests
+	websocketTestFailed := runWebSocketServiceTest(t, ctx, ts, results, resultsMutex)
+
+	// Calculate and validate the WebSocket service summary
+	overallTestFailed := calculateServiceSummary(t, ts, results)
+
+	// Mark overall test as failed if any component failed
+	if websocketTestFailed || overallTestFailed {
+		t.Fail()
+	}
+}
+
+// runHTTPTestsForService executes HTTP tests and handles validation
+func runHTTPTestsForService(t *testing.T, ctx context.Context, ts *TestService, results map[string]*methodMetrics, resultsMutex *sync.Mutex) {
+	// Execute HTTP tests
+	runHTTPServiceTestWithResults(t, ctx, ts, results, resultsMutex)
+
+	// Calculate and validate the HTTP service summary
+	overallTestFailed := calculateServiceSummary(t, ts, results)
+
+	// Mark overall test as failed if HTTP tests failed
+	if overallTestFailed {
+		t.Fail()
+	}
+}
+
+// runHTTPServiceTestWithResults runs HTTP tests and populates the shared results map.
+// This function is used when running HTTP-only tests.
+func runHTTPServiceTestWithResults(t *testing.T, ctx context.Context, ts *TestService, results map[string]*methodMetrics, resultsMutex *sync.Mutex) {
+	httpResults := make(map[string]*methodMetrics)
+	httpResultsMutex := sync.Mutex{}
+
+	// Run the HTTP test with its own results map
+	runHTTPServiceTest(t, ctx, ts, httpResults, &httpResultsMutex)
+
+	// Copy HTTP results to the shared results map (no labeling needed since tests are separate)
+	resultsMutex.Lock()
+	for method, metrics := range httpResults {
+		results[method] = metrics
+	}
+	resultsMutex.Unlock()
 }
 
 // -------------------- Helper Functions --------------------
@@ -188,11 +302,22 @@ func logTestServiceIDs(testServices []*TestService) {
 	fmt.Printf("\n\n=======================================================\n")
 	fmt.Printf("⛓️  Will be running tests for service IDs:\n")
 	for _, ts := range testServices {
-		if ts.Archival {
-			fmt.Printf("  🗄️  %s%s%s (Archival)\n", GREEN, ts.ServiceID, RESET)
-		} else {
-			fmt.Printf("  📝  %s%s%s (Non-archival)\n", GREEN, ts.ServiceID, RESET)
-		}
+		typeStr, icon := getServiceTypeDisplay(ts)
+		fmt.Printf("  %s  %s%s%s %s\n", icon, GREEN, ts.ServiceID, RESET, typeStr)
+	}
+}
+
+// getServiceTypeDisplay returns the appropriate type string and icon for a service
+func getServiceTypeDisplay(ts *TestService) (typeStr, icon string) {
+	switch {
+	case ts.Archival && ts.supportsEVMWebSockets():
+		return "(Archival + WebSocket)", "🗄️🔌"
+	case ts.Archival:
+		return "(Archival)", "🗄️"
+	case ts.supportsEVMWebSockets():
+		return "(WebSocket)", "🔌"
+	default:
+		return "(Non-archival)", "📝"
 	}
 }
 

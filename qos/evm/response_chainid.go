@@ -25,7 +25,7 @@ func responseUnmarshallerChainID(
 	if jsonrpcResp.IsError() {
 		return responseToChainID{
 			logger:          logger,
-			jsonRPCResponse: jsonrpcResp,
+			jsonrpcResponse: jsonrpcResp,
 			validationError: nil, // Intentionally set to nil to indicate a valid JSONRPC error response.
 		}, nil
 	}
@@ -35,7 +35,7 @@ func responseUnmarshallerChainID(
 		validationError := qosobservations.EVMResponseValidationError_EVM_RESPONSE_VALIDATION_ERROR_UNMARSHAL
 		return responseToChainID{
 			logger:          logger,
-			jsonRPCResponse: jsonrpcResp,
+			jsonrpcResponse: jsonrpcResp,
 			validationError: &validationError,
 		}, err
 	}
@@ -53,7 +53,7 @@ func responseUnmarshallerChainID(
 
 	return &responseToChainID{
 		logger:          logger,
-		jsonRPCResponse: jsonrpcResp,
+		jsonrpcResponse: jsonrpcResp,
 		result:          result,
 		validationError: validationError,
 	}, err
@@ -64,8 +64,8 @@ func responseUnmarshallerChainID(
 type responseToChainID struct {
 	logger polylog.Logger
 
-	// jsonRPCResponse stores the JSONRPC response parsed from an endpoint's response bytes.
-	jsonRPCResponse jsonrpc.Response
+	// jsonrpcResponse stores the JSONRPC response parsed from an endpoint's response bytes.
+	jsonrpcResponse jsonrpc.Response
 
 	// result captures the `result` field of a JSONRPC response to an `eth_chainId` request.
 	result string
@@ -113,7 +113,7 @@ func (r responseToChainID) GetHTTPResponse() jsonrpc.HTTPResponse {
 
 // getResponsePayload returns the raw byte slice payload to be returned as the response to the JSONRPC request.
 func (r responseToChainID) getResponsePayload() []byte {
-	bz, err := json.Marshal(r.jsonRPCResponse)
+	bz, err := json.Marshal(r.jsonrpcResponse)
 	if err != nil {
 		// This should never happen: log an entry but return the response anyway.
 		r.logger.Warn().Err(err).Msg("responseToChainID: Marshaling JSONRPC response failed.")
@@ -124,5 +124,5 @@ func (r responseToChainID) getResponsePayload() []byte {
 // getHTTPStatusCode returns an HTTP status code corresponding to the underlying JSON-RPC response code.
 // DEV_NOTE: This is an opinionated mapping following best practice but not enforced by any specifications or standards.
 func (r responseToChainID) getHTTPStatusCode() int {
-	return r.jsonRPCResponse.GetRecommendedHTTPStatusCode()
+	return r.jsonrpcResponse.GetRecommendedHTTPStatusCode()
 }
