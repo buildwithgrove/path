@@ -13,14 +13,14 @@ func TestEndpointAddr_GetURL(t *testing.T) {
 	}{
 		// Standard endpoint addresses
 		{
-			name:         "NodeFleet endpoint",
-			endpointAddr: EndpointAddr("pokt1eetcwfv2agdl2nvpf4cprhe89rdq3cxdf037wq-https://relayminer.shannon-mainnet.eu.nodefleet.net"),
-			expected:     "https://relayminer.shannon-mainnet.eu.nodefleet.net",
+			name:         "NordFleet endpoint",
+			endpointAddr: EndpointAddr("pokt1eetcwfv2agdl2nvpf4cprhe89rdq3cxdf037wq-https://skyrim.belongs-to-the.eu.nordfleet.net"),
+			expected:     "https://skyrim.belongs-to-the.eu.nordfleet.net",
 		},
 		{
-			name:         "DoPokT endpoint with port",
-			endpointAddr: EndpointAddr("pokt1d3atlnepcvsa9j5uunpvf64g80eucjqtem77mn-https://rm02-eu.dopokt.com:443"),
-			expected:     "https://rm02-eu.dopokt.com:443",
+			name:         "DoIt endpoint with port",
+			endpointAddr: EndpointAddr("pokt1d3atlnepcvsa9j5uunpvf64g80eucjqtem77mn-https://my01.doit.com:443"),
+			expected:     "https://my01.doit.com:443",
 		},
 		{
 			name:         "Simple HTTPS endpoint",
@@ -189,14 +189,14 @@ func TestEndpointAddr_GetURL(t *testing.T) {
 
 		// Real-world examples
 		{
-			name:         "Real NodeFleet endpoint",
-			endpointAddr: EndpointAddr("pokt1eetcwfv2agdl2nvpf4cprhe89rdq3cxdf037wq-https://relayminer.shannon-mainnet.eu.nodefleet.net"),
-			expected:     "https://relayminer.shannon-mainnet.eu.nodefleet.net",
+			name:         "Real NordFleet endpoint",
+			endpointAddr: EndpointAddr("pokt1eetcwfv2agdl2nvpf4cprhe89rdq3cxdf037wq-https://skyrim.belongs-to-the.eu.nordfleet.net"),
+			expected:     "https://skyrim.belongs-to-the.eu.nordfleet.net",
 		},
 		{
-			name:         "Real DoPokT endpoint",
-			endpointAddr: EndpointAddr("pokt1d3atlnepcvsa9j5uunpvf64g80eucjqtem77mn-https://rm02-eu.dopokt.com:443"),
-			expected:     "https://rm02-eu.dopokt.com:443",
+			name:         "Real DoIt endpoint",
+			endpointAddr: EndpointAddr("pokt1d3atlnepcvsa9j5uunpvf64g80eucjqtem77mn-https://my01.doit.com:443"),
+			expected:     "https://my01.doit.com:443",
 		},
 
 		// Edge cases
@@ -272,12 +272,12 @@ func TestEndpointAddr_GetAddress(t *testing.T) {
 		// Standard endpoint addresses
 		{
 			name:         "Standard endpoint",
-			endpointAddr: EndpointAddr("pokt1eetcwfv2agdl2nvpf4cprhe89rdq3cxdf037wq-https://relayminer.shannon-mainnet.eu.nodefleet.net"),
+			endpointAddr: EndpointAddr("pokt1eetcwfv2agdl2nvpf4cprhe89rdq3cxdf037wq-https://skyrim.belongs-to-the.eu.nordfleet.net"),
 			expected:     "pokt1eetcwfv2agdl2nvpf4cprhe89rdq3cxdf037wq",
 		},
 		{
-			name:         "DoPokT endpoint",
-			endpointAddr: EndpointAddr("pokt1d3atlnepcvsa9j5uunpvf64g80eucjqtem77mn-https://rm02-eu.dopokt.com:443"),
+			name:         "DoIt endpoint",
+			endpointAddr: EndpointAddr("pokt1d3atlnepcvsa9j5uunpvf64g80eucjqtem77mn-https://my01.doit.com:443"),
 			expected:     "pokt1d3atlnepcvsa9j5uunpvf64g80eucjqtem77mn",
 		},
 		{
@@ -376,13 +376,13 @@ func TestEndpointAddr_GetAddress(t *testing.T) {
 
 		// Real-world examples
 		{
-			name:         "Real NodeFleet address",
-			endpointAddr: EndpointAddr("pokt1eetcwfv2agdl2nvpf4cprhe89rdq3cxdf037wq-https://relayminer.shannon-mainnet.eu.nodefleet.net"),
+			name:         "Real NordFleet address",
+			endpointAddr: EndpointAddr("pokt1eetcwfv2agdl2nvpf4cprhe89rdq3cxdf037wq-https://skyrim.belongs-to-the.eu.nordfleet.net"),
 			expected:     "pokt1eetcwfv2agdl2nvpf4cprhe89rdq3cxdf037wq",
 		},
 		{
-			name:         "Real DoPokT address",
-			endpointAddr: EndpointAddr("pokt1d3atlnepcvsa9j5uunpvf64g80eucjqtem77mn-https://rm02-eu.dopokt.com:443"),
+			name:         "Real DoIt address",
+			endpointAddr: EndpointAddr("pokt1d3atlnepcvsa9j5uunpvf64g80eucjqtem77mn-https://my01.doit.com:443"),
 			expected:     "pokt1d3atlnepcvsa9j5uunpvf64g80eucjqtem77mn",
 		},
 
@@ -462,8 +462,8 @@ func TestEndpointAddr_String(t *testing.T) {
 	}{
 		{
 			name:         "Standard endpoint",
-			endpointAddr: EndpointAddr("pokt1eetcwfv2agdl2nvpf4cprhe89rdq3cxdf037wq-https://relayminer.shannon-mainnet.eu.nodefleet.net"),
-			expected:     "pokt1eetcwfv2agdl2nvpf4cprhe89rdq3cxdf037wq-https://relayminer.shannon-mainnet.eu.nodefleet.net",
+			endpointAddr: EndpointAddr("pokt1eetcwfv2agdl2nvpf4cprhe89rdq3cxdf037wq-https://skyrim.belongs-to-the.eu.nordfleet.net"),
+			expected:     "pokt1eetcwfv2agdl2nvpf4cprhe89rdq3cxdf037wq-https://skyrim.belongs-to-the.eu.nordfleet.net",
 		},
 		{
 			name:         "Simple endpoint",
@@ -522,10 +522,10 @@ func TestEndpointAddrList_String(t *testing.T) {
 		{
 			name: "Real-world endpoints",
 			list: EndpointAddrList{
-				EndpointAddr("pokt1eetcwfv2agdl2nvpf4cprhe89rdq3cxdf037wq-https://relayminer.shannon-mainnet.eu.nodefleet.net"),
-				EndpointAddr("pokt1d3atlnepcvsa9j5uunpvf64g80eucjqtem77mn-https://rm02-eu.dopokt.com:443"),
+				EndpointAddr("pokt1eetcwfv2agdl2nvpf4cprhe89rdq3cxdf037wq-https://skyrim.belongs-to-the.eu.nordfleet.net"),
+				EndpointAddr("pokt1d3atlnepcvsa9j5uunpvf64g80eucjqtem77mn-https://my01.doit.com:443"),
 			},
-			expected: "pokt1eetcwfv2agdl2nvpf4cprhe89rdq3cxdf037wq-https://relayminer.shannon-mainnet.eu.nodefleet.net, pokt1d3atlnepcvsa9j5uunpvf64g80eucjqtem77mn-https://rm02-eu.dopokt.com:443",
+			expected: "pokt1eetcwfv2agdl2nvpf4cprhe89rdq3cxdf037wq-https://skyrim.belongs-to-the.eu.nordfleet.net, pokt1d3atlnepcvsa9j5uunpvf64g80eucjqtem77mn-https://my01.doit.com:443",
 		},
 		{
 			name: "Endpoints with various URL types",
@@ -560,15 +560,15 @@ func TestEndpointAddr_Integration(t *testing.T) {
 	}{
 		{
 			name:            "Standard endpoint integration",
-			endpointAddr:    EndpointAddr("pokt1eetcwfv2agdl2nvpf4cprhe89rdq3cxdf037wq-https://relayminer.shannon-mainnet.eu.nodefleet.net"),
+			endpointAddr:    EndpointAddr("pokt1eetcwfv2agdl2nvpf4cprhe89rdq3cxdf037wq-https://skyrim.belongs-to-the.eu.nordfleet.net"),
 			expectedAddress: "pokt1eetcwfv2agdl2nvpf4cprhe89rdq3cxdf037wq",
-			expectedURL:     "https://relayminer.shannon-mainnet.eu.nodefleet.net",
+			expectedURL:     "https://skyrim.belongs-to-the.eu.nordfleet.net",
 		},
 		{
 			name:            "URL with dashes integration",
-			endpointAddr:    EndpointAddr("pokt1d3atlnepcvsa9j5uunpvf64g80eucjqtem77mn-https://rm02-eu.dopokt.com:443"),
+			endpointAddr:    EndpointAddr("pokt1d3atlnepcvsa9j5uunpvf64g80eucjqtem77mn-https://my01.doit.com:443"),
 			expectedAddress: "pokt1d3atlnepcvsa9j5uunpvf64g80eucjqtem77mn",
-			expectedURL:     "https://rm02-eu.dopokt.com:443",
+			expectedURL:     "https://my01.doit.com:443",
 		},
 		{
 			name:            "Complex URL with many dashes",
@@ -629,7 +629,7 @@ func TestEndpointAddr_Integration(t *testing.T) {
 
 // Benchmark tests
 func BenchmarkEndpointAddr_GetAddress(b *testing.B) {
-	endpoint := EndpointAddr("pokt1eetcwfv2agdl2nvpf4cprhe89rdq3cxdf037wq-https://relayminer.shannon-mainnet.eu.nodefleet.net")
+	endpoint := EndpointAddr("pokt1eetcwfv2agdl2nvpf4cprhe89rdq3cxdf037wq-https://skyrim.belongs-to-the.eu.nordfleet.net")
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -638,7 +638,7 @@ func BenchmarkEndpointAddr_GetAddress(b *testing.B) {
 }
 
 func BenchmarkEndpointAddr_GetURL(b *testing.B) {
-	endpoint := EndpointAddr("pokt1eetcwfv2agdl2nvpf4cprhe89rdq3cxdf037wq-https://relayminer.shannon-mainnet.eu.nodefleet.net")
+	endpoint := EndpointAddr("pokt1eetcwfv2agdl2nvpf4cprhe89rdq3cxdf037wq-https://skyrim.belongs-to-the.eu.nordfleet.net")
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -648,8 +648,8 @@ func BenchmarkEndpointAddr_GetURL(b *testing.B) {
 
 func BenchmarkEndpointAddrList_String(b *testing.B) {
 	list := EndpointAddrList{
-		EndpointAddr("pokt1eetcwfv2agdl2nvpf4cprhe89rdq3cxdf037wq-https://relayminer.shannon-mainnet.eu.nodefleet.net"),
-		EndpointAddr("pokt1d3atlnepcvsa9j5uunpvf64g80eucjqtem77mn-https://rm02-eu.dopokt.com:443"),
+		EndpointAddr("pokt1eetcwfv2agdl2nvpf4cprhe89rdq3cxdf037wq-https://skyrim.belongs-to-the.eu.nordfleet.net"),
+		EndpointAddr("pokt1d3atlnepcvsa9j5uunpvf64g80eucjqtem77mn-https://my01.doit.com:443"),
 		EndpointAddr("pokt1234567890abcdef-https://192.168.1.1:8545"),
 	}
 
