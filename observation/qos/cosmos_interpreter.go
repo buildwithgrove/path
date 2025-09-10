@@ -6,6 +6,7 @@ import (
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
+	shannonmetrics "github.com/buildwithgrove/path/metrics/protocol/shannon"
 	"github.com/buildwithgrove/path/protocol"
 )
 
@@ -254,9 +255,15 @@ func (i *CosmosSDKObservationInterpreter) GetEndpointDomain() string {
 	}
 
 	// Use the first observed endpoint address for domain extraction
-	domain, err := protocol.EndpointAddr(endpointAddrs[0]).GetDomain()
+	endpointURL, err := protocol.EndpointAddr(endpointAddrs[0]).GetURL()
+	if err != nil {
+		i.Logger.Error().Err(err).Msg("SHOULD NEVER HAPPEN: Cannot get endpoint URL from endpoint address")
+	}
+
+	domain, err := shannonmetrics.ExtractDomainOrHost(endpointURL)
 	if err != nil {
 		i.Logger.Error().Err(err).Msg("SHOULD NEVER HAPPEN: Cannot get endpoint domain from endpoint address")
 	}
+
 	return domain
 }

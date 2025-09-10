@@ -6,6 +6,7 @@ import (
 	"github.com/pokt-network/poktroll/pkg/polylog"
 	"github.com/prometheus/client_golang/prometheus"
 
+	shannonmetrics "github.com/buildwithgrove/path/metrics/protocol/shannon"
 	"github.com/buildwithgrove/path/observation/qos"
 	"github.com/buildwithgrove/path/protocol"
 )
@@ -249,11 +250,17 @@ func publishValidationMetricsFromMetadata(logger polylog.Logger, chainID, servic
 
 	// Process all validation results in a single loop
 	for _, result := range metadata.ValidationResults {
+		var endpointDomain string
 
 		// Extract domain information from endpoint address
-		endpointDomain, err := protocol.EndpointAddr(result.EndpointAddr).GetDomain()
+		endpointURL, err := protocol.EndpointAddr(result.EndpointAddr).GetURL()
 		if err != nil {
 			// Log error and use empty string as fallback
+			logger.Warn().Err(err).Str("endpoint_addr", result.EndpointAddr).Msg("Failed to extract domain from endpoint address")
+		}
+
+		endpointDomain, err = shannonmetrics.ExtractDomainOrHost(endpointURL)
+		if err != nil {
 			logger.Warn().Err(err).Str("endpoint_addr", result.EndpointAddr).Msg("Failed to extract domain from endpoint address")
 			endpointDomain = ""
 		}
