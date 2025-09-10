@@ -651,7 +651,6 @@ func TestIsPrivateOrInternalDomain(t *testing.T) {
 	}
 }
 
-// Integration tests for real-world endpoint address scenarios
 func TestExtractDomainOrHost_RealWorldScenarios(t *testing.T) {
 	tests := []struct {
 		name        string
