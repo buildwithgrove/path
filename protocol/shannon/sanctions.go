@@ -75,14 +75,13 @@ func classifyRelayError(logger polylog.Logger, err error) (protocolobservations.
 			protocolobservations.ShannonSanctionType_SHANNON_SANCTION_SESSION
 
 	// TODO_NEXT(@commoddity): Introduce correct error classification for WebSocket errors.
-	//   - Error creating a WebSocket connection.
 	//   - Error signing the relay request.
 	//   - Error validating the relay response.
 
 	// WebSocket connection failed.
 	case errors.Is(err, errCreatingWebSocketConnection):
 		return protocolobservations.ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_WEBSOCKET_CONNECTION_FAILED,
-			protocolobservations.ShannonSanctionType_SHANNON_SANCTION_UNSPECIFIED
+			protocolobservations.ShannonSanctionType_SHANNON_SANCTION_SESSION
 
 	// Error signing the relay request.
 	case errors.Is(err, errRelayRequestWebsocketMessageSigningFailed):

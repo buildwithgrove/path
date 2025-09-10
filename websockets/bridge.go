@@ -101,7 +101,7 @@ func StartBridge(
 	}
 
 	// Connect to the Relay Miner endpoint
-	endpointConn, err := connectWebsocketEndpoint(logger, websocketURL, headers)
+	endpointConn, err := ConnectWebsocketEndpoint(logger, websocketURL, headers)
 	if err != nil {
 		logger.Error().Err(err).Msg("❌ error connecting to websocket endpoint")
 		cancelCtx() // Clean up context on error

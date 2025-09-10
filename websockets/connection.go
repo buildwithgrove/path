@@ -98,8 +98,8 @@ func upgradeClientWebsocketConnection(
 	return clientConn, nil
 }
 
-// connectWebsocketEndpoint makes a websocket connection to the websocket Endpoint.
-func connectWebsocketEndpoint(
+// ConnectWebsocketEndpoint makes a websocket connection to the websocket Endpoint.
+func ConnectWebsocketEndpoint(
 	wsLogger polylog.Logger,
 	websocketURL string,
 	headers http.Header,
