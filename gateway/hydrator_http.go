@@ -60,7 +60,7 @@ func (eph *EndpointHydrator) performHTTPChecks(serviceID protocol.ServiceID, ser
 	// This implies there is no need to specify a specific app.
 	// TODO_TECHDEBT(@adshmh): support specifying the app(s) used for sending/signing synthetic relay requests by the hydrator.
 	// TODO_FUTURE(@adshmh): consider publishing observations if endpoint lookup fails.
-	availableEndpoints, _, err := eph.AvailableEndpoints(context.TODO(), serviceID, nil)
+	availableEndpoints, _, err := eph.AvailableHTTPEndpoints(context.TODO(), serviceID, nil)
 	if err != nil || len(availableEndpoints) == 0 {
 		// No session found or no endpoints available for service: skip.
 		logger.Warn().Msg("no session found or no endpoints available for service when running HTTP hydrator checks.")

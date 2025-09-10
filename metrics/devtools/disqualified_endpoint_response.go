@@ -13,11 +13,10 @@ import (
 //
 // It also reports the total number of service endpoints, the number of qualified service endpoints, and the number of disqualified service endpoints.
 type DisqualifiedEndpointResponse struct {
-	ProtocolLevelDisqualifiedEndpoints ProtocolLevelDataResponse `json:"protocol_level_disqualified_endpoints"`
-	QoSLevelDisqualifiedEndpoints      QoSLevelDataResponse      `json:"qos_level_disqualified_endpoints"`
-	TotalServiceEndpointsCount         int                       `json:"total_service_endpoints_count"`
-	QualifiedServiceEndpointsCount     int                       `json:"qualified_service_endpoints_count"`
-	DisqualifiedServiceEndpointsCount  int                       `json:"disqualified_service_endpoints_count"`
+	ProtocolLevelDisqualifiedEndpoints map[string]ProtocolLevelDataResponse `json:"protocol_level_disqualified_endpoints"`
+	QoSLevelDisqualifiedEndpoints      QoSLevelDataResponse                 `json:"qos_level_disqualified_endpoints"`
+	TotalServiceEndpointsCount         int                                  `json:"total_service_endpoints_count"`
+	DisqualifiedServiceEndpointsCount  int                                  `json:"disqualified_service_endpoints_count"`
 }
 
 // GetDisqualifiedEndpointsCount sums:
@@ -25,14 +24,13 @@ type DisqualifiedEndpointResponse struct {
 //   - Protocol-level session sanctioned endpoints
 //   - QoS-level disqualified endpoints
 func (r *DisqualifiedEndpointResponse) GetDisqualifiedEndpointsCount() int {
-	return len(r.ProtocolLevelDisqualifiedEndpoints.PermanentlySanctionedEndpoints) +
-		len(r.ProtocolLevelDisqualifiedEndpoints.SessionSanctionedEndpoints) +
+	protocolLevelDisqualifiedEndpointsCount := 0
+	for _, protocolLevelDisqualifiedEndpoints := range r.ProtocolLevelDisqualifiedEndpoints {
+		protocolLevelDisqualifiedEndpointsCount += len(protocolLevelDisqualifiedEndpoints.PermanentlySanctionedEndpoints) +
+			len(protocolLevelDisqualifiedEndpoints.SessionSanctionedEndpoints)
+	}
+	return protocolLevelDisqualifiedEndpointsCount +
 		len(r.QoSLevelDisqualifiedEndpoints.DisqualifiedEndpoints)
-}
-
-// GetValidServiceEndpointsCount subtracts the number of disqualified endpoints from the total number of service endpoints.
-func (r *DisqualifiedEndpointResponse) GetValidServiceEndpointsCount() int {
-	return r.TotalServiceEndpointsCount - r.GetDisqualifiedEndpointsCount()
 }
 
 type (

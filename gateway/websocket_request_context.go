@@ -157,7 +157,7 @@ func (wrc *websocketRequestContext) buildProtocolContextAndStartBridge(
 
 	// Retrieve the list of available endpoints for the requested service.
 	// endpointLookupObs will capture the details of the endpoint lookup, including whether it is an error or success.
-	availableEndpoints, endpointLookupObs, err := wrc.protocol.AvailableEndpoints(wrc.context, wrc.serviceID, httpReq)
+	availableEndpoints, endpointLookupObs, err := wrc.protocol.AvailableWebsocketEndpoints(wrc.context, wrc.serviceID, httpReq)
 	if err != nil {
 		logger.Error().Err(err).Msg("❌ no available endpoints could be found for websocket request")
 		// Send connection failure observation manually since the connection observation channel is not available yet
@@ -355,7 +355,7 @@ func (wrc *websocketRequestContext) BroadcastMessageObservations(
 	// observation-related tasks are called in Goroutines to avoid potentially blocking the handler.
 	go func() {
 		if protocolObservations := messageObservations.GetProtocol(); protocolObservations != nil {
-			err := wrc.protocol.ApplyObservations(protocolObservations)
+			err := wrc.protocol.ApplyWebSocketObservations(protocolObservations)
 			if err != nil {
 				wrc.logger.Warn().Err(err).Msg("error applying protocol observations for websocket.")
 			}

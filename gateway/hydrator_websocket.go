@@ -60,7 +60,7 @@ func (eph *EndpointHydrator) performWebSocketChecks(serviceID protocol.ServiceID
 	// Passing a nil as the HTTP request, because we assume the hydrator uses "Centralized Operation Mode".
 	// TODO_TECHDEBT(@adshmh): support specifying the app(s) used for sending/signing synthetic relay requests by the hydrator.
 	// TODO_FUTURE(@adshmh): consider publishing observations if endpoint lookup fails.
-	availableEndpoints, _, err := eph.AvailableEndpoints(context.TODO(), serviceID, nil)
+	availableEndpoints, _, err := eph.AvailableWebsocketEndpoints(context.TODO(), serviceID, nil)
 	if err != nil || len(availableEndpoints) == 0 {
 		// No session found or no endpoints available for service: skip.
 		logger.Warn().Msg("no session found or no endpoints available for service when running WebSocket hydrator checks.")
@@ -122,7 +122,7 @@ func (eph *EndpointHydrator) performWebSocketConnectionCheck(
 
 	obs := eph.Protocol.CheckWebsocketConnection(ctx, serviceID, endpointAddr)
 	if obs != nil {
-		eph.Protocol.ApplyObservations(obs)
+		eph.Protocol.ApplyWebSocketObservations(obs)
 	}
 
 	return nil

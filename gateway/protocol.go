@@ -15,7 +15,7 @@ import (
 // Protocol defines the core functionality of a protocol from the perspective of a gateway.
 // The gateway expects a protocol to build and return a request context for a particular service ID.
 type Protocol interface {
-	// AvailableEndpoints returns the list of available endpoints matching both the service ID
+	// AvailableHTTPEndpoints returns the list of available HTTP endpoints matching both the service ID
 	//
 	// If the Pocket Network Gateway is in delegated mode, the staked application is passed via
 	// the `App-Address` header. In all other modes, *http.Request will be nil.
@@ -23,7 +23,21 @@ type Protocol interface {
 	// Context may contain a deadline that protocol should respect on best-effort basis.
 	// Return observation if endpoint lookup fails.
 	// Used as protocol observation for the request when no protocol context exists.
-	AvailableEndpoints(
+	AvailableHTTPEndpoints(
+		context.Context,
+		protocol.ServiceID,
+		*http.Request,
+	) (protocol.EndpointAddrList, protocolobservations.Observations, error)
+
+	// AvailableWebsocketEndpoints returns the list of available websocket endpoints matching both the service ID
+	//
+	// If the Pocket Network Gateway is in delegated mode, the staked application is passed via
+	// the `App-Address` header. In all other modes, *http.Request will be nil.
+	//
+	// Context may contain a deadline that protocol should respect on best-effort basis.
+	// Return observation if endpoint lookup fails.
+	// Used as protocol observation for the request when no protocol context exists.
+	AvailableWebsocketEndpoints(
 		context.Context,
 		protocol.ServiceID,
 		*http.Request,
@@ -70,12 +84,19 @@ type Protocol interface {
 	// See protocol/gateway_mode.go for more details.
 	SupportedGatewayModes() []protocol.GatewayMode
 
-	// ApplyObservations applies the supplied observations to the protocol instance's internal state.
+	// ApplyHTTPObservations applies the supplied observations to the protocol instance's internal state.
 	// Hypothetical example (for illustrative purposes only):
 	// 	- protocol: Shannon
 	// 	- observation: "endpoint maxed-out or over-serviced (i.e. onchain rate limiting)"
 	// 	- result: skip the endpoint for a set time period until a new session begins.
-	ApplyObservations(*protocolobservations.Observations) error
+	ApplyHTTPObservations(*protocolobservations.Observations) error
+
+	// ApplyWebSocketObservations applies the supplied observations to the protocol instance's internal state.
+	// Hypothetical example (for illustrative purposes only):
+	// 	- protocol: Shannon
+	// 	- observation: "endpoint maxed-out or over-serviced (i.e. onchain rate limiting)"
+	// 	- result: skip the endpoint for a set time period until a new session begins.
+	ApplyWebSocketObservations(*protocolobservations.Observations) error
 
 	// TODO_FUTURE(@adshmh): support specifying the app(s) used for sending/signing synthetic relay requests by the hydrator.
 	// TODO_TECHDEBT: Enable the hydrator for gateway modes beyond Centralized only.

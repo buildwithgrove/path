@@ -72,7 +72,7 @@ func (p *Protocol) BuildWebsocketRequestContextForEndpoint(
 		"endpoint_addr", selectedEndpointAddr,
 	)
 
-	selectedEndpoint, err := p.getPreSelectedEndpoint(ctx, serviceID, selectedEndpointAddr, httpReq)
+	selectedEndpoint, err := p.getPreSelectedEndpoint(ctx, serviceID, selectedEndpointAddr, httpReq, sharedtypes.RPCType_WEBSOCKET)
 	if err != nil {
 		logger.Error().Err(err).Msg("Failed to get pre-selected endpoint")
 		return nil, nil, err
@@ -120,44 +120,6 @@ func (p *Protocol) BuildWebsocketRequestContextForEndpoint(
 	return wrc, connectionObservationChan, nil
 }
 
-func (p *Protocol) getPreSelectedEndpoint(
-	ctx context.Context,
-	serviceID protocol.ServiceID,
-	selectedEndpointAddr protocol.EndpointAddr,
-	httpReq *http.Request,
-) (endpoint, error) {
-	logger := p.logger.With("method", "getPreSelectedEndpoint")
-
-	activeSessions, err := p.getActiveGatewaySessions(ctx, serviceID, httpReq)
-	if err != nil {
-		logger.Error().Err(err).Msgf("Relay request will fail due to error retrieving active sessions for service %s", serviceID)
-		return nil, err
-	}
-
-	// Retrieve the list of endpoints (i.e. backend service URLs by external operators)
-	// that can service RPC requests for the given service ID for the given apps.
-	// This includes fallback logic if session endpoints are unavailable.
-	// The final boolean parameter sets whether to filter out sanctioned endpoints.
-	endpoints, err := p.getUniqueEndpoints(ctx, serviceID, activeSessions, true)
-	if err != nil {
-		logger.Error().Err(err).Msg(err.Error())
-		return nil, err
-	}
-
-	// Select the endpoint that matches the pre-selected address.
-	// This ensures QoS checks are performed on the selected endpoint.
-	selectedEndpoint, ok := endpoints[selectedEndpointAddr]
-	if !ok {
-		// Wrap the context setup error.
-		// Used to generate the observation.
-		err := fmt.Errorf("%w: service %s endpoint %s", errRequestContextSetupInvalidEndpointSelected, serviceID, selectedEndpointAddr)
-		logger.Error().Err(err).Msg("Selected endpoint is not available.")
-		return nil, err
-	}
-
-	return selectedEndpoint, nil
-}
-
 // CheckWebsocketConnection checks if the websocket connection to the endpoint is established.
 // This method is used by the websocket hydrator to check if the endpoint supports websocket RPC type.
 // It uses a simplified version of the websocket bridge connection process to avoid unnecessary overhead.
@@ -169,7 +131,7 @@ func (p *Protocol) CheckWebsocketConnection(
 	logger := p.logger.With("method", "CheckWebsocketConnection")
 
 	// Get the pre-selected endpoint.
-	selectedEndpoint, err := p.getPreSelectedEndpoint(ctx, serviceID, selectedEndpointAddr, nil)
+	selectedEndpoint, err := p.getPreSelectedEndpoint(ctx, serviceID, selectedEndpointAddr, nil, sharedtypes.RPCType_WEBSOCKET)
 	if err != nil {
 		err = fmt.Errorf("⁉️ SHOULD NEVER HAPPEN: failed to get pre-selected endpoint: %s", err.Error())
 		// Will not lead to sanctions as this does not indicate a problem with the endpoint, nor should it ever happen.
@@ -206,6 +168,74 @@ func (p *Protocol) CheckWebsocketConnection(
 	}
 
 	// A nil obsservation means no error occurred.
+	return nil
+}
+
+func (p *Protocol) getPreSelectedEndpoint(
+	ctx context.Context,
+	serviceID protocol.ServiceID,
+	selectedEndpointAddr protocol.EndpointAddr,
+	httpReq *http.Request,
+	rpcType sharedtypes.RPCType,
+) (endpoint, error) {
+	logger := p.logger.With("method", "getPreSelectedEndpoint")
+
+	activeSessions, err := p.getActiveGatewaySessions(ctx, serviceID, httpReq)
+	if err != nil {
+		logger.Error().Err(err).Msgf("Relay request will fail due to error retrieving active sessions for service %s", serviceID)
+		return nil, err
+	}
+
+	// Retrieve the list of endpoints (i.e. backend service URLs by external operators)
+	// that can service RPC requests for the given service ID for the given apps.
+	// This includes fallback logic if session endpoints are unavailable.
+	// The final boolean parameter sets whether to filter out sanctioned endpoints.
+	endpoints, err := p.getUniqueEndpoints(ctx, serviceID, activeSessions, true, rpcType)
+	if err != nil {
+		logger.Error().Err(err).Msg(err.Error())
+		return nil, err
+	}
+
+	// Select the endpoint that matches the pre-selected address.
+	// This ensures QoS checks are performed on the selected endpoint.
+	selectedEndpoint, ok := endpoints[selectedEndpointAddr]
+	if !ok {
+		// Wrap the context setup error.
+		// Used to generate the observation.
+		err := fmt.Errorf("%w: service %s endpoint %s", errRequestContextSetupInvalidEndpointSelected, serviceID, selectedEndpointAddr)
+		logger.Error().Err(err).Msg("Selected endpoint is not available.")
+		return nil, err
+	}
+
+	return selectedEndpoint, nil
+}
+
+// ApplyWebSocketObservations updates protocol instance state based on endpoint observations.
+// Examples:
+// - Mark endpoints as invalid based on response quality
+// - Disqualify endpoints for a time period
+//
+// Implements gateway.Protocol interface.
+func (p *Protocol) ApplyWebSocketObservations(observations *protocolobservations.Observations) error {
+	// Sanity check the input
+	if observations == nil || observations.GetShannon() == nil {
+		p.logger.ProbabilisticDebugInfo(polylog.ProbabilisticDebugInfoProb).Msg("SHOULD RARELY HAPPEN: ApplyWebSocketObservations called with nil input or nil Shannon observation list.")
+		return nil
+	}
+
+	shannonObservations := observations.GetShannon().GetObservations()
+	if len(shannonObservations) == 0 {
+		p.logger.ProbabilisticDebugInfo(polylog.ProbabilisticDebugInfoProb).Msg("SHOULD RARELY HAPPEN: ApplyWebSocketObservations called with nil set of Shannon request observations.")
+		return nil
+	}
+	// hand over the observations to the sanctioned endpoints store for adding any applicable sanctions.
+	sanctionedEndpointsStore, ok := p.sanctionedEndpointsStores[sharedtypes.RPCType_WEBSOCKET]
+	if !ok {
+		p.logger.Error().Msgf("SHOULD NEVER HAPPEN: sanctioned endpoints store not found for RPC type: %s", sharedtypes.RPCType_WEBSOCKET)
+		return nil
+	}
+	sanctionedEndpointsStore.ApplyObservations(shannonObservations)
+
 	return nil
 }
 
