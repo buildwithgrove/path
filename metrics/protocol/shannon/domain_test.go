@@ -660,16 +660,16 @@ func TestExtractDomainOrHost_RealWorldScenarios(t *testing.T) {
 		description string
 	}{
 		{
-			name:        "Grove NodeFleet",
-			rawURL:      "https://relayminer.shannon-mainnet.eu.nodefleet.net",
-			expected:    "nodefleet.net",
-			description: "Grove provider using NodeFleet infrastructure",
+			name:        "NordFleet",
+			rawURL:      "https://skyrim.belongs-to-the.eu.nordfleet.net",
+			expected:    "nordfleet.net",
+			description: "The northern most province of Skyrim",
 		},
 		{
-			name:        "DoPokT with port",
-			rawURL:      "https://rm02-eu.dopokt.com:443",
-			expected:    "dopokt.com",
-			description: "DoPokT provider with explicit HTTPS port",
+			name:        "DoIt with port",
+			rawURL:      "https://rm02-eu.doit.com:443",
+			expected:    "doit.com",
+			description: "DoIt provider with very explicit HTTPS port",
 		},
 		{
 			name:        "Self-hosted relay miner",
@@ -734,24 +734,5 @@ func TestExtractDomainOrHost_RealWorldScenarios(t *testing.T) {
 				t.Errorf("For %s: expected %q, got %q", tt.description, tt.expected, result)
 			}
 		})
-	}
-}
-
-// Benchmark tests
-func BenchmarkExtractDomainOrHost(b *testing.B) {
-	testCases := []string{
-		"https://example.com",
-		"https://api.service.nodefleet.net:8545",
-		"https://192.168.1.1:8080",
-		"https://localhost:3000",
-		"https://service.local",
-		"https://relayminer1",
-	}
-
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		for _, tc := range testCases {
-			_, _ = ExtractDomainOrHost(tc)
-		}
 	}
 }
