@@ -285,7 +285,6 @@ func (p *Protocol) ApplyObservations(observations *protocolobservations.Observat
 		p.logger.ProbabilisticDebugInfo(polylog.ProbabilisticDebugInfoProb).Msg("SHOULD RARELY HAPPEN: ApplyObservations called with nil set of Shannon request observations.")
 		return nil
 	}
-
 	// hand over the observations to the sanctioned endpoints store for adding any applicable sanctions.
 	p.sanctionedEndpointsStore.ApplyObservations(shannonObservations)
 

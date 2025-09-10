@@ -90,6 +90,9 @@ type Protocol interface {
 	// HydrateDisqualifiedEndpointsResponse hydrates the disqualified endpoint response with the protocol-specific data.
 	HydrateDisqualifiedEndpointsResponse(protocol.ServiceID, *devtools.DisqualifiedEndpointResponse)
 
+	// CheckWebsocketConnection checks if the websocket connection to the endpoint is established.
+	CheckWebsocketConnection(context.Context, protocol.ServiceID, protocol.EndpointAddr) *protocolobservations.Observations
+
 	// health.Check interface is used to verify protocol instance's health status.
 	health.Check
 }

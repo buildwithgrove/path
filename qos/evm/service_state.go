@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
+	sharedtypes "github.com/pokt-network/poktroll/x/shared/types"
 
 	"github.com/buildwithgrove/path/gateway"
 	"github.com/buildwithgrove/path/metrics/devtools"
@@ -58,6 +59,12 @@ type serviceState struct {
 // the gateway package to augment endpoints' quality data,
 // using synthetic service requests.
 var _ gateway.QoSEndpointCheckGenerator = &serviceState{}
+
+// CheckWebsocketConnection returns true if the endpoint supports WebSocket connections.
+func (ss *serviceState) CheckWebsocketConnection() bool {
+	_, supportsWebsockets := ss.serviceQoSConfig.getSupportedAPIs()[sharedtypes.RPCType_WEBSOCKET]
+	return supportsWebsockets
+}
 
 // GetRequiredQualityChecks returns the list of quality checks required for an endpoint.
 // It is called in the `gateway/hydrator.go` file on each run of the hydrator.

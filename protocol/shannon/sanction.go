@@ -42,6 +42,17 @@ func buildSanctionFromObservation(observation *protocolobservations.ShannonEndpo
 	}
 }
 
+// buildSanctionFromWebSocketConnectionObservation creates a sanction struct from a websocket connection observation.
+func buildSanctionFromWebSocketConnectionObservation(observation *protocolobservations.ShannonWebsocketConnectionObservation) sanction {
+	return sanction{
+		reason:             observation.GetErrorDetails(),
+		errorType:          observation.GetErrorType(),
+		createdAt:          time.Now(),
+		sessionServiceID:   observation.GetSessionServiceId(),
+		sessionStartHeight: observation.GetSessionStartHeight(),
+	}
+}
+
 // permanentSanctionToDetails converts a permanent sanction to a devtools.SanctionedEndpoint struct.
 // It does not include the session ID as permanent sanction is not associated with a specific session.
 func (s sanction) permanentSanctionToDetails(

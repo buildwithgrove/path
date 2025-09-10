@@ -72,30 +72,9 @@ func (p *Protocol) BuildWebsocketRequestContextForEndpoint(
 		"endpoint_addr", selectedEndpointAddr,
 	)
 
-	activeSessions, err := p.getActiveGatewaySessions(ctx, serviceID, httpReq)
+	selectedEndpoint, err := p.getPreSelectedEndpoint(ctx, serviceID, selectedEndpointAddr, httpReq)
 	if err != nil {
-		logger.Error().Err(err).Msgf("Relay request will fail due to error retrieving active sessions for service %s", serviceID)
-		return nil, nil, err
-	}
-
-	// Retrieve the list of endpoints (i.e. backend service URLs by external operators)
-	// that can service RPC requests for the given service ID for the given apps.
-	// This includes fallback logic if session endpoints are unavailable.
-	// The final boolean parameter sets whether to filter out sanctioned endpoints.
-	endpoints, err := p.getUniqueEndpoints(ctx, serviceID, activeSessions, true)
-	if err != nil {
-		logger.Error().Err(err).Msg(err.Error())
-		return nil, nil, err
-	}
-
-	// Select the endpoint that matches the pre-selected address.
-	// This ensures QoS checks are performed on the selected endpoint.
-	selectedEndpoint, ok := endpoints[selectedEndpointAddr]
-	if !ok {
-		// Wrap the context setup error.
-		// Used to generate the observation.
-		err := fmt.Errorf("%w: service %s endpoint %s", errRequestContextSetupInvalidEndpointSelected, serviceID, selectedEndpointAddr)
-		logger.Error().Err(err).Msg("Selected endpoint is not available.")
+		logger.Error().Err(err).Msg("Failed to get pre-selected endpoint")
 		return nil, nil, err
 	}
 
@@ -141,6 +120,95 @@ func (p *Protocol) BuildWebsocketRequestContextForEndpoint(
 	return wrc, connectionObservationChan, nil
 }
 
+func (p *Protocol) getPreSelectedEndpoint(
+	ctx context.Context,
+	serviceID protocol.ServiceID,
+	selectedEndpointAddr protocol.EndpointAddr,
+	httpReq *http.Request,
+) (endpoint, error) {
+	logger := p.logger.With("method", "getPreSelectedEndpoint")
+
+	activeSessions, err := p.getActiveGatewaySessions(ctx, serviceID, httpReq)
+	if err != nil {
+		logger.Error().Err(err).Msgf("Relay request will fail due to error retrieving active sessions for service %s", serviceID)
+		return nil, err
+	}
+
+	// Retrieve the list of endpoints (i.e. backend service URLs by external operators)
+	// that can service RPC requests for the given service ID for the given apps.
+	// This includes fallback logic if session endpoints are unavailable.
+	// The final boolean parameter sets whether to filter out sanctioned endpoints.
+	endpoints, err := p.getUniqueEndpoints(ctx, serviceID, activeSessions, true)
+	if err != nil {
+		logger.Error().Err(err).Msg(err.Error())
+		return nil, err
+	}
+
+	// Select the endpoint that matches the pre-selected address.
+	// This ensures QoS checks are performed on the selected endpoint.
+	selectedEndpoint, ok := endpoints[selectedEndpointAddr]
+	if !ok {
+		// Wrap the context setup error.
+		// Used to generate the observation.
+		err := fmt.Errorf("%w: service %s endpoint %s", errRequestContextSetupInvalidEndpointSelected, serviceID, selectedEndpointAddr)
+		logger.Error().Err(err).Msg("Selected endpoint is not available.")
+		return nil, err
+	}
+
+	return selectedEndpoint, nil
+}
+
+// CheckWebsocketConnection checks if the websocket connection to the endpoint is established.
+// This method is used by the websocket hydrator to check if the endpoint supports websocket RPC type.
+// It uses a simplified version of the websocket bridge connection process to avoid unnecessary overhead.
+func (p *Protocol) CheckWebsocketConnection(
+	ctx context.Context,
+	serviceID protocol.ServiceID,
+	selectedEndpointAddr protocol.EndpointAddr,
+) *protocolobservations.Observations {
+	logger := p.logger.With("method", "CheckWebsocketConnection")
+
+	// Get the pre-selected endpoint.
+	selectedEndpoint, err := p.getPreSelectedEndpoint(ctx, serviceID, selectedEndpointAddr, nil)
+	if err != nil {
+		err = fmt.Errorf("⁉️ SHOULD NEVER HAPPEN: failed to get pre-selected endpoint: %s", err.Error())
+		// Will not lead to sanctions as this does not indicate a problem with the endpoint, nor should it ever happen.
+		return getWebsocketConnectionErrorObservation(logger, serviceID, selectedEndpoint, err)
+	}
+
+	// Get the websocket-specific URL from the selected endpoint.
+	websocketEndpointURL, err := getWebsocketEndpointURL(logger, selectedEndpoint)
+	if err != nil {
+		err = fmt.Errorf("%w: selected endpoint does not support websocket RPC type: %s", errCreatingWebSocketConnection, err.Error())
+		logger.Debug().Err(err).Msg("❌ Selected endpoint does not support websocket RPC type")
+		return getWebsocketConnectionErrorObservation(logger, serviceID, selectedEndpoint, err)
+	}
+	logger = logger.With("websocket_url", websocketEndpointURL)
+
+	// Get the headers for the websocket connection that will be sent to the endpoint.
+	endpointConnectionHeaders, err := getWebsocketConnectionHeaders(logger, selectedEndpoint)
+	if err != nil {
+		err = fmt.Errorf("%w: failed to get websocket connection headers: %s", errCreatingWebSocketConnection, err.Error())
+		logger.Debug().Err(err).Msg("❌ Failed to get websocket connection headers")
+		return getWebsocketConnectionErrorObservation(logger, serviceID, selectedEndpoint, err)
+	}
+
+	// Test the websocket connection to the endpoint.
+	_, err = websockets.ConnectWebsocketEndpoint(
+		logger,
+		websocketEndpointURL,
+		endpointConnectionHeaders,
+	)
+	if err != nil {
+		err = fmt.Errorf("%w: failed to connect to websocket endpoint: %s", errCreatingWebSocketConnection, err.Error())
+		logger.Debug().Err(err).Msg("❌ Failed to connect to websocket endpoint")
+		return getWebsocketConnectionErrorObservation(logger, serviceID, selectedEndpoint, err)
+	}
+
+	// A nil obsservation means no error occurred.
+	return nil
+}
+
 // ---------- Connection Establishment ----------
 
 // startWebSocketBridge creates and starts a WebSocket bridge between client and endpoint.
@@ -157,25 +225,25 @@ func (wrc *websocketRequestContext) startWebSocketBridge(
 	wrc.hydratedLogger("StartWebSocketBridge")
 
 	// Get the websocket-specific URL from the selected endpoint.
-	websocketEndpointURL, err := wrc.getWebsocketEndpointURL()
+	websocketEndpointURL, err := getWebsocketEndpointURL(wrc.logger, wrc.selectedEndpoint)
 	if err != nil {
-		// Build error observation for connection failure
-		errorObs := wrc.getWebsocketConnectionErrorObservation(err, "selected endpoint does not support websocket RPC type")
+		err = fmt.Errorf("%w: selected endpoint does not support websocket RPC type: %s", errCreatingWebSocketConnection, err.Error())
 		wrc.logger.Error().Err(err).Msg("❌ Selected endpoint does not support websocket RPC type")
-		// Send error observation
-		connectionObservationChan <- errorObs
+
+		connectionObservationChan <- getWebsocketConnectionErrorObservation(wrc.logger, wrc.serviceID, wrc.selectedEndpoint, err)
+
 		return fmt.Errorf("selected endpoint does not support websocket RPC type: %w", err)
 	}
 	wrc.logger = wrc.logger.With("websocket_url", websocketEndpointURL)
 
 	// Get the headers for the websocket connection that will be sent to the endpoint.
-	endpointConnectionHeaders, err := wrc.getWebsocketConnectionHeaders()
+	endpointConnectionHeaders, err := getWebsocketConnectionHeaders(wrc.logger, wrc.selectedEndpoint)
 	if err != nil {
-		// Build error observation for connection failure
-		errorObs := wrc.getWebsocketConnectionErrorObservation(err, "failed to get websocket connection headers")
+		err = fmt.Errorf("%w: failed to get websocket connection headers: %s", errCreatingWebSocketConnection, err.Error())
 		wrc.logger.Error().Err(err).Msg("❌ Failed to get websocket connection headers")
-		// Send error observation
-		connectionObservationChan <- errorObs
+
+		connectionObservationChan <- getWebsocketConnectionErrorObservation(wrc.logger, wrc.serviceID, wrc.selectedEndpoint, err)
+
 		return fmt.Errorf("failed to get websocket connection headers: %w", err)
 	}
 
@@ -192,11 +260,11 @@ func (wrc *websocketRequestContext) startWebSocketBridge(
 		messageObservationsChan,
 	)
 	if err != nil {
-		// Build error observation for connection failure
-		errorObs := wrc.getWebsocketConnectionErrorObservation(err, "failed to start websocket bridge")
-		wrc.logger.Error().Err(err).Msg("Failed to start WebSocket bridge")
-		// Send error observation
-		connectionObservationChan <- errorObs
+		err = fmt.Errorf("%w: failed to start websocket bridge: %s", errCreatingWebSocketConnection, err.Error())
+		wrc.logger.Error().Err(err).Msg("❌ Failed to start WebSocket bridge")
+
+		connectionObservationChan <- getWebsocketConnectionErrorObservation(wrc.logger, wrc.serviceID, wrc.selectedEndpoint, err)
+
 		return fmt.Errorf("failed to start websocket bridge: %w", err)
 	}
 
@@ -206,13 +274,13 @@ func (wrc *websocketRequestContext) startWebSocketBridge(
 
 		// Send establishment observation immediately (buffered channel ensures it's captured)
 		wrc.logger.Info().Msg("✅ WebSocket bridge started successfully, sending establishment observation")
-		connectionObservationChan <- wrc.getWebsocketConnectionEstablishedObservation()
+		connectionObservationChan <- getWebsocketConnectionEstablishedObservation(wrc.logger, wrc.serviceID, wrc.selectedEndpoint)
 
 		// Wait for the bridge to complete (blocks until WebSocket connection terminates)
 		<-bridgeCompletionChan
 		// Send closure observation
 		wrc.logger.Info().Msg("🔌 WebSocket connection closed, sending closure observation")
-		connectionObservationChan <- wrc.getWebsocketConnectionClosedObservation()
+		connectionObservationChan <- getWebsocketConnectionClosedObservation(wrc.logger, wrc.serviceID, wrc.selectedEndpoint)
 	}()
 
 	return nil
@@ -222,29 +290,29 @@ func (wrc *websocketRequestContext) startWebSocketBridge(
 //   - Target-Service-Id: The service ID of the target service
 //   - App-Address: The address of the session's application
 //   - Rpc-Type: Always "websocket" for websocket connection requests
-func (wrc *websocketRequestContext) getWebsocketConnectionHeaders() (http.Header, error) {
+func getWebsocketConnectionHeaders(logger polylog.Logger, selectedEndpoint endpoint) (http.Header, error) {
 	// Requests to fallback endpoints bypass the protocol so RelayMiner headers are not needed.
 	// TODO_IMPROVE(@commoddity,@adshmh): Cleanly separate fallback endpoint handling from the protocol package.
 	// TODO_ARCHITECTURE: Extract fallback endpoint handling from protocol package
 	// Current: Fallback logic is scattered with if wrc.selectedEndpoint.IsFallback() checks
 	// Suggestion: Use strategy pattern or separate fallback handler to cleanly separate concerns
-	if wrc.selectedEndpoint.IsFallback() {
+	if selectedEndpoint.IsFallback() {
 		return http.Header{}, nil
 	}
 
 	// If the selected endpoint is a protocol endpoint, add the headers
 	// that the RelayMiner requires to forward the request to the Endpoint.
-	return wrc.getRelayMinerConnectionHeaders()
+	return getRelayMinerConnectionHeaders(logger, selectedEndpoint)
 }
 
 // getRelayMinerConnectionHeaders returns headers for RelayMiner websocket connections.
-func (wrc *websocketRequestContext) getRelayMinerConnectionHeaders() (http.Header, error) {
-	wrc.hydratedLogger("getRelayMinerConnectionHeaders")
+func getRelayMinerConnectionHeaders(logger polylog.Logger, selectedEndpoint endpoint) (http.Header, error) {
+	logger.With("method", "getRelayMinerConnectionHeaders")
 
-	sessionHeader := wrc.selectedEndpoint.Session().GetHeader()
+	sessionHeader := selectedEndpoint.Session().GetHeader()
 
 	if sessionHeader == nil {
-		wrc.logger.Error().Msg("❌ SHOULD NEVER HAPPEN: Error getting relay miner connection headers: session header is nil")
+		logger.Error().Msg("❌ SHOULD NEVER HAPPEN: Error getting relay miner connection headers: session header is nil")
 		return http.Header{}, fmt.Errorf("session header is nil")
 	}
 
@@ -257,12 +325,12 @@ func (wrc *websocketRequestContext) getRelayMinerConnectionHeaders() (http.Heade
 
 // getWebsocketEndpointURL returns the websocket URL for the selected endpoint.
 // This URL is used to establish the websocket connection to the endpoint.
-func (wrc *websocketRequestContext) getWebsocketEndpointURL() (string, error) {
-	wrc.hydratedLogger("getWebsocketEndpointURL")
+func getWebsocketEndpointURL(logger polylog.Logger, selectedEndpoint endpoint) (string, error) {
+	logger.With("method", "getWebsocketEndpointURL")
 
-	websocketURL, err := wrc.selectedEndpoint.WebsocketURL()
+	websocketURL, err := selectedEndpoint.WebsocketURL()
 	if err != nil {
-		wrc.logger.Error().Err(err).Msg("❌ Selected endpoint does not support websocket RPC type")
+		logger.Error().Err(err).Msg("❌ Selected endpoint does not support websocket RPC type")
 		return "", err
 	}
 
@@ -340,17 +408,17 @@ func (wrc *websocketRequestContext) ProcessProtocolEndpointWebsocketMessage(
 	// Fallback endpoints bypass the protocol so the raw message is sent to the endpoint.
 	// TODO_IMPROVE(@commoddity,@adshmh): Cleanly separate fallback endpoint handling from the protocol package.
 	if wrc.selectedEndpoint.IsFallback() {
-		return msgData, wrc.getWebsocketMessageSuccessObservation(msgData), nil
+		return msgData, getWebsocketMessageSuccessObservation(wrc.logger, wrc.serviceID, wrc.selectedEndpoint, msgData), nil
 	}
 
 	// If the selected endpoint is a protocol endpoint, we need to validate the message.
 	validatedRelayResponse, err := wrc.validateEndpointWebsocketMessage(msgData)
 	if err != nil {
 		wrc.logger.Error().Err(err).Msg("❌ failed to validate relay response")
-		return nil, wrc.getWebsocketMessageErrorObservation(msgData, err), err
+		return nil, getWebsocketMessageErrorObservation(wrc.logger, wrc.serviceID, wrc.selectedEndpoint, msgData, err), err
 	}
 
-	return validatedRelayResponse, wrc.getWebsocketMessageSuccessObservation(msgData), nil
+	return validatedRelayResponse, getWebsocketMessageSuccessObservation(wrc.logger, wrc.serviceID, wrc.selectedEndpoint, msgData), nil
 }
 
 // validateEndpointWebsocketMessage validates a message from the endpoint using the Shannon FullNode.
@@ -368,146 +436,6 @@ func (wrc *websocketRequestContext) validateEndpointWebsocketMessage(msgData []b
 	wrc.logger.Debug().Msgf("received message from protocol endpoint: %s", string(relayResponse.Payload))
 
 	return relayResponse.Payload, nil
-}
-
-// ---------- Message-Level Observations ----------
-
-// getWebsocketMessageSuccessObservation updates the observations for the current message
-// if the message handler does not return an error.
-func (wrc *websocketRequestContext) getWebsocketMessageSuccessObservation(
-	msgData []byte,
-) protocolobservations.Observations {
-	wrc.hydratedLogger("getWebsocketMessageSuccessObservation")
-
-	// Create a new WebSocket message observation for success
-	wsMessageObs := buildWebsocketMessageSuccessObservation(
-		wrc.logger,
-		wrc.selectedEndpoint,
-		int64(len(msgData)),
-	)
-
-	// Update the observations to use the WebSocket message observation
-	return protocolobservations.Observations{
-		Shannon: &protocolobservations.ShannonObservationsList{
-			Observations: []*protocolobservations.ShannonRequestObservations{
-				{
-					ServiceId:    string(wrc.serviceID),
-					RequestError: nil, // WS messages do not have request errors
-					ObservationData: &protocolobservations.ShannonRequestObservations_WebsocketMessageObservation{
-						WebsocketMessageObservation: wsMessageObs,
-					},
-				},
-			},
-		},
-	}
-}
-
-// getWebsocketMessageErrorObservation updates the observations for the current message
-// if the message handler returns an error.
-func (wrc *websocketRequestContext) getWebsocketMessageErrorObservation(
-	msgData []byte,
-	messageError error,
-) protocolobservations.Observations {
-	// Error classification based on trusted error sources only
-	endpointErrorType, recommendedSanctionType := classifyRelayError(wrc.logger, messageError)
-
-	// Create a new WebSocket message observation for error
-	wsMessageObs := buildWebsocketMessageErrorObservation(
-		wrc.selectedEndpoint,
-		int64(len(msgData)),
-		endpointErrorType,
-		fmt.Sprintf("websocket message error: %v", messageError),
-		recommendedSanctionType,
-	)
-
-	return protocolobservations.Observations{
-		Shannon: &protocolobservations.ShannonObservationsList{
-			Observations: []*protocolobservations.ShannonRequestObservations{
-				{
-					ServiceId:    string(wrc.serviceID),
-					RequestError: nil, // WS messages do not have request errors
-					ObservationData: &protocolobservations.ShannonRequestObservations_WebsocketMessageObservation{
-						WebsocketMessageObservation: wsMessageObs,
-					},
-				},
-			},
-		},
-	}
-}
-
-// ---------- Connection-Level Observations ----------
-
-// getWebsocketConnectionSuccessObservation builds observations for successful WebSocket connection establishment.
-func (wrc *websocketRequestContext) getWebsocketConnectionEstablishedObservation() *protocolobservations.Observations {
-	return &protocolobservations.Observations{
-		Shannon: &protocolobservations.ShannonObservationsList{
-			Observations: []*protocolobservations.ShannonRequestObservations{
-				{
-					ServiceId: string(wrc.serviceID),
-					ObservationData: &protocolobservations.ShannonRequestObservations_WebsocketConnectionObservation{
-						WebsocketConnectionObservation: buildWebsocketConnectionObservation(
-							wrc.logger,
-							wrc.selectedEndpoint,
-							protocolobservations.ShannonWebsocketConnectionObservation_CONNECTION_ESTABLISHED,
-						),
-					},
-				},
-			},
-		},
-	}
-}
-
-func (wrc *websocketRequestContext) getWebsocketConnectionClosedObservation() *protocolobservations.Observations {
-	return &protocolobservations.Observations{
-		Shannon: &protocolobservations.ShannonObservationsList{
-			Observations: []*protocolobservations.ShannonRequestObservations{
-				{
-					ServiceId: string(wrc.serviceID),
-					ObservationData: &protocolobservations.ShannonRequestObservations_WebsocketConnectionObservation{
-						WebsocketConnectionObservation: buildWebsocketConnectionObservation(
-							wrc.logger,
-							wrc.selectedEndpoint,
-							protocolobservations.ShannonWebsocketConnectionObservation_CONNECTION_CLOSED,
-						),
-					},
-				},
-			},
-		},
-	}
-}
-
-// getWebsocketConnectionErrorObservation builds observations for failed WebSocket connection establishment.
-func (wrc *websocketRequestContext) getWebsocketConnectionErrorObservation(
-	err error,
-	details string,
-) *protocolobservations.Observations {
-	endpointErrorType, recommendedSanctionType := classifyRelayError(wrc.logger, err)
-
-	errorDetails := fmt.Sprintf("websocket connection error: %s: %v", details, err)
-
-	return &protocolobservations.Observations{
-		Shannon: &protocolobservations.ShannonObservationsList{
-			Observations: []*protocolobservations.ShannonRequestObservations{
-				{
-					ServiceId: string(wrc.serviceID),
-					RequestError: &protocolobservations.ShannonRequestError{
-						ErrorType:    protocolobservations.ShannonRequestErrorType_SHANNON_REQUEST_ERROR_INTERNAL,
-						ErrorDetails: fmt.Sprintf("websocket connection error: %s: %v", details, err),
-					},
-					ObservationData: &protocolobservations.ShannonRequestObservations_WebsocketConnectionObservation{
-						WebsocketConnectionObservation: buildWebsocketConnectionErrorObservation(
-							wrc.logger,
-							wrc.selectedEndpoint,
-							endpointErrorType,
-							errorDetails,
-							recommendedSanctionType,
-							protocolobservations.ShannonWebsocketConnectionObservation_CONNECTION_ESTABLISHMENT_FAILED,
-						),
-					},
-				},
-			},
-		},
-	}
 }
 
 // ---------- Logger Helpers ----------
