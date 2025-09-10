@@ -147,6 +147,8 @@ func (rc *requestContext) sendSingleRelay(payload protocol.Payload) (protocol.Re
 	return relayResponse, err
 }
 
+// TODO_TECHDEBT(@adshmh): Set and enforce a cap on the number of concurrent parallel requests for a single method call.
+//
 // TODO_TECHDEBT(@adshmh): Single and Multiple payloads should be handled as similarly as possible:
 // - This includes using similar execution paths.
 //
