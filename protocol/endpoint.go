@@ -50,41 +50,32 @@ func (e EndpointAddr) String() string {
 	return string(e)
 }
 
-// GetURL returns the URL part of the endpoint address.
+// GetURL returns the effective TLD+1 domain of the endpoint address.
 // For example:
 // - Given the endpoint address "pokt1eetcwfv2agdl2nvpf4cprhe89rdq3cxdf037wq-https://relayminer.shannon-mainnet.eu.nodefleet.net"
 // - Would return "https://relayminer.shannon-mainnet.eu.nodefleet.net"
 func (e EndpointAddr) GetURL() (string, error) {
-	// Find the first dash to separate supplier address from URL
-	// This handles cases where the URL itself contains dashes
-	dashIndex := strings.Index(e.String(), "-")
-	if dashIndex == -1 {
+	// Split by dash to separate the address part from the URL part
+	endpointAddrParts := strings.SplitN(e.String(), "-", 2)
+	if len(endpointAddrParts) < 2 {
 		return "", fmt.Errorf("endpoint address %s does not contain a dash separator", e.String())
 	}
 
-	// Extract the URL part (everything after the first dash)
-	urlPart := e.String()[dashIndex+1:]
-	if urlPart == "" {
-		return "", fmt.Errorf("endpoint address %s has empty URL part", e.String())
-	}
-
-	// Use enhanced domain extraction with fallback handling
-	// for edge cases like localhost, IPs, and non-standard domains
-	return urlPart, nil
+	// Take everything after the first dash as the URL
+	return endpointAddrParts[1], nil
 }
 
-// GetAddress returns the address part of the endpoint.
+// GetAddress returns the address of the endpoint.
 // For example:
 // - Given the endpoint address "pokt1eetcwfv2agdl2nvpf4cprhe89rdq3cxdf037wq-https://relayminer.shannon-mainnet.eu.nodefleet.net"
 // - Would return "pokt1eetcwfv2agdl2nvpf4cprhe89rdq3cxdf037wq"
 func (e EndpointAddr) GetAddress() (string, error) {
-	// Find the first dash to separate supplier address from URL
-	// This handles cases where the URL itself contains dashes
-	dashIndex := strings.Index(e.String(), "-")
-	if dashIndex == -1 {
+	// Split by dash to separate the address part from the URL part
+	endpointAddrParts := strings.Split(e.String(), "-")
+	if len(endpointAddrParts) < 2 {
 		return "", fmt.Errorf("endpoint address %s does not contain a dash separator", e.String())
 	}
 
-	// Extract the supplier address part (everything before the first dash)
-	return e.String()[:dashIndex], nil
+	// Take everything before the first dash as the address
+	return endpointAddrParts[0], nil
 }

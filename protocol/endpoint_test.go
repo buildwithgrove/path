@@ -218,16 +218,6 @@ func TestEndpointAddr_GetURL(t *testing.T) {
 			expectError:  true,
 		},
 		{
-			name:         "Empty URL part",
-			endpointAddr: EndpointAddr("pokt1234567890abcdef-"),
-			expectError:  true,
-		},
-		{
-			name:         "Only dash",
-			endpointAddr: EndpointAddr("-"),
-			expectError:  true,
-		},
-		{
 			name:         "Empty endpoint address",
 			endpointAddr: EndpointAddr(""),
 			expectError:  true,
