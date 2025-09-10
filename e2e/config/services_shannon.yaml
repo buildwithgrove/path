@@ -239,6 +239,22 @@ services:
       transaction_hash: "0x2a0fcdc34a2db7b216f0d637937f8bfab6259fed397164b27896c88ab8f1cc3a"
       call_data: "0x18160ddd"
 
+  # Shannon - Giwa (Archival)
+  # TODO_NEXT(@commoddity): Add 'giwa' mainnet E2E config once it is live.
+
+  # Shannon - Giwa Sepolia Testnet (Archival)
+  - name: "Shannon - giwa-sepolia-testnet (Giwa Sepolia Testnet) Test"
+    service_id: "giwa-sepolia-testnet"
+    evm_chain_id: "0x164ce"
+    service_type: "evm"
+    archival: true
+    service_params:
+      # https://sepolia-explorer.giwa.io/address/0xA2a51Cca837B8ebc00dA2810e72F386Ee0dD08a0
+      contract_address: "0xA2a51Cca837B8ebc00dA2810e72F386Ee0dD08a0"
+      contract_start_block: 3456000
+      transaction_hash: "0x17858f9e29eb1c1779623bcf0f2ec35d583c12b0cb0f3955e25c23868c6ad35e"
+      call_data: "0x18160ddd"
+
   # Shannon - Gnosis (Archival)
   - name: "Shannon - gnosis (Gnosis) Test"
     service_id: "gnosis"
