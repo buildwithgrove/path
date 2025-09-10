@@ -33,6 +33,8 @@ type requestValidator struct {
 	endpointStore *EndpointStore
 }
 
+// TODO_TECHDEBT(@adshmh): Add a JSON-RPC request validator to reject invalid/unsupported method calls early.
+//
 // validateHTTPRequest:
 // - Validates an HTTP request for a Solana JSONRPC payload
 // - Extracts and validates the JSONRPC request from the HTTP body
@@ -51,24 +53,50 @@ func (rv *requestValidator) validateHTTPRequest(req *http.Request) (gateway.Requ
 		return rv.createHTTPBodyReadFailureContext(err), false
 	}
 
+	// TODO_TECHDEBT(@adshmh): Distinguish malformed single and batch requests.
+	// This is needed to provide a JSONRPC-compliant error response to user if e.g. a batch request is malformed.
+	//
 	// Parse and validate the JSONRPC request
-	jsonrpcReq, err := parseJSONRPCFromRequestBody(logger, body)
-	if err != nil {
-		return rv.createRequestUnmarshalingFailureContext(jsonrpcReq.ID, err), false
+	// 1. Attempt to parse as a batch of requests
+	// Ref: https://www.jsonrpc.org/specification#batch
+	//
+	var jsonrpcBatchRequest jsonrpc.BatchRequest
+	if err := json.Unmarshal(body, &jsonrpcBatchRequest); err == nil {
+		return &batchJSONRPCRequestContext{
+			logger:               rv.logger,
+			chainID:              rv.chainID,
+			serviceID:            rv.serviceID,
+			requestPayloadLength: uint(len(body)),
+			JSONRPCBatchRequest:  jsonrpcBatchRequest,
+			// Set the origin of the request as USER (i.e. organic relay)
+			// The request is from a user.
+			requestOrigin: qosobservations.RequestOrigin_REQUEST_ORIGIN_ORGANIC,
+			endpointStore: rv.endpointStore,
+		}, true
 	}
 
-	// Request is valid, return a fully initialized requestContext
-	return &requestContext{
-		logger:               rv.logger,
-		chainID:              rv.chainID,
-		serviceID:            rv.serviceID,
-		requestPayloadLength: uint(len(body)),
-		JSONRPCReq:           jsonrpcReq,
-		// Set the origin of the request as USER (i.e. organic relay)
-		// The request is from a user.
-		requestOrigin: qosobservations.RequestOrigin_REQUEST_ORIGIN_ORGANIC,
-		endpointStore: rv.endpointStore,
-	}, true
+	// 2. Attempt to parse as a single JSONRPC request
+	var jsonrpcRequest jsonrpc.Request
+	if err := json.Unmarshal(body, &jsonrpcRequest); err == nil {
+		// single JSONRPC request is valid, return a fully initialized requestContext
+		return &requestContext{
+			logger:               rv.logger,
+			chainID:              rv.chainID,
+			serviceID:            rv.serviceID,
+			requestPayloadLength: uint(len(body)),
+			JSONRPCReq:           jsonrpcRequest,
+			// Set the origin of the request as USER (i.e. organic relay)
+			// The request is from a user.
+			requestOrigin: qosobservations.RequestOrigin_REQUEST_ORIGIN_ORGANIC,
+			endpointStore: rv.endpointStore,
+		}, true
+	}
+
+	// TODO_UPNEXT(@adshmh): Adjust the error response based on request type: single JSONRPC vs. batch JSONRPC.
+	// Only log a preview of the request body (first 1000 bytes or less) to avoid excessive logging
+	requestPreview := string(body[:min(maxErrMessageLen, len(body))])
+	logger.Error().Err(err).Msgf("❌ Solana endpoint will fail QoS check because JSONRPC request could not be parsed. Request preview: %s", requestPreview)
+	return rv.createRequestUnmarshalingFailureContext(jsonrpc.ID{}, err), false
 }
 
 // createHTTPBodyReadFailureContext:
@@ -168,37 +196,4 @@ func (rv *requestValidator) createHTTPBodyReadFailureObservation(
 			},
 		},
 	}
-}
-
-// TODO_TECHDEBT(@adshmh): Support Batch JSONRPC requests per spec:
-// https://www.jsonrpc.org/specification#batch
-//
-// TODO_MVP(@adshmh): Add a JSON-RPC request validator to reject invalid/unsupported method calls early.
-//
-// parseJSONRPCFromRequestBody:
-// - Attempts to unmarshal HTTP request body into a JSONRPC request structure
-// - On failure:
-//   - Logs a preview of the request body (truncated for security/performance)
-//   - Logs the specific error
-//
-// Parameters:
-//   - logger: Logger for structured logging
-//   - requestBody: Raw HTTP request body bytes
-//
-// Returns:
-//   - jsonrpc.Request: Parsed request (empty on error)
-//   - error: Any error encountered during parsing
-func parseJSONRPCFromRequestBody(
-	logger polylog.Logger,
-	requestBody []byte,
-) (jsonrpc.Request, error) {
-	var jsonrpcRequest jsonrpc.Request
-	err := json.Unmarshal(requestBody, &jsonrpcRequest)
-	if err != nil {
-		// Only log a preview of the request body (first 1000 bytes or less) to avoid excessive logging
-		requestPreview := string(requestBody[:min(maxErrMessageLen, len(requestBody))])
-		logger.Error().Err(err).Msgf("❌ Solana endpoint will fail QoS check because JSONRPC request could not be parsed. Request preview: %s", requestPreview)
-	}
-
-	return jsonrpcRequest, err
 }
