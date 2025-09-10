@@ -85,6 +85,10 @@ func (ses *sanctionedEndpointsStore) ApplyObservations(shannonObservations []*pr
 	}
 }
 
+// TODO_TECHDEBT(@commoddity,@adshmh): sanctioned endpoints stores are categorized on RPC type, but contain HTTP methods.
+// The approach is in the right direction in general, but requires a few refactors to encapsulate observation processing
+// logic specific to each RPC type.
+//
 // processHTTPConnectionObservationForSanctions processes HTTP endpoint observations for sanctions
 func (ses *sanctionedEndpointsStore) processHTTPConnectionObservationForSanctions(
 	logger polylog.Logger,

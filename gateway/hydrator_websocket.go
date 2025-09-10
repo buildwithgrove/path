@@ -120,9 +120,18 @@ func (eph *EndpointHydrator) performWebSocketConnectionCheck(
 	ctx, cancel := context.WithTimeout(context.Background(), checkTimeout)
 	defer cancel()
 
-	obs := eph.Protocol.CheckWebsocketConnection(ctx, serviceID, endpointAddr)
+	// TODO_TECHDEBT(@commoddity,@adshmh): this is an internal detail of protocol (similar to e.g. fetching sessions).
+	// It should be encapsulated and handled automatically inside protocol (e.g. via a goroutine started at the time of
+	// protocol instance initialization), as there is no input required from any other components.
+	// This is different from endpoint quality checks, where QoS needs to provide the payload to send to the endpoint.
+	// Protocol can perform regular WS checks against in-session endpoints and adjust the list of available endpoints
+	// for WS requests accordingly.
+	obs := eph.CheckWebsocketConnection(ctx, serviceID, endpointAddr)
 	if obs != nil {
-		eph.Protocol.ApplyWebSocketObservations(obs)
+		err := eph.ApplyWebSocketObservations(obs)
+		if err != nil {
+			eph.Logger.Error().Err(err).Msg("❌ failed to apply WebSocket observations")
+		}
 	}
 
 	return nil
