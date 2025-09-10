@@ -173,7 +173,7 @@ func (rc *requestContext) BuildProtocolContextsFromHTTPRequest(httpReq *http.Req
 	logger := rc.logger.With("method", "BuildProtocolContextsFromHTTPRequest").With("service_id", rc.serviceID)
 
 	// Retrieve the list of available endpoints for the requested service.
-	availableEndpoints, endpointLookupObs, err := rc.protocol.AvailableEndpoints(rc.context, rc.serviceID, httpReq)
+	availableEndpoints, endpointLookupObs, err := rc.protocol.AvailableHTTPEndpoints(rc.context, rc.serviceID, httpReq)
 	if err != nil {
 		// error encountered: use the supplied observations as protocol observations.
 		rc.updateProtocolObservations(&endpointLookupObs)
@@ -299,7 +299,7 @@ func (rc *requestContext) BroadcastAllObservations() {
 		// update protocol-level observations: no errors encountered setting up the protocol context.
 		rc.updateProtocolObservations(nil)
 		if rc.protocolObservations != nil {
-			err := rc.protocol.ApplyObservations(rc.protocolObservations)
+			err := rc.protocol.ApplyHTTPObservations(rc.protocolObservations)
 			if err != nil {
 				rc.logger.Warn().Err(err).Msg("error applying protocol observations.")
 			}

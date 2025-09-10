@@ -213,7 +213,7 @@ func Test_ConnectWebsocketEndpoint(t *testing.T) {
 				test.websocketURL = "ws" + strings.TrimPrefix(server.URL, "http")
 			}
 
-			conn, err := connectWebsocketEndpoint(polyzero.NewLogger(), test.websocketURL, test.headers)
+			conn, err := ConnectWebsocketEndpoint(polyzero.NewLogger(), test.websocketURL, test.headers)
 
 			if test.shouldFail {
 				c.Error(err)
