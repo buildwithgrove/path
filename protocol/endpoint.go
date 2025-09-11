@@ -3,8 +3,6 @@ package protocol
 import (
 	"fmt"
 	"strings"
-
-	metricshttp "github.com/buildwithgrove/path/metrics/http"
 )
 
 // EndpointAddr is used as the unique identifier for a service endpoint.
@@ -52,19 +50,19 @@ func (e EndpointAddr) String() string {
 	return string(e)
 }
 
-// GetDomain returns the effective TLD+1 domain of the endpoint address.
+// GetURL returns the effective TLD+1 domain of the endpoint address.
 // For example:
 // - Given the endpoint address "pokt1eetcwfv2agdl2nvpf4cprhe89rdq3cxdf037wq-https://relayminer.shannon-mainnet.eu.nodefleet.net"
-// - Would return "relayminer.shannon-mainnet.eu.nodefleet.net"
-func (e EndpointAddr) GetDomain() (string, error) {
+// - Would return "https://relayminer.shannon-mainnet.eu.nodefleet.net"
+func (e EndpointAddr) GetURL() (string, error) {
 	// Split by dash to separate the address part from the URL part
-	endpointAddrParts := strings.Split(e.String(), "-")
+	endpointAddrParts := strings.SplitN(e.String(), "-", 2)
 	if len(endpointAddrParts) < 2 {
 		return "", fmt.Errorf("endpoint address %s does not contain a dash separator", e.String())
 	}
 
 	// Take everything after the first dash as the URL
-	return metricshttp.ExtractEffectiveTLDPlusOne(endpointAddrParts[1])
+	return endpointAddrParts[1], nil
 }
 
 // GetAddress returns the address of the endpoint.
