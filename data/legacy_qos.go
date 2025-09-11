@@ -35,9 +35,7 @@ func setLegacyFieldsFromQoSObservations(
 
 	// Use Solana observations to update the legacy record's fields.
 	if solanaObservations := observations.GetSolana(); solanaObservations != nil {
-		populatedRecord := setLegacyFieldsFromQoSSolanaObservations(logger, baseLegacyRecord, solanaObservations)
-		// Solana does not support batch requests so expect a single record.
-		return []*legacyRecord{populatedRecord}
+		return setLegacyFieldsFromQoSSolanaObservations(logger, baseLegacyRecord, solanaObservations)
 	}
 
 	// Use Cosmos SDK observations to update the legacy record's fields.
@@ -146,13 +144,13 @@ func populateEVMErrorFields(legacyRecord *legacyRecord, evmInterpreter *qosobser
 // Returns: the populated legacy record
 func setLegacyFieldsFromQoSSolanaObservations(
 	logger polylog.Logger,
-	legacyRecord *legacyRecord,
+	record *legacyRecord,
 	observations *qosobservation.SolanaRequestObservations,
-) *legacyRecord {
+) []*legacyRecord {
 	logger = logger.With("method", "setLegacyFieldsFromQoSSolanaObservations")
 
 	// In bytes: the length of the request: float64 type is for compatibility with the legacy data pipeline.
-	legacyRecord.RequestDataSize = float64(observations.RequestPayloadLength)
+	record.RequestDataSize = float64(observations.RequestPayloadLength)
 
 	// Initialize the Solana observations interpreter.
 	// Used to extract required fields from the observations.
@@ -162,24 +160,49 @@ func setLegacyFieldsFromQoSSolanaObservations(
 	}
 
 	// Extract the JSONRPC request's method.
-	legacyRecord.ChainMethod = solanaInterpreter.GetRequestMethod()
+	record.ChainMethod = solanaInterpreter.GetRequestMethod()
 
 	// ErrorType is already set at gateway or protocol level.
 	// Skip updating the error fields to preserve the original error.
-	if legacyRecord.ErrorType != "" {
-		return legacyRecord
+	if record.ErrorType != "" {
+		return []*legacyRecord{record}
 	}
 
-	errType := solanaInterpreter.GetRequestErrorType()
-	legacyRecord.ErrorType = errType
-	legacyRecord.ErrorMessage = errType
+	// TODO_UPNEXT(@adshmh): Track and report the `method` field of each JSONRPC request in a batch.
+	// - This requires updating the gateway.QoSRequestContext interface to guarantee a 1:1 map between requests of a batch and responses.
+	//
+	// TODO_TECHDEBT(@adshmh): Track each request of a batch JSONRPC request separately in proto messages.
+	// TODO_TECHDEBT(@adshmh): Include a num_requests fields for batch JSONRPC requests once data pipeline is refactored.
+	endpointObservations := observations.GetEndpointObservations()
+	// 0 or 1 endpoint observations: not a batch JSONRPC request.
+	if len(endpointObservations) <= 1 {
+		return []*legacyRecord{record}
+	}
 
-	return legacyRecord
+	// TODO_UPNEXT(@adshmh): Track and report errors on each request of a JSONRPC batch request.
+	//
+	// Create a separate legacy record for each method
+	var legacyRecords []*legacyRecord
+	for index := range endpointObservations {
+		// Create a copy of the base record
+		recordCopy := *record
+
+		// Track the index of the request to ensure correctness of records.
+		recordCopy.ChainMethod = fmt.Sprintf("batch_request_index:%d", index)
+
+		legacyRecords = append(legacyRecords, &recordCopy)
+	}
+
+	return legacyRecords
 }
 
 // qosCosmosErrorTypeStr defines the prefix for Cosmos QoS error types in legacy records
 const qosCosmosErrorTypeStr = "QOS_COSMOS"
 
+// TODO_TECHDEBT(@adshmh): Refactor the data reporting logic:
+// - QoS logic should simply return a list of legacy records (to eliminate the need for copying the original record)
+// - Protocol and Gateway logic sets the fields related to their perspective on the QoS returned set of records.
+//
 // setLegacyFieldsFromQoSCosmosObservations populates legacy records with Cosmos SDK-specific QoS data.
 // It captures:
 // - Request payload size (aggregated across all request profiles)
@@ -217,6 +240,8 @@ func setLegacyFieldsFromQoSCosmosObservations(
 		return []*legacyRecord{baseLegacyRecord}
 	}
 
+	// TODO_TECHDEBT(@adshmh): Refactor to loop over the endpoint observations instead.
+	//
 	// Create a separate legacy record for each method
 	// This enables the data pipeline to track metrics per individual method
 	// Similar to EVM batch request handling

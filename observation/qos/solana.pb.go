@@ -38,6 +38,10 @@ type SolanaRequestObservations struct {
 	RequestOrigin RequestOrigin `protobuf:"varint,4,opt,name=request_origin,json=requestOrigin,proto3,enum=path.qos.RequestOrigin" json:"request_origin,omitempty"`
 	// Tracks request errors, if any.
 	RequestError *RequestError `protobuf:"bytes,5,opt,name=request_error,json=requestError,proto3,oneof" json:"request_error,omitempty"`
+	// TODO_TECHDEBT(@adshmh): refactor this proto struct to add separate entries for batch JSONRPC requests.
+	// - Introduce a batch JSONRPC request message.
+	// - Each batch contains one or more JSONRPC requests, each with their separate endpoint observations.
+	//
 	// JSON-RPC request to the Solana blockchain service.
 	// Only set if the HTTP request payload was successfully parsed into JSONRPC.
 	// TODO_TECHDEBT: This assumes all SolanaVM blockchains only (and always) support JSON-RPC.

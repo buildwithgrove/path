@@ -9,6 +9,9 @@ import "path/qos/cosmos_response.proto";
 import "path/qos/request_origin.proto";
 import "path/qos/request_error.proto";
 
+// TODO_TECHDEBT(@adshmh): Reorganize the messages to be consistent with both single and batch JSONRPC requests:
+// - Directly associate each request of a batch with the corresponding endpoint observation(s).
+//
 // CosmosRequestObservations captures all observations made while serving a single Cosmos blockchain service request.
 message CosmosRequestObservations {
     // Next free index: 10

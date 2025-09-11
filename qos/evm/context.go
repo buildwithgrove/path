@@ -275,6 +275,9 @@ func (rc requestContext) createNoResponseObservations() []*qosobservations.EVMRe
 func (rc requestContext) createResponseObservations() []*qosobservations.EVMRequestObservation {
 	var observations []*qosobservations.EVMRequestObservation
 
+	// TODO_TECHDEBT(@adshmh): Simplify this code to use the order of payloads in the slice to map them to the requests in a batch of JSONRPC requests.
+	// This requires gateway package's RequestQoSContext interface to be updated to accept a slice of responses.
+	//
 	for _, endpointResp := range rc.endpointResponses {
 		var jsonrpcResponse jsonrpc.Response
 		err := json.Unmarshal(endpointResp.GetHTTPResponse().GetPayload(), &jsonrpcResponse)
