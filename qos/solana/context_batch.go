@@ -174,7 +174,7 @@ func (rc batchJSONRPCRequestContext) GetObservations() qosobservations.Observati
 			ResponseObservation: &qosobservations.SolanaEndpointObservation_UnrecognizedResponse{
 				UnrecognizedResponse: &qosobservations.SolanaUnrecognizedResponse{
 					// Track details of the JSONRPC response: e.g. ID and a preview of result.
-					JsonrpcResponse: endpointResp.Response.GetObservation(),
+					JsonrpcResponse: endpointResp.GetObservation(),
 				},
 			},
 		}
