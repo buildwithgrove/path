@@ -123,6 +123,10 @@ func (i *EVMObservationInterpreter) GetRequestOrigin() string {
 	return i.Observations.GetRequestOrigin().String()
 }
 
+// TODO_TECHDEBT(@adshmh): Check for any request-level errors.
+// - Example: no responses received from any endpoints.
+// - Drop EVMRequestError struct, and use RequestError directly.
+//
 // GetRequestStatus interprets the observations to determine request status information:
 // - httpStatusCode: the suggested HTTP status code to return to the client
 // - requestError: error details (nil if successful)
