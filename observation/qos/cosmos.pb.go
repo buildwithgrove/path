@@ -21,6 +21,9 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// TODO_TECHDEBT(@adshmh): Reorganize the messages to be consistent with both single and batch JSONRPC requests:
+// - Directly associate each request of a batch with the corresponding endpoint observation(s).
+//
 // CosmosRequestObservations captures all observations made while serving a single Cosmos blockchain service request.
 type CosmosRequestObservations struct {
 	state protoimpl.MessageState `protogen:"open.v1"`

@@ -51,7 +51,7 @@ type batchJSONRPCRequestContext struct {
 	// - QoS: requests built by the QoS service to get additional data points on endpoints.
 	requestOrigin qosobservations.RequestOrigin
 
-	// endpointResponses is the set of responses received from one or
+	// endpointJSONRPCResponses is the set of responses received from one or
 	// more endpoints as part of handling this service request.
 	endpointJSONRPCResponses []endpointJSONRPCResponse
 }
@@ -130,6 +130,11 @@ func (brc batchJSONRPCRequestContext) GetHTTPResponse() pathhttp.HTTPResponse {
 	}
 }
 
+// TODO_IMPROVE(@adshmh): Track the method field of each request in a JSONRPC batch request:
+// - Update proto/path/qos/solana.proto to include request details in each endpoint observation.
+// - Map each request in a batch to its corresponding response: needs gateway.QoSRequestContext interface update to handle slice of response.
+// - Update the endpoint observation building code below to include details of the corresponding request.
+//
 // GetObservations returns all the observations contained in the request context.
 // Implements the gateway.RequestQoSContext interface.
 func (rc batchJSONRPCRequestContext) GetObservations() qosobservations.Observations {
@@ -154,8 +159,32 @@ func (rc batchJSONRPCRequestContext) GetObservations() qosobservations.Observati
 		}
 	}
 
-	// TODO_UPNEXT(@adshmh): Report batch JSONRPC requests endpoint observations via metrics.
-	//
+	// Add one endpoint observation per request in the JSONRPC batch request.
+	endpointObservations := make([]*qosobservations.SolanaEndpointObservation, len(rc.endpointJSONRPCResponses))
+	for index, endpointResp := range rc.endpointJSONRPCResponses {
+		// TODO_TECHDEBT(@adshmh): Support method-specific JSONRPC responses on batch requests.
+		// This requires mapping each endpoint response to its corresponding request in the batch.
+		//
+		endpointObs := &qosobservations.SolanaEndpointObservation{
+			// TODO_DOCUMENT(@adshmh): Add a reference for the choice of HTTP status code on batch requests.
+			//
+			// HTTP status code 200 for batch requests.
+			HttpStatusCode: int32(http.StatusOK),
+			// Track response as an unrecognized response, since QoS does not currently use batch requests to evaluate endpoints.
+			ResponseObservation: &qosobservations.SolanaEndpointObservation_UnrecognizedResponse{
+				UnrecognizedResponse: &qosobservations.SolanaUnrecognizedResponse{
+					// Track details of the JSONRPC response: e.g. ID and a preview of result.
+					JsonrpcResponse: endpointResp.GetObservation(),
+				},
+			},
+		}
+
+		// Store in the list of endpoint observations.
+		endpointObservations[index] = endpointObs
+	}
+
+	observations.EndpointObservations = endpointObservations
+
 	return qosobservations.Observations{
 		ServiceObservations: &qosobservations.Observations_Solana{
 			Solana: observations,

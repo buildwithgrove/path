@@ -1,3 +1,6 @@
+# TODO_TECHDEBT(@adshmh): Include a simple data pipeline in Local development mode.
+# Example: fluentd with logging to stdout.
+#
 # Load necessary Tilt extensions
 load("ext://restart_process", "docker_build_with_restart")
 load("ext://helm_resource", "helm_resource", "helm_repo")
