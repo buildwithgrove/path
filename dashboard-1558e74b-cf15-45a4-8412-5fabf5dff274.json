@@ -1,0 +1,432 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": 170,
+  "links": [],
+  "panels": [
+    {
+      "datasource": {
+        "type": "victoriametrics-logs-datasource",
+        "uid": "depa5bgc9o6ipf"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": 3600000,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 2,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "ms"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 0
+      },
+      "id": 1,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "12.0.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "victoriametrics-logs-datasource",
+            "uid": "depa5bgc9o6ipf"
+          },
+          "editorMode": "code",
+          "expr": "kubernetes.pod_namespace:\"mainnet\" AND kubernetes.container_name:\"requests-spammer\" AND log.duration_ms:*\n| stats by (log.endpoint) avg(log.duration_ms) as avg_duration_ms\n| sort by (avg_duration_ms) desc",
+          "legendFormat": "{{log.endpoint}}",
+          "queryType": "statsRange",
+          "refId": "A",
+          "step": ""
+        }
+      ],
+      "title": "Endpoint latency",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "victoriametrics-logs-datasource",
+        "uid": "depa5bgc9o6ipf"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": 3600000,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 0
+      },
+      "id": 2,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "12.0.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "victoriametrics-logs-datasource",
+            "uid": "depa5bgc9o6ipf"
+          },
+          "editorMode": "code",
+          "expr": "kubernetes.pod_namespace:\"mainnet\" AND kubernetes.container_name:\"requests-spammer\" AND log.duration_ms:*\n| stats by (log.endpoint) \n  quantile(0.5, log.duration_ms) p50_ms,\n  quantile(0.9, log.duration_ms) p90_ms,\n  quantile(0.99, log.duration_ms) p99_ms",
+          "legendFormat": "",
+          "queryType": "statsRange",
+          "refId": "A",
+          "step": "500ms"
+        }
+      ],
+      "title": "esponse Time Percentiles by Endpoint (P50, P90, P99)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "victoriametrics-logs-datasource",
+        "uid": "depa5bgc9o6ipf"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "log.status_code"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 173
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 15,
+        "w": 24,
+        "x": 0,
+        "y": 8
+      },
+      "id": 3,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true,
+        "sortBy": []
+      },
+      "pluginVersion": "12.0.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "victoriametrics-logs-datasource",
+            "uid": "depa5bgc9o6ipf"
+          },
+          "editorMode": "code",
+          "expr": "kubernetes.pod_namespace:\"mainnet\" AND kubernetes.container_name:\"requests-spammer\" AND log.error:*",
+          "queryType": "instant",
+          "refId": "A"
+        }
+      ],
+      "title": "Errors",
+      "transformations": [
+        {
+          "id": "extractFields",
+          "options": {
+            "delimiter": ",",
+            "format": "json",
+            "keepTime": true,
+            "replace": true,
+            "source": "labels"
+          }
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "_stream_id": true,
+              "file": true,
+              "kubernetes.container_id": true,
+              "kubernetes.container_image": true,
+              "kubernetes.container_image_id": true,
+              "kubernetes.container_name": true,
+              "kubernetes.namespace_labels.kubernetes.io/metadata.name": true,
+              "kubernetes.namespace_labels.shared-gateway-access": true,
+              "kubernetes.node_labels.beta.kubernetes.io/arch": true,
+              "kubernetes.node_labels.beta.kubernetes.io/instance-type": true,
+              "kubernetes.node_labels.beta.kubernetes.io/os": true,
+              "kubernetes.node_labels.failure-domain.beta.kubernetes.io/region": true,
+              "kubernetes.node_labels.kubernetes.io/arch": true,
+              "kubernetes.node_labels.kubernetes.io/hostname": true,
+              "kubernetes.node_labels.kubernetes.io/os": true,
+              "kubernetes.node_labels.node-pool-type": true,
+              "kubernetes.node_labels.node.kubernetes.io/instance-type": true,
+              "kubernetes.node_labels.node.kubernetes.io/kube-proxy-ds-ready": true,
+              "kubernetes.node_labels.region": true,
+              "kubernetes.node_labels.topology.kubernetes.io/region": true,
+              "kubernetes.node_labels.vke.vultr.com/gpu": true,
+              "kubernetes.node_labels.vke.vultr.com/node-id": true,
+              "kubernetes.node_labels.vke.vultr.com/node-pool": true,
+              "kubernetes.node_labels.vke.vultr.com/node-pool-id": true,
+              "kubernetes.node_labels.vke.vultr.com/version": true,
+              "kubernetes.node_labels.vultr.com/baremetal": true,
+              "kubernetes.pod_annotations.cni.projectcalico.org/containerID": true,
+              "kubernetes.pod_annotations.cni.projectcalico.org/podIP": true,
+              "kubernetes.pod_annotations.cni.projectcalico.org/podIPs": true,
+              "kubernetes.pod_ip": true,
+              "kubernetes.pod_ips": true,
+              "kubernetes.pod_labels.app": true,
+              "kubernetes.pod_labels.pod-template-hash": true,
+              "kubernetes.pod_name": true,
+              "kubernetes.pod_namespace": true,
+              "kubernetes.pod_node_name": true,
+              "kubernetes.pod_owner": true,
+              "kubernetes.pod_uid": true,
+              "log.duration_ms": false,
+              "log.level": true,
+              "log.time": true,
+              "source_type": true,
+              "stream": true
+            },
+            "includeByName": {},
+            "indexByName": {
+              "Time": 0,
+              "_stream_id": 1,
+              "file": 2,
+              "kubernetes.container_id": 3,
+              "kubernetes.container_image": 4,
+              "kubernetes.container_image_id": 5,
+              "kubernetes.container_name": 6,
+              "kubernetes.namespace_labels.kubernetes.io/metadata.name": 7,
+              "kubernetes.namespace_labels.shared-gateway-access": 8,
+              "kubernetes.node_labels.beta.kubernetes.io/arch": 9,
+              "kubernetes.node_labels.beta.kubernetes.io/instance-type": 10,
+              "kubernetes.node_labels.beta.kubernetes.io/os": 11,
+              "kubernetes.node_labels.failure-domain.beta.kubernetes.io/region": 12,
+              "kubernetes.node_labels.kubernetes.io/arch": 13,
+              "kubernetes.node_labels.kubernetes.io/hostname": 14,
+              "kubernetes.node_labels.kubernetes.io/os": 15,
+              "kubernetes.node_labels.node-pool-type": 16,
+              "kubernetes.node_labels.node.kubernetes.io/instance-type": 17,
+              "kubernetes.node_labels.node.kubernetes.io/kube-proxy-ds-ready": 18,
+              "kubernetes.node_labels.region": 19,
+              "kubernetes.node_labels.topology.kubernetes.io/region": 20,
+              "kubernetes.node_labels.vke.vultr.com/gpu": 21,
+              "kubernetes.node_labels.vke.vultr.com/node-id": 22,
+              "kubernetes.node_labels.vke.vultr.com/node-pool": 23,
+              "kubernetes.node_labels.vke.vultr.com/node-pool-id": 24,
+              "kubernetes.node_labels.vke.vultr.com/version": 25,
+              "kubernetes.node_labels.vultr.com/baremetal": 26,
+              "kubernetes.pod_annotations.cni.projectcalico.org/containerID": 27,
+              "kubernetes.pod_annotations.cni.projectcalico.org/podIP": 28,
+              "kubernetes.pod_annotations.cni.projectcalico.org/podIPs": 29,
+              "kubernetes.pod_ip": 30,
+              "kubernetes.pod_ips": 31,
+              "kubernetes.pod_labels.app": 32,
+              "kubernetes.pod_labels.pod-template-hash": 33,
+              "kubernetes.pod_name": 34,
+              "kubernetes.pod_namespace": 35,
+              "kubernetes.pod_node_name": 36,
+              "kubernetes.pod_owner": 37,
+              "kubernetes.pod_uid": 38,
+              "log.duration_ms": 41,
+              "log.endpoint": 40,
+              "log.error": 42,
+              "log.level": 43,
+              "log.time": 39,
+              "log.url": 44,
+              "source_type": 45,
+              "stream": 46
+            },
+            "renameByName": {
+              "log.body_size": ""
+            }
+          }
+        }
+      ],
+      "type": "table"
+    }
+  ],
+  "preload": false,
+  "schemaVersion": 41,
+  "tags": [],
+  "templating": {
+    "list": []
+  },
+  "time": {
+    "from": "now-15m",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "Spamming relays - client PoV",
+  "uid": "1558e74b-cf15-45a4-8412-5fabf5dff274",
+  "version": 7
+}
