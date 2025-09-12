@@ -199,6 +199,14 @@ func PublishMetrics(logger polylog.Logger, observations *qos.EVMRequestObservati
 		errorType = requestError.String()
 	}
 
+	// TODO_TECHDEBT(@adshmh): Move this to the EVM interpreter logic:
+	// - Drop structs not generated from proto files: e.g. observation.EVMRequestError
+	// - Update the EVM interpreter to return an HTTP status code and an error_type string instead.
+	if requestErr := observations.GetRequestError(); requestErr != nil {
+		statusCode = int(requestErr.GetHttpStatusCode())
+		errorType = requestErr.GetErrorKind().String()
+	}
+
 	// Count each method as a separate request.
 	// This is required for batch requests.
 	for _, method := range methods {

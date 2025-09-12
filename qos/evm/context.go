@@ -10,6 +10,7 @@ import (
 	pathhttp "github.com/buildwithgrove/path/network/http"
 	qosobservations "github.com/buildwithgrove/path/observation/qos"
 	"github.com/buildwithgrove/path/protocol"
+	"github.com/buildwithgrove/path/qos"
 	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
 
@@ -218,6 +219,12 @@ func (rc requestContext) GetObservations() qosobservations.Observations {
 	// Convert endpoint selection validation results to proto format
 	validationResults := rc.convertValidationResults()
 
+	var requestError *qosobservations.RequestError
+	// Set request error as protocol-level error if no endpoint responses were received.
+	if len(rc.endpointResponses) == 0 {
+		requestError = qos.GetRequestErrorForProtocolError()
+	}
+
 	return qosobservations.Observations{
 		ServiceObservations: &qosobservations.Observations_Evm{
 			Evm: &qosobservations.EVMRequestObservations{
@@ -225,6 +232,7 @@ func (rc requestContext) GetObservations() qosobservations.Observations {
 				ServiceId:            string(rc.serviceID),
 				RequestPayloadLength: uint32(rc.requestPayloadLength),
 				RequestOrigin:        rc.requestOrigin,
+				RequestError:         requestError,
 				RequestObservations:  requestObservations,
 				EndpointSelectionMetadata: &qosobservations.EndpointSelectionMetadata{
 					RandomEndpointFallback: rc.endpointSelectionMetadata.RandomEndpointFallback,
@@ -260,9 +268,11 @@ func (rc requestContext) createNoResponseObservations() []*qosobservations.EVMRe
 	responseNoneObs := responseNoneObj.GetObservation()
 
 	return []*qosobservations.EVMRequestObservation{
-		{EndpointObservations: []*qosobservations.EVMEndpointObservation{
-			&responseNoneObs,
-		}},
+		{
+			EndpointObservations: []*qosobservations.EVMEndpointObservation{
+				&responseNoneObs,
+			},
+		},
 	}
 }
 
