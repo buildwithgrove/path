@@ -19,6 +19,7 @@ option go_package = "github.com/buildwithgrove/path/observation/qos";
 import "path/qos/jsonrpc.proto";
 import "path/qos/request_origin.proto";
 import "path/qos/endpoint_selection_metadata.proto";
+import "path/qos/request_error.proto";
 import "path/metadata/metadata.proto";
 
 // EVMRequestValidationError enumerates possible causes for EVM request rejection:
@@ -64,7 +65,7 @@ enum EVMResponseValidationError {
 
 // EVMRequestObservations captures all observations made while serving a single EVM blockchain service request.
 message EVMRequestObservations {
-  // Next ID: 11
+  // Next ID: 12
 
   // JsonRpcRequest and endpoint_observations are no longer supported.
   // They are replaced by EVMRequestObservation.
@@ -109,6 +110,12 @@ message EVMRequestObservations {
 
   // endpoint_selection_metadata contains metadata about the endpoint selection process.
   EndpointSelectionMetadata endpoint_selection_metadata = 9;
+
+  // Internal error encountered processing the request, if any.
+  // Example: no endpoint responses received.
+  // On single JSONRPC request: applies to the single request.
+  // On batch JSONRPC requests: only set if the entire batch failed (e.g. no endpoint responses for any of the requests of the batch)
+  optional RequestError request_error = 11;
 }
 
 // EVMRequestObservation stores a single observation from an endpoint servicing the protocol response.
