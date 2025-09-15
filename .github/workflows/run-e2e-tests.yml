@@ -144,8 +144,8 @@ jobs:
       - build-and-test-docker-image
     strategy:
       matrix:
-        # DEV_NOTE: Only xrplevm supports WebSocket testing currently
-        service_id: [xrplevm]
+        # DEV_NOTE: Add new services here if they should be tested as part of the Shannon E2E CI suite
+        service_id: [xrplevm, eth]
     steps:
       - uses: actions/checkout@v4
 

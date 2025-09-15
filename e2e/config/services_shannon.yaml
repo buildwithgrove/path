@@ -86,6 +86,7 @@ services:
     evm_chain_id: "0x2105"
     service_type: "evm"
     archival: true
+    websockets: true
     service_params:
       # https://basescan.org/address/0x3304e22ddaa22bcdc5fca2269b418046ae7b566a
       contract_address: "0x3304E22DDaa22bCdC5fCa2269b418046aE7b566A"
@@ -100,6 +101,7 @@ services:
     alias: "base-sepolia-testnetnet"
     service_type: "evm"
     archival: true
+    websockets: true
     service_params:
       # https://sepolia.basescan.org/address/0xbab76e4365a2dff89ddb2d3fc9994103b48886c0
       contract_address: "0xbab76e4365a2dff89ddb2d3fc9994103b48886c0"
@@ -140,6 +142,7 @@ services:
     evm_chain_id: "0x38"
     service_type: "evm"
     archival: true
+    websockets: true
     service_params:
       # https://bsctrace.com/address/0xfb50526f49894b78541b776f5aaefe43e3bd8590
       contract_address: "0xfb50526f49894b78541b776f5aaefe43e3bd8590"
@@ -179,6 +182,7 @@ services:
     evm_chain_id: "0x1"
     service_type: "evm"
     archival: true
+    websockets: true
     service_params:
       contract_address: "0x28C6c06298d514Db089934071355E5743bf21d60"
       contract_start_block: 12300000

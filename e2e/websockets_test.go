@@ -204,7 +204,7 @@ type websocketTestResult struct {
 }
 
 // validateWebSocketResults validates WebSocket test results using the existing validation logic
-func validateWebSocketResults(results []*websocketTestResult, serviceID string) map[string]*methodMetrics {
+func validateWebSocketResults(results []*websocketTestResult) map[string]*methodMetrics {
 	metrics := make(map[string]*methodMetrics)
 
 	for _, result := range results {
@@ -322,7 +322,7 @@ func runWebSocketServiceTest(
 	}
 
 	// Convert WebSocket results to method metrics and validate
-	websocketMetrics := validateWebSocketResults(allResults, string(ts.ServiceID))
+	websocketMetrics := validateWebSocketResults(allResults)
 
 	// Use the service configuration we retrieved earlier
 	wsServiceConfig := serviceConfig.serviceConfig

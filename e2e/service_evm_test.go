@@ -86,7 +86,6 @@ func getEVMTestMethodsForWebSocket() []string {
 		eth_getBalance,
 		eth_getBlockByNumber,
 		eth_getTransactionCount,
-		eth_getTransactionReceipt,
 		eth_getTransactionByHash,
 		eth_call,
 	}
