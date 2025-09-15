@@ -88,6 +88,7 @@ type responseToGetBalance struct {
 // Implements the response interface.
 func (r responseToGetBalance) GetObservation() qosobservations.EVMEndpointObservation {
 	return qosobservations.EVMEndpointObservation{
+		ParsedJsonrpcResponse: r.jsonrpcResponse.GetObservation(),
 		ResponseObservation: &qosobservations.EVMEndpointObservation_GetBalanceResponse{
 			GetBalanceResponse: &qosobservations.EVMGetBalanceResponse{
 				HttpStatusCode:          int32(r.getHTTPStatusCode()),
