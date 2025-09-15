@@ -129,6 +129,8 @@ func setLegacyFieldsFromWebsocketConnectionObservation(
 	legacyRecord *legacyRecord,
 	wsConnectionObs *protocolobservation.ShannonWebsocketConnectionObservation,
 ) *legacyRecord {
+	logger = logger.With("method", "setLegacyFieldsFromWebsocketConnectionObservation")
+
 	// Update error fields if a connection error has occurred.
 	legacyRecord = setLegacyErrFieldsFromWebsocketConnectionError(legacyRecord, wsConnectionObs)
 

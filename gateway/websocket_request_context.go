@@ -187,9 +187,11 @@ func (wrc *websocketRequestContext) buildProtocolContextAndStartBridge(
 		wrc.messageObservationsChan,
 	)
 	if err != nil {
-		logger.Error().Err(err).Str("endpoint_addr", string(selectedEndpoint)).Msg("Failed to build protocol context and start bridge for websocket endpoint")
+		logger.Error().Err(err).Str(
+			"endpoint_addr", string(selectedEndpoint),
+		).Msg("Failed to build protocol context and start bridge for websocket endpoint")
 		// Send connection failure observation manually since the connection observation channel is not available in case of error
-		errorObs := buildConnectionEstablishmentFailureObservation(wrc.serviceID, selectedEndpoint, err)
+		errorObs := buildConnectionEstablishmentFailureObservation(wrc.logger, wrc.serviceID, selectedEndpoint, err)
 		wrc.handleConnectionObservation(errorObs)
 		return nil, fmt.Errorf("failed to build protocol context and start bridge for websocket endpoint: %w", err)
 	}

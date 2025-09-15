@@ -137,13 +137,13 @@ func (rc *requestContext) sendSingleRelay(payload protocol.Payload) (protocol.Re
 
 	// Failure: Pass the response (which may contain RelayMinerError data) to error handler.
 	if err != nil {
-		return rc.handleEndpointError(endpointQueryTime, err)
+		return rc.handleEndpointError(endpointQueryTime, err, payload.RPCType)
 	}
 
 	// Success:
 	// - Record observation
 	// - Return response received from endpoint.
-	err = rc.handleEndpointSuccess(endpointQueryTime, &relayResponse)
+	err = rc.handleEndpointSuccess(endpointQueryTime, &relayResponse, payload.RPCType)
 	return relayResponse, err
 }
 
@@ -807,6 +807,7 @@ func (rc *requestContext) handleInternalError(internalErr error) (protocol.Respo
 func (rc *requestContext) handleEndpointError(
 	endpointQueryTime time.Time,
 	endpointErr error,
+	rpcType sharedtypes.RPCType,
 ) (protocol.Response, error) {
 	rc.hydrateLogger("handleEndpointError")
 	selectedEndpoint := rc.getSelectedEndpoint()
@@ -834,6 +835,7 @@ func (rc *requestContext) handleEndpointError(
 		fmt.Sprintf("relay error: %v", endpointErr),
 		recommendedSanctionType,
 		rc.currentRelayMinerError, // Use RelayMinerError data from request context
+		rpcType,
 	)
 
 	// Track endpoint error observation for metrics and sanctioning
@@ -854,6 +856,7 @@ func (rc *requestContext) handleEndpointError(
 func (rc *requestContext) handleEndpointSuccess(
 	endpointQueryTime time.Time,
 	endpointResponse *protocol.Response,
+	rpcType sharedtypes.RPCType,
 ) error {
 	rc.hydrateLogger("handleEndpointSuccess")
 	rc.logger = rc.logger.With("endpoint_response_payload_len", len(endpointResponse.Bytes))
@@ -868,6 +871,7 @@ func (rc *requestContext) handleEndpointSuccess(
 		time.Now(), // Timestamp: endpoint query completed.
 		endpointResponse,
 		rc.currentRelayMinerError, // Use RelayMinerError data from request context
+		rpcType,
 	)
 
 	// Track endpoint success observation for metrics

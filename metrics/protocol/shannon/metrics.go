@@ -674,6 +674,8 @@ func processSanctionsByDomain(
 	serviceID string,
 	observations []*protocolobservations.ShannonEndpointObservation,
 ) {
+	logger = logger.With("method", "processSanctionsByDomain")
+
 	for _, endpointObs := range observations {
 		// Skip if there's no recommended sanction (based on trusted error classification)
 		if endpointObs.RecommendedSanction == nil {
@@ -714,6 +716,8 @@ func processEndpointLatency(
 	serviceID string,
 	observations []*protocolobservations.ShannonEndpointObservation,
 ) {
+	logger = logger.With("method", "processEndpointLatency")
+
 	// Calculate overall success status for the request
 	success := isAnyObservationSuccessful(observations)
 
@@ -731,7 +735,7 @@ func processEndpointLatency(
 		endpointUrl := endpointObs.GetEndpointUrl()
 		endpointDomain, err := ExtractDomainOrHost(endpointUrl)
 		if err != nil {
-			logger.Error().Err(err).Msgf("Could not extract domain from endpoint URL %s.", endpointUrl)
+			logger.Error().Str("endpoint_url", endpointUrl).Err(err).Msg("Could not extract domain from endpoint URL")
 			endpointDomain = ErrDomain
 		}
 
@@ -771,6 +775,8 @@ func processRelayMinerErrors(
 	serviceID string,
 	observations []*protocolobservations.ShannonEndpointObservation,
 ) {
+	logger = logger.With("method", "processRelayMinerErrors")
+
 	for _, endpointObs := range observations {
 		// Skip if there's no RelayMinerError
 		if endpointObs.RelayMinerError == nil {
@@ -828,7 +834,7 @@ func recordWebsocketConnectionTotal(
 	logger polylog.Logger,
 	observations *protocolobservations.ShannonRequestObservations,
 ) {
-	hydratedLogger := logger.With("method", "recordWebsocketConnectionTotal")
+	logger = logger.With("method", "recordWebsocketConnectionTotal")
 
 	serviceID := observations.GetServiceId()
 
@@ -848,7 +854,7 @@ func recordWebsocketConnectionTotal(
 
 	wsConnectionObs := observations.GetWebsocketConnectionObservation()
 	if wsConnectionObs == nil {
-		hydratedLogger.Warn().Msg("WebSocket connection observation is nil")
+		logger.Warn().Msg("WebSocket connection observation is nil")
 		return
 	}
 
@@ -895,7 +901,7 @@ func recordWebsocketMessageTotal(
 	logger polylog.Logger,
 	observations *protocolobservations.ShannonRequestObservations,
 ) {
-	hydratedLogger := logger.With("method", "recordWebsocketMessageTotal")
+	logger = logger.With("method", "recordWebsocketMessageTotal")
 
 	serviceID := observations.GetServiceId()
 
@@ -915,7 +921,7 @@ func recordWebsocketMessageTotal(
 
 	wsMessageObs := observations.GetWebsocketMessageObservation()
 	if wsMessageObs == nil {
-		hydratedLogger.Warn().Msg("WebSocket message observation is nil")
+		logger.Warn().Msg("WebSocket message observation is nil")
 		return
 	}
 
@@ -948,6 +954,8 @@ func processWebsocketConnectionErrors(
 	serviceID string,
 	wsConnectionObs *protocolobservations.ShannonWebsocketConnectionObservation,
 ) {
+	logger = logger.With("method", "processWebsocketConnectionErrors")
+
 	// Skip if there's no error
 	if wsConnectionObs.ErrorType == nil {
 		return
@@ -995,6 +1003,8 @@ func processWebsocketMessageErrors(
 	serviceID string,
 	wsMessageObs *protocolobservations.ShannonWebsocketMessageObservation,
 ) {
+	logger = logger.With("method", "processWebsocketMessageErrors")
+
 	// Skip if there's no error
 	if wsMessageObs.ErrorType == nil {
 		return
