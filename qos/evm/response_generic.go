@@ -58,7 +58,7 @@ func (r responseGeneric) GetObservation() qosobservations.EVMEndpointObservation
 		parsedJSONRPCResponseObservation = r.jsonrpcResponse.GetObservation()
 	}
 
-	observation := &qosobservations.EVMEndpointObservation{
+	return qosobservations.EVMEndpointObservation{
 		ParsedJsonrpcResponse: parsedJSONRPCResponseObservation,
 		ResponseObservation: &qosobservations.EVMEndpointObservation_UnrecognizedResponse{
 			UnrecognizedResponse: &qosobservations.EVMUnrecognizedResponse{
@@ -69,8 +69,6 @@ func (r responseGeneric) GetObservation() qosobservations.EVMEndpointObservation
 			},
 		},
 	}
-
-	return *observation
 }
 
 // GetHTTPResponse builds and returns the httpResponse matching the responseGeneric instance.
