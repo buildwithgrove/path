@@ -52,7 +52,7 @@ type responseGeneric struct {
 // disqualification when validation errors are present.
 // Implements the response interface.
 func (r responseGeneric) GetObservation() qosobservations.EVMEndpointObservation {
-	return qosobservations.EVMEndpointObservation{
+	observation := qosobservations.EVMEndpointObservation{
 		ResponseObservation: &qosobservations.EVMEndpointObservation_UnrecognizedResponse{
 			UnrecognizedResponse: &qosobservations.EVMUnrecognizedResponse{
 				// Include JSONRPC response's details in the observation.
@@ -62,6 +62,13 @@ func (r responseGeneric) GetObservation() qosobservations.EVMEndpointObservation
 			},
 		},
 	}
+
+	// If validation error was nil, i.e. if the endpoint response was parsed successfully, update the observation.
+	if r.validationError == nil {
+		observation.ParsedJsonrpcResponse = r.jsonrpcResponse.GetObservation()
+	}
+
+	return observation
 }
 
 // GetHTTPResponse builds and returns the httpResponse matching the responseGeneric instance.

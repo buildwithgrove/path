@@ -84,6 +84,7 @@ type responseToChainID struct {
 // Reference: https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_chainid
 func (r responseToChainID) GetObservation() qosobservations.EVMEndpointObservation {
 	return qosobservations.EVMEndpointObservation{
+		ParsedJsonrpcResponse: r.jsonrpcResponse.GetObservation(),
 		ResponseObservation: &qosobservations.EVMEndpointObservation_ChainIdResponse{
 			ChainIdResponse: &qosobservations.EVMChainIDResponse{
 				HttpStatusCode:          int32(r.getHTTPStatusCode()),

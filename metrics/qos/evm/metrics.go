@@ -20,6 +20,7 @@ const (
 	availableEndpointsMetric       = "evm_available_endpoints"
 	validEndpointsMetric           = "evm_valid_endpoints"
 	endpointValidationsTotalMetric = "evm_endpoint_validations_total"
+	jsonrpcErrorsTotalMetric       = "evm_jsonrpc_errors_total"
 )
 
 func init() {
@@ -27,6 +28,7 @@ func init() {
 	prometheus.MustRegister(availableEndpoints)
 	prometheus.MustRegister(validEndpoints)
 	prometheus.MustRegister(endpointValidationsTotal)
+	prometheus.MustRegister(jsonrpcErrorsTotal)
 }
 
 var (
@@ -147,6 +149,34 @@ var (
 		},
 		[]string{"chain_id", "service_id", "endpoint_domain", "success", "validation_failure_reason"},
 	)
+
+	// TODO_TECHDEBT(@adshmh): Consider using buckets of JSONRPC error codes as the number of distinct values could be a Prometheus metric cardinality concern.
+	//
+	// jsonrpcErrorsTotal tracks JSON-RPC errors returned by endpoints for specific request methods.
+	// This metric captures the relationship between request methods, endpoint domains, and JSON-RPC error codes
+	// to help identify patterns in endpoint-specific failures and method-specific issues.
+	//
+	// Labels:
+	//   - chain_id: Target EVM chain identifier
+	//   - service_id: Service ID of the EVM QoS instance
+	//   - request_method: JSON-RPC method name that generated the error (e.g., "eth_getBalance", "eth_call")
+	//   - endpoint_domain: eTLD+1 of endpoint URL for provider analysis (extracted from endpoint_addr)
+	//   - jsonrpc_error_code: The JSON-RPC error code returned by the endpoint (e.g., "-32601", "-32602")
+	//
+	// Use to analyze:
+	//   - Error patterns by JSON-RPC method and endpoint provider
+	//   - Endpoint reliability for specific method types
+	//   - Most common JSON-RPC error codes across the network
+	//   - Provider-specific error rates and patterns
+	//   - Method compatibility issues across different endpoint providers
+	jsonrpcErrorsTotal = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Subsystem: pathProcess,
+			Name:      jsonrpcErrorsTotalMetric,
+			Help:      "Total JSON-RPC errors returned by endpoints, categorized by request method, endpoint domain, and error code",
+		},
+		[]string{"chain_id", "service_id", "request_method", "endpoint_domain", "jsonrpc_error_code"},
+	)
 )
 
 // PublishMetrics exports all EVM-related Prometheus metrics using observations reported by EVM QoS service.
@@ -223,6 +253,23 @@ func PublishMetrics(logger polylog.Logger, observations *qos.EVMRequestObservati
 				"http_status_code":         fmt.Sprintf("%d", statusCode),
 				"random_endpoint_fallback": fmt.Sprintf("%t", endpointSelectionMetadata.RandomEndpointFallback),
 				"endpoint_domain":          interpreter.GetEndpointDomain(),
+			}).Inc()
+
+		// Check if the endpoint's JSONRPC response indicates an error.
+		jsonrpcResponseErrorCode, jsonrpcResponseHasError := interpreter.GetJSONRPCErrorCode()
+		// No JSONRPC response error: skip.
+		if !jsonrpcResponseHasError {
+			continue
+		}
+
+		// Export the JSONRPC Error Code.
+		jsonrpcErrorsTotal.With(
+			prometheus.Labels{
+				"chain_id":           chainID,
+				"service_id":         serviceID,
+				"request_method":     method,
+				"endpoint_domain":    interpreter.GetEndpointDomain(),
+				"jsonrpc_error_code": fmt.Sprintf("%d", jsonrpcResponseErrorCode),
 			}).Inc()
 	}
 
