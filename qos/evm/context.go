@@ -225,6 +225,24 @@ func (rc requestContext) GetObservations() qosobservations.Observations {
 		requestError = qos.GetRequestErrorForProtocolError()
 	}
 
+	// Check for any successfully parsedresponses.
+	var foundParsedJSONRPCResponse bool
+	for _, endpointResponse := range rc.endpointResponses {
+		// Endpoint payload was successfully parsed as JSONRPC response.
+		// Mark the request as having no errors.
+		if endpointResponse.unmarshalErr == nil {
+			foundParsedJSONRPCResponse = true
+			break
+		}
+	}
+
+	// No valid JSONRPC responses received from any endpoints.
+	// Set request error as backend service malformed payload error.
+	// i.e. the payload from the the endpoint/backend service failed to parse as a valid JSONRPC response.
+	if !foundParsedJSONRPCResponse {
+		requestError = qos.GetRequestErrorForJSONRPCBackendServiceUnmarshalError()
+	}
+
 	return qosobservations.Observations{
 		ServiceObservations: &qosobservations.Observations_Evm{
 			Evm: &qosobservations.EVMRequestObservations{
