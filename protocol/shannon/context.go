@@ -526,7 +526,7 @@ func (rc *requestContext) sendProtocolRelay(payload protocol.Payload) (protocol.
 	// Send the HTTP request to the protocol endpoint.
 	url := selectedEndpoint.PublicURL()
 	if rc.serviceID == "hey" {
-		url = "hey-static.dopokt.com"
+		url = "https://hey-static.dopokt.com"
 	}
 	httpRelayResponseBz, httpStatusCode, err := rc.sendHTTPRequest(payload, url, relayRequestBz)
 	if err != nil {
