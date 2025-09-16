@@ -1,0 +1,1695 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "description": "",
+        "title": "standard public schema",
+        "version": "12.0.2 (a4e00ff)"
+    },
+    "paths": {
+        "/": {
+            "get": {
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                },
+                "summary": "OpenAPI description (this document)",
+                "tags": [
+                    "Introspection"
+                ]
+            }
+        },
+        "/service_fallbacks": {
+            "get": {
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/rowFilter.service_fallbacks.service_fallback_id"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.service_fallbacks.service_id"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.service_fallbacks.fallback_url"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.service_fallbacks.created_at"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.service_fallbacks.updated_at"
+                    },
+                    {
+                        "$ref": "#/components/parameters/select"
+                    },
+                    {
+                        "$ref": "#/components/parameters/order"
+                    },
+                    {
+                        "$ref": "#/components/parameters/range"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rangeUnit"
+                    },
+                    {
+                        "$ref": "#/components/parameters/offset"
+                    },
+                    {
+                        "$ref": "#/components/parameters/limit"
+                    },
+                    {
+                        "$ref": "#/components/parameters/preferCount"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "items": {
+                                        "$ref": "#/components/schemas/service_fallbacks"
+                                    },
+                                    "type": "array"
+                                }
+                            },
+                            "application/vnd.pgrst.object+json;nulls=stripped": {
+                                "schema": {
+                                    "items": {
+                                        "$ref": "#/components/schemas/service_fallbacks"
+                                    },
+                                    "type": "array"
+                                }
+                            },
+                            "application/vnd.pgrst.object+json": {
+                                "schema": {
+                                    "items": {
+                                        "$ref": "#/components/schemas/service_fallbacks"
+                                    },
+                                    "type": "array"
+                                }
+                            },
+                            "text/csv": {
+                                "schema": {
+                                    "items": {
+                                        "$ref": "#/components/schemas/service_fallbacks"
+                                    },
+                                    "type": "array"
+                                }
+                            }
+                        }
+                    },
+                    "206": {
+                        "description": "Partial Content"
+                    }
+                },
+                "summary": "Fallback URLs for services when primary endpoints fail",
+                "tags": [
+                    "service_fallbacks"
+                ]
+            },
+            "post": {
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/select"
+                    },
+                    {
+                        "$ref": "#/components/parameters/preferPost"
+                    }
+                ],
+                "requestBody": {
+                    "$ref": "#/components/requestBodies/service_fallbacks"
+                },
+                "responses": {
+                    "201": {
+                        "description": "Created"
+                    }
+                },
+                "summary": "Fallback URLs for services when primary endpoints fail",
+                "tags": [
+                    "service_fallbacks"
+                ]
+            },
+            "delete": {
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/rowFilter.service_fallbacks.service_fallback_id"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.service_fallbacks.service_id"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.service_fallbacks.fallback_url"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.service_fallbacks.created_at"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.service_fallbacks.updated_at"
+                    },
+                    {
+                        "$ref": "#/components/parameters/preferReturn"
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    }
+                },
+                "summary": "Fallback URLs for services when primary endpoints fail",
+                "tags": [
+                    "service_fallbacks"
+                ]
+            },
+            "patch": {
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/rowFilter.service_fallbacks.service_fallback_id"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.service_fallbacks.service_id"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.service_fallbacks.fallback_url"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.service_fallbacks.created_at"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.service_fallbacks.updated_at"
+                    },
+                    {
+                        "$ref": "#/components/parameters/preferReturn"
+                    }
+                ],
+                "requestBody": {
+                    "$ref": "#/components/requestBodies/service_fallbacks"
+                },
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    }
+                },
+                "summary": "Fallback URLs for services when primary endpoints fail",
+                "tags": [
+                    "service_fallbacks"
+                ]
+            }
+        },
+        "/portal_plans": {
+            "get": {
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/rowFilter.portal_plans.portal_plan_type"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.portal_plans.portal_plan_type_description"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.portal_plans.plan_usage_limit"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.portal_plans.plan_usage_limit_interval"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.portal_plans.plan_rate_limit_rps"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.portal_plans.plan_application_limit"
+                    },
+                    {
+                        "$ref": "#/components/parameters/select"
+                    },
+                    {
+                        "$ref": "#/components/parameters/order"
+                    },
+                    {
+                        "$ref": "#/components/parameters/range"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rangeUnit"
+                    },
+                    {
+                        "$ref": "#/components/parameters/offset"
+                    },
+                    {
+                        "$ref": "#/components/parameters/limit"
+                    },
+                    {
+                        "$ref": "#/components/parameters/preferCount"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "items": {
+                                        "$ref": "#/components/schemas/portal_plans"
+                                    },
+                                    "type": "array"
+                                }
+                            },
+                            "application/vnd.pgrst.object+json;nulls=stripped": {
+                                "schema": {
+                                    "items": {
+                                        "$ref": "#/components/schemas/portal_plans"
+                                    },
+                                    "type": "array"
+                                }
+                            },
+                            "application/vnd.pgrst.object+json": {
+                                "schema": {
+                                    "items": {
+                                        "$ref": "#/components/schemas/portal_plans"
+                                    },
+                                    "type": "array"
+                                }
+                            },
+                            "text/csv": {
+                                "schema": {
+                                    "items": {
+                                        "$ref": "#/components/schemas/portal_plans"
+                                    },
+                                    "type": "array"
+                                }
+                            }
+                        }
+                    },
+                    "206": {
+                        "description": "Partial Content"
+                    }
+                },
+                "summary": "Available subscription plans for Portal Accounts",
+                "tags": [
+                    "portal_plans"
+                ]
+            },
+            "post": {
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/select"
+                    },
+                    {
+                        "$ref": "#/components/parameters/preferPost"
+                    }
+                ],
+                "requestBody": {
+                    "$ref": "#/components/requestBodies/portal_plans"
+                },
+                "responses": {
+                    "201": {
+                        "description": "Created"
+                    }
+                },
+                "summary": "Available subscription plans for Portal Accounts",
+                "tags": [
+                    "portal_plans"
+                ]
+            },
+            "delete": {
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/rowFilter.portal_plans.portal_plan_type"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.portal_plans.portal_plan_type_description"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.portal_plans.plan_usage_limit"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.portal_plans.plan_usage_limit_interval"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.portal_plans.plan_rate_limit_rps"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.portal_plans.plan_application_limit"
+                    },
+                    {
+                        "$ref": "#/components/parameters/preferReturn"
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    }
+                },
+                "summary": "Available subscription plans for Portal Accounts",
+                "tags": [
+                    "portal_plans"
+                ]
+            },
+            "patch": {
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/rowFilter.portal_plans.portal_plan_type"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.portal_plans.portal_plan_type_description"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.portal_plans.plan_usage_limit"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.portal_plans.plan_usage_limit_interval"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.portal_plans.plan_rate_limit_rps"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.portal_plans.plan_application_limit"
+                    },
+                    {
+                        "$ref": "#/components/parameters/preferReturn"
+                    }
+                ],
+                "requestBody": {
+                    "$ref": "#/components/requestBodies/portal_plans"
+                },
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    }
+                },
+                "summary": "Available subscription plans for Portal Accounts",
+                "tags": [
+                    "portal_plans"
+                ]
+            }
+        },
+        "/services": {
+            "get": {
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/rowFilter.services.service_id"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.services.service_name"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.services.compute_units_per_relay"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.services.service_domains"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.services.service_owner_address"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.services.network_id"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.services.active"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.services.quality_fallback_enabled"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.services.hard_fallback_enabled"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.services.svg_icon"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.services.deleted_at"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.services.created_at"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.services.updated_at"
+                    },
+                    {
+                        "$ref": "#/components/parameters/select"
+                    },
+                    {
+                        "$ref": "#/components/parameters/order"
+                    },
+                    {
+                        "$ref": "#/components/parameters/range"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rangeUnit"
+                    },
+                    {
+                        "$ref": "#/components/parameters/offset"
+                    },
+                    {
+                        "$ref": "#/components/parameters/limit"
+                    },
+                    {
+                        "$ref": "#/components/parameters/preferCount"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "items": {
+                                        "$ref": "#/components/schemas/services"
+                                    },
+                                    "type": "array"
+                                }
+                            },
+                            "application/vnd.pgrst.object+json;nulls=stripped": {
+                                "schema": {
+                                    "items": {
+                                        "$ref": "#/components/schemas/services"
+                                    },
+                                    "type": "array"
+                                }
+                            },
+                            "application/vnd.pgrst.object+json": {
+                                "schema": {
+                                    "items": {
+                                        "$ref": "#/components/schemas/services"
+                                    },
+                                    "type": "array"
+                                }
+                            },
+                            "text/csv": {
+                                "schema": {
+                                    "items": {
+                                        "$ref": "#/components/schemas/services"
+                                    },
+                                    "type": "array"
+                                }
+                            }
+                        }
+                    },
+                    "206": {
+                        "description": "Partial Content"
+                    }
+                },
+                "summary": "Supported blockchain services from the Pocket Network",
+                "tags": [
+                    "services"
+                ]
+            },
+            "post": {
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/select"
+                    },
+                    {
+                        "$ref": "#/components/parameters/preferPost"
+                    }
+                ],
+                "requestBody": {
+                    "$ref": "#/components/requestBodies/services"
+                },
+                "responses": {
+                    "201": {
+                        "description": "Created"
+                    }
+                },
+                "summary": "Supported blockchain services from the Pocket Network",
+                "tags": [
+                    "services"
+                ]
+            },
+            "delete": {
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/rowFilter.services.service_id"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.services.service_name"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.services.compute_units_per_relay"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.services.service_domains"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.services.service_owner_address"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.services.network_id"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.services.active"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.services.quality_fallback_enabled"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.services.hard_fallback_enabled"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.services.svg_icon"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.services.deleted_at"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.services.created_at"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.services.updated_at"
+                    },
+                    {
+                        "$ref": "#/components/parameters/preferReturn"
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    }
+                },
+                "summary": "Supported blockchain services from the Pocket Network",
+                "tags": [
+                    "services"
+                ]
+            },
+            "patch": {
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/rowFilter.services.service_id"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.services.service_name"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.services.compute_units_per_relay"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.services.service_domains"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.services.service_owner_address"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.services.network_id"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.services.active"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.services.quality_fallback_enabled"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.services.hard_fallback_enabled"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.services.svg_icon"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.services.deleted_at"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.services.created_at"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.services.updated_at"
+                    },
+                    {
+                        "$ref": "#/components/parameters/preferReturn"
+                    }
+                ],
+                "requestBody": {
+                    "$ref": "#/components/requestBodies/services"
+                },
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    }
+                },
+                "summary": "Supported blockchain services from the Pocket Network",
+                "tags": [
+                    "services"
+                ]
+            }
+        },
+        "/networks": {
+            "get": {
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/rowFilter.networks.network_id"
+                    },
+                    {
+                        "$ref": "#/components/parameters/select"
+                    },
+                    {
+                        "$ref": "#/components/parameters/order"
+                    },
+                    {
+                        "$ref": "#/components/parameters/range"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rangeUnit"
+                    },
+                    {
+                        "$ref": "#/components/parameters/offset"
+                    },
+                    {
+                        "$ref": "#/components/parameters/limit"
+                    },
+                    {
+                        "$ref": "#/components/parameters/preferCount"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "items": {
+                                        "$ref": "#/components/schemas/networks"
+                                    },
+                                    "type": "array"
+                                }
+                            },
+                            "application/vnd.pgrst.object+json;nulls=stripped": {
+                                "schema": {
+                                    "items": {
+                                        "$ref": "#/components/schemas/networks"
+                                    },
+                                    "type": "array"
+                                }
+                            },
+                            "application/vnd.pgrst.object+json": {
+                                "schema": {
+                                    "items": {
+                                        "$ref": "#/components/schemas/networks"
+                                    },
+                                    "type": "array"
+                                }
+                            },
+                            "text/csv": {
+                                "schema": {
+                                    "items": {
+                                        "$ref": "#/components/schemas/networks"
+                                    },
+                                    "type": "array"
+                                }
+                            }
+                        }
+                    },
+                    "206": {
+                        "description": "Partial Content"
+                    }
+                },
+                "summary": "Supported blockchain networks (Pocket mainnet, testnet, etc.)",
+                "tags": [
+                    "networks"
+                ]
+            },
+            "post": {
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/select"
+                    },
+                    {
+                        "$ref": "#/components/parameters/preferPost"
+                    }
+                ],
+                "requestBody": {
+                    "$ref": "#/components/requestBodies/networks"
+                },
+                "responses": {
+                    "201": {
+                        "description": "Created"
+                    }
+                },
+                "summary": "Supported blockchain networks (Pocket mainnet, testnet, etc.)",
+                "tags": [
+                    "networks"
+                ]
+            },
+            "delete": {
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/rowFilter.networks.network_id"
+                    },
+                    {
+                        "$ref": "#/components/parameters/preferReturn"
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    }
+                },
+                "summary": "Supported blockchain networks (Pocket mainnet, testnet, etc.)",
+                "tags": [
+                    "networks"
+                ]
+            },
+            "patch": {
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/rowFilter.networks.network_id"
+                    },
+                    {
+                        "$ref": "#/components/parameters/preferReturn"
+                    }
+                ],
+                "requestBody": {
+                    "$ref": "#/components/requestBodies/networks"
+                },
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    }
+                },
+                "summary": "Supported blockchain networks (Pocket mainnet, testnet, etc.)",
+                "tags": [
+                    "networks"
+                ]
+            }
+        },
+        "/service_endpoints": {
+            "get": {
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/rowFilter.service_endpoints.endpoint_id"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.service_endpoints.service_id"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.service_endpoints.endpoint_type"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.service_endpoints.created_at"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.service_endpoints.updated_at"
+                    },
+                    {
+                        "$ref": "#/components/parameters/select"
+                    },
+                    {
+                        "$ref": "#/components/parameters/order"
+                    },
+                    {
+                        "$ref": "#/components/parameters/range"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rangeUnit"
+                    },
+                    {
+                        "$ref": "#/components/parameters/offset"
+                    },
+                    {
+                        "$ref": "#/components/parameters/limit"
+                    },
+                    {
+                        "$ref": "#/components/parameters/preferCount"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "items": {
+                                        "$ref": "#/components/schemas/service_endpoints"
+                                    },
+                                    "type": "array"
+                                }
+                            },
+                            "application/vnd.pgrst.object+json;nulls=stripped": {
+                                "schema": {
+                                    "items": {
+                                        "$ref": "#/components/schemas/service_endpoints"
+                                    },
+                                    "type": "array"
+                                }
+                            },
+                            "application/vnd.pgrst.object+json": {
+                                "schema": {
+                                    "items": {
+                                        "$ref": "#/components/schemas/service_endpoints"
+                                    },
+                                    "type": "array"
+                                }
+                            },
+                            "text/csv": {
+                                "schema": {
+                                    "items": {
+                                        "$ref": "#/components/schemas/service_endpoints"
+                                    },
+                                    "type": "array"
+                                }
+                            }
+                        }
+                    },
+                    "206": {
+                        "description": "Partial Content"
+                    }
+                },
+                "summary": "Available endpoint types for each service",
+                "tags": [
+                    "service_endpoints"
+                ]
+            },
+            "post": {
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/select"
+                    },
+                    {
+                        "$ref": "#/components/parameters/preferPost"
+                    }
+                ],
+                "requestBody": {
+                    "$ref": "#/components/requestBodies/service_endpoints"
+                },
+                "responses": {
+                    "201": {
+                        "description": "Created"
+                    }
+                },
+                "summary": "Available endpoint types for each service",
+                "tags": [
+                    "service_endpoints"
+                ]
+            },
+            "delete": {
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/rowFilter.service_endpoints.endpoint_id"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.service_endpoints.service_id"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.service_endpoints.endpoint_type"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.service_endpoints.created_at"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.service_endpoints.updated_at"
+                    },
+                    {
+                        "$ref": "#/components/parameters/preferReturn"
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    }
+                },
+                "summary": "Available endpoint types for each service",
+                "tags": [
+                    "service_endpoints"
+                ]
+            },
+            "patch": {
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/rowFilter.service_endpoints.endpoint_id"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.service_endpoints.service_id"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.service_endpoints.endpoint_type"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.service_endpoints.created_at"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.service_endpoints.updated_at"
+                    },
+                    {
+                        "$ref": "#/components/parameters/preferReturn"
+                    }
+                ],
+                "requestBody": {
+                    "$ref": "#/components/requestBodies/service_endpoints"
+                },
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    }
+                },
+                "summary": "Available endpoint types for each service",
+                "tags": [
+                    "service_endpoints"
+                ]
+            }
+        }
+    },
+    "externalDocs": {
+        "description": "PostgREST Documentation",
+        "url": "https://postgrest.org/en/v12.0/api.html"
+    },
+    "servers": [
+        {
+            "url": "http://localhost:3000"
+        }
+    ],
+    "components": {
+        "parameters": {
+            "preferParams": {
+                "name": "Prefer",
+                "description": "Preference",
+                "required": false,
+                "in": "header",
+                "schema": {
+                    "type": "string",
+                    "enum": [
+                        "params=single-object"
+                    ]
+                }
+            },
+            "preferReturn": {
+                "name": "Prefer",
+                "description": "Preference",
+                "required": false,
+                "in": "header",
+                "schema": {
+                    "type": "string",
+                    "enum": [
+                        "return=representation",
+                        "return=minimal",
+                        "return=none"
+                    ]
+                }
+            },
+            "preferCount": {
+                "name": "Prefer",
+                "description": "Preference",
+                "required": false,
+                "in": "header",
+                "schema": {
+                    "type": "string",
+                    "enum": [
+                        "count=none"
+                    ]
+                }
+            },
+            "preferPost": {
+                "name": "Prefer",
+                "description": "Preference",
+                "required": false,
+                "in": "header",
+                "schema": {
+                    "type": "string",
+                    "enum": [
+                        "return=representation",
+                        "return=minimal",
+                        "return=none",
+                        "resolution=ignore-duplicates",
+                        "resolution=merge-duplicates"
+                    ]
+                }
+            },
+            "select": {
+                "name": "select",
+                "description": "Filtering Columns",
+                "required": false,
+                "in": "query",
+                "schema": {
+                    "type": "string"
+                }
+            },
+            "on_conflict": {
+                "name": "on_conflict",
+                "description": "On Conflict",
+                "required": false,
+                "in": "query",
+                "schema": {
+                    "type": "string"
+                }
+            },
+            "order": {
+                "name": "order",
+                "description": "Ordering",
+                "required": false,
+                "in": "query",
+                "schema": {
+                    "type": "string"
+                }
+            },
+            "range": {
+                "name": "Range",
+                "description": "Limiting and Pagination",
+                "required": false,
+                "in": "header",
+                "schema": {
+                    "type": "string"
+                }
+            },
+            "rangeUnit": {
+                "name": "Range-Unit",
+                "description": "Limiting and Pagination",
+                "required": false,
+                "in": "header",
+                "schema": {
+                    "type": "string",
+                    "default": "items"
+                }
+            },
+            "offset": {
+                "name": "offset",
+                "description": "Limiting and Pagination",
+                "required": false,
+                "in": "query",
+                "schema": {
+                    "type": "string"
+                }
+            },
+            "limit": {
+                "name": "limit",
+                "description": "Limiting and Pagination",
+                "required": false,
+                "in": "query",
+                "schema": {
+                    "type": "string"
+                }
+            },
+            "rowFilter.service_fallbacks.service_fallback_id": {
+                "name": "service_fallback_id",
+                "required": false,
+                "in": "query",
+                "schema": {
+                    "type": "string",
+                    "format": "integer"
+                }
+            },
+            "rowFilter.service_fallbacks.service_id": {
+                "name": "service_id",
+                "required": false,
+                "in": "query",
+                "schema": {
+                    "type": "string",
+                    "format": "character varying"
+                }
+            },
+            "rowFilter.service_fallbacks.fallback_url": {
+                "name": "fallback_url",
+                "required": false,
+                "in": "query",
+                "schema": {
+                    "type": "string",
+                    "format": "character varying"
+                }
+            },
+            "rowFilter.service_fallbacks.created_at": {
+                "name": "created_at",
+                "required": false,
+                "in": "query",
+                "schema": {
+                    "type": "string",
+                    "format": "timestamp with time zone"
+                }
+            },
+            "rowFilter.service_fallbacks.updated_at": {
+                "name": "updated_at",
+                "required": false,
+                "in": "query",
+                "schema": {
+                    "type": "string",
+                    "format": "timestamp with time zone"
+                }
+            },
+            "rowFilter.portal_plans.portal_plan_type": {
+                "name": "portal_plan_type",
+                "required": false,
+                "in": "query",
+                "schema": {
+                    "type": "string",
+                    "format": "character varying"
+                }
+            },
+            "rowFilter.portal_plans.portal_plan_type_description": {
+                "name": "portal_plan_type_description",
+                "required": false,
+                "in": "query",
+                "schema": {
+                    "type": "string",
+                    "format": "character varying"
+                }
+            },
+            "rowFilter.portal_plans.plan_usage_limit": {
+                "name": "plan_usage_limit",
+                "description": "Maximum usage allowed within the interval",
+                "required": false,
+                "in": "query",
+                "schema": {
+                    "type": "string",
+                    "format": "integer"
+                }
+            },
+            "rowFilter.portal_plans.plan_usage_limit_interval": {
+                "name": "plan_usage_limit_interval",
+                "required": false,
+                "in": "query",
+                "schema": {
+                    "type": "string",
+                    "format": "public.plan_interval"
+                }
+            },
+            "rowFilter.portal_plans.plan_rate_limit_rps": {
+                "name": "plan_rate_limit_rps",
+                "description": "Rate limit in requests per second",
+                "required": false,
+                "in": "query",
+                "schema": {
+                    "type": "string",
+                    "format": "integer"
+                }
+            },
+            "rowFilter.portal_plans.plan_application_limit": {
+                "name": "plan_application_limit",
+                "required": false,
+                "in": "query",
+                "schema": {
+                    "type": "string",
+                    "format": "integer"
+                }
+            },
+            "rowFilter.services.service_id": {
+                "name": "service_id",
+                "required": false,
+                "in": "query",
+                "schema": {
+                    "type": "string",
+                    "format": "character varying"
+                }
+            },
+            "rowFilter.services.service_name": {
+                "name": "service_name",
+                "required": false,
+                "in": "query",
+                "schema": {
+                    "type": "string",
+                    "format": "character varying"
+                }
+            },
+            "rowFilter.services.compute_units_per_relay": {
+                "name": "compute_units_per_relay",
+                "description": "Cost in compute units for each relay",
+                "required": false,
+                "in": "query",
+                "schema": {
+                    "type": "string",
+                    "format": "integer"
+                }
+            },
+            "rowFilter.services.service_domains": {
+                "name": "service_domains",
+                "description": "Valid domains for this service",
+                "required": false,
+                "in": "query",
+                "schema": {
+                    "type": "string",
+                    "format": "character varying[]"
+                }
+            },
+            "rowFilter.services.service_owner_address": {
+                "name": "service_owner_address",
+                "required": false,
+                "in": "query",
+                "schema": {
+                    "type": "string",
+                    "format": "character varying"
+                }
+            },
+            "rowFilter.services.network_id": {
+                "name": "network_id",
+                "required": false,
+                "in": "query",
+                "schema": {
+                    "type": "string",
+                    "format": "character varying"
+                }
+            },
+            "rowFilter.services.active": {
+                "name": "active",
+                "required": false,
+                "in": "query",
+                "schema": {
+                    "type": "string",
+                    "format": "boolean"
+                }
+            },
+            "rowFilter.services.quality_fallback_enabled": {
+                "name": "quality_fallback_enabled",
+                "required": false,
+                "in": "query",
+                "schema": {
+                    "type": "string",
+                    "format": "boolean"
+                }
+            },
+            "rowFilter.services.hard_fallback_enabled": {
+                "name": "hard_fallback_enabled",
+                "required": false,
+                "in": "query",
+                "schema": {
+                    "type": "string",
+                    "format": "boolean"
+                }
+            },
+            "rowFilter.services.svg_icon": {
+                "name": "svg_icon",
+                "required": false,
+                "in": "query",
+                "schema": {
+                    "type": "string",
+                    "format": "text"
+                }
+            },
+            "rowFilter.services.deleted_at": {
+                "name": "deleted_at",
+                "required": false,
+                "in": "query",
+                "schema": {
+                    "type": "string",
+                    "format": "timestamp with time zone"
+                }
+            },
+            "rowFilter.services.created_at": {
+                "name": "created_at",
+                "required": false,
+                "in": "query",
+                "schema": {
+                    "type": "string",
+                    "format": "timestamp with time zone"
+                }
+            },
+            "rowFilter.services.updated_at": {
+                "name": "updated_at",
+                "required": false,
+                "in": "query",
+                "schema": {
+                    "type": "string",
+                    "format": "timestamp with time zone"
+                }
+            },
+            "rowFilter.networks.network_id": {
+                "name": "network_id",
+                "required": false,
+                "in": "query",
+                "schema": {
+                    "type": "string",
+                    "format": "character varying"
+                }
+            },
+            "rowFilter.service_endpoints.endpoint_id": {
+                "name": "endpoint_id",
+                "required": false,
+                "in": "query",
+                "schema": {
+                    "type": "string",
+                    "format": "integer"
+                }
+            },
+            "rowFilter.service_endpoints.service_id": {
+                "name": "service_id",
+                "required": false,
+                "in": "query",
+                "schema": {
+                    "type": "string",
+                    "format": "character varying"
+                }
+            },
+            "rowFilter.service_endpoints.endpoint_type": {
+                "name": "endpoint_type",
+                "required": false,
+                "in": "query",
+                "schema": {
+                    "type": "string",
+                    "format": "public.endpoint_type"
+                }
+            },
+            "rowFilter.service_endpoints.created_at": {
+                "name": "created_at",
+                "required": false,
+                "in": "query",
+                "schema": {
+                    "type": "string",
+                    "format": "timestamp with time zone"
+                }
+            },
+            "rowFilter.service_endpoints.updated_at": {
+                "name": "updated_at",
+                "required": false,
+                "in": "query",
+                "schema": {
+                    "type": "string",
+                    "format": "timestamp with time zone"
+                }
+            }
+        },
+        "requestBodies": {
+            "networks": {
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "$ref": "#/components/schemas/networks"
+                        }
+                    },
+                    "application/vnd.pgrst.object+json;nulls=stripped": {
+                        "schema": {
+                            "$ref": "#/components/schemas/networks"
+                        }
+                    },
+                    "application/vnd.pgrst.object+json": {
+                        "schema": {
+                            "$ref": "#/components/schemas/networks"
+                        }
+                    },
+                    "text/csv": {
+                        "schema": {
+                            "$ref": "#/components/schemas/networks"
+                        }
+                    }
+                },
+                "description": "networks"
+            },
+            "service_endpoints": {
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "$ref": "#/components/schemas/service_endpoints"
+                        }
+                    },
+                    "application/vnd.pgrst.object+json;nulls=stripped": {
+                        "schema": {
+                            "$ref": "#/components/schemas/service_endpoints"
+                        }
+                    },
+                    "application/vnd.pgrst.object+json": {
+                        "schema": {
+                            "$ref": "#/components/schemas/service_endpoints"
+                        }
+                    },
+                    "text/csv": {
+                        "schema": {
+                            "$ref": "#/components/schemas/service_endpoints"
+                        }
+                    }
+                },
+                "description": "service_endpoints"
+            },
+            "service_fallbacks": {
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "$ref": "#/components/schemas/service_fallbacks"
+                        }
+                    },
+                    "application/vnd.pgrst.object+json;nulls=stripped": {
+                        "schema": {
+                            "$ref": "#/components/schemas/service_fallbacks"
+                        }
+                    },
+                    "application/vnd.pgrst.object+json": {
+                        "schema": {
+                            "$ref": "#/components/schemas/service_fallbacks"
+                        }
+                    },
+                    "text/csv": {
+                        "schema": {
+                            "$ref": "#/components/schemas/service_fallbacks"
+                        }
+                    }
+                },
+                "description": "service_fallbacks"
+            },
+            "portal_plans": {
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "$ref": "#/components/schemas/portal_plans"
+                        }
+                    },
+                    "application/vnd.pgrst.object+json;nulls=stripped": {
+                        "schema": {
+                            "$ref": "#/components/schemas/portal_plans"
+                        }
+                    },
+                    "application/vnd.pgrst.object+json": {
+                        "schema": {
+                            "$ref": "#/components/schemas/portal_plans"
+                        }
+                    },
+                    "text/csv": {
+                        "schema": {
+                            "$ref": "#/components/schemas/portal_plans"
+                        }
+                    }
+                },
+                "description": "portal_plans"
+            },
+            "services": {
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "$ref": "#/components/schemas/services"
+                        }
+                    },
+                    "application/vnd.pgrst.object+json;nulls=stripped": {
+                        "schema": {
+                            "$ref": "#/components/schemas/services"
+                        }
+                    },
+                    "application/vnd.pgrst.object+json": {
+                        "schema": {
+                            "$ref": "#/components/schemas/services"
+                        }
+                    },
+                    "text/csv": {
+                        "schema": {
+                            "$ref": "#/components/schemas/services"
+                        }
+                    }
+                },
+                "description": "services"
+            }
+        },
+        "schemas": {
+            "service_fallbacks": {
+                "description": "Fallback URLs for services when primary endpoints fail",
+                "required": [
+                    "service_fallback_id",
+                    "service_id",
+                    "fallback_url"
+                ],
+                "properties": {
+                    "service_fallback_id": {
+                        "description": "Note:\nThis is a Primary Key.<pk/>",
+                        "format": "integer",
+                        "type": "integer"
+                    },
+                    "service_id": {
+                        "description": "Note:\nThis is a Foreign Key to `services.service_id`.<fk table='services' column='service_id'/>",
+                        "format": "character varying",
+                        "maxLength": 42,
+                        "type": "string"
+                    },
+                    "fallback_url": {
+                        "format": "character varying",
+                        "maxLength": 255,
+                        "type": "string"
+                    },
+                    "created_at": {
+                        "default": "CURRENT_TIMESTAMP",
+                        "format": "timestamp with time zone",
+                        "type": "string"
+                    },
+                    "updated_at": {
+                        "default": "CURRENT_TIMESTAMP",
+                        "format": "timestamp with time zone",
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "portal_plans": {
+                "description": "Available subscription plans for Portal Accounts",
+                "required": [
+                    "portal_plan_type"
+                ],
+                "properties": {
+                    "portal_plan_type": {
+                        "description": "Note:\nThis is a Primary Key.<pk/>",
+                        "format": "character varying",
+                        "maxLength": 42,
+                        "type": "string"
+                    },
+                    "portal_plan_type_description": {
+                        "format": "character varying",
+                        "maxLength": 420,
+                        "type": "string"
+                    },
+                    "plan_usage_limit": {
+                        "description": "Maximum usage allowed within the interval",
+                        "format": "integer",
+                        "type": "integer"
+                    },
+                    "plan_usage_limit_interval": {
+                        "enum": [
+                            "day",
+                            "month",
+                            "year"
+                        ],
+                        "format": "public.plan_interval",
+                        "type": "string"
+                    },
+                    "plan_rate_limit_rps": {
+                        "description": "Rate limit in requests per second",
+                        "format": "integer",
+                        "type": "integer"
+                    },
+                    "plan_application_limit": {
+                        "format": "integer",
+                        "type": "integer"
+                    }
+                },
+                "type": "object"
+            },
+            "services": {
+                "description": "Supported blockchain services from the Pocket Network",
+                "required": [
+                    "service_id",
+                    "service_name",
+                    "service_domains"
+                ],
+                "properties": {
+                    "service_id": {
+                        "description": "Note:\nThis is a Primary Key.<pk/>",
+                        "format": "character varying",
+                        "maxLength": 42,
+                        "type": "string"
+                    },
+                    "service_name": {
+                        "format": "character varying",
+                        "maxLength": 169,
+                        "type": "string"
+                    },
+                    "compute_units_per_relay": {
+                        "description": "Cost in compute units for each relay",
+                        "format": "integer",
+                        "type": "integer"
+                    },
+                    "service_domains": {
+                        "description": "Valid domains for this service",
+                        "format": "character varying[]",
+                        "items": {
+                            "type": "string"
+                        },
+                        "type": "array"
+                    },
+                    "service_owner_address": {
+                        "description": "Note:\nThis is a Foreign Key to `gateways.gateway_address`.<fk table='gateways' column='gateway_address'/>",
+                        "format": "character varying",
+                        "maxLength": 50,
+                        "type": "string"
+                    },
+                    "network_id": {
+                        "description": "Note:\nThis is a Foreign Key to `networks.network_id`.<fk table='networks' column='network_id'/>",
+                        "format": "character varying",
+                        "maxLength": 42,
+                        "type": "string"
+                    },
+                    "active": {
+                        "default": false,
+                        
+                        "type": "boolean"
+                    },
+                    "quality_fallback_enabled": {
+                        "default": false,
+                        
+                        "type": "boolean"
+                    },
+                    "hard_fallback_enabled": {
+                        "default": false,
+                        
+                        "type": "boolean"
+                    },
+                    "svg_icon": {
+                        "format": "text",
+                        "type": "string"
+                    },
+                    "deleted_at": {
+                        "format": "timestamp with time zone",
+                        "type": "string"
+                    },
+                    "created_at": {
+                        "default": "CURRENT_TIMESTAMP",
+                        "format": "timestamp with time zone",
+                        "type": "string"
+                    },
+                    "updated_at": {
+                        "default": "CURRENT_TIMESTAMP",
+                        "format": "timestamp with time zone",
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "networks": {
+                "description": "Supported blockchain networks (Pocket mainnet, testnet, etc.)",
+                "required": [
+                    "network_id"
+                ],
+                "properties": {
+                    "network_id": {
+                        "description": "Note:\nThis is a Primary Key.<pk/>",
+                        "format": "character varying",
+                        "maxLength": 42,
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "service_endpoints": {
+                "description": "Available endpoint types for each service",
+                "required": [
+                    "endpoint_id",
+                    "service_id"
+                ],
+                "properties": {
+                    "endpoint_id": {
+                        "description": "Note:\nThis is a Primary Key.<pk/>",
+                        "format": "integer",
+                        "type": "integer"
+                    },
+                    "service_id": {
+                        "description": "Note:\nThis is a Foreign Key to `services.service_id`.<fk table='services' column='service_id'/>",
+                        "format": "character varying",
+                        "maxLength": 42,
+                        "type": "string"
+                    },
+                    "endpoint_type": {
+                        "enum": [
+                            "cometBFT",
+                            "cosmos",
+                            "REST",
+                            "JSON-RPC",
+                            "WSS",
+                            "gRPC"
+                        ],
+                        "format": "public.endpoint_type",
+                        "type": "string"
+                    },
+                    "created_at": {
+                        "default": "CURRENT_TIMESTAMP",
+                        "format": "timestamp with time zone",
+                        "type": "string"
+                    },
+                    "updated_at": {
+                        "default": "CURRENT_TIMESTAMP",
+                        "format": "timestamp with time zone",
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            }
+        }
+    }
+}

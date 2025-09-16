@@ -59,7 +59,7 @@ make | grep --line-buffered "portal"
 
 ### `make` Targets
 
-- `make portal_db_up` creates the Portal DB with the base schema (`./init/001_schema.sql`) and runs the Portal DB on port `:5435`.
+- `make portal_db_up` creates the Portal DB with the base schema (`./schema/001_schema.sql`) and runs the Portal DB on port `:5435`.
 - `make portal_db_down` stops running the local Portal DB.
 - `make portal_db_env` creates and inits the Database, and helps set up the local development environment.
 - `make portal_db_clean` stops the local Portal DB and deletes the database and drops the schema.
