@@ -41,6 +41,7 @@ const (
 
 	// Latency metrics (currently HTTP only)
 	endpointLatencyMetric       = "shannon_endpoint_latency_seconds"
+	requestLatencyMetric        = "shannon_request_latency_seconds"
 	relayMinerErrorsTotalMetric = "shannon_relay_miner_errors_total"
 
 	// The default value for a domain if it cannot be extracted from an endpoint URL
@@ -77,6 +78,7 @@ func init() {
 
 	// Latency metrics
 	prometheus.MustRegister(endpointLatency)
+	prometheus.MustRegister(requestLatency)
 	prometheus.MustRegister(endpointResponseSize)
 	prometheus.MustRegister(relayMinerErrorsTotal)
 }
@@ -304,6 +306,29 @@ var (
 			Subsystem: pathProcess,
 			Name:      endpointLatencyMetric,
 			Help:      "Histogram of endpoint response latencies in seconds",
+			Buckets:   defaultBuckets,
+		},
+		[]string{"service_id", "endpoint_domain", "success"},
+	)
+
+	// requestLatency tracks the latency distribution of HTTP request processing.
+	// Labels:
+	//   - service_id: Target service identifier
+	//   - endpoint_domain: Effective TLD+1 domain extracted from endpoint URL
+	//   - success: Whether the request was successful (true if at least one endpoint had no error)
+	//
+	// This histogram measures the time spent specifically in the SendHTTPRelay call,
+	// capturing the network round-trip time and HTTP processing latency.
+	//
+	// Use to analyze:
+	//   - HTTP request processing time percentiles by service and domain
+	//   - Network latency patterns across different endpoint domains
+	//   - Impact of errors on request processing times
+	requestLatency = prometheus.NewHistogramVec(
+		prometheus.HistogramOpts{
+			Subsystem: pathProcess,
+			Name:      requestLatencyMetric,
+			Help:      "Histogram of HTTP request processing latencies in seconds",
 			Buckets:   defaultBuckets,
 		},
 		[]string{"service_id", "endpoint_domain", "success"},
@@ -746,13 +771,24 @@ func processEndpointLatency(
 			continue
 		}
 
-		// Record latency
+		// Record endpoint latency
 		endpointLatency.With(
 			prometheus.Labels{
 				"service_id":      serviceID,
 				"success":         fmt.Sprintf("%t", success),
 				"endpoint_domain": endpointDomain,
 			}).Observe(latencySeconds)
+
+		// Record request latency (from requestLatency field in observation)
+		requestLatencySeconds := float64(endpointObs.GetEndpointRequestLatency())
+		if requestLatencySeconds > 0 {
+			requestLatency.With(
+				prometheus.Labels{
+					"service_id":      serviceID,
+					"success":         fmt.Sprintf("%t", success),
+					"endpoint_domain": endpointDomain,
+				}).Observe(requestLatencySeconds)
+		}
 
 		// Record response size
 		responseSize := float64(endpointObs.GetEndpointBackendServiceHttpResponsePayloadSize())

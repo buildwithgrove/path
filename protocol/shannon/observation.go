@@ -108,6 +108,7 @@ func buildEndpointSuccessObservation(
 	logger polylog.Logger,
 	endpoint endpoint,
 	endpointQueryTimestamp time.Time,
+	endpointRequestLatency time.Duration,
 	endpointResponseTimestamp time.Time,
 	endpointResponse *protocol.Response,
 	relayMinerError *protocolobservations.ShannonRelayMinerError,
@@ -118,6 +119,7 @@ func buildEndpointSuccessObservation(
 	// Update the observation with endpoint query and response timestamps.
 	endpointObs.EndpointQueryTimestamp = timestamppb.New(endpointQueryTimestamp)
 	endpointObs.EndpointResponseTimestamp = timestamppb.New(endpointResponseTimestamp)
+	endpointObs.EndpointRequestLatency = float32(endpointRequestLatency.Seconds())
 	// Track RelayMiner error.
 	endpointObs.RelayMinerError = relayMinerError
 
@@ -133,6 +135,7 @@ func buildEndpointErrorObservation(
 	logger polylog.Logger,
 	endpoint endpoint,
 	endpointQueryTimestamp time.Time,
+	endpointRequestLatency time.Duration,
 	endpointResponseTimestamp time.Time,
 	errorType protocolobservations.ShannonEndpointErrorType,
 	errorDetails string,
@@ -145,6 +148,7 @@ func buildEndpointErrorObservation(
 	// Update the observation with endpoint query/response timestamps.
 	endpointObs.EndpointQueryTimestamp = timestamppb.New(endpointQueryTimestamp)
 	endpointObs.EndpointResponseTimestamp = timestamppb.New(endpointResponseTimestamp)
+	endpointObs.EndpointRequestLatency = float32(endpointRequestLatency.Seconds())
 
 	// Update the observation with error details and any resulting sanctions
 	endpointObs.ErrorType = &errorType

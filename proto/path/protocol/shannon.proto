@@ -332,6 +332,10 @@ message ShannonEndpointObservation {
   //
   // Tracks whether the endpoint is a fallback endpoint.
   bool is_fallback_endpoint = 16;
+
+  // Latency in seconds between sending the request and receiving the response.
+  // Only set if the endpoint did not timeout.
+  float endpoint_request_latency = 17;
 }
 
 // ShannonObservationsList provides a container for multiple ShannonRequestObservations,

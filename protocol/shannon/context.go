@@ -95,6 +95,9 @@ type requestContext struct {
 
 	// fallbackEndpoints is used to retrieve a fallback endpoint by an endpoint address.
 	fallbackEndpoints map[protocol.EndpointAddr]endpoint
+
+	// requestLatency tracks the latency of the SendHTTPRelay call specifically
+	requestLatency time.Duration
 }
 
 // HandleServiceRequest:
@@ -829,6 +832,7 @@ func (rc *requestContext) handleEndpointError(
 		rc.logger,
 		selectedEndpoint,
 		endpointQueryTime,
+		rc.getRequestLatency(),
 		time.Now(), // Timestamp: endpoint query completed.
 		endpointErrorType,
 		fmt.Sprintf("relay error: %v", endpointErr),
@@ -865,6 +869,7 @@ func (rc *requestContext) handleEndpointSuccess(
 		rc.logger,
 		selectedEndpoint,
 		endpointQueryTime,
+		rc.getRequestLatency(),
 		time.Now(), // Timestamp: endpoint query completed.
 		endpointResponse,
 		rc.currentRelayMinerError, // Use RelayMinerError data from request context
@@ -893,7 +898,8 @@ func (rc *requestContext) sendHTTPRequest(
 	// Build headers including RPCType header
 	headers := buildHeaders(payload)
 
-	// Send the HTTP request
+	// Capture query latency specifically for SendHTTPRelay
+	queryStartTime := time.Now()
 	httpResponseBz, httpStatusCode, err := rc.httpClient.SendHTTPRelay(
 		ctxWithTimeout,
 		rc.logger,
@@ -902,6 +908,10 @@ func (rc *requestContext) sendHTTPRequest(
 		requestData,
 		headers,
 	)
+	requestLatency := time.Since(queryStartTime)
+
+	// Store query latency in request context for observations
+	rc.storeRequestLatency(requestLatency)
 
 	if err != nil {
 		// Endpoint failed to respond before the timeout expires
@@ -914,6 +924,16 @@ func (rc *requestContext) sendHTTPRequest(
 	}
 
 	return httpResponseBz, httpStatusCode, nil
+}
+
+// storeRequestLatency stores the request latency for inclusion in observations
+func (rc *requestContext) storeRequestLatency(latency time.Duration) {
+	rc.requestLatency = latency
+}
+
+// getRequestLatency returns the stored request latency
+func (rc *requestContext) getRequestLatency() time.Duration {
+	return rc.requestLatency
 }
 
 // prepareURLFromPayload constructs the URL for requests, including optional path.
