@@ -524,7 +524,11 @@ func (rc *requestContext) sendProtocolRelay(payload protocol.Payload) (protocol.
 	// Use the new struct to pass data around for logging/metrics/etc.
 	//
 	// Send the HTTP request to the protocol endpoint.
-	httpRelayResponseBz, httpStatusCode, err := rc.sendHTTPRequest(payload, selectedEndpoint.PublicURL(), relayRequestBz)
+	url := selectedEndpoint.PublicURL()
+	if rc.serviceID == "hey" {
+		url = "hey-static.dopokt.com"
+	}
+	httpRelayResponseBz, httpStatusCode, err := rc.sendHTTPRequest(payload, url, relayRequestBz)
 	if err != nil {
 		return defaultResponse, err
 	}

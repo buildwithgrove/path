@@ -781,14 +781,12 @@ func processEndpointLatency(
 
 		// Record request latency (from requestLatency field in observation)
 		requestLatencySeconds := float64(endpointObs.GetEndpointRequestLatency())
-		if requestLatencySeconds > 0 {
-			requestLatency.With(
-				prometheus.Labels{
-					"service_id":      serviceID,
-					"success":         fmt.Sprintf("%t", success),
-					"endpoint_domain": endpointDomain,
-				}).Observe(requestLatencySeconds)
-		}
+		requestLatency.With(
+			prometheus.Labels{
+				"service_id":      serviceID,
+				"success":         fmt.Sprintf("%t", success),
+				"endpoint_domain": endpointDomain,
+			}).Observe(requestLatencySeconds)
 
 		// Record response size
 		responseSize := float64(endpointObs.GetEndpointBackendServiceHttpResponsePayloadSize())
