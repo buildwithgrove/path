@@ -7,6 +7,7 @@
 -- ============================================================================
 
 -- Designates the API Types that we support. We can expand this should new interfaces be introduced.
+-- Also used as a mapping for the types of QoS that should be attached to a service.
 CREATE TYPE endpoint_type AS ENUM ('cometBFT', 'cosmos', 'REST', 'JSON-RPC', 'WSS', 'gRPC');
 
 -- Creates intervals that plans can be evaluated on, also enables users to set their plan limits
@@ -269,6 +270,7 @@ CREATE TABLE services (
     active BOOLEAN DEFAULT FALSE,
     quality_fallback_enabled BOOLEAN DEFAULT FALSE,
     hard_fallback_enabled BOOLEAN DEFAULT FALSE,
+    svg_icon TEXT, 
     deleted_at TIMESTAMPTZ,
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
