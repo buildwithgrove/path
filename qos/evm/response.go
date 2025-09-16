@@ -106,6 +106,18 @@ func unmarshalResponse(
 		return getGenericJSONRPCErrResponse(logger, jsonrpcReq.ID, data, err), err
 	}
 
+	// The parsed JSONRPC response contains an error:
+	// - Log the request and the response
+	// - Used to track potential endpoint quality issues.
+	if jsonrpcResponseErr := jsonrpcResponse.Error; jsonrpcResponseErr != nil {
+		logger.With(
+			"jsonrpc_request", jsonrpcReq,
+			"jsonrpc_response_error_code", jsonrpcResponseErr.Code,
+			"jsonrpc_response_error_message", jsonrpcResponseErr.Message,
+			"endpoint_addr", endpointAddr,
+		).Error().Msg("❌ Endpoint returned JSONRPC response with error")
+	}
+
 	// Unmarshal the JSONRPC response into a method-specific response.
 	unmarshaller, found := methodResponseMappings[jsonrpcReq.Method]
 	if found {
