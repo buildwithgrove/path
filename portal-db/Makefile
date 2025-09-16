@@ -31,7 +31,7 @@ setup-db: ## Set up database roles and permissions for API access
 	@echo "🔧 Setting up database roles and permissions..."
 	@if ! docker ps | grep -q path-portal-db; then \
 		echo "❌ Portal DB is not running. Please start it first:"; \
-		echo "   cd .. && make portal_db_up"; \
+		echo "   make portal_db_up"; \
 		exit 1; \
 	fi
 	@echo "   Applying API database setup..."

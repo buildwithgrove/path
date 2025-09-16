@@ -112,12 +112,13 @@ This PostgREST API provides:
 
 3. **Start the API services**:
    ```bash
-   make up
+   make postgrest-up
    ```
 
 4. **Verify the setup**:
    ```bash
-   make test-api
+   # Test API endpoint
+   curl http://localhost:3000/networks
    ```
 
 ### Services URLs
@@ -516,6 +517,16 @@ func authenticatedExample() {
 
 **For complete Go SDK documentation, see [SDK README](../sdk/go/README.md)**
 
+<!-- TODO_IMPLEMENT: Add TypeScript client generation -->
+<!-- The PostgREST API would benefit from a TypeScript/JavaScript SDK for frontend -->
+<!-- and Node.js applications. This should use the same OpenAPI spec to generate -->
+<!-- a type-safe TypeScript client similar to the Go SDK. Consider using: -->
+<!-- - @apidevtools/swagger-parser for OpenAPI parsing -->
+<!-- - @openapitools/openapi-generator-cli for TS client generation -->
+<!-- - or a custom generator that produces more idiomatic TypeScript -->
+<!-- Target output: sdk/typescript/ directory with npm package -->
+<!-- Priority: Medium - would improve frontend developer experience -->
+
 ## 🔧 Development
 
 ### Development Environment
@@ -523,20 +534,20 @@ func authenticatedExample() {
 Start a full development environment with all services:
 
 ```bash
-make dev  # Starts PostgREST, Swagger UI, and Auth Service
+make postgrest-up  # Starts PostgREST and PostgreSQL services
 ```
 
 ### Available Commands
 
-| Command         | Description                 |
-| --------------- | --------------------------- |
-| `make help`     | Show all available commands |
-| `make up`       | Start API services          |
-| `make down`     | Stop API services           |
-| `make logs`     | Show service logs           |
-| `make status`   | Show service status         |
-| `make test-api` | Test API endpoints          |
-| `make clean`    | Clean up and reset          |
+| Command                | Description                         |
+| ---------------------- | ----------------------------------- |
+| `make postgrest-up`    | Start PostgREST and PostgreSQL      |
+| `make postgrest-down`  | Stop PostgREST and PostgreSQL       |
+| `make postgrest-logs`  | Show service logs                   |
+| `make setup-db`        | Set up database roles and permissions |
+| `make generate-openapi`| Generate OpenAPI specification      |
+| `make generate-sdks`   | Generate Go SDK from OpenAPI spec   |
+| `make generate-all`    | Generate both OpenAPI spec and SDKs |
 
 ### Database Schema Changes
 
@@ -655,6 +666,12 @@ curl -H "Accept: application/openapi+json" \
 - [PostgreSQL Row Level Security](https://www.postgresql.org/docs/current/ddl-rowsecurity.html)
 - [OpenAPI Specification](https://swagger.io/specification/)
 - [JWT.io](https://jwt.io/) - JWT token debugging
+
+<!-- TODO_IMPROVE: Add Swagger UI integration for better API exploration -->
+<!-- TODO_IMPROVE: Add API versioning strategy documentation -->
+<!-- TODO_DOCUMENT: Add troubleshooting guide for common PostgREST configuration issues -->
+<!-- TODO_IMPLEMENT: Add automated API testing with generated SDKs -->
+<!-- TODO_CONSIDERATION: Consider adding GraphQL endpoint alongside REST API -->
 
 ## 🤝 Contributing
 

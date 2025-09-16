@@ -200,7 +200,7 @@ This SDK was generated from the OpenAPI specification served by PostgREST. To re
 make generate-sdks
 
 # Or directly run the script
-cd api/scripts
+cd api/codegen
 ./generate-sdks.sh
 ```
 

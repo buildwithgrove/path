@@ -181,7 +181,7 @@ Using a postgres MCP server is experimental but worth a shot!
    - Favor correctness, readability, and performance best practices in all SQL you produce.
    ```
 
-5. Upload [init/001_schema.sql](init/001_schema.sql) as one of the files to the Claude Project.
+5. Upload [schema/001_schema.sql](schema/001_schema.sql) as one of the files to the Claude Project.
 
 6. Try using it by asking: `How many records are in my database?`
 

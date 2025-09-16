@@ -9,7 +9,7 @@ services:
     ports:
       - "5435:5432"
     volumes:
-      - portal_db_data:/var/lib/postgresql/data
+      - ./tmp/portal_db_data:/var/lib/postgresql/data
       - ./schema:/docker-entrypoint-initdb.d
     healthcheck:
       test: ["CMD", "pg_isready", "-U", "portal_user", "-d", "portal_db"]
@@ -49,6 +49,3 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-
-volumes:
-  portal_db_data:

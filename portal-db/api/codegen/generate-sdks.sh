@@ -3,6 +3,14 @@
 # Generate Go SDK from OpenAPI specification using oapi-codegen
 # This script generates a Go client SDK for the Portal DB API
 
+# TODO_IMPLEMENT: Add TypeScript SDK generation support
+# - Add TypeScript SDK generation alongside Go SDK generation
+# - Use @openapitools/openapi-generator-cli or similar tool
+# - Target output: ../../sdk/typescript/ directory
+# - Should generate: models, client, types, and documentation
+# - Add TypeScript-specific configuration files similar to codegen-*.yaml
+# - Priority: Medium - would significantly improve frontend/Node.js developer experience
+
 set -e
 
 # Configuration
