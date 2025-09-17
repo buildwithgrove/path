@@ -6,12 +6,14 @@ import (
 	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
 
+// TODO_CONSIDERATION(@adshmh): Is there any value in further breaking down error codes here to indicate different failures?
+//
 // newErrResponseInternalErr creates a JSON-RPC error response when an internal error has occurred (e.g. reading HTTP request's body)
 // Marks the error as retryable to allow clients to safely retry their request.
 func newErrResponseInternalErr(requestID jsonrpc.ID, err error) jsonrpc.Response {
 	return jsonrpc.GetErrorResponse(
 		requestID,
-		-32000, // JSON-RPC standard server error code; https://www.jsonrpc.org/historical/json-rpc-2-0.html
+		jsonrpc.ResponseCodeDefaultInternalErr,         // Used to indicate an internal error on PATH/protocol (e.g. failed to read the HTTP request's body)
 		fmt.Sprintf("internal error: %s", err.Error()), // Error Message
 		map[string]string{
 			"error": err.Error(),
@@ -32,8 +34,8 @@ func newErrResponseInternalErr(requestID jsonrpc.ID, err error) jsonrpc.Response
 // The error is marked as permanent since retrying without correcting the request will fail.
 func newErrResponseInvalidRequest(err error, requestID jsonrpc.ID) jsonrpc.Response {
 	return jsonrpc.GetErrorResponse(
-		requestID, // Use request's original ID if present
-		-32000,    // JSON-RPC standard server error code; https://www.jsonrpc.org/historical/json-rpc-2-0.html
+		requestID,                             // Use request's original ID if present
+		jsonrpc.ResponseCodeDefaultBadRequest, // JSON-RPC error code indicating bad user request
 		fmt.Sprintf("invalid request: %s", err.Error()), // Error Message
 		map[string]string{
 			"error": err.Error(),
