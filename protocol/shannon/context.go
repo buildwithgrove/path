@@ -76,6 +76,11 @@ type requestContext struct {
 	selectedEndpoint      endpoint
 	selectedEndpointMutex sync.RWMutex
 
+	// currentRPCType:
+	//   - Tracks the RPC type of the current relay being processed.
+	//   - Set during relay execution and used when building observations.
+	currentRPCType sharedtypes.RPCType
+
 	// requestErrorObservation:
 	//   - Tracks any errors encountered during request processing.
 	requestErrorObservation *protocolobservations.ShannonRequestError
@@ -89,11 +94,6 @@ type requestContext struct {
 	//   - Tracks RelayMinerError data from the current relay response for reporting.
 	//   - Set by trackRelayMinerError method and used when building observations.
 	currentRelayMinerError *protocolobservations.ShannonRelayMinerError
-
-	// currentRPCType:
-	//   - Tracks the RPC type of the current relay being processed.
-	//   - Set during relay execution and used when building observations.
-	currentRPCType sharedtypes.RPCType
 
 	// HTTP client used for sending relay requests to endpoints while also capturing various debug metrics
 	httpClient *pathhttp.HTTPClientWithDebugMetrics
@@ -121,6 +121,11 @@ func (rc *requestContext) HandleServiceRequest(payloads []protocol.Payload) ([]p
 		return []protocol.Response{response}, err
 	}
 
+	// TODO_TECHDEBT: Account for different payloads having different RPC types
+	// OR refactor the single/parallel code flow altogether
+	// Store the current RPC type for use in observations
+	rc.currentRPCType = payloads[0].RPCType
+
 	// For single payload, handle directly without additional overhead.
 	if len(payloads) == 1 {
 		response, err := rc.sendSingleRelay(payloads[0])
@@ -134,9 +139,6 @@ func (rc *requestContext) HandleServiceRequest(payloads []protocol.Payload) ([]p
 // sendSingleRelay handles a single relay request with full error handling and observation tracking.
 // Extracted from original HandleServiceRequest logic for reuse in parallel processing.
 func (rc *requestContext) sendSingleRelay(payload protocol.Payload) (protocol.Response, error) {
-	// Store the current RPC type for use in observations
-	rc.currentRPCType = payload.RPCType
-
 	// Record endpoint query time.
 	endpointQueryTime := time.Now()
 

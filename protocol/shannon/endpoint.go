@@ -88,7 +88,6 @@ func (e fallbackEndpoint) GetURL(rpcType sharedtypes.RPCType) string {
 	return url
 }
 
-
 func (e fallbackEndpoint) WebsocketURL() (string, error) {
 	websocketURL, ok := e.rpcTypeURLs[sharedtypes.RPCType_WEBSOCKET]
 	if !ok {
@@ -155,7 +154,6 @@ func (e protocolEndpoint) PublicURL() string {
 func (e protocolEndpoint) GetURL(_ sharedtypes.RPCType) string {
 	return e.url
 }
-
 
 // WebsocketURL returns the URL of the endpoint.
 func (e protocolEndpoint) WebsocketURL() (string, error) {
