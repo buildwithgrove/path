@@ -378,6 +378,473 @@
                 ]
             }
         },
+        "/applications": {
+            "get": {
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/rowFilter.applications.application_address"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.applications.gateway_address"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.applications.service_id"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.applications.stake_amount"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.applications.stake_denom"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.applications.application_private_key_hex"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.applications.network_id"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.applications.created_at"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.applications.updated_at"
+                    },
+                    {
+                        "$ref": "#/components/parameters/select"
+                    },
+                    {
+                        "$ref": "#/components/parameters/order"
+                    },
+                    {
+                        "$ref": "#/components/parameters/range"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rangeUnit"
+                    },
+                    {
+                        "$ref": "#/components/parameters/offset"
+                    },
+                    {
+                        "$ref": "#/components/parameters/limit"
+                    },
+                    {
+                        "$ref": "#/components/parameters/preferCount"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "items": {
+                                        "$ref": "#/components/schemas/applications"
+                                    },
+                                    "type": "array"
+                                }
+                            },
+                            "application/vnd.pgrst.object+json;nulls=stripped": {
+                                "schema": {
+                                    "items": {
+                                        "$ref": "#/components/schemas/applications"
+                                    },
+                                    "type": "array"
+                                }
+                            },
+                            "application/vnd.pgrst.object+json": {
+                                "schema": {
+                                    "items": {
+                                        "$ref": "#/components/schemas/applications"
+                                    },
+                                    "type": "array"
+                                }
+                            },
+                            "text/csv": {
+                                "schema": {
+                                    "items": {
+                                        "$ref": "#/components/schemas/applications"
+                                    },
+                                    "type": "array"
+                                }
+                            }
+                        }
+                    },
+                    "206": {
+                        "description": "Partial Content"
+                    }
+                },
+                "summary": "Onchain applications for processing relays through the network",
+                "tags": [
+                    "applications"
+                ]
+            },
+            "post": {
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/select"
+                    },
+                    {
+                        "$ref": "#/components/parameters/preferPost"
+                    }
+                ],
+                "requestBody": {
+                    "$ref": "#/components/requestBodies/applications"
+                },
+                "responses": {
+                    "201": {
+                        "description": "Created"
+                    }
+                },
+                "summary": "Onchain applications for processing relays through the network",
+                "tags": [
+                    "applications"
+                ]
+            },
+            "delete": {
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/rowFilter.applications.application_address"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.applications.gateway_address"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.applications.service_id"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.applications.stake_amount"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.applications.stake_denom"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.applications.application_private_key_hex"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.applications.network_id"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.applications.created_at"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.applications.updated_at"
+                    },
+                    {
+                        "$ref": "#/components/parameters/preferReturn"
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    }
+                },
+                "summary": "Onchain applications for processing relays through the network",
+                "tags": [
+                    "applications"
+                ]
+            },
+            "patch": {
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/rowFilter.applications.application_address"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.applications.gateway_address"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.applications.service_id"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.applications.stake_amount"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.applications.stake_denom"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.applications.application_private_key_hex"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.applications.network_id"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.applications.created_at"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.applications.updated_at"
+                    },
+                    {
+                        "$ref": "#/components/parameters/preferReturn"
+                    }
+                ],
+                "requestBody": {
+                    "$ref": "#/components/requestBodies/applications"
+                },
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    }
+                },
+                "summary": "Onchain applications for processing relays through the network",
+                "tags": [
+                    "applications"
+                ]
+            }
+        },
+        "/portal_applications": {
+            "get": {
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/rowFilter.portal_applications.portal_application_id"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.portal_applications.portal_account_id"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.portal_applications.portal_application_name"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.portal_applications.emoji"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.portal_applications.portal_application_user_limit"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.portal_applications.portal_application_user_limit_interval"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.portal_applications.portal_application_user_limit_rps"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.portal_applications.portal_application_description"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.portal_applications.favorite_service_ids"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.portal_applications.secret_key_hash"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.portal_applications.secret_key_required"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.portal_applications.deleted_at"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.portal_applications.created_at"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.portal_applications.updated_at"
+                    },
+                    {
+                        "$ref": "#/components/parameters/select"
+                    },
+                    {
+                        "$ref": "#/components/parameters/order"
+                    },
+                    {
+                        "$ref": "#/components/parameters/range"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rangeUnit"
+                    },
+                    {
+                        "$ref": "#/components/parameters/offset"
+                    },
+                    {
+                        "$ref": "#/components/parameters/limit"
+                    },
+                    {
+                        "$ref": "#/components/parameters/preferCount"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "items": {
+                                        "$ref": "#/components/schemas/portal_applications"
+                                    },
+                                    "type": "array"
+                                }
+                            },
+                            "application/vnd.pgrst.object+json;nulls=stripped": {
+                                "schema": {
+                                    "items": {
+                                        "$ref": "#/components/schemas/portal_applications"
+                                    },
+                                    "type": "array"
+                                }
+                            },
+                            "application/vnd.pgrst.object+json": {
+                                "schema": {
+                                    "items": {
+                                        "$ref": "#/components/schemas/portal_applications"
+                                    },
+                                    "type": "array"
+                                }
+                            },
+                            "text/csv": {
+                                "schema": {
+                                    "items": {
+                                        "$ref": "#/components/schemas/portal_applications"
+                                    },
+                                    "type": "array"
+                                }
+                            }
+                        }
+                    },
+                    "206": {
+                        "description": "Partial Content"
+                    }
+                },
+                "summary": "Applications created within portal accounts with their own rate limits and settings",
+                "tags": [
+                    "portal_applications"
+                ]
+            },
+            "post": {
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/select"
+                    },
+                    {
+                        "$ref": "#/components/parameters/preferPost"
+                    }
+                ],
+                "requestBody": {
+                    "$ref": "#/components/requestBodies/portal_applications"
+                },
+                "responses": {
+                    "201": {
+                        "description": "Created"
+                    }
+                },
+                "summary": "Applications created within portal accounts with their own rate limits and settings",
+                "tags": [
+                    "portal_applications"
+                ]
+            },
+            "delete": {
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/rowFilter.portal_applications.portal_application_id"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.portal_applications.portal_account_id"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.portal_applications.portal_application_name"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.portal_applications.emoji"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.portal_applications.portal_application_user_limit"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.portal_applications.portal_application_user_limit_interval"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.portal_applications.portal_application_user_limit_rps"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.portal_applications.portal_application_description"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.portal_applications.favorite_service_ids"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.portal_applications.secret_key_hash"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.portal_applications.secret_key_required"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.portal_applications.deleted_at"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.portal_applications.created_at"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.portal_applications.updated_at"
+                    },
+                    {
+                        "$ref": "#/components/parameters/preferReturn"
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    }
+                },
+                "summary": "Applications created within portal accounts with their own rate limits and settings",
+                "tags": [
+                    "portal_applications"
+                ]
+            },
+            "patch": {
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/rowFilter.portal_applications.portal_application_id"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.portal_applications.portal_account_id"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.portal_applications.portal_application_name"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.portal_applications.emoji"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.portal_applications.portal_application_user_limit"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.portal_applications.portal_application_user_limit_interval"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.portal_applications.portal_application_user_limit_rps"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.portal_applications.portal_application_description"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.portal_applications.favorite_service_ids"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.portal_applications.secret_key_hash"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.portal_applications.secret_key_required"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.portal_applications.deleted_at"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.portal_applications.created_at"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.portal_applications.updated_at"
+                    },
+                    {
+                        "$ref": "#/components/parameters/preferReturn"
+                    }
+                ],
+                "requestBody": {
+                    "$ref": "#/components/requestBodies/portal_applications"
+                },
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    }
+                },
+                "summary": "Applications created within portal accounts with their own rate limits and settings",
+                "tags": [
+                    "portal_applications"
+                ]
+            }
+        },
         "/services": {
             "get": {
                 "parameters": [
@@ -625,6 +1092,446 @@
                 ]
             }
         },
+        "/portal_accounts": {
+            "get": {
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/rowFilter.portal_accounts.portal_account_id"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.portal_accounts.organization_id"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.portal_accounts.portal_plan_type"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.portal_accounts.user_account_name"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.portal_accounts.internal_account_name"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.portal_accounts.portal_account_user_limit"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.portal_accounts.portal_account_user_limit_interval"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.portal_accounts.portal_account_user_limit_rps"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.portal_accounts.billing_type"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.portal_accounts.stripe_subscription_id"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.portal_accounts.gcp_account_id"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.portal_accounts.gcp_entitlement_id"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.portal_accounts.deleted_at"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.portal_accounts.created_at"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.portal_accounts.updated_at"
+                    },
+                    {
+                        "$ref": "#/components/parameters/select"
+                    },
+                    {
+                        "$ref": "#/components/parameters/order"
+                    },
+                    {
+                        "$ref": "#/components/parameters/range"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rangeUnit"
+                    },
+                    {
+                        "$ref": "#/components/parameters/offset"
+                    },
+                    {
+                        "$ref": "#/components/parameters/limit"
+                    },
+                    {
+                        "$ref": "#/components/parameters/preferCount"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "items": {
+                                        "$ref": "#/components/schemas/portal_accounts"
+                                    },
+                                    "type": "array"
+                                }
+                            },
+                            "application/vnd.pgrst.object+json;nulls=stripped": {
+                                "schema": {
+                                    "items": {
+                                        "$ref": "#/components/schemas/portal_accounts"
+                                    },
+                                    "type": "array"
+                                }
+                            },
+                            "application/vnd.pgrst.object+json": {
+                                "schema": {
+                                    "items": {
+                                        "$ref": "#/components/schemas/portal_accounts"
+                                    },
+                                    "type": "array"
+                                }
+                            },
+                            "text/csv": {
+                                "schema": {
+                                    "items": {
+                                        "$ref": "#/components/schemas/portal_accounts"
+                                    },
+                                    "type": "array"
+                                }
+                            }
+                        }
+                    },
+                    "206": {
+                        "description": "Partial Content"
+                    }
+                },
+                "summary": "Multi-tenant accounts with plans and billing integration",
+                "tags": [
+                    "portal_accounts"
+                ]
+            },
+            "post": {
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/select"
+                    },
+                    {
+                        "$ref": "#/components/parameters/preferPost"
+                    }
+                ],
+                "requestBody": {
+                    "$ref": "#/components/requestBodies/portal_accounts"
+                },
+                "responses": {
+                    "201": {
+                        "description": "Created"
+                    }
+                },
+                "summary": "Multi-tenant accounts with plans and billing integration",
+                "tags": [
+                    "portal_accounts"
+                ]
+            },
+            "delete": {
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/rowFilter.portal_accounts.portal_account_id"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.portal_accounts.organization_id"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.portal_accounts.portal_plan_type"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.portal_accounts.user_account_name"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.portal_accounts.internal_account_name"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.portal_accounts.portal_account_user_limit"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.portal_accounts.portal_account_user_limit_interval"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.portal_accounts.portal_account_user_limit_rps"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.portal_accounts.billing_type"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.portal_accounts.stripe_subscription_id"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.portal_accounts.gcp_account_id"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.portal_accounts.gcp_entitlement_id"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.portal_accounts.deleted_at"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.portal_accounts.created_at"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.portal_accounts.updated_at"
+                    },
+                    {
+                        "$ref": "#/components/parameters/preferReturn"
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    }
+                },
+                "summary": "Multi-tenant accounts with plans and billing integration",
+                "tags": [
+                    "portal_accounts"
+                ]
+            },
+            "patch": {
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/rowFilter.portal_accounts.portal_account_id"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.portal_accounts.organization_id"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.portal_accounts.portal_plan_type"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.portal_accounts.user_account_name"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.portal_accounts.internal_account_name"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.portal_accounts.portal_account_user_limit"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.portal_accounts.portal_account_user_limit_interval"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.portal_accounts.portal_account_user_limit_rps"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.portal_accounts.billing_type"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.portal_accounts.stripe_subscription_id"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.portal_accounts.gcp_account_id"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.portal_accounts.gcp_entitlement_id"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.portal_accounts.deleted_at"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.portal_accounts.created_at"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.portal_accounts.updated_at"
+                    },
+                    {
+                        "$ref": "#/components/parameters/preferReturn"
+                    }
+                ],
+                "requestBody": {
+                    "$ref": "#/components/requestBodies/portal_accounts"
+                },
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    }
+                },
+                "summary": "Multi-tenant accounts with plans and billing integration",
+                "tags": [
+                    "portal_accounts"
+                ]
+            }
+        },
+        "/organizations": {
+            "get": {
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/rowFilter.organizations.organization_id"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.organizations.organization_name"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.organizations.deleted_at"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.organizations.created_at"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.organizations.updated_at"
+                    },
+                    {
+                        "$ref": "#/components/parameters/select"
+                    },
+                    {
+                        "$ref": "#/components/parameters/order"
+                    },
+                    {
+                        "$ref": "#/components/parameters/range"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rangeUnit"
+                    },
+                    {
+                        "$ref": "#/components/parameters/offset"
+                    },
+                    {
+                        "$ref": "#/components/parameters/limit"
+                    },
+                    {
+                        "$ref": "#/components/parameters/preferCount"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "items": {
+                                        "$ref": "#/components/schemas/organizations"
+                                    },
+                                    "type": "array"
+                                }
+                            },
+                            "application/vnd.pgrst.object+json;nulls=stripped": {
+                                "schema": {
+                                    "items": {
+                                        "$ref": "#/components/schemas/organizations"
+                                    },
+                                    "type": "array"
+                                }
+                            },
+                            "application/vnd.pgrst.object+json": {
+                                "schema": {
+                                    "items": {
+                                        "$ref": "#/components/schemas/organizations"
+                                    },
+                                    "type": "array"
+                                }
+                            },
+                            "text/csv": {
+                                "schema": {
+                                    "items": {
+                                        "$ref": "#/components/schemas/organizations"
+                                    },
+                                    "type": "array"
+                                }
+                            }
+                        }
+                    },
+                    "206": {
+                        "description": "Partial Content"
+                    }
+                },
+                "summary": "Companies or customer groups that can be attached to Portal Accounts",
+                "tags": [
+                    "organizations"
+                ]
+            },
+            "post": {
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/select"
+                    },
+                    {
+                        "$ref": "#/components/parameters/preferPost"
+                    }
+                ],
+                "requestBody": {
+                    "$ref": "#/components/requestBodies/organizations"
+                },
+                "responses": {
+                    "201": {
+                        "description": "Created"
+                    }
+                },
+                "summary": "Companies or customer groups that can be attached to Portal Accounts",
+                "tags": [
+                    "organizations"
+                ]
+            },
+            "delete": {
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/rowFilter.organizations.organization_id"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.organizations.organization_name"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.organizations.deleted_at"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.organizations.created_at"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.organizations.updated_at"
+                    },
+                    {
+                        "$ref": "#/components/parameters/preferReturn"
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    }
+                },
+                "summary": "Companies or customer groups that can be attached to Portal Accounts",
+                "tags": [
+                    "organizations"
+                ]
+            },
+            "patch": {
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/rowFilter.organizations.organization_id"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.organizations.organization_name"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.organizations.deleted_at"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.organizations.created_at"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.organizations.updated_at"
+                    },
+                    {
+                        "$ref": "#/components/parameters/preferReturn"
+                    }
+                ],
+                "requestBody": {
+                    "$ref": "#/components/requestBodies/organizations"
+                },
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    }
+                },
+                "summary": "Companies or customer groups that can be attached to Portal Accounts",
+                "tags": [
+                    "organizations"
+                ]
+            }
+        },
         "/networks": {
             "get": {
                 "parameters": [
@@ -761,6 +1668,199 @@
                 "summary": "Supported blockchain networks (Pocket mainnet, testnet, etc.)",
                 "tags": [
                     "networks"
+                ]
+            }
+        },
+        "/gateways": {
+            "get": {
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/rowFilter.gateways.gateway_address"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.gateways.stake_amount"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.gateways.stake_denom"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.gateways.network_id"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.gateways.gateway_private_key_hex"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.gateways.created_at"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.gateways.updated_at"
+                    },
+                    {
+                        "$ref": "#/components/parameters/select"
+                    },
+                    {
+                        "$ref": "#/components/parameters/order"
+                    },
+                    {
+                        "$ref": "#/components/parameters/range"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rangeUnit"
+                    },
+                    {
+                        "$ref": "#/components/parameters/offset"
+                    },
+                    {
+                        "$ref": "#/components/parameters/limit"
+                    },
+                    {
+                        "$ref": "#/components/parameters/preferCount"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "items": {
+                                        "$ref": "#/components/schemas/gateways"
+                                    },
+                                    "type": "array"
+                                }
+                            },
+                            "application/vnd.pgrst.object+json;nulls=stripped": {
+                                "schema": {
+                                    "items": {
+                                        "$ref": "#/components/schemas/gateways"
+                                    },
+                                    "type": "array"
+                                }
+                            },
+                            "application/vnd.pgrst.object+json": {
+                                "schema": {
+                                    "items": {
+                                        "$ref": "#/components/schemas/gateways"
+                                    },
+                                    "type": "array"
+                                }
+                            },
+                            "text/csv": {
+                                "schema": {
+                                    "items": {
+                                        "$ref": "#/components/schemas/gateways"
+                                    },
+                                    "type": "array"
+                                }
+                            }
+                        }
+                    },
+                    "206": {
+                        "description": "Partial Content"
+                    }
+                },
+                "summary": "Onchain gateway information including stake and network details",
+                "tags": [
+                    "gateways"
+                ]
+            },
+            "post": {
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/select"
+                    },
+                    {
+                        "$ref": "#/components/parameters/preferPost"
+                    }
+                ],
+                "requestBody": {
+                    "$ref": "#/components/requestBodies/gateways"
+                },
+                "responses": {
+                    "201": {
+                        "description": "Created"
+                    }
+                },
+                "summary": "Onchain gateway information including stake and network details",
+                "tags": [
+                    "gateways"
+                ]
+            },
+            "delete": {
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/rowFilter.gateways.gateway_address"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.gateways.stake_amount"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.gateways.stake_denom"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.gateways.network_id"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.gateways.gateway_private_key_hex"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.gateways.created_at"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.gateways.updated_at"
+                    },
+                    {
+                        "$ref": "#/components/parameters/preferReturn"
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    }
+                },
+                "summary": "Onchain gateway information including stake and network details",
+                "tags": [
+                    "gateways"
+                ]
+            },
+            "patch": {
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/rowFilter.gateways.gateway_address"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.gateways.stake_amount"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.gateways.stake_denom"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.gateways.network_id"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.gateways.gateway_private_key_hex"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.gateways.created_at"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.gateways.updated_at"
+                    },
+                    {
+                        "$ref": "#/components/parameters/preferReturn"
+                    }
+                ],
+                "requestBody": {
+                    "$ref": "#/components/requestBodies/gateways"
+                },
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    }
+                },
+                "summary": "Onchain gateway information including stake and network details",
+                "tags": [
+                    "gateways"
                 ]
             }
         },
@@ -936,6 +2036,58 @@
                 "summary": "Available endpoint types for each service",
                 "tags": [
                     "service_endpoints"
+                ]
+            }
+        },
+        "/rpc/me": {
+            "get": {
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                },
+                "tags": [
+                    "(rpc) me"
+                ]
+            },
+            "post": {
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/preferParams"
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object"
+                            }
+                        },
+                        "application/vnd.pgrst.object+json;nulls=stripped": {
+                            "schema": {
+                                "type": "object"
+                            }
+                        },
+                        "application/vnd.pgrst.object+json": {
+                            "schema": {
+                                "type": "object"
+                            }
+                        },
+                        "text/csv": {
+                            "schema": {
+                                "type": "object"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                },
+                "tags": [
+                    "(rpc) me"
                 ]
             }
         }
@@ -1170,6 +2322,215 @@
                     "format": "integer"
                 }
             },
+            "rowFilter.applications.application_address": {
+                "name": "application_address",
+                "description": "Blockchain address of the application",
+                "required": false,
+                "in": "query",
+                "schema": {
+                    "type": "string",
+                    "format": "character varying"
+                }
+            },
+            "rowFilter.applications.gateway_address": {
+                "name": "gateway_address",
+                "required": false,
+                "in": "query",
+                "schema": {
+                    "type": "string",
+                    "format": "character varying"
+                }
+            },
+            "rowFilter.applications.service_id": {
+                "name": "service_id",
+                "required": false,
+                "in": "query",
+                "schema": {
+                    "type": "string",
+                    "format": "character varying"
+                }
+            },
+            "rowFilter.applications.stake_amount": {
+                "name": "stake_amount",
+                "required": false,
+                "in": "query",
+                "schema": {
+                    "type": "string",
+                    "format": "bigint"
+                }
+            },
+            "rowFilter.applications.stake_denom": {
+                "name": "stake_denom",
+                "required": false,
+                "in": "query",
+                "schema": {
+                    "type": "string",
+                    "format": "character varying"
+                }
+            },
+            "rowFilter.applications.application_private_key_hex": {
+                "name": "application_private_key_hex",
+                "required": false,
+                "in": "query",
+                "schema": {
+                    "type": "string",
+                    "format": "character varying"
+                }
+            },
+            "rowFilter.applications.network_id": {
+                "name": "network_id",
+                "required": false,
+                "in": "query",
+                "schema": {
+                    "type": "string",
+                    "format": "character varying"
+                }
+            },
+            "rowFilter.applications.created_at": {
+                "name": "created_at",
+                "required": false,
+                "in": "query",
+                "schema": {
+                    "type": "string",
+                    "format": "timestamp with time zone"
+                }
+            },
+            "rowFilter.applications.updated_at": {
+                "name": "updated_at",
+                "required": false,
+                "in": "query",
+                "schema": {
+                    "type": "string",
+                    "format": "timestamp with time zone"
+                }
+            },
+            "rowFilter.portal_applications.portal_application_id": {
+                "name": "portal_application_id",
+                "required": false,
+                "in": "query",
+                "schema": {
+                    "type": "string",
+                    "format": "uuid"
+                }
+            },
+            "rowFilter.portal_applications.portal_account_id": {
+                "name": "portal_account_id",
+                "required": false,
+                "in": "query",
+                "schema": {
+                    "type": "string",
+                    "format": "uuid"
+                }
+            },
+            "rowFilter.portal_applications.portal_application_name": {
+                "name": "portal_application_name",
+                "required": false,
+                "in": "query",
+                "schema": {
+                    "type": "string",
+                    "format": "character varying"
+                }
+            },
+            "rowFilter.portal_applications.emoji": {
+                "name": "emoji",
+                "required": false,
+                "in": "query",
+                "schema": {
+                    "type": "string",
+                    "format": "character varying"
+                }
+            },
+            "rowFilter.portal_applications.portal_application_user_limit": {
+                "name": "portal_application_user_limit",
+                "required": false,
+                "in": "query",
+                "schema": {
+                    "type": "string",
+                    "format": "integer"
+                }
+            },
+            "rowFilter.portal_applications.portal_application_user_limit_interval": {
+                "name": "portal_application_user_limit_interval",
+                "required": false,
+                "in": "query",
+                "schema": {
+                    "type": "string",
+                    "format": "public.plan_interval"
+                }
+            },
+            "rowFilter.portal_applications.portal_application_user_limit_rps": {
+                "name": "portal_application_user_limit_rps",
+                "required": false,
+                "in": "query",
+                "schema": {
+                    "type": "string",
+                    "format": "integer"
+                }
+            },
+            "rowFilter.portal_applications.portal_application_description": {
+                "name": "portal_application_description",
+                "required": false,
+                "in": "query",
+                "schema": {
+                    "type": "string",
+                    "format": "character varying"
+                }
+            },
+            "rowFilter.portal_applications.favorite_service_ids": {
+                "name": "favorite_service_ids",
+                "required": false,
+                "in": "query",
+                "schema": {
+                    "type": "string",
+                    "format": "character varying[]"
+                }
+            },
+            "rowFilter.portal_applications.secret_key_hash": {
+                "name": "secret_key_hash",
+                "description": "Hashed secret key for application authentication",
+                "required": false,
+                "in": "query",
+                "schema": {
+                    "type": "string",
+                    "format": "character varying"
+                }
+            },
+            "rowFilter.portal_applications.secret_key_required": {
+                "name": "secret_key_required",
+                "required": false,
+                "in": "query",
+                "schema": {
+                    "type": "string",
+                    "format": "boolean"
+                }
+            },
+            "rowFilter.portal_applications.deleted_at": {
+                "name": "deleted_at",
+                "required": false,
+                "in": "query",
+                "schema": {
+                    "type": "string",
+                    "format": "timestamp with time zone"
+                }
+            },
+            "rowFilter.portal_applications.created_at": {
+                "name": "created_at",
+                "required": false,
+                "in": "query",
+                "schema": {
+                    "type": "string",
+                    "format": "timestamp with time zone"
+                }
+            },
+            "rowFilter.portal_applications.updated_at": {
+                "name": "updated_at",
+                "required": false,
+                "in": "query",
+                "schema": {
+                    "type": "string",
+                    "format": "timestamp with time zone"
+                }
+            },
             "rowFilter.services.service_id": {
                 "name": "service_id",
                 "required": false,
@@ -1289,6 +2650,190 @@
                     "format": "timestamp with time zone"
                 }
             },
+            "rowFilter.portal_accounts.portal_account_id": {
+                "name": "portal_account_id",
+                "description": "Unique identifier for the portal account",
+                "required": false,
+                "in": "query",
+                "schema": {
+                    "type": "string",
+                    "format": "uuid"
+                }
+            },
+            "rowFilter.portal_accounts.organization_id": {
+                "name": "organization_id",
+                "required": false,
+                "in": "query",
+                "schema": {
+                    "type": "string",
+                    "format": "integer"
+                }
+            },
+            "rowFilter.portal_accounts.portal_plan_type": {
+                "name": "portal_plan_type",
+                "required": false,
+                "in": "query",
+                "schema": {
+                    "type": "string",
+                    "format": "character varying"
+                }
+            },
+            "rowFilter.portal_accounts.user_account_name": {
+                "name": "user_account_name",
+                "required": false,
+                "in": "query",
+                "schema": {
+                    "type": "string",
+                    "format": "character varying"
+                }
+            },
+            "rowFilter.portal_accounts.internal_account_name": {
+                "name": "internal_account_name",
+                "required": false,
+                "in": "query",
+                "schema": {
+                    "type": "string",
+                    "format": "character varying"
+                }
+            },
+            "rowFilter.portal_accounts.portal_account_user_limit": {
+                "name": "portal_account_user_limit",
+                "required": false,
+                "in": "query",
+                "schema": {
+                    "type": "string",
+                    "format": "integer"
+                }
+            },
+            "rowFilter.portal_accounts.portal_account_user_limit_interval": {
+                "name": "portal_account_user_limit_interval",
+                "required": false,
+                "in": "query",
+                "schema": {
+                    "type": "string",
+                    "format": "public.plan_interval"
+                }
+            },
+            "rowFilter.portal_accounts.portal_account_user_limit_rps": {
+                "name": "portal_account_user_limit_rps",
+                "required": false,
+                "in": "query",
+                "schema": {
+                    "type": "string",
+                    "format": "integer"
+                }
+            },
+            "rowFilter.portal_accounts.billing_type": {
+                "name": "billing_type",
+                "required": false,
+                "in": "query",
+                "schema": {
+                    "type": "string",
+                    "format": "character varying"
+                }
+            },
+            "rowFilter.portal_accounts.stripe_subscription_id": {
+                "name": "stripe_subscription_id",
+                "description": "Stripe subscription identifier for billing",
+                "required": false,
+                "in": "query",
+                "schema": {
+                    "type": "string",
+                    "format": "character varying"
+                }
+            },
+            "rowFilter.portal_accounts.gcp_account_id": {
+                "name": "gcp_account_id",
+                "required": false,
+                "in": "query",
+                "schema": {
+                    "type": "string",
+                    "format": "character varying"
+                }
+            },
+            "rowFilter.portal_accounts.gcp_entitlement_id": {
+                "name": "gcp_entitlement_id",
+                "required": false,
+                "in": "query",
+                "schema": {
+                    "type": "string",
+                    "format": "character varying"
+                }
+            },
+            "rowFilter.portal_accounts.deleted_at": {
+                "name": "deleted_at",
+                "required": false,
+                "in": "query",
+                "schema": {
+                    "type": "string",
+                    "format": "timestamp with time zone"
+                }
+            },
+            "rowFilter.portal_accounts.created_at": {
+                "name": "created_at",
+                "required": false,
+                "in": "query",
+                "schema": {
+                    "type": "string",
+                    "format": "timestamp with time zone"
+                }
+            },
+            "rowFilter.portal_accounts.updated_at": {
+                "name": "updated_at",
+                "required": false,
+                "in": "query",
+                "schema": {
+                    "type": "string",
+                    "format": "timestamp with time zone"
+                }
+            },
+            "rowFilter.organizations.organization_id": {
+                "name": "organization_id",
+                "required": false,
+                "in": "query",
+                "schema": {
+                    "type": "string",
+                    "format": "integer"
+                }
+            },
+            "rowFilter.organizations.organization_name": {
+                "name": "organization_name",
+                "description": "Name of the organization",
+                "required": false,
+                "in": "query",
+                "schema": {
+                    "type": "string",
+                    "format": "character varying"
+                }
+            },
+            "rowFilter.organizations.deleted_at": {
+                "name": "deleted_at",
+                "description": "Soft delete timestamp",
+                "required": false,
+                "in": "query",
+                "schema": {
+                    "type": "string",
+                    "format": "timestamp with time zone"
+                }
+            },
+            "rowFilter.organizations.created_at": {
+                "name": "created_at",
+                "required": false,
+                "in": "query",
+                "schema": {
+                    "type": "string",
+                    "format": "timestamp with time zone"
+                }
+            },
+            "rowFilter.organizations.updated_at": {
+                "name": "updated_at",
+                "required": false,
+                "in": "query",
+                "schema": {
+                    "type": "string",
+                    "format": "timestamp with time zone"
+                }
+            },
             "rowFilter.networks.network_id": {
                 "name": "network_id",
                 "required": false,
@@ -1296,6 +2841,71 @@
                 "schema": {
                     "type": "string",
                     "format": "character varying"
+                }
+            },
+            "rowFilter.gateways.gateway_address": {
+                "name": "gateway_address",
+                "description": "Blockchain address of the gateway",
+                "required": false,
+                "in": "query",
+                "schema": {
+                    "type": "string",
+                    "format": "character varying"
+                }
+            },
+            "rowFilter.gateways.stake_amount": {
+                "name": "stake_amount",
+                "description": "Amount of tokens staked by the gateway",
+                "required": false,
+                "in": "query",
+                "schema": {
+                    "type": "string",
+                    "format": "bigint"
+                }
+            },
+            "rowFilter.gateways.stake_denom": {
+                "name": "stake_denom",
+                "required": false,
+                "in": "query",
+                "schema": {
+                    "type": "string",
+                    "format": "character varying"
+                }
+            },
+            "rowFilter.gateways.network_id": {
+                "name": "network_id",
+                "required": false,
+                "in": "query",
+                "schema": {
+                    "type": "string",
+                    "format": "character varying"
+                }
+            },
+            "rowFilter.gateways.gateway_private_key_hex": {
+                "name": "gateway_private_key_hex",
+                "required": false,
+                "in": "query",
+                "schema": {
+                    "type": "string",
+                    "format": "character varying"
+                }
+            },
+            "rowFilter.gateways.created_at": {
+                "name": "created_at",
+                "required": false,
+                "in": "query",
+                "schema": {
+                    "type": "string",
+                    "format": "timestamp with time zone"
+                }
+            },
+            "rowFilter.gateways.updated_at": {
+                "name": "updated_at",
+                "required": false,
+                "in": "query",
+                "schema": {
+                    "type": "string",
+                    "format": "timestamp with time zone"
                 }
             },
             "rowFilter.service_endpoints.endpoint_id": {
@@ -1345,6 +2955,31 @@
             }
         },
         "requestBodies": {
+            "portal_accounts": {
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "$ref": "#/components/schemas/portal_accounts"
+                        }
+                    },
+                    "application/vnd.pgrst.object+json;nulls=stripped": {
+                        "schema": {
+                            "$ref": "#/components/schemas/portal_accounts"
+                        }
+                    },
+                    "application/vnd.pgrst.object+json": {
+                        "schema": {
+                            "$ref": "#/components/schemas/portal_accounts"
+                        }
+                    },
+                    "text/csv": {
+                        "schema": {
+                            "$ref": "#/components/schemas/portal_accounts"
+                        }
+                    }
+                },
+                "description": "portal_accounts"
+            },
             "networks": {
                 "content": {
                     "application/json": {
@@ -1370,6 +3005,31 @@
                 },
                 "description": "networks"
             },
+            "gateways": {
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "$ref": "#/components/schemas/gateways"
+                        }
+                    },
+                    "application/vnd.pgrst.object+json;nulls=stripped": {
+                        "schema": {
+                            "$ref": "#/components/schemas/gateways"
+                        }
+                    },
+                    "application/vnd.pgrst.object+json": {
+                        "schema": {
+                            "$ref": "#/components/schemas/gateways"
+                        }
+                    },
+                    "text/csv": {
+                        "schema": {
+                            "$ref": "#/components/schemas/gateways"
+                        }
+                    }
+                },
+                "description": "gateways"
+            },
             "service_endpoints": {
                 "content": {
                     "application/json": {
@@ -1394,6 +3054,31 @@
                     }
                 },
                 "description": "service_endpoints"
+            },
+            "portal_applications": {
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "$ref": "#/components/schemas/portal_applications"
+                        }
+                    },
+                    "application/vnd.pgrst.object+json;nulls=stripped": {
+                        "schema": {
+                            "$ref": "#/components/schemas/portal_applications"
+                        }
+                    },
+                    "application/vnd.pgrst.object+json": {
+                        "schema": {
+                            "$ref": "#/components/schemas/portal_applications"
+                        }
+                    },
+                    "text/csv": {
+                        "schema": {
+                            "$ref": "#/components/schemas/portal_applications"
+                        }
+                    }
+                },
+                "description": "portal_applications"
             },
             "service_fallbacks": {
                 "content": {
@@ -1445,6 +3130,31 @@
                 },
                 "description": "portal_plans"
             },
+            "applications": {
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "$ref": "#/components/schemas/applications"
+                        }
+                    },
+                    "application/vnd.pgrst.object+json;nulls=stripped": {
+                        "schema": {
+                            "$ref": "#/components/schemas/applications"
+                        }
+                    },
+                    "application/vnd.pgrst.object+json": {
+                        "schema": {
+                            "$ref": "#/components/schemas/applications"
+                        }
+                    },
+                    "text/csv": {
+                        "schema": {
+                            "$ref": "#/components/schemas/applications"
+                        }
+                    }
+                },
+                "description": "applications"
+            },
             "services": {
                 "content": {
                     "application/json": {
@@ -1469,6 +3179,31 @@
                     }
                 },
                 "description": "services"
+            },
+            "organizations": {
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "$ref": "#/components/schemas/organizations"
+                        }
+                    },
+                    "application/vnd.pgrst.object+json;nulls=stripped": {
+                        "schema": {
+                            "$ref": "#/components/schemas/organizations"
+                        }
+                    },
+                    "application/vnd.pgrst.object+json": {
+                        "schema": {
+                            "$ref": "#/components/schemas/organizations"
+                        }
+                    },
+                    "text/csv": {
+                        "schema": {
+                            "$ref": "#/components/schemas/organizations"
+                        }
+                    }
+                },
+                "description": "organizations"
             }
         },
         "schemas": {
@@ -1548,6 +3283,151 @@
                     "plan_application_limit": {
                         "format": "integer",
                         "type": "integer"
+                    }
+                },
+                "type": "object"
+            },
+            "applications": {
+                "description": "Onchain applications for processing relays through the network",
+                "required": [
+                    "application_address",
+                    "gateway_address",
+                    "service_id",
+                    "network_id"
+                ],
+                "properties": {
+                    "application_address": {
+                        "description": "Blockchain address of the application\n\nNote:\nThis is a Primary Key.<pk/>",
+                        "format": "character varying",
+                        "maxLength": 50,
+                        "type": "string"
+                    },
+                    "gateway_address": {
+                        "description": "Note:\nThis is a Foreign Key to `gateways.gateway_address`.<fk table='gateways' column='gateway_address'/>",
+                        "format": "character varying",
+                        "maxLength": 50,
+                        "type": "string"
+                    },
+                    "service_id": {
+                        "description": "Note:\nThis is a Foreign Key to `services.service_id`.<fk table='services' column='service_id'/>",
+                        "format": "character varying",
+                        "maxLength": 42,
+                        "type": "string"
+                    },
+                    "stake_amount": {
+                        "format": "bigint",
+                        "type": "integer"
+                    },
+                    "stake_denom": {
+                        "format": "character varying",
+                        "maxLength": 15,
+                        "type": "string"
+                    },
+                    "application_private_key_hex": {
+                        "format": "character varying",
+                        "maxLength": 64,
+                        "type": "string"
+                    },
+                    "network_id": {
+                        "description": "Note:\nThis is a Foreign Key to `networks.network_id`.<fk table='networks' column='network_id'/>",
+                        "format": "character varying",
+                        "maxLength": 42,
+                        "type": "string"
+                    },
+                    "created_at": {
+                        "default": "CURRENT_TIMESTAMP",
+                        "format": "timestamp with time zone",
+                        "type": "string"
+                    },
+                    "updated_at": {
+                        "default": "CURRENT_TIMESTAMP",
+                        "format": "timestamp with time zone",
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "portal_applications": {
+                "description": "Applications created within portal accounts with their own rate limits and settings",
+                "required": [
+                    "portal_application_id",
+                    "portal_account_id"
+                ],
+                "properties": {
+                    "portal_application_id": {
+                        "default": "gen_random_uuid()",
+                        "description": "Note:\nThis is a Primary Key.<pk/>",
+                        "format": "uuid",
+                        "type": "string"
+                    },
+                    "portal_account_id": {
+                        "description": "Note:\nThis is a Foreign Key to `portal_accounts.portal_account_id`.<fk table='portal_accounts' column='portal_account_id'/>",
+                        "format": "uuid",
+                        "type": "string"
+                    },
+                    "portal_application_name": {
+                        "format": "character varying",
+                        "maxLength": 42,
+                        "type": "string"
+                    },
+                    "emoji": {
+                        "format": "character varying",
+                        "maxLength": 16,
+                        "type": "string"
+                    },
+                    "portal_application_user_limit": {
+                        "format": "integer",
+                        "type": "integer"
+                    },
+                    "portal_application_user_limit_interval": {
+                        "enum": [
+                            "day",
+                            "month",
+                            "year"
+                        ],
+                        "format": "public.plan_interval",
+                        "type": "string"
+                    },
+                    "portal_application_user_limit_rps": {
+                        "format": "integer",
+                        "type": "integer"
+                    },
+                    "portal_application_description": {
+                        "format": "character varying",
+                        "maxLength": 255,
+                        "type": "string"
+                    },
+                    "favorite_service_ids": {
+                        "format": "character varying[]",
+                        "items": {
+                            "type": "string"
+                        },
+                        "type": "array"
+                    },
+                    "secret_key_hash": {
+                        "description": "Hashed secret key for application authentication",
+                        "format": "character varying",
+                        "maxLength": 255,
+                        "type": "string"
+                    },
+                    "secret_key_required": {
+                        "default": false,
+                        
+                        "type": "boolean"
+                    },
+                    "deleted_at": {
+                        "format": "timestamp with time zone",
+                        "type": "string"
+                    },
+                    "created_at": {
+                        "default": "CURRENT_TIMESTAMP",
+                        "format": "timestamp with time zone",
+                        "type": "string"
+                    },
+                    "updated_at": {
+                        "default": "CURRENT_TIMESTAMP",
+                        "format": "timestamp with time zone",
+                        "type": "string"
                     }
                 },
                 "type": "object"
@@ -1632,6 +3512,131 @@
                 },
                 "type": "object"
             },
+            "portal_accounts": {
+                "description": "Multi-tenant accounts with plans and billing integration",
+                "required": [
+                    "portal_account_id",
+                    "portal_plan_type"
+                ],
+                "properties": {
+                    "portal_account_id": {
+                        "default": "gen_random_uuid()",
+                        "description": "Unique identifier for the portal account\n\nNote:\nThis is a Primary Key.<pk/>",
+                        "format": "uuid",
+                        "type": "string"
+                    },
+                    "organization_id": {
+                        "description": "Note:\nThis is a Foreign Key to `organizations.organization_id`.<fk table='organizations' column='organization_id'/>",
+                        "format": "integer",
+                        "type": "integer"
+                    },
+                    "portal_plan_type": {
+                        "description": "Note:\nThis is a Foreign Key to `portal_plans.portal_plan_type`.<fk table='portal_plans' column='portal_plan_type'/>",
+                        "format": "character varying",
+                        "maxLength": 42,
+                        "type": "string"
+                    },
+                    "user_account_name": {
+                        "format": "character varying",
+                        "maxLength": 42,
+                        "type": "string"
+                    },
+                    "internal_account_name": {
+                        "format": "character varying",
+                        "maxLength": 42,
+                        "type": "string"
+                    },
+                    "portal_account_user_limit": {
+                        "format": "integer",
+                        "type": "integer"
+                    },
+                    "portal_account_user_limit_interval": {
+                        "enum": [
+                            "day",
+                            "month",
+                            "year"
+                        ],
+                        "format": "public.plan_interval",
+                        "type": "string"
+                    },
+                    "portal_account_user_limit_rps": {
+                        "format": "integer",
+                        "type": "integer"
+                    },
+                    "billing_type": {
+                        "format": "character varying",
+                        "maxLength": 20,
+                        "type": "string"
+                    },
+                    "stripe_subscription_id": {
+                        "description": "Stripe subscription identifier for billing",
+                        "format": "character varying",
+                        "maxLength": 255,
+                        "type": "string"
+                    },
+                    "gcp_account_id": {
+                        "format": "character varying",
+                        "maxLength": 255,
+                        "type": "string"
+                    },
+                    "gcp_entitlement_id": {
+                        "format": "character varying",
+                        "maxLength": 255,
+                        "type": "string"
+                    },
+                    "deleted_at": {
+                        "format": "timestamp with time zone",
+                        "type": "string"
+                    },
+                    "created_at": {
+                        "default": "CURRENT_TIMESTAMP",
+                        "format": "timestamp with time zone",
+                        "type": "string"
+                    },
+                    "updated_at": {
+                        "default": "CURRENT_TIMESTAMP",
+                        "format": "timestamp with time zone",
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "organizations": {
+                "description": "Companies or customer groups that can be attached to Portal Accounts",
+                "required": [
+                    "organization_id",
+                    "organization_name"
+                ],
+                "properties": {
+                    "organization_id": {
+                        "description": "Note:\nThis is a Primary Key.<pk/>",
+                        "format": "integer",
+                        "type": "integer"
+                    },
+                    "organization_name": {
+                        "description": "Name of the organization",
+                        "format": "character varying",
+                        "maxLength": 69,
+                        "type": "string"
+                    },
+                    "deleted_at": {
+                        "description": "Soft delete timestamp",
+                        "format": "timestamp with time zone",
+                        "type": "string"
+                    },
+                    "created_at": {
+                        "default": "CURRENT_TIMESTAMP",
+                        "format": "timestamp with time zone",
+                        "type": "string"
+                    },
+                    "updated_at": {
+                        "default": "CURRENT_TIMESTAMP",
+                        "format": "timestamp with time zone",
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
             "networks": {
                 "description": "Supported blockchain networks (Pocket mainnet, testnet, etc.)",
                 "required": [
@@ -1642,6 +3647,55 @@
                         "description": "Note:\nThis is a Primary Key.<pk/>",
                         "format": "character varying",
                         "maxLength": 42,
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "gateways": {
+                "description": "Onchain gateway information including stake and network details",
+                "required": [
+                    "gateway_address",
+                    "stake_amount",
+                    "stake_denom",
+                    "network_id"
+                ],
+                "properties": {
+                    "gateway_address": {
+                        "description": "Blockchain address of the gateway\n\nNote:\nThis is a Primary Key.<pk/>",
+                        "format": "character varying",
+                        "maxLength": 50,
+                        "type": "string"
+                    },
+                    "stake_amount": {
+                        "description": "Amount of tokens staked by the gateway",
+                        "format": "bigint",
+                        "type": "integer"
+                    },
+                    "stake_denom": {
+                        "format": "character varying",
+                        "maxLength": 15,
+                        "type": "string"
+                    },
+                    "network_id": {
+                        "description": "Note:\nThis is a Foreign Key to `networks.network_id`.<fk table='networks' column='network_id'/>",
+                        "format": "character varying",
+                        "maxLength": 42,
+                        "type": "string"
+                    },
+                    "gateway_private_key_hex": {
+                        "format": "character varying",
+                        "maxLength": 64,
+                        "type": "string"
+                    },
+                    "created_at": {
+                        "default": "CURRENT_TIMESTAMP",
+                        "format": "timestamp with time zone",
+                        "type": "string"
+                    },
+                    "updated_at": {
+                        "default": "CURRENT_TIMESTAMP",
+                        "format": "timestamp with time zone",
                         "type": "string"
                     }
                 },

@@ -96,6 +96,54 @@ type ClientInterface interface {
 	// Get request
 	Get(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// DeleteApplications request
+	DeleteApplications(ctx context.Context, params *DeleteApplicationsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetApplications request
+	GetApplications(ctx context.Context, params *GetApplicationsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PatchApplicationsWithBody request with any body
+	PatchApplicationsWithBody(ctx context.Context, params *PatchApplicationsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	PatchApplications(ctx context.Context, params *PatchApplicationsParams, body PatchApplicationsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	PatchApplicationsWithApplicationVndPgrstObjectPlusJSONBody(ctx context.Context, params *PatchApplicationsParams, body PatchApplicationsApplicationVndPgrstObjectPlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	PatchApplicationsWithApplicationVndPgrstObjectPlusJSONNullsStrippedBody(ctx context.Context, params *PatchApplicationsParams, body PatchApplicationsApplicationVndPgrstObjectPlusJSONNullsStrippedRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PostApplicationsWithBody request with any body
+	PostApplicationsWithBody(ctx context.Context, params *PostApplicationsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	PostApplications(ctx context.Context, params *PostApplicationsParams, body PostApplicationsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	PostApplicationsWithApplicationVndPgrstObjectPlusJSONBody(ctx context.Context, params *PostApplicationsParams, body PostApplicationsApplicationVndPgrstObjectPlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	PostApplicationsWithApplicationVndPgrstObjectPlusJSONNullsStrippedBody(ctx context.Context, params *PostApplicationsParams, body PostApplicationsApplicationVndPgrstObjectPlusJSONNullsStrippedRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// DeleteGateways request
+	DeleteGateways(ctx context.Context, params *DeleteGatewaysParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetGateways request
+	GetGateways(ctx context.Context, params *GetGatewaysParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PatchGatewaysWithBody request with any body
+	PatchGatewaysWithBody(ctx context.Context, params *PatchGatewaysParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	PatchGateways(ctx context.Context, params *PatchGatewaysParams, body PatchGatewaysJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	PatchGatewaysWithApplicationVndPgrstObjectPlusJSONBody(ctx context.Context, params *PatchGatewaysParams, body PatchGatewaysApplicationVndPgrstObjectPlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	PatchGatewaysWithApplicationVndPgrstObjectPlusJSONNullsStrippedBody(ctx context.Context, params *PatchGatewaysParams, body PatchGatewaysApplicationVndPgrstObjectPlusJSONNullsStrippedRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PostGatewaysWithBody request with any body
+	PostGatewaysWithBody(ctx context.Context, params *PostGatewaysParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	PostGateways(ctx context.Context, params *PostGatewaysParams, body PostGatewaysJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	PostGatewaysWithApplicationVndPgrstObjectPlusJSONBody(ctx context.Context, params *PostGatewaysParams, body PostGatewaysApplicationVndPgrstObjectPlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	PostGatewaysWithApplicationVndPgrstObjectPlusJSONNullsStrippedBody(ctx context.Context, params *PostGatewaysParams, body PostGatewaysApplicationVndPgrstObjectPlusJSONNullsStrippedRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// DeleteNetworks request
 	DeleteNetworks(ctx context.Context, params *DeleteNetworksParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -120,6 +168,78 @@ type ClientInterface interface {
 
 	PostNetworksWithApplicationVndPgrstObjectPlusJSONNullsStrippedBody(ctx context.Context, params *PostNetworksParams, body PostNetworksApplicationVndPgrstObjectPlusJSONNullsStrippedRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// DeleteOrganizations request
+	DeleteOrganizations(ctx context.Context, params *DeleteOrganizationsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetOrganizations request
+	GetOrganizations(ctx context.Context, params *GetOrganizationsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PatchOrganizationsWithBody request with any body
+	PatchOrganizationsWithBody(ctx context.Context, params *PatchOrganizationsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	PatchOrganizations(ctx context.Context, params *PatchOrganizationsParams, body PatchOrganizationsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	PatchOrganizationsWithApplicationVndPgrstObjectPlusJSONBody(ctx context.Context, params *PatchOrganizationsParams, body PatchOrganizationsApplicationVndPgrstObjectPlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	PatchOrganizationsWithApplicationVndPgrstObjectPlusJSONNullsStrippedBody(ctx context.Context, params *PatchOrganizationsParams, body PatchOrganizationsApplicationVndPgrstObjectPlusJSONNullsStrippedRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PostOrganizationsWithBody request with any body
+	PostOrganizationsWithBody(ctx context.Context, params *PostOrganizationsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	PostOrganizations(ctx context.Context, params *PostOrganizationsParams, body PostOrganizationsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	PostOrganizationsWithApplicationVndPgrstObjectPlusJSONBody(ctx context.Context, params *PostOrganizationsParams, body PostOrganizationsApplicationVndPgrstObjectPlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	PostOrganizationsWithApplicationVndPgrstObjectPlusJSONNullsStrippedBody(ctx context.Context, params *PostOrganizationsParams, body PostOrganizationsApplicationVndPgrstObjectPlusJSONNullsStrippedRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// DeletePortalAccounts request
+	DeletePortalAccounts(ctx context.Context, params *DeletePortalAccountsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetPortalAccounts request
+	GetPortalAccounts(ctx context.Context, params *GetPortalAccountsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PatchPortalAccountsWithBody request with any body
+	PatchPortalAccountsWithBody(ctx context.Context, params *PatchPortalAccountsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	PatchPortalAccounts(ctx context.Context, params *PatchPortalAccountsParams, body PatchPortalAccountsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	PatchPortalAccountsWithApplicationVndPgrstObjectPlusJSONBody(ctx context.Context, params *PatchPortalAccountsParams, body PatchPortalAccountsApplicationVndPgrstObjectPlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	PatchPortalAccountsWithApplicationVndPgrstObjectPlusJSONNullsStrippedBody(ctx context.Context, params *PatchPortalAccountsParams, body PatchPortalAccountsApplicationVndPgrstObjectPlusJSONNullsStrippedRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PostPortalAccountsWithBody request with any body
+	PostPortalAccountsWithBody(ctx context.Context, params *PostPortalAccountsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	PostPortalAccounts(ctx context.Context, params *PostPortalAccountsParams, body PostPortalAccountsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	PostPortalAccountsWithApplicationVndPgrstObjectPlusJSONBody(ctx context.Context, params *PostPortalAccountsParams, body PostPortalAccountsApplicationVndPgrstObjectPlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	PostPortalAccountsWithApplicationVndPgrstObjectPlusJSONNullsStrippedBody(ctx context.Context, params *PostPortalAccountsParams, body PostPortalAccountsApplicationVndPgrstObjectPlusJSONNullsStrippedRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// DeletePortalApplications request
+	DeletePortalApplications(ctx context.Context, params *DeletePortalApplicationsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetPortalApplications request
+	GetPortalApplications(ctx context.Context, params *GetPortalApplicationsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PatchPortalApplicationsWithBody request with any body
+	PatchPortalApplicationsWithBody(ctx context.Context, params *PatchPortalApplicationsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	PatchPortalApplications(ctx context.Context, params *PatchPortalApplicationsParams, body PatchPortalApplicationsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	PatchPortalApplicationsWithApplicationVndPgrstObjectPlusJSONBody(ctx context.Context, params *PatchPortalApplicationsParams, body PatchPortalApplicationsApplicationVndPgrstObjectPlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	PatchPortalApplicationsWithApplicationVndPgrstObjectPlusJSONNullsStrippedBody(ctx context.Context, params *PatchPortalApplicationsParams, body PatchPortalApplicationsApplicationVndPgrstObjectPlusJSONNullsStrippedRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PostPortalApplicationsWithBody request with any body
+	PostPortalApplicationsWithBody(ctx context.Context, params *PostPortalApplicationsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	PostPortalApplications(ctx context.Context, params *PostPortalApplicationsParams, body PostPortalApplicationsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	PostPortalApplicationsWithApplicationVndPgrstObjectPlusJSONBody(ctx context.Context, params *PostPortalApplicationsParams, body PostPortalApplicationsApplicationVndPgrstObjectPlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	PostPortalApplicationsWithApplicationVndPgrstObjectPlusJSONNullsStrippedBody(ctx context.Context, params *PostPortalApplicationsParams, body PostPortalApplicationsApplicationVndPgrstObjectPlusJSONNullsStrippedRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// DeletePortalPlans request
 	DeletePortalPlans(ctx context.Context, params *DeletePortalPlansParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -143,6 +263,18 @@ type ClientInterface interface {
 	PostPortalPlansWithApplicationVndPgrstObjectPlusJSONBody(ctx context.Context, params *PostPortalPlansParams, body PostPortalPlansApplicationVndPgrstObjectPlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	PostPortalPlansWithApplicationVndPgrstObjectPlusJSONNullsStrippedBody(ctx context.Context, params *PostPortalPlansParams, body PostPortalPlansApplicationVndPgrstObjectPlusJSONNullsStrippedRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetRpcMe request
+	GetRpcMe(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PostRpcMeWithBody request with any body
+	PostRpcMeWithBody(ctx context.Context, params *PostRpcMeParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	PostRpcMe(ctx context.Context, params *PostRpcMeParams, body PostRpcMeJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	PostRpcMeWithApplicationVndPgrstObjectPlusJSONBody(ctx context.Context, params *PostRpcMeParams, body PostRpcMeApplicationVndPgrstObjectPlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	PostRpcMeWithApplicationVndPgrstObjectPlusJSONNullsStrippedBody(ctx context.Context, params *PostRpcMeParams, body PostRpcMeApplicationVndPgrstObjectPlusJSONNullsStrippedRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// DeleteServiceEndpoints request
 	DeleteServiceEndpoints(ctx context.Context, params *DeleteServiceEndpointsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -219,6 +351,246 @@ type ClientInterface interface {
 
 func (c *Client) Get(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) DeleteApplications(ctx context.Context, params *DeleteApplicationsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteApplicationsRequest(c.Server, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetApplications(ctx context.Context, params *GetApplicationsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetApplicationsRequest(c.Server, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PatchApplicationsWithBody(ctx context.Context, params *PatchApplicationsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPatchApplicationsRequestWithBody(c.Server, params, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PatchApplications(ctx context.Context, params *PatchApplicationsParams, body PatchApplicationsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPatchApplicationsRequest(c.Server, params, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PatchApplicationsWithApplicationVndPgrstObjectPlusJSONBody(ctx context.Context, params *PatchApplicationsParams, body PatchApplicationsApplicationVndPgrstObjectPlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPatchApplicationsRequestWithApplicationVndPgrstObjectPlusJSONBody(c.Server, params, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PatchApplicationsWithApplicationVndPgrstObjectPlusJSONNullsStrippedBody(ctx context.Context, params *PatchApplicationsParams, body PatchApplicationsApplicationVndPgrstObjectPlusJSONNullsStrippedRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPatchApplicationsRequestWithApplicationVndPgrstObjectPlusJSONNullsStrippedBody(c.Server, params, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostApplicationsWithBody(ctx context.Context, params *PostApplicationsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostApplicationsRequestWithBody(c.Server, params, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostApplications(ctx context.Context, params *PostApplicationsParams, body PostApplicationsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostApplicationsRequest(c.Server, params, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostApplicationsWithApplicationVndPgrstObjectPlusJSONBody(ctx context.Context, params *PostApplicationsParams, body PostApplicationsApplicationVndPgrstObjectPlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostApplicationsRequestWithApplicationVndPgrstObjectPlusJSONBody(c.Server, params, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostApplicationsWithApplicationVndPgrstObjectPlusJSONNullsStrippedBody(ctx context.Context, params *PostApplicationsParams, body PostApplicationsApplicationVndPgrstObjectPlusJSONNullsStrippedRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostApplicationsRequestWithApplicationVndPgrstObjectPlusJSONNullsStrippedBody(c.Server, params, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) DeleteGateways(ctx context.Context, params *DeleteGatewaysParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteGatewaysRequest(c.Server, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetGateways(ctx context.Context, params *GetGatewaysParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetGatewaysRequest(c.Server, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PatchGatewaysWithBody(ctx context.Context, params *PatchGatewaysParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPatchGatewaysRequestWithBody(c.Server, params, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PatchGateways(ctx context.Context, params *PatchGatewaysParams, body PatchGatewaysJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPatchGatewaysRequest(c.Server, params, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PatchGatewaysWithApplicationVndPgrstObjectPlusJSONBody(ctx context.Context, params *PatchGatewaysParams, body PatchGatewaysApplicationVndPgrstObjectPlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPatchGatewaysRequestWithApplicationVndPgrstObjectPlusJSONBody(c.Server, params, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PatchGatewaysWithApplicationVndPgrstObjectPlusJSONNullsStrippedBody(ctx context.Context, params *PatchGatewaysParams, body PatchGatewaysApplicationVndPgrstObjectPlusJSONNullsStrippedRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPatchGatewaysRequestWithApplicationVndPgrstObjectPlusJSONNullsStrippedBody(c.Server, params, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostGatewaysWithBody(ctx context.Context, params *PostGatewaysParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostGatewaysRequestWithBody(c.Server, params, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostGateways(ctx context.Context, params *PostGatewaysParams, body PostGatewaysJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostGatewaysRequest(c.Server, params, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostGatewaysWithApplicationVndPgrstObjectPlusJSONBody(ctx context.Context, params *PostGatewaysParams, body PostGatewaysApplicationVndPgrstObjectPlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostGatewaysRequestWithApplicationVndPgrstObjectPlusJSONBody(c.Server, params, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostGatewaysWithApplicationVndPgrstObjectPlusJSONNullsStrippedBody(ctx context.Context, params *PostGatewaysParams, body PostGatewaysApplicationVndPgrstObjectPlusJSONNullsStrippedRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostGatewaysRequestWithApplicationVndPgrstObjectPlusJSONNullsStrippedBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -349,6 +721,366 @@ func (c *Client) PostNetworksWithApplicationVndPgrstObjectPlusJSONNullsStrippedB
 	return c.Client.Do(req)
 }
 
+func (c *Client) DeleteOrganizations(ctx context.Context, params *DeleteOrganizationsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteOrganizationsRequest(c.Server, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetOrganizations(ctx context.Context, params *GetOrganizationsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetOrganizationsRequest(c.Server, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PatchOrganizationsWithBody(ctx context.Context, params *PatchOrganizationsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPatchOrganizationsRequestWithBody(c.Server, params, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PatchOrganizations(ctx context.Context, params *PatchOrganizationsParams, body PatchOrganizationsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPatchOrganizationsRequest(c.Server, params, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PatchOrganizationsWithApplicationVndPgrstObjectPlusJSONBody(ctx context.Context, params *PatchOrganizationsParams, body PatchOrganizationsApplicationVndPgrstObjectPlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPatchOrganizationsRequestWithApplicationVndPgrstObjectPlusJSONBody(c.Server, params, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PatchOrganizationsWithApplicationVndPgrstObjectPlusJSONNullsStrippedBody(ctx context.Context, params *PatchOrganizationsParams, body PatchOrganizationsApplicationVndPgrstObjectPlusJSONNullsStrippedRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPatchOrganizationsRequestWithApplicationVndPgrstObjectPlusJSONNullsStrippedBody(c.Server, params, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostOrganizationsWithBody(ctx context.Context, params *PostOrganizationsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostOrganizationsRequestWithBody(c.Server, params, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostOrganizations(ctx context.Context, params *PostOrganizationsParams, body PostOrganizationsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostOrganizationsRequest(c.Server, params, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostOrganizationsWithApplicationVndPgrstObjectPlusJSONBody(ctx context.Context, params *PostOrganizationsParams, body PostOrganizationsApplicationVndPgrstObjectPlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostOrganizationsRequestWithApplicationVndPgrstObjectPlusJSONBody(c.Server, params, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostOrganizationsWithApplicationVndPgrstObjectPlusJSONNullsStrippedBody(ctx context.Context, params *PostOrganizationsParams, body PostOrganizationsApplicationVndPgrstObjectPlusJSONNullsStrippedRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostOrganizationsRequestWithApplicationVndPgrstObjectPlusJSONNullsStrippedBody(c.Server, params, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) DeletePortalAccounts(ctx context.Context, params *DeletePortalAccountsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeletePortalAccountsRequest(c.Server, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetPortalAccounts(ctx context.Context, params *GetPortalAccountsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetPortalAccountsRequest(c.Server, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PatchPortalAccountsWithBody(ctx context.Context, params *PatchPortalAccountsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPatchPortalAccountsRequestWithBody(c.Server, params, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PatchPortalAccounts(ctx context.Context, params *PatchPortalAccountsParams, body PatchPortalAccountsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPatchPortalAccountsRequest(c.Server, params, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PatchPortalAccountsWithApplicationVndPgrstObjectPlusJSONBody(ctx context.Context, params *PatchPortalAccountsParams, body PatchPortalAccountsApplicationVndPgrstObjectPlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPatchPortalAccountsRequestWithApplicationVndPgrstObjectPlusJSONBody(c.Server, params, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PatchPortalAccountsWithApplicationVndPgrstObjectPlusJSONNullsStrippedBody(ctx context.Context, params *PatchPortalAccountsParams, body PatchPortalAccountsApplicationVndPgrstObjectPlusJSONNullsStrippedRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPatchPortalAccountsRequestWithApplicationVndPgrstObjectPlusJSONNullsStrippedBody(c.Server, params, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostPortalAccountsWithBody(ctx context.Context, params *PostPortalAccountsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostPortalAccountsRequestWithBody(c.Server, params, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostPortalAccounts(ctx context.Context, params *PostPortalAccountsParams, body PostPortalAccountsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostPortalAccountsRequest(c.Server, params, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostPortalAccountsWithApplicationVndPgrstObjectPlusJSONBody(ctx context.Context, params *PostPortalAccountsParams, body PostPortalAccountsApplicationVndPgrstObjectPlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostPortalAccountsRequestWithApplicationVndPgrstObjectPlusJSONBody(c.Server, params, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostPortalAccountsWithApplicationVndPgrstObjectPlusJSONNullsStrippedBody(ctx context.Context, params *PostPortalAccountsParams, body PostPortalAccountsApplicationVndPgrstObjectPlusJSONNullsStrippedRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostPortalAccountsRequestWithApplicationVndPgrstObjectPlusJSONNullsStrippedBody(c.Server, params, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) DeletePortalApplications(ctx context.Context, params *DeletePortalApplicationsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeletePortalApplicationsRequest(c.Server, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetPortalApplications(ctx context.Context, params *GetPortalApplicationsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetPortalApplicationsRequest(c.Server, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PatchPortalApplicationsWithBody(ctx context.Context, params *PatchPortalApplicationsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPatchPortalApplicationsRequestWithBody(c.Server, params, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PatchPortalApplications(ctx context.Context, params *PatchPortalApplicationsParams, body PatchPortalApplicationsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPatchPortalApplicationsRequest(c.Server, params, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PatchPortalApplicationsWithApplicationVndPgrstObjectPlusJSONBody(ctx context.Context, params *PatchPortalApplicationsParams, body PatchPortalApplicationsApplicationVndPgrstObjectPlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPatchPortalApplicationsRequestWithApplicationVndPgrstObjectPlusJSONBody(c.Server, params, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PatchPortalApplicationsWithApplicationVndPgrstObjectPlusJSONNullsStrippedBody(ctx context.Context, params *PatchPortalApplicationsParams, body PatchPortalApplicationsApplicationVndPgrstObjectPlusJSONNullsStrippedRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPatchPortalApplicationsRequestWithApplicationVndPgrstObjectPlusJSONNullsStrippedBody(c.Server, params, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostPortalApplicationsWithBody(ctx context.Context, params *PostPortalApplicationsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostPortalApplicationsRequestWithBody(c.Server, params, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostPortalApplications(ctx context.Context, params *PostPortalApplicationsParams, body PostPortalApplicationsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostPortalApplicationsRequest(c.Server, params, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostPortalApplicationsWithApplicationVndPgrstObjectPlusJSONBody(ctx context.Context, params *PostPortalApplicationsParams, body PostPortalApplicationsApplicationVndPgrstObjectPlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostPortalApplicationsRequestWithApplicationVndPgrstObjectPlusJSONBody(c.Server, params, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostPortalApplicationsWithApplicationVndPgrstObjectPlusJSONNullsStrippedBody(ctx context.Context, params *PostPortalApplicationsParams, body PostPortalApplicationsApplicationVndPgrstObjectPlusJSONNullsStrippedRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostPortalApplicationsRequestWithApplicationVndPgrstObjectPlusJSONNullsStrippedBody(c.Server, params, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 func (c *Client) DeletePortalPlans(ctx context.Context, params *DeletePortalPlansParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewDeletePortalPlansRequest(c.Server, params)
 	if err != nil {
@@ -459,6 +1191,66 @@ func (c *Client) PostPortalPlansWithApplicationVndPgrstObjectPlusJSONBody(ctx co
 
 func (c *Client) PostPortalPlansWithApplicationVndPgrstObjectPlusJSONNullsStrippedBody(ctx context.Context, params *PostPortalPlansParams, body PostPortalPlansApplicationVndPgrstObjectPlusJSONNullsStrippedRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewPostPortalPlansRequestWithApplicationVndPgrstObjectPlusJSONNullsStrippedBody(c.Server, params, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetRpcMe(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetRpcMeRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostRpcMeWithBody(ctx context.Context, params *PostRpcMeParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostRpcMeRequestWithBody(c.Server, params, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostRpcMe(ctx context.Context, params *PostRpcMeParams, body PostRpcMeJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostRpcMeRequest(c.Server, params, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostRpcMeWithApplicationVndPgrstObjectPlusJSONBody(ctx context.Context, params *PostRpcMeParams, body PostRpcMeApplicationVndPgrstObjectPlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostRpcMeRequestWithApplicationVndPgrstObjectPlusJSONBody(c.Server, params, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostRpcMeWithApplicationVndPgrstObjectPlusJSONNullsStrippedBody(ctx context.Context, params *PostRpcMeParams, body PostRpcMeApplicationVndPgrstObjectPlusJSONNullsStrippedRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostRpcMeRequestWithApplicationVndPgrstObjectPlusJSONNullsStrippedBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -856,6 +1648,1502 @@ func NewGetRequest(server string) (*http.Request, error) {
 	return req, nil
 }
 
+// NewDeleteApplicationsRequest generates requests for DeleteApplications
+func NewDeleteApplicationsRequest(server string, params *DeleteApplicationsParams) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/applications")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.ApplicationAddress != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "application_address", runtime.ParamLocationQuery, *params.ApplicationAddress); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.GatewayAddress != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "gateway_address", runtime.ParamLocationQuery, *params.GatewayAddress); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.ServiceId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "service_id", runtime.ParamLocationQuery, *params.ServiceId); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.StakeAmount != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "stake_amount", runtime.ParamLocationQuery, *params.StakeAmount); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.StakeDenom != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "stake_denom", runtime.ParamLocationQuery, *params.StakeDenom); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.ApplicationPrivateKeyHex != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "application_private_key_hex", runtime.ParamLocationQuery, *params.ApplicationPrivateKeyHex); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.NetworkId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "network_id", runtime.ParamLocationQuery, *params.NetworkId); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.CreatedAt != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "created_at", runtime.ParamLocationQuery, *params.CreatedAt); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.UpdatedAt != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "updated_at", runtime.ParamLocationQuery, *params.UpdatedAt); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
+	req, err := http.NewRequest("DELETE", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+
+		if params.Prefer != nil {
+			var headerParam0 string
+
+			headerParam0, err = runtime.StyleParamWithLocation("simple", false, "Prefer", runtime.ParamLocationHeader, *params.Prefer)
+			if err != nil {
+				return nil, err
+			}
+
+			req.Header.Set("Prefer", headerParam0)
+		}
+
+	}
+
+	return req, nil
+}
+
+// NewGetApplicationsRequest generates requests for GetApplications
+func NewGetApplicationsRequest(server string, params *GetApplicationsParams) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/applications")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.ApplicationAddress != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "application_address", runtime.ParamLocationQuery, *params.ApplicationAddress); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.GatewayAddress != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "gateway_address", runtime.ParamLocationQuery, *params.GatewayAddress); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.ServiceId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "service_id", runtime.ParamLocationQuery, *params.ServiceId); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.StakeAmount != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "stake_amount", runtime.ParamLocationQuery, *params.StakeAmount); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.StakeDenom != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "stake_denom", runtime.ParamLocationQuery, *params.StakeDenom); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.ApplicationPrivateKeyHex != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "application_private_key_hex", runtime.ParamLocationQuery, *params.ApplicationPrivateKeyHex); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.NetworkId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "network_id", runtime.ParamLocationQuery, *params.NetworkId); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.CreatedAt != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "created_at", runtime.ParamLocationQuery, *params.CreatedAt); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.UpdatedAt != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "updated_at", runtime.ParamLocationQuery, *params.UpdatedAt); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Select != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "select", runtime.ParamLocationQuery, *params.Select); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Order != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "order", runtime.ParamLocationQuery, *params.Order); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Offset != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "offset", runtime.ParamLocationQuery, *params.Offset); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Limit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "limit", runtime.ParamLocationQuery, *params.Limit); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+
+		if params.Range != nil {
+			var headerParam0 string
+
+			headerParam0, err = runtime.StyleParamWithLocation("simple", false, "Range", runtime.ParamLocationHeader, *params.Range)
+			if err != nil {
+				return nil, err
+			}
+
+			req.Header.Set("Range", headerParam0)
+		}
+
+		if params.RangeUnit != nil {
+			var headerParam1 string
+
+			headerParam1, err = runtime.StyleParamWithLocation("simple", false, "Range-Unit", runtime.ParamLocationHeader, *params.RangeUnit)
+			if err != nil {
+				return nil, err
+			}
+
+			req.Header.Set("Range-Unit", headerParam1)
+		}
+
+		if params.Prefer != nil {
+			var headerParam2 string
+
+			headerParam2, err = runtime.StyleParamWithLocation("simple", false, "Prefer", runtime.ParamLocationHeader, *params.Prefer)
+			if err != nil {
+				return nil, err
+			}
+
+			req.Header.Set("Prefer", headerParam2)
+		}
+
+	}
+
+	return req, nil
+}
+
+// NewPatchApplicationsRequest calls the generic PatchApplications builder with application/json body
+func NewPatchApplicationsRequest(server string, params *PatchApplicationsParams, body PatchApplicationsJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewPatchApplicationsRequestWithBody(server, params, "application/json", bodyReader)
+}
+
+// NewPatchApplicationsRequestWithApplicationVndPgrstObjectPlusJSONBody calls the generic PatchApplications builder with application/vnd.pgrst.object+json body
+func NewPatchApplicationsRequestWithApplicationVndPgrstObjectPlusJSONBody(server string, params *PatchApplicationsParams, body PatchApplicationsApplicationVndPgrstObjectPlusJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewPatchApplicationsRequestWithBody(server, params, "application/vnd.pgrst.object+json", bodyReader)
+}
+
+// NewPatchApplicationsRequestWithApplicationVndPgrstObjectPlusJSONNullsStrippedBody calls the generic PatchApplications builder with application/vnd.pgrst.object+json;nulls=stripped body
+func NewPatchApplicationsRequestWithApplicationVndPgrstObjectPlusJSONNullsStrippedBody(server string, params *PatchApplicationsParams, body PatchApplicationsApplicationVndPgrstObjectPlusJSONNullsStrippedRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewPatchApplicationsRequestWithBody(server, params, "application/vnd.pgrst.object+json;nulls=stripped", bodyReader)
+}
+
+// NewPatchApplicationsRequestWithBody generates requests for PatchApplications with any type of body
+func NewPatchApplicationsRequestWithBody(server string, params *PatchApplicationsParams, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/applications")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.ApplicationAddress != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "application_address", runtime.ParamLocationQuery, *params.ApplicationAddress); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.GatewayAddress != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "gateway_address", runtime.ParamLocationQuery, *params.GatewayAddress); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.ServiceId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "service_id", runtime.ParamLocationQuery, *params.ServiceId); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.StakeAmount != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "stake_amount", runtime.ParamLocationQuery, *params.StakeAmount); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.StakeDenom != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "stake_denom", runtime.ParamLocationQuery, *params.StakeDenom); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.ApplicationPrivateKeyHex != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "application_private_key_hex", runtime.ParamLocationQuery, *params.ApplicationPrivateKeyHex); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.NetworkId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "network_id", runtime.ParamLocationQuery, *params.NetworkId); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.CreatedAt != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "created_at", runtime.ParamLocationQuery, *params.CreatedAt); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.UpdatedAt != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "updated_at", runtime.ParamLocationQuery, *params.UpdatedAt); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
+	req, err := http.NewRequest("PATCH", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	if params != nil {
+
+		if params.Prefer != nil {
+			var headerParam0 string
+
+			headerParam0, err = runtime.StyleParamWithLocation("simple", false, "Prefer", runtime.ParamLocationHeader, *params.Prefer)
+			if err != nil {
+				return nil, err
+			}
+
+			req.Header.Set("Prefer", headerParam0)
+		}
+
+	}
+
+	return req, nil
+}
+
+// NewPostApplicationsRequest calls the generic PostApplications builder with application/json body
+func NewPostApplicationsRequest(server string, params *PostApplicationsParams, body PostApplicationsJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewPostApplicationsRequestWithBody(server, params, "application/json", bodyReader)
+}
+
+// NewPostApplicationsRequestWithApplicationVndPgrstObjectPlusJSONBody calls the generic PostApplications builder with application/vnd.pgrst.object+json body
+func NewPostApplicationsRequestWithApplicationVndPgrstObjectPlusJSONBody(server string, params *PostApplicationsParams, body PostApplicationsApplicationVndPgrstObjectPlusJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewPostApplicationsRequestWithBody(server, params, "application/vnd.pgrst.object+json", bodyReader)
+}
+
+// NewPostApplicationsRequestWithApplicationVndPgrstObjectPlusJSONNullsStrippedBody calls the generic PostApplications builder with application/vnd.pgrst.object+json;nulls=stripped body
+func NewPostApplicationsRequestWithApplicationVndPgrstObjectPlusJSONNullsStrippedBody(server string, params *PostApplicationsParams, body PostApplicationsApplicationVndPgrstObjectPlusJSONNullsStrippedRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewPostApplicationsRequestWithBody(server, params, "application/vnd.pgrst.object+json;nulls=stripped", bodyReader)
+}
+
+// NewPostApplicationsRequestWithBody generates requests for PostApplications with any type of body
+func NewPostApplicationsRequestWithBody(server string, params *PostApplicationsParams, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/applications")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.Select != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "select", runtime.ParamLocationQuery, *params.Select); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	if params != nil {
+
+		if params.Prefer != nil {
+			var headerParam0 string
+
+			headerParam0, err = runtime.StyleParamWithLocation("simple", false, "Prefer", runtime.ParamLocationHeader, *params.Prefer)
+			if err != nil {
+				return nil, err
+			}
+
+			req.Header.Set("Prefer", headerParam0)
+		}
+
+	}
+
+	return req, nil
+}
+
+// NewDeleteGatewaysRequest generates requests for DeleteGateways
+func NewDeleteGatewaysRequest(server string, params *DeleteGatewaysParams) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/gateways")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.GatewayAddress != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "gateway_address", runtime.ParamLocationQuery, *params.GatewayAddress); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.StakeAmount != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "stake_amount", runtime.ParamLocationQuery, *params.StakeAmount); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.StakeDenom != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "stake_denom", runtime.ParamLocationQuery, *params.StakeDenom); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.NetworkId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "network_id", runtime.ParamLocationQuery, *params.NetworkId); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.GatewayPrivateKeyHex != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "gateway_private_key_hex", runtime.ParamLocationQuery, *params.GatewayPrivateKeyHex); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.CreatedAt != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "created_at", runtime.ParamLocationQuery, *params.CreatedAt); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.UpdatedAt != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "updated_at", runtime.ParamLocationQuery, *params.UpdatedAt); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
+	req, err := http.NewRequest("DELETE", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+
+		if params.Prefer != nil {
+			var headerParam0 string
+
+			headerParam0, err = runtime.StyleParamWithLocation("simple", false, "Prefer", runtime.ParamLocationHeader, *params.Prefer)
+			if err != nil {
+				return nil, err
+			}
+
+			req.Header.Set("Prefer", headerParam0)
+		}
+
+	}
+
+	return req, nil
+}
+
+// NewGetGatewaysRequest generates requests for GetGateways
+func NewGetGatewaysRequest(server string, params *GetGatewaysParams) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/gateways")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.GatewayAddress != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "gateway_address", runtime.ParamLocationQuery, *params.GatewayAddress); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.StakeAmount != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "stake_amount", runtime.ParamLocationQuery, *params.StakeAmount); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.StakeDenom != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "stake_denom", runtime.ParamLocationQuery, *params.StakeDenom); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.NetworkId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "network_id", runtime.ParamLocationQuery, *params.NetworkId); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.GatewayPrivateKeyHex != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "gateway_private_key_hex", runtime.ParamLocationQuery, *params.GatewayPrivateKeyHex); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.CreatedAt != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "created_at", runtime.ParamLocationQuery, *params.CreatedAt); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.UpdatedAt != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "updated_at", runtime.ParamLocationQuery, *params.UpdatedAt); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Select != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "select", runtime.ParamLocationQuery, *params.Select); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Order != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "order", runtime.ParamLocationQuery, *params.Order); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Offset != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "offset", runtime.ParamLocationQuery, *params.Offset); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Limit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "limit", runtime.ParamLocationQuery, *params.Limit); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+
+		if params.Range != nil {
+			var headerParam0 string
+
+			headerParam0, err = runtime.StyleParamWithLocation("simple", false, "Range", runtime.ParamLocationHeader, *params.Range)
+			if err != nil {
+				return nil, err
+			}
+
+			req.Header.Set("Range", headerParam0)
+		}
+
+		if params.RangeUnit != nil {
+			var headerParam1 string
+
+			headerParam1, err = runtime.StyleParamWithLocation("simple", false, "Range-Unit", runtime.ParamLocationHeader, *params.RangeUnit)
+			if err != nil {
+				return nil, err
+			}
+
+			req.Header.Set("Range-Unit", headerParam1)
+		}
+
+		if params.Prefer != nil {
+			var headerParam2 string
+
+			headerParam2, err = runtime.StyleParamWithLocation("simple", false, "Prefer", runtime.ParamLocationHeader, *params.Prefer)
+			if err != nil {
+				return nil, err
+			}
+
+			req.Header.Set("Prefer", headerParam2)
+		}
+
+	}
+
+	return req, nil
+}
+
+// NewPatchGatewaysRequest calls the generic PatchGateways builder with application/json body
+func NewPatchGatewaysRequest(server string, params *PatchGatewaysParams, body PatchGatewaysJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewPatchGatewaysRequestWithBody(server, params, "application/json", bodyReader)
+}
+
+// NewPatchGatewaysRequestWithApplicationVndPgrstObjectPlusJSONBody calls the generic PatchGateways builder with application/vnd.pgrst.object+json body
+func NewPatchGatewaysRequestWithApplicationVndPgrstObjectPlusJSONBody(server string, params *PatchGatewaysParams, body PatchGatewaysApplicationVndPgrstObjectPlusJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewPatchGatewaysRequestWithBody(server, params, "application/vnd.pgrst.object+json", bodyReader)
+}
+
+// NewPatchGatewaysRequestWithApplicationVndPgrstObjectPlusJSONNullsStrippedBody calls the generic PatchGateways builder with application/vnd.pgrst.object+json;nulls=stripped body
+func NewPatchGatewaysRequestWithApplicationVndPgrstObjectPlusJSONNullsStrippedBody(server string, params *PatchGatewaysParams, body PatchGatewaysApplicationVndPgrstObjectPlusJSONNullsStrippedRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewPatchGatewaysRequestWithBody(server, params, "application/vnd.pgrst.object+json;nulls=stripped", bodyReader)
+}
+
+// NewPatchGatewaysRequestWithBody generates requests for PatchGateways with any type of body
+func NewPatchGatewaysRequestWithBody(server string, params *PatchGatewaysParams, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/gateways")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.GatewayAddress != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "gateway_address", runtime.ParamLocationQuery, *params.GatewayAddress); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.StakeAmount != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "stake_amount", runtime.ParamLocationQuery, *params.StakeAmount); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.StakeDenom != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "stake_denom", runtime.ParamLocationQuery, *params.StakeDenom); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.NetworkId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "network_id", runtime.ParamLocationQuery, *params.NetworkId); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.GatewayPrivateKeyHex != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "gateway_private_key_hex", runtime.ParamLocationQuery, *params.GatewayPrivateKeyHex); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.CreatedAt != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "created_at", runtime.ParamLocationQuery, *params.CreatedAt); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.UpdatedAt != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "updated_at", runtime.ParamLocationQuery, *params.UpdatedAt); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
+	req, err := http.NewRequest("PATCH", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	if params != nil {
+
+		if params.Prefer != nil {
+			var headerParam0 string
+
+			headerParam0, err = runtime.StyleParamWithLocation("simple", false, "Prefer", runtime.ParamLocationHeader, *params.Prefer)
+			if err != nil {
+				return nil, err
+			}
+
+			req.Header.Set("Prefer", headerParam0)
+		}
+
+	}
+
+	return req, nil
+}
+
+// NewPostGatewaysRequest calls the generic PostGateways builder with application/json body
+func NewPostGatewaysRequest(server string, params *PostGatewaysParams, body PostGatewaysJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewPostGatewaysRequestWithBody(server, params, "application/json", bodyReader)
+}
+
+// NewPostGatewaysRequestWithApplicationVndPgrstObjectPlusJSONBody calls the generic PostGateways builder with application/vnd.pgrst.object+json body
+func NewPostGatewaysRequestWithApplicationVndPgrstObjectPlusJSONBody(server string, params *PostGatewaysParams, body PostGatewaysApplicationVndPgrstObjectPlusJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewPostGatewaysRequestWithBody(server, params, "application/vnd.pgrst.object+json", bodyReader)
+}
+
+// NewPostGatewaysRequestWithApplicationVndPgrstObjectPlusJSONNullsStrippedBody calls the generic PostGateways builder with application/vnd.pgrst.object+json;nulls=stripped body
+func NewPostGatewaysRequestWithApplicationVndPgrstObjectPlusJSONNullsStrippedBody(server string, params *PostGatewaysParams, body PostGatewaysApplicationVndPgrstObjectPlusJSONNullsStrippedRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewPostGatewaysRequestWithBody(server, params, "application/vnd.pgrst.object+json;nulls=stripped", bodyReader)
+}
+
+// NewPostGatewaysRequestWithBody generates requests for PostGateways with any type of body
+func NewPostGatewaysRequestWithBody(server string, params *PostGatewaysParams, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/gateways")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.Select != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "select", runtime.ParamLocationQuery, *params.Select); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	if params != nil {
+
+		if params.Prefer != nil {
+			var headerParam0 string
+
+			headerParam0, err = runtime.StyleParamWithLocation("simple", false, "Prefer", runtime.ParamLocationHeader, *params.Prefer)
+			if err != nil {
+				return nil, err
+			}
+
+			req.Header.Set("Prefer", headerParam0)
+		}
+
+	}
+
+	return req, nil
+}
+
 // NewDeleteNetworksRequest generates requests for DeleteNetworks
 func NewDeleteNetworksRequest(server string, params *DeleteNetworksParams) (*http.Request, error) {
 	var err error
@@ -1212,6 +3500,2730 @@ func NewPostNetworksRequestWithBody(server string, params *PostNetworksParams, c
 	}
 
 	operationPath := fmt.Sprintf("/networks")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.Select != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "select", runtime.ParamLocationQuery, *params.Select); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	if params != nil {
+
+		if params.Prefer != nil {
+			var headerParam0 string
+
+			headerParam0, err = runtime.StyleParamWithLocation("simple", false, "Prefer", runtime.ParamLocationHeader, *params.Prefer)
+			if err != nil {
+				return nil, err
+			}
+
+			req.Header.Set("Prefer", headerParam0)
+		}
+
+	}
+
+	return req, nil
+}
+
+// NewDeleteOrganizationsRequest generates requests for DeleteOrganizations
+func NewDeleteOrganizationsRequest(server string, params *DeleteOrganizationsParams) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/organizations")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.OrganizationId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "organization_id", runtime.ParamLocationQuery, *params.OrganizationId); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.OrganizationName != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "organization_name", runtime.ParamLocationQuery, *params.OrganizationName); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.DeletedAt != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "deleted_at", runtime.ParamLocationQuery, *params.DeletedAt); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.CreatedAt != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "created_at", runtime.ParamLocationQuery, *params.CreatedAt); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.UpdatedAt != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "updated_at", runtime.ParamLocationQuery, *params.UpdatedAt); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
+	req, err := http.NewRequest("DELETE", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+
+		if params.Prefer != nil {
+			var headerParam0 string
+
+			headerParam0, err = runtime.StyleParamWithLocation("simple", false, "Prefer", runtime.ParamLocationHeader, *params.Prefer)
+			if err != nil {
+				return nil, err
+			}
+
+			req.Header.Set("Prefer", headerParam0)
+		}
+
+	}
+
+	return req, nil
+}
+
+// NewGetOrganizationsRequest generates requests for GetOrganizations
+func NewGetOrganizationsRequest(server string, params *GetOrganizationsParams) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/organizations")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.OrganizationId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "organization_id", runtime.ParamLocationQuery, *params.OrganizationId); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.OrganizationName != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "organization_name", runtime.ParamLocationQuery, *params.OrganizationName); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.DeletedAt != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "deleted_at", runtime.ParamLocationQuery, *params.DeletedAt); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.CreatedAt != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "created_at", runtime.ParamLocationQuery, *params.CreatedAt); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.UpdatedAt != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "updated_at", runtime.ParamLocationQuery, *params.UpdatedAt); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Select != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "select", runtime.ParamLocationQuery, *params.Select); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Order != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "order", runtime.ParamLocationQuery, *params.Order); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Offset != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "offset", runtime.ParamLocationQuery, *params.Offset); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Limit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "limit", runtime.ParamLocationQuery, *params.Limit); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+
+		if params.Range != nil {
+			var headerParam0 string
+
+			headerParam0, err = runtime.StyleParamWithLocation("simple", false, "Range", runtime.ParamLocationHeader, *params.Range)
+			if err != nil {
+				return nil, err
+			}
+
+			req.Header.Set("Range", headerParam0)
+		}
+
+		if params.RangeUnit != nil {
+			var headerParam1 string
+
+			headerParam1, err = runtime.StyleParamWithLocation("simple", false, "Range-Unit", runtime.ParamLocationHeader, *params.RangeUnit)
+			if err != nil {
+				return nil, err
+			}
+
+			req.Header.Set("Range-Unit", headerParam1)
+		}
+
+		if params.Prefer != nil {
+			var headerParam2 string
+
+			headerParam2, err = runtime.StyleParamWithLocation("simple", false, "Prefer", runtime.ParamLocationHeader, *params.Prefer)
+			if err != nil {
+				return nil, err
+			}
+
+			req.Header.Set("Prefer", headerParam2)
+		}
+
+	}
+
+	return req, nil
+}
+
+// NewPatchOrganizationsRequest calls the generic PatchOrganizations builder with application/json body
+func NewPatchOrganizationsRequest(server string, params *PatchOrganizationsParams, body PatchOrganizationsJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewPatchOrganizationsRequestWithBody(server, params, "application/json", bodyReader)
+}
+
+// NewPatchOrganizationsRequestWithApplicationVndPgrstObjectPlusJSONBody calls the generic PatchOrganizations builder with application/vnd.pgrst.object+json body
+func NewPatchOrganizationsRequestWithApplicationVndPgrstObjectPlusJSONBody(server string, params *PatchOrganizationsParams, body PatchOrganizationsApplicationVndPgrstObjectPlusJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewPatchOrganizationsRequestWithBody(server, params, "application/vnd.pgrst.object+json", bodyReader)
+}
+
+// NewPatchOrganizationsRequestWithApplicationVndPgrstObjectPlusJSONNullsStrippedBody calls the generic PatchOrganizations builder with application/vnd.pgrst.object+json;nulls=stripped body
+func NewPatchOrganizationsRequestWithApplicationVndPgrstObjectPlusJSONNullsStrippedBody(server string, params *PatchOrganizationsParams, body PatchOrganizationsApplicationVndPgrstObjectPlusJSONNullsStrippedRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewPatchOrganizationsRequestWithBody(server, params, "application/vnd.pgrst.object+json;nulls=stripped", bodyReader)
+}
+
+// NewPatchOrganizationsRequestWithBody generates requests for PatchOrganizations with any type of body
+func NewPatchOrganizationsRequestWithBody(server string, params *PatchOrganizationsParams, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/organizations")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.OrganizationId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "organization_id", runtime.ParamLocationQuery, *params.OrganizationId); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.OrganizationName != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "organization_name", runtime.ParamLocationQuery, *params.OrganizationName); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.DeletedAt != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "deleted_at", runtime.ParamLocationQuery, *params.DeletedAt); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.CreatedAt != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "created_at", runtime.ParamLocationQuery, *params.CreatedAt); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.UpdatedAt != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "updated_at", runtime.ParamLocationQuery, *params.UpdatedAt); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
+	req, err := http.NewRequest("PATCH", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	if params != nil {
+
+		if params.Prefer != nil {
+			var headerParam0 string
+
+			headerParam0, err = runtime.StyleParamWithLocation("simple", false, "Prefer", runtime.ParamLocationHeader, *params.Prefer)
+			if err != nil {
+				return nil, err
+			}
+
+			req.Header.Set("Prefer", headerParam0)
+		}
+
+	}
+
+	return req, nil
+}
+
+// NewPostOrganizationsRequest calls the generic PostOrganizations builder with application/json body
+func NewPostOrganizationsRequest(server string, params *PostOrganizationsParams, body PostOrganizationsJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewPostOrganizationsRequestWithBody(server, params, "application/json", bodyReader)
+}
+
+// NewPostOrganizationsRequestWithApplicationVndPgrstObjectPlusJSONBody calls the generic PostOrganizations builder with application/vnd.pgrst.object+json body
+func NewPostOrganizationsRequestWithApplicationVndPgrstObjectPlusJSONBody(server string, params *PostOrganizationsParams, body PostOrganizationsApplicationVndPgrstObjectPlusJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewPostOrganizationsRequestWithBody(server, params, "application/vnd.pgrst.object+json", bodyReader)
+}
+
+// NewPostOrganizationsRequestWithApplicationVndPgrstObjectPlusJSONNullsStrippedBody calls the generic PostOrganizations builder with application/vnd.pgrst.object+json;nulls=stripped body
+func NewPostOrganizationsRequestWithApplicationVndPgrstObjectPlusJSONNullsStrippedBody(server string, params *PostOrganizationsParams, body PostOrganizationsApplicationVndPgrstObjectPlusJSONNullsStrippedRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewPostOrganizationsRequestWithBody(server, params, "application/vnd.pgrst.object+json;nulls=stripped", bodyReader)
+}
+
+// NewPostOrganizationsRequestWithBody generates requests for PostOrganizations with any type of body
+func NewPostOrganizationsRequestWithBody(server string, params *PostOrganizationsParams, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/organizations")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.Select != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "select", runtime.ParamLocationQuery, *params.Select); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	if params != nil {
+
+		if params.Prefer != nil {
+			var headerParam0 string
+
+			headerParam0, err = runtime.StyleParamWithLocation("simple", false, "Prefer", runtime.ParamLocationHeader, *params.Prefer)
+			if err != nil {
+				return nil, err
+			}
+
+			req.Header.Set("Prefer", headerParam0)
+		}
+
+	}
+
+	return req, nil
+}
+
+// NewDeletePortalAccountsRequest generates requests for DeletePortalAccounts
+func NewDeletePortalAccountsRequest(server string, params *DeletePortalAccountsParams) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/portal_accounts")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.PortalAccountId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "portal_account_id", runtime.ParamLocationQuery, *params.PortalAccountId); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.OrganizationId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "organization_id", runtime.ParamLocationQuery, *params.OrganizationId); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.PortalPlanType != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "portal_plan_type", runtime.ParamLocationQuery, *params.PortalPlanType); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.UserAccountName != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "user_account_name", runtime.ParamLocationQuery, *params.UserAccountName); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.InternalAccountName != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "internal_account_name", runtime.ParamLocationQuery, *params.InternalAccountName); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.PortalAccountUserLimit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "portal_account_user_limit", runtime.ParamLocationQuery, *params.PortalAccountUserLimit); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.PortalAccountUserLimitInterval != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "portal_account_user_limit_interval", runtime.ParamLocationQuery, *params.PortalAccountUserLimitInterval); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.PortalAccountUserLimitRps != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "portal_account_user_limit_rps", runtime.ParamLocationQuery, *params.PortalAccountUserLimitRps); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.BillingType != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "billing_type", runtime.ParamLocationQuery, *params.BillingType); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.StripeSubscriptionId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "stripe_subscription_id", runtime.ParamLocationQuery, *params.StripeSubscriptionId); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.GcpAccountId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "gcp_account_id", runtime.ParamLocationQuery, *params.GcpAccountId); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.GcpEntitlementId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "gcp_entitlement_id", runtime.ParamLocationQuery, *params.GcpEntitlementId); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.DeletedAt != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "deleted_at", runtime.ParamLocationQuery, *params.DeletedAt); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.CreatedAt != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "created_at", runtime.ParamLocationQuery, *params.CreatedAt); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.UpdatedAt != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "updated_at", runtime.ParamLocationQuery, *params.UpdatedAt); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
+	req, err := http.NewRequest("DELETE", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+
+		if params.Prefer != nil {
+			var headerParam0 string
+
+			headerParam0, err = runtime.StyleParamWithLocation("simple", false, "Prefer", runtime.ParamLocationHeader, *params.Prefer)
+			if err != nil {
+				return nil, err
+			}
+
+			req.Header.Set("Prefer", headerParam0)
+		}
+
+	}
+
+	return req, nil
+}
+
+// NewGetPortalAccountsRequest generates requests for GetPortalAccounts
+func NewGetPortalAccountsRequest(server string, params *GetPortalAccountsParams) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/portal_accounts")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.PortalAccountId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "portal_account_id", runtime.ParamLocationQuery, *params.PortalAccountId); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.OrganizationId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "organization_id", runtime.ParamLocationQuery, *params.OrganizationId); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.PortalPlanType != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "portal_plan_type", runtime.ParamLocationQuery, *params.PortalPlanType); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.UserAccountName != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "user_account_name", runtime.ParamLocationQuery, *params.UserAccountName); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.InternalAccountName != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "internal_account_name", runtime.ParamLocationQuery, *params.InternalAccountName); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.PortalAccountUserLimit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "portal_account_user_limit", runtime.ParamLocationQuery, *params.PortalAccountUserLimit); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.PortalAccountUserLimitInterval != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "portal_account_user_limit_interval", runtime.ParamLocationQuery, *params.PortalAccountUserLimitInterval); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.PortalAccountUserLimitRps != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "portal_account_user_limit_rps", runtime.ParamLocationQuery, *params.PortalAccountUserLimitRps); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.BillingType != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "billing_type", runtime.ParamLocationQuery, *params.BillingType); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.StripeSubscriptionId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "stripe_subscription_id", runtime.ParamLocationQuery, *params.StripeSubscriptionId); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.GcpAccountId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "gcp_account_id", runtime.ParamLocationQuery, *params.GcpAccountId); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.GcpEntitlementId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "gcp_entitlement_id", runtime.ParamLocationQuery, *params.GcpEntitlementId); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.DeletedAt != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "deleted_at", runtime.ParamLocationQuery, *params.DeletedAt); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.CreatedAt != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "created_at", runtime.ParamLocationQuery, *params.CreatedAt); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.UpdatedAt != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "updated_at", runtime.ParamLocationQuery, *params.UpdatedAt); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Select != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "select", runtime.ParamLocationQuery, *params.Select); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Order != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "order", runtime.ParamLocationQuery, *params.Order); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Offset != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "offset", runtime.ParamLocationQuery, *params.Offset); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Limit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "limit", runtime.ParamLocationQuery, *params.Limit); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+
+		if params.Range != nil {
+			var headerParam0 string
+
+			headerParam0, err = runtime.StyleParamWithLocation("simple", false, "Range", runtime.ParamLocationHeader, *params.Range)
+			if err != nil {
+				return nil, err
+			}
+
+			req.Header.Set("Range", headerParam0)
+		}
+
+		if params.RangeUnit != nil {
+			var headerParam1 string
+
+			headerParam1, err = runtime.StyleParamWithLocation("simple", false, "Range-Unit", runtime.ParamLocationHeader, *params.RangeUnit)
+			if err != nil {
+				return nil, err
+			}
+
+			req.Header.Set("Range-Unit", headerParam1)
+		}
+
+		if params.Prefer != nil {
+			var headerParam2 string
+
+			headerParam2, err = runtime.StyleParamWithLocation("simple", false, "Prefer", runtime.ParamLocationHeader, *params.Prefer)
+			if err != nil {
+				return nil, err
+			}
+
+			req.Header.Set("Prefer", headerParam2)
+		}
+
+	}
+
+	return req, nil
+}
+
+// NewPatchPortalAccountsRequest calls the generic PatchPortalAccounts builder with application/json body
+func NewPatchPortalAccountsRequest(server string, params *PatchPortalAccountsParams, body PatchPortalAccountsJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewPatchPortalAccountsRequestWithBody(server, params, "application/json", bodyReader)
+}
+
+// NewPatchPortalAccountsRequestWithApplicationVndPgrstObjectPlusJSONBody calls the generic PatchPortalAccounts builder with application/vnd.pgrst.object+json body
+func NewPatchPortalAccountsRequestWithApplicationVndPgrstObjectPlusJSONBody(server string, params *PatchPortalAccountsParams, body PatchPortalAccountsApplicationVndPgrstObjectPlusJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewPatchPortalAccountsRequestWithBody(server, params, "application/vnd.pgrst.object+json", bodyReader)
+}
+
+// NewPatchPortalAccountsRequestWithApplicationVndPgrstObjectPlusJSONNullsStrippedBody calls the generic PatchPortalAccounts builder with application/vnd.pgrst.object+json;nulls=stripped body
+func NewPatchPortalAccountsRequestWithApplicationVndPgrstObjectPlusJSONNullsStrippedBody(server string, params *PatchPortalAccountsParams, body PatchPortalAccountsApplicationVndPgrstObjectPlusJSONNullsStrippedRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewPatchPortalAccountsRequestWithBody(server, params, "application/vnd.pgrst.object+json;nulls=stripped", bodyReader)
+}
+
+// NewPatchPortalAccountsRequestWithBody generates requests for PatchPortalAccounts with any type of body
+func NewPatchPortalAccountsRequestWithBody(server string, params *PatchPortalAccountsParams, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/portal_accounts")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.PortalAccountId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "portal_account_id", runtime.ParamLocationQuery, *params.PortalAccountId); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.OrganizationId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "organization_id", runtime.ParamLocationQuery, *params.OrganizationId); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.PortalPlanType != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "portal_plan_type", runtime.ParamLocationQuery, *params.PortalPlanType); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.UserAccountName != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "user_account_name", runtime.ParamLocationQuery, *params.UserAccountName); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.InternalAccountName != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "internal_account_name", runtime.ParamLocationQuery, *params.InternalAccountName); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.PortalAccountUserLimit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "portal_account_user_limit", runtime.ParamLocationQuery, *params.PortalAccountUserLimit); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.PortalAccountUserLimitInterval != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "portal_account_user_limit_interval", runtime.ParamLocationQuery, *params.PortalAccountUserLimitInterval); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.PortalAccountUserLimitRps != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "portal_account_user_limit_rps", runtime.ParamLocationQuery, *params.PortalAccountUserLimitRps); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.BillingType != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "billing_type", runtime.ParamLocationQuery, *params.BillingType); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.StripeSubscriptionId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "stripe_subscription_id", runtime.ParamLocationQuery, *params.StripeSubscriptionId); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.GcpAccountId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "gcp_account_id", runtime.ParamLocationQuery, *params.GcpAccountId); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.GcpEntitlementId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "gcp_entitlement_id", runtime.ParamLocationQuery, *params.GcpEntitlementId); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.DeletedAt != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "deleted_at", runtime.ParamLocationQuery, *params.DeletedAt); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.CreatedAt != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "created_at", runtime.ParamLocationQuery, *params.CreatedAt); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.UpdatedAt != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "updated_at", runtime.ParamLocationQuery, *params.UpdatedAt); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
+	req, err := http.NewRequest("PATCH", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	if params != nil {
+
+		if params.Prefer != nil {
+			var headerParam0 string
+
+			headerParam0, err = runtime.StyleParamWithLocation("simple", false, "Prefer", runtime.ParamLocationHeader, *params.Prefer)
+			if err != nil {
+				return nil, err
+			}
+
+			req.Header.Set("Prefer", headerParam0)
+		}
+
+	}
+
+	return req, nil
+}
+
+// NewPostPortalAccountsRequest calls the generic PostPortalAccounts builder with application/json body
+func NewPostPortalAccountsRequest(server string, params *PostPortalAccountsParams, body PostPortalAccountsJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewPostPortalAccountsRequestWithBody(server, params, "application/json", bodyReader)
+}
+
+// NewPostPortalAccountsRequestWithApplicationVndPgrstObjectPlusJSONBody calls the generic PostPortalAccounts builder with application/vnd.pgrst.object+json body
+func NewPostPortalAccountsRequestWithApplicationVndPgrstObjectPlusJSONBody(server string, params *PostPortalAccountsParams, body PostPortalAccountsApplicationVndPgrstObjectPlusJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewPostPortalAccountsRequestWithBody(server, params, "application/vnd.pgrst.object+json", bodyReader)
+}
+
+// NewPostPortalAccountsRequestWithApplicationVndPgrstObjectPlusJSONNullsStrippedBody calls the generic PostPortalAccounts builder with application/vnd.pgrst.object+json;nulls=stripped body
+func NewPostPortalAccountsRequestWithApplicationVndPgrstObjectPlusJSONNullsStrippedBody(server string, params *PostPortalAccountsParams, body PostPortalAccountsApplicationVndPgrstObjectPlusJSONNullsStrippedRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewPostPortalAccountsRequestWithBody(server, params, "application/vnd.pgrst.object+json;nulls=stripped", bodyReader)
+}
+
+// NewPostPortalAccountsRequestWithBody generates requests for PostPortalAccounts with any type of body
+func NewPostPortalAccountsRequestWithBody(server string, params *PostPortalAccountsParams, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/portal_accounts")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.Select != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "select", runtime.ParamLocationQuery, *params.Select); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	if params != nil {
+
+		if params.Prefer != nil {
+			var headerParam0 string
+
+			headerParam0, err = runtime.StyleParamWithLocation("simple", false, "Prefer", runtime.ParamLocationHeader, *params.Prefer)
+			if err != nil {
+				return nil, err
+			}
+
+			req.Header.Set("Prefer", headerParam0)
+		}
+
+	}
+
+	return req, nil
+}
+
+// NewDeletePortalApplicationsRequest generates requests for DeletePortalApplications
+func NewDeletePortalApplicationsRequest(server string, params *DeletePortalApplicationsParams) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/portal_applications")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.PortalApplicationId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "portal_application_id", runtime.ParamLocationQuery, *params.PortalApplicationId); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.PortalAccountId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "portal_account_id", runtime.ParamLocationQuery, *params.PortalAccountId); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.PortalApplicationName != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "portal_application_name", runtime.ParamLocationQuery, *params.PortalApplicationName); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Emoji != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "emoji", runtime.ParamLocationQuery, *params.Emoji); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.PortalApplicationUserLimit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "portal_application_user_limit", runtime.ParamLocationQuery, *params.PortalApplicationUserLimit); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.PortalApplicationUserLimitInterval != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "portal_application_user_limit_interval", runtime.ParamLocationQuery, *params.PortalApplicationUserLimitInterval); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.PortalApplicationUserLimitRps != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "portal_application_user_limit_rps", runtime.ParamLocationQuery, *params.PortalApplicationUserLimitRps); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.PortalApplicationDescription != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "portal_application_description", runtime.ParamLocationQuery, *params.PortalApplicationDescription); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.FavoriteServiceIds != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "favorite_service_ids", runtime.ParamLocationQuery, *params.FavoriteServiceIds); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.SecretKeyHash != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "secret_key_hash", runtime.ParamLocationQuery, *params.SecretKeyHash); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.SecretKeyRequired != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "secret_key_required", runtime.ParamLocationQuery, *params.SecretKeyRequired); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.DeletedAt != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "deleted_at", runtime.ParamLocationQuery, *params.DeletedAt); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.CreatedAt != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "created_at", runtime.ParamLocationQuery, *params.CreatedAt); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.UpdatedAt != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "updated_at", runtime.ParamLocationQuery, *params.UpdatedAt); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
+	req, err := http.NewRequest("DELETE", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+
+		if params.Prefer != nil {
+			var headerParam0 string
+
+			headerParam0, err = runtime.StyleParamWithLocation("simple", false, "Prefer", runtime.ParamLocationHeader, *params.Prefer)
+			if err != nil {
+				return nil, err
+			}
+
+			req.Header.Set("Prefer", headerParam0)
+		}
+
+	}
+
+	return req, nil
+}
+
+// NewGetPortalApplicationsRequest generates requests for GetPortalApplications
+func NewGetPortalApplicationsRequest(server string, params *GetPortalApplicationsParams) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/portal_applications")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.PortalApplicationId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "portal_application_id", runtime.ParamLocationQuery, *params.PortalApplicationId); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.PortalAccountId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "portal_account_id", runtime.ParamLocationQuery, *params.PortalAccountId); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.PortalApplicationName != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "portal_application_name", runtime.ParamLocationQuery, *params.PortalApplicationName); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Emoji != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "emoji", runtime.ParamLocationQuery, *params.Emoji); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.PortalApplicationUserLimit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "portal_application_user_limit", runtime.ParamLocationQuery, *params.PortalApplicationUserLimit); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.PortalApplicationUserLimitInterval != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "portal_application_user_limit_interval", runtime.ParamLocationQuery, *params.PortalApplicationUserLimitInterval); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.PortalApplicationUserLimitRps != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "portal_application_user_limit_rps", runtime.ParamLocationQuery, *params.PortalApplicationUserLimitRps); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.PortalApplicationDescription != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "portal_application_description", runtime.ParamLocationQuery, *params.PortalApplicationDescription); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.FavoriteServiceIds != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "favorite_service_ids", runtime.ParamLocationQuery, *params.FavoriteServiceIds); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.SecretKeyHash != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "secret_key_hash", runtime.ParamLocationQuery, *params.SecretKeyHash); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.SecretKeyRequired != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "secret_key_required", runtime.ParamLocationQuery, *params.SecretKeyRequired); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.DeletedAt != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "deleted_at", runtime.ParamLocationQuery, *params.DeletedAt); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.CreatedAt != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "created_at", runtime.ParamLocationQuery, *params.CreatedAt); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.UpdatedAt != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "updated_at", runtime.ParamLocationQuery, *params.UpdatedAt); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Select != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "select", runtime.ParamLocationQuery, *params.Select); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Order != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "order", runtime.ParamLocationQuery, *params.Order); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Offset != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "offset", runtime.ParamLocationQuery, *params.Offset); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Limit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "limit", runtime.ParamLocationQuery, *params.Limit); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+
+		if params.Range != nil {
+			var headerParam0 string
+
+			headerParam0, err = runtime.StyleParamWithLocation("simple", false, "Range", runtime.ParamLocationHeader, *params.Range)
+			if err != nil {
+				return nil, err
+			}
+
+			req.Header.Set("Range", headerParam0)
+		}
+
+		if params.RangeUnit != nil {
+			var headerParam1 string
+
+			headerParam1, err = runtime.StyleParamWithLocation("simple", false, "Range-Unit", runtime.ParamLocationHeader, *params.RangeUnit)
+			if err != nil {
+				return nil, err
+			}
+
+			req.Header.Set("Range-Unit", headerParam1)
+		}
+
+		if params.Prefer != nil {
+			var headerParam2 string
+
+			headerParam2, err = runtime.StyleParamWithLocation("simple", false, "Prefer", runtime.ParamLocationHeader, *params.Prefer)
+			if err != nil {
+				return nil, err
+			}
+
+			req.Header.Set("Prefer", headerParam2)
+		}
+
+	}
+
+	return req, nil
+}
+
+// NewPatchPortalApplicationsRequest calls the generic PatchPortalApplications builder with application/json body
+func NewPatchPortalApplicationsRequest(server string, params *PatchPortalApplicationsParams, body PatchPortalApplicationsJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewPatchPortalApplicationsRequestWithBody(server, params, "application/json", bodyReader)
+}
+
+// NewPatchPortalApplicationsRequestWithApplicationVndPgrstObjectPlusJSONBody calls the generic PatchPortalApplications builder with application/vnd.pgrst.object+json body
+func NewPatchPortalApplicationsRequestWithApplicationVndPgrstObjectPlusJSONBody(server string, params *PatchPortalApplicationsParams, body PatchPortalApplicationsApplicationVndPgrstObjectPlusJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewPatchPortalApplicationsRequestWithBody(server, params, "application/vnd.pgrst.object+json", bodyReader)
+}
+
+// NewPatchPortalApplicationsRequestWithApplicationVndPgrstObjectPlusJSONNullsStrippedBody calls the generic PatchPortalApplications builder with application/vnd.pgrst.object+json;nulls=stripped body
+func NewPatchPortalApplicationsRequestWithApplicationVndPgrstObjectPlusJSONNullsStrippedBody(server string, params *PatchPortalApplicationsParams, body PatchPortalApplicationsApplicationVndPgrstObjectPlusJSONNullsStrippedRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewPatchPortalApplicationsRequestWithBody(server, params, "application/vnd.pgrst.object+json;nulls=stripped", bodyReader)
+}
+
+// NewPatchPortalApplicationsRequestWithBody generates requests for PatchPortalApplications with any type of body
+func NewPatchPortalApplicationsRequestWithBody(server string, params *PatchPortalApplicationsParams, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/portal_applications")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.PortalApplicationId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "portal_application_id", runtime.ParamLocationQuery, *params.PortalApplicationId); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.PortalAccountId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "portal_account_id", runtime.ParamLocationQuery, *params.PortalAccountId); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.PortalApplicationName != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "portal_application_name", runtime.ParamLocationQuery, *params.PortalApplicationName); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Emoji != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "emoji", runtime.ParamLocationQuery, *params.Emoji); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.PortalApplicationUserLimit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "portal_application_user_limit", runtime.ParamLocationQuery, *params.PortalApplicationUserLimit); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.PortalApplicationUserLimitInterval != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "portal_application_user_limit_interval", runtime.ParamLocationQuery, *params.PortalApplicationUserLimitInterval); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.PortalApplicationUserLimitRps != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "portal_application_user_limit_rps", runtime.ParamLocationQuery, *params.PortalApplicationUserLimitRps); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.PortalApplicationDescription != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "portal_application_description", runtime.ParamLocationQuery, *params.PortalApplicationDescription); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.FavoriteServiceIds != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "favorite_service_ids", runtime.ParamLocationQuery, *params.FavoriteServiceIds); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.SecretKeyHash != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "secret_key_hash", runtime.ParamLocationQuery, *params.SecretKeyHash); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.SecretKeyRequired != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "secret_key_required", runtime.ParamLocationQuery, *params.SecretKeyRequired); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.DeletedAt != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "deleted_at", runtime.ParamLocationQuery, *params.DeletedAt); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.CreatedAt != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "created_at", runtime.ParamLocationQuery, *params.CreatedAt); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.UpdatedAt != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "updated_at", runtime.ParamLocationQuery, *params.UpdatedAt); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
+	req, err := http.NewRequest("PATCH", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	if params != nil {
+
+		if params.Prefer != nil {
+			var headerParam0 string
+
+			headerParam0, err = runtime.StyleParamWithLocation("simple", false, "Prefer", runtime.ParamLocationHeader, *params.Prefer)
+			if err != nil {
+				return nil, err
+			}
+
+			req.Header.Set("Prefer", headerParam0)
+		}
+
+	}
+
+	return req, nil
+}
+
+// NewPostPortalApplicationsRequest calls the generic PostPortalApplications builder with application/json body
+func NewPostPortalApplicationsRequest(server string, params *PostPortalApplicationsParams, body PostPortalApplicationsJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewPostPortalApplicationsRequestWithBody(server, params, "application/json", bodyReader)
+}
+
+// NewPostPortalApplicationsRequestWithApplicationVndPgrstObjectPlusJSONBody calls the generic PostPortalApplications builder with application/vnd.pgrst.object+json body
+func NewPostPortalApplicationsRequestWithApplicationVndPgrstObjectPlusJSONBody(server string, params *PostPortalApplicationsParams, body PostPortalApplicationsApplicationVndPgrstObjectPlusJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewPostPortalApplicationsRequestWithBody(server, params, "application/vnd.pgrst.object+json", bodyReader)
+}
+
+// NewPostPortalApplicationsRequestWithApplicationVndPgrstObjectPlusJSONNullsStrippedBody calls the generic PostPortalApplications builder with application/vnd.pgrst.object+json;nulls=stripped body
+func NewPostPortalApplicationsRequestWithApplicationVndPgrstObjectPlusJSONNullsStrippedBody(server string, params *PostPortalApplicationsParams, body PostPortalApplicationsApplicationVndPgrstObjectPlusJSONNullsStrippedRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewPostPortalApplicationsRequestWithBody(server, params, "application/vnd.pgrst.object+json;nulls=stripped", bodyReader)
+}
+
+// NewPostPortalApplicationsRequestWithBody generates requests for PostPortalApplications with any type of body
+func NewPostPortalApplicationsRequestWithBody(server string, params *PostPortalApplicationsParams, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/portal_applications")
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -1893,6 +6905,110 @@ func NewPostPortalPlansRequestWithBody(server string, params *PostPortalPlansPar
 		}
 
 		queryURL.RawQuery = queryValues.Encode()
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	if params != nil {
+
+		if params.Prefer != nil {
+			var headerParam0 string
+
+			headerParam0, err = runtime.StyleParamWithLocation("simple", false, "Prefer", runtime.ParamLocationHeader, *params.Prefer)
+			if err != nil {
+				return nil, err
+			}
+
+			req.Header.Set("Prefer", headerParam0)
+		}
+
+	}
+
+	return req, nil
+}
+
+// NewGetRpcMeRequest generates requests for GetRpcMe
+func NewGetRpcMeRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/rpc/me")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewPostRpcMeRequest calls the generic PostRpcMe builder with application/json body
+func NewPostRpcMeRequest(server string, params *PostRpcMeParams, body PostRpcMeJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewPostRpcMeRequestWithBody(server, params, "application/json", bodyReader)
+}
+
+// NewPostRpcMeRequestWithApplicationVndPgrstObjectPlusJSONBody calls the generic PostRpcMe builder with application/vnd.pgrst.object+json body
+func NewPostRpcMeRequestWithApplicationVndPgrstObjectPlusJSONBody(server string, params *PostRpcMeParams, body PostRpcMeApplicationVndPgrstObjectPlusJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewPostRpcMeRequestWithBody(server, params, "application/vnd.pgrst.object+json", bodyReader)
+}
+
+// NewPostRpcMeRequestWithApplicationVndPgrstObjectPlusJSONNullsStrippedBody calls the generic PostRpcMe builder with application/vnd.pgrst.object+json;nulls=stripped body
+func NewPostRpcMeRequestWithApplicationVndPgrstObjectPlusJSONNullsStrippedBody(server string, params *PostRpcMeParams, body PostRpcMeApplicationVndPgrstObjectPlusJSONNullsStrippedRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewPostRpcMeRequestWithBody(server, params, "application/vnd.pgrst.object+json;nulls=stripped", bodyReader)
+}
+
+// NewPostRpcMeRequestWithBody generates requests for PostRpcMe with any type of body
+func NewPostRpcMeRequestWithBody(server string, params *PostRpcMeParams, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/rpc/me")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
 	}
 
 	req, err := http.NewRequest("POST", queryURL.String(), body)
@@ -4162,6 +9278,54 @@ type ClientWithResponsesInterface interface {
 	// GetWithResponse request
 	GetWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetResponse, error)
 
+	// DeleteApplicationsWithResponse request
+	DeleteApplicationsWithResponse(ctx context.Context, params *DeleteApplicationsParams, reqEditors ...RequestEditorFn) (*DeleteApplicationsResponse, error)
+
+	// GetApplicationsWithResponse request
+	GetApplicationsWithResponse(ctx context.Context, params *GetApplicationsParams, reqEditors ...RequestEditorFn) (*GetApplicationsResponse, error)
+
+	// PatchApplicationsWithBodyWithResponse request with any body
+	PatchApplicationsWithBodyWithResponse(ctx context.Context, params *PatchApplicationsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PatchApplicationsResponse, error)
+
+	PatchApplicationsWithResponse(ctx context.Context, params *PatchApplicationsParams, body PatchApplicationsJSONRequestBody, reqEditors ...RequestEditorFn) (*PatchApplicationsResponse, error)
+
+	PatchApplicationsWithApplicationVndPgrstObjectPlusJSONBodyWithResponse(ctx context.Context, params *PatchApplicationsParams, body PatchApplicationsApplicationVndPgrstObjectPlusJSONRequestBody, reqEditors ...RequestEditorFn) (*PatchApplicationsResponse, error)
+
+	PatchApplicationsWithApplicationVndPgrstObjectPlusJSONNullsStrippedBodyWithResponse(ctx context.Context, params *PatchApplicationsParams, body PatchApplicationsApplicationVndPgrstObjectPlusJSONNullsStrippedRequestBody, reqEditors ...RequestEditorFn) (*PatchApplicationsResponse, error)
+
+	// PostApplicationsWithBodyWithResponse request with any body
+	PostApplicationsWithBodyWithResponse(ctx context.Context, params *PostApplicationsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostApplicationsResponse, error)
+
+	PostApplicationsWithResponse(ctx context.Context, params *PostApplicationsParams, body PostApplicationsJSONRequestBody, reqEditors ...RequestEditorFn) (*PostApplicationsResponse, error)
+
+	PostApplicationsWithApplicationVndPgrstObjectPlusJSONBodyWithResponse(ctx context.Context, params *PostApplicationsParams, body PostApplicationsApplicationVndPgrstObjectPlusJSONRequestBody, reqEditors ...RequestEditorFn) (*PostApplicationsResponse, error)
+
+	PostApplicationsWithApplicationVndPgrstObjectPlusJSONNullsStrippedBodyWithResponse(ctx context.Context, params *PostApplicationsParams, body PostApplicationsApplicationVndPgrstObjectPlusJSONNullsStrippedRequestBody, reqEditors ...RequestEditorFn) (*PostApplicationsResponse, error)
+
+	// DeleteGatewaysWithResponse request
+	DeleteGatewaysWithResponse(ctx context.Context, params *DeleteGatewaysParams, reqEditors ...RequestEditorFn) (*DeleteGatewaysResponse, error)
+
+	// GetGatewaysWithResponse request
+	GetGatewaysWithResponse(ctx context.Context, params *GetGatewaysParams, reqEditors ...RequestEditorFn) (*GetGatewaysResponse, error)
+
+	// PatchGatewaysWithBodyWithResponse request with any body
+	PatchGatewaysWithBodyWithResponse(ctx context.Context, params *PatchGatewaysParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PatchGatewaysResponse, error)
+
+	PatchGatewaysWithResponse(ctx context.Context, params *PatchGatewaysParams, body PatchGatewaysJSONRequestBody, reqEditors ...RequestEditorFn) (*PatchGatewaysResponse, error)
+
+	PatchGatewaysWithApplicationVndPgrstObjectPlusJSONBodyWithResponse(ctx context.Context, params *PatchGatewaysParams, body PatchGatewaysApplicationVndPgrstObjectPlusJSONRequestBody, reqEditors ...RequestEditorFn) (*PatchGatewaysResponse, error)
+
+	PatchGatewaysWithApplicationVndPgrstObjectPlusJSONNullsStrippedBodyWithResponse(ctx context.Context, params *PatchGatewaysParams, body PatchGatewaysApplicationVndPgrstObjectPlusJSONNullsStrippedRequestBody, reqEditors ...RequestEditorFn) (*PatchGatewaysResponse, error)
+
+	// PostGatewaysWithBodyWithResponse request with any body
+	PostGatewaysWithBodyWithResponse(ctx context.Context, params *PostGatewaysParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostGatewaysResponse, error)
+
+	PostGatewaysWithResponse(ctx context.Context, params *PostGatewaysParams, body PostGatewaysJSONRequestBody, reqEditors ...RequestEditorFn) (*PostGatewaysResponse, error)
+
+	PostGatewaysWithApplicationVndPgrstObjectPlusJSONBodyWithResponse(ctx context.Context, params *PostGatewaysParams, body PostGatewaysApplicationVndPgrstObjectPlusJSONRequestBody, reqEditors ...RequestEditorFn) (*PostGatewaysResponse, error)
+
+	PostGatewaysWithApplicationVndPgrstObjectPlusJSONNullsStrippedBodyWithResponse(ctx context.Context, params *PostGatewaysParams, body PostGatewaysApplicationVndPgrstObjectPlusJSONNullsStrippedRequestBody, reqEditors ...RequestEditorFn) (*PostGatewaysResponse, error)
+
 	// DeleteNetworksWithResponse request
 	DeleteNetworksWithResponse(ctx context.Context, params *DeleteNetworksParams, reqEditors ...RequestEditorFn) (*DeleteNetworksResponse, error)
 
@@ -4186,6 +9350,78 @@ type ClientWithResponsesInterface interface {
 
 	PostNetworksWithApplicationVndPgrstObjectPlusJSONNullsStrippedBodyWithResponse(ctx context.Context, params *PostNetworksParams, body PostNetworksApplicationVndPgrstObjectPlusJSONNullsStrippedRequestBody, reqEditors ...RequestEditorFn) (*PostNetworksResponse, error)
 
+	// DeleteOrganizationsWithResponse request
+	DeleteOrganizationsWithResponse(ctx context.Context, params *DeleteOrganizationsParams, reqEditors ...RequestEditorFn) (*DeleteOrganizationsResponse, error)
+
+	// GetOrganizationsWithResponse request
+	GetOrganizationsWithResponse(ctx context.Context, params *GetOrganizationsParams, reqEditors ...RequestEditorFn) (*GetOrganizationsResponse, error)
+
+	// PatchOrganizationsWithBodyWithResponse request with any body
+	PatchOrganizationsWithBodyWithResponse(ctx context.Context, params *PatchOrganizationsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PatchOrganizationsResponse, error)
+
+	PatchOrganizationsWithResponse(ctx context.Context, params *PatchOrganizationsParams, body PatchOrganizationsJSONRequestBody, reqEditors ...RequestEditorFn) (*PatchOrganizationsResponse, error)
+
+	PatchOrganizationsWithApplicationVndPgrstObjectPlusJSONBodyWithResponse(ctx context.Context, params *PatchOrganizationsParams, body PatchOrganizationsApplicationVndPgrstObjectPlusJSONRequestBody, reqEditors ...RequestEditorFn) (*PatchOrganizationsResponse, error)
+
+	PatchOrganizationsWithApplicationVndPgrstObjectPlusJSONNullsStrippedBodyWithResponse(ctx context.Context, params *PatchOrganizationsParams, body PatchOrganizationsApplicationVndPgrstObjectPlusJSONNullsStrippedRequestBody, reqEditors ...RequestEditorFn) (*PatchOrganizationsResponse, error)
+
+	// PostOrganizationsWithBodyWithResponse request with any body
+	PostOrganizationsWithBodyWithResponse(ctx context.Context, params *PostOrganizationsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostOrganizationsResponse, error)
+
+	PostOrganizationsWithResponse(ctx context.Context, params *PostOrganizationsParams, body PostOrganizationsJSONRequestBody, reqEditors ...RequestEditorFn) (*PostOrganizationsResponse, error)
+
+	PostOrganizationsWithApplicationVndPgrstObjectPlusJSONBodyWithResponse(ctx context.Context, params *PostOrganizationsParams, body PostOrganizationsApplicationVndPgrstObjectPlusJSONRequestBody, reqEditors ...RequestEditorFn) (*PostOrganizationsResponse, error)
+
+	PostOrganizationsWithApplicationVndPgrstObjectPlusJSONNullsStrippedBodyWithResponse(ctx context.Context, params *PostOrganizationsParams, body PostOrganizationsApplicationVndPgrstObjectPlusJSONNullsStrippedRequestBody, reqEditors ...RequestEditorFn) (*PostOrganizationsResponse, error)
+
+	// DeletePortalAccountsWithResponse request
+	DeletePortalAccountsWithResponse(ctx context.Context, params *DeletePortalAccountsParams, reqEditors ...RequestEditorFn) (*DeletePortalAccountsResponse, error)
+
+	// GetPortalAccountsWithResponse request
+	GetPortalAccountsWithResponse(ctx context.Context, params *GetPortalAccountsParams, reqEditors ...RequestEditorFn) (*GetPortalAccountsResponse, error)
+
+	// PatchPortalAccountsWithBodyWithResponse request with any body
+	PatchPortalAccountsWithBodyWithResponse(ctx context.Context, params *PatchPortalAccountsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PatchPortalAccountsResponse, error)
+
+	PatchPortalAccountsWithResponse(ctx context.Context, params *PatchPortalAccountsParams, body PatchPortalAccountsJSONRequestBody, reqEditors ...RequestEditorFn) (*PatchPortalAccountsResponse, error)
+
+	PatchPortalAccountsWithApplicationVndPgrstObjectPlusJSONBodyWithResponse(ctx context.Context, params *PatchPortalAccountsParams, body PatchPortalAccountsApplicationVndPgrstObjectPlusJSONRequestBody, reqEditors ...RequestEditorFn) (*PatchPortalAccountsResponse, error)
+
+	PatchPortalAccountsWithApplicationVndPgrstObjectPlusJSONNullsStrippedBodyWithResponse(ctx context.Context, params *PatchPortalAccountsParams, body PatchPortalAccountsApplicationVndPgrstObjectPlusJSONNullsStrippedRequestBody, reqEditors ...RequestEditorFn) (*PatchPortalAccountsResponse, error)
+
+	// PostPortalAccountsWithBodyWithResponse request with any body
+	PostPortalAccountsWithBodyWithResponse(ctx context.Context, params *PostPortalAccountsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostPortalAccountsResponse, error)
+
+	PostPortalAccountsWithResponse(ctx context.Context, params *PostPortalAccountsParams, body PostPortalAccountsJSONRequestBody, reqEditors ...RequestEditorFn) (*PostPortalAccountsResponse, error)
+
+	PostPortalAccountsWithApplicationVndPgrstObjectPlusJSONBodyWithResponse(ctx context.Context, params *PostPortalAccountsParams, body PostPortalAccountsApplicationVndPgrstObjectPlusJSONRequestBody, reqEditors ...RequestEditorFn) (*PostPortalAccountsResponse, error)
+
+	PostPortalAccountsWithApplicationVndPgrstObjectPlusJSONNullsStrippedBodyWithResponse(ctx context.Context, params *PostPortalAccountsParams, body PostPortalAccountsApplicationVndPgrstObjectPlusJSONNullsStrippedRequestBody, reqEditors ...RequestEditorFn) (*PostPortalAccountsResponse, error)
+
+	// DeletePortalApplicationsWithResponse request
+	DeletePortalApplicationsWithResponse(ctx context.Context, params *DeletePortalApplicationsParams, reqEditors ...RequestEditorFn) (*DeletePortalApplicationsResponse, error)
+
+	// GetPortalApplicationsWithResponse request
+	GetPortalApplicationsWithResponse(ctx context.Context, params *GetPortalApplicationsParams, reqEditors ...RequestEditorFn) (*GetPortalApplicationsResponse, error)
+
+	// PatchPortalApplicationsWithBodyWithResponse request with any body
+	PatchPortalApplicationsWithBodyWithResponse(ctx context.Context, params *PatchPortalApplicationsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PatchPortalApplicationsResponse, error)
+
+	PatchPortalApplicationsWithResponse(ctx context.Context, params *PatchPortalApplicationsParams, body PatchPortalApplicationsJSONRequestBody, reqEditors ...RequestEditorFn) (*PatchPortalApplicationsResponse, error)
+
+	PatchPortalApplicationsWithApplicationVndPgrstObjectPlusJSONBodyWithResponse(ctx context.Context, params *PatchPortalApplicationsParams, body PatchPortalApplicationsApplicationVndPgrstObjectPlusJSONRequestBody, reqEditors ...RequestEditorFn) (*PatchPortalApplicationsResponse, error)
+
+	PatchPortalApplicationsWithApplicationVndPgrstObjectPlusJSONNullsStrippedBodyWithResponse(ctx context.Context, params *PatchPortalApplicationsParams, body PatchPortalApplicationsApplicationVndPgrstObjectPlusJSONNullsStrippedRequestBody, reqEditors ...RequestEditorFn) (*PatchPortalApplicationsResponse, error)
+
+	// PostPortalApplicationsWithBodyWithResponse request with any body
+	PostPortalApplicationsWithBodyWithResponse(ctx context.Context, params *PostPortalApplicationsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostPortalApplicationsResponse, error)
+
+	PostPortalApplicationsWithResponse(ctx context.Context, params *PostPortalApplicationsParams, body PostPortalApplicationsJSONRequestBody, reqEditors ...RequestEditorFn) (*PostPortalApplicationsResponse, error)
+
+	PostPortalApplicationsWithApplicationVndPgrstObjectPlusJSONBodyWithResponse(ctx context.Context, params *PostPortalApplicationsParams, body PostPortalApplicationsApplicationVndPgrstObjectPlusJSONRequestBody, reqEditors ...RequestEditorFn) (*PostPortalApplicationsResponse, error)
+
+	PostPortalApplicationsWithApplicationVndPgrstObjectPlusJSONNullsStrippedBodyWithResponse(ctx context.Context, params *PostPortalApplicationsParams, body PostPortalApplicationsApplicationVndPgrstObjectPlusJSONNullsStrippedRequestBody, reqEditors ...RequestEditorFn) (*PostPortalApplicationsResponse, error)
+
 	// DeletePortalPlansWithResponse request
 	DeletePortalPlansWithResponse(ctx context.Context, params *DeletePortalPlansParams, reqEditors ...RequestEditorFn) (*DeletePortalPlansResponse, error)
 
@@ -4209,6 +9445,18 @@ type ClientWithResponsesInterface interface {
 	PostPortalPlansWithApplicationVndPgrstObjectPlusJSONBodyWithResponse(ctx context.Context, params *PostPortalPlansParams, body PostPortalPlansApplicationVndPgrstObjectPlusJSONRequestBody, reqEditors ...RequestEditorFn) (*PostPortalPlansResponse, error)
 
 	PostPortalPlansWithApplicationVndPgrstObjectPlusJSONNullsStrippedBodyWithResponse(ctx context.Context, params *PostPortalPlansParams, body PostPortalPlansApplicationVndPgrstObjectPlusJSONNullsStrippedRequestBody, reqEditors ...RequestEditorFn) (*PostPortalPlansResponse, error)
+
+	// GetRpcMeWithResponse request
+	GetRpcMeWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetRpcMeResponse, error)
+
+	// PostRpcMeWithBodyWithResponse request with any body
+	PostRpcMeWithBodyWithResponse(ctx context.Context, params *PostRpcMeParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostRpcMeResponse, error)
+
+	PostRpcMeWithResponse(ctx context.Context, params *PostRpcMeParams, body PostRpcMeJSONRequestBody, reqEditors ...RequestEditorFn) (*PostRpcMeResponse, error)
+
+	PostRpcMeWithApplicationVndPgrstObjectPlusJSONBodyWithResponse(ctx context.Context, params *PostRpcMeParams, body PostRpcMeApplicationVndPgrstObjectPlusJSONRequestBody, reqEditors ...RequestEditorFn) (*PostRpcMeResponse, error)
+
+	PostRpcMeWithApplicationVndPgrstObjectPlusJSONNullsStrippedBodyWithResponse(ctx context.Context, params *PostRpcMeParams, body PostRpcMeApplicationVndPgrstObjectPlusJSONNullsStrippedRequestBody, reqEditors ...RequestEditorFn) (*PostRpcMeResponse, error)
 
 	// DeleteServiceEndpointsWithResponse request
 	DeleteServiceEndpointsWithResponse(ctx context.Context, params *DeleteServiceEndpointsParams, reqEditors ...RequestEditorFn) (*DeleteServiceEndpointsResponse, error)
@@ -4304,6 +9552,180 @@ func (r GetResponse) StatusCode() int {
 	return 0
 }
 
+type DeleteApplicationsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+}
+
+// Status returns HTTPResponse.Status
+func (r DeleteApplicationsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DeleteApplicationsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetApplicationsResponse struct {
+	Body                                          []byte
+	HTTPResponse                                  *http.Response
+	JSON200                                       *[]Applications
+	ApplicationvndPgrstObjectJSON200              *[]Applications
+	ApplicationvndPgrstObjectJSONNullsStripped200 *[]Applications
+}
+
+// Status returns HTTPResponse.Status
+func (r GetApplicationsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetApplicationsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type PatchApplicationsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+}
+
+// Status returns HTTPResponse.Status
+func (r PatchApplicationsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PatchApplicationsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type PostApplicationsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+}
+
+// Status returns HTTPResponse.Status
+func (r PostApplicationsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PostApplicationsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type DeleteGatewaysResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+}
+
+// Status returns HTTPResponse.Status
+func (r DeleteGatewaysResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DeleteGatewaysResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetGatewaysResponse struct {
+	Body                                          []byte
+	HTTPResponse                                  *http.Response
+	JSON200                                       *[]Gateways
+	ApplicationvndPgrstObjectJSON200              *[]Gateways
+	ApplicationvndPgrstObjectJSONNullsStripped200 *[]Gateways
+}
+
+// Status returns HTTPResponse.Status
+func (r GetGatewaysResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetGatewaysResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type PatchGatewaysResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+}
+
+// Status returns HTTPResponse.Status
+func (r PatchGatewaysResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PatchGatewaysResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type PostGatewaysResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+}
+
+// Status returns HTTPResponse.Status
+func (r PostGatewaysResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PostGatewaysResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
 type DeleteNetworksResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -4391,6 +9813,267 @@ func (r PostNetworksResponse) StatusCode() int {
 	return 0
 }
 
+type DeleteOrganizationsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+}
+
+// Status returns HTTPResponse.Status
+func (r DeleteOrganizationsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DeleteOrganizationsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetOrganizationsResponse struct {
+	Body                                          []byte
+	HTTPResponse                                  *http.Response
+	JSON200                                       *[]Organizations
+	ApplicationvndPgrstObjectJSON200              *[]Organizations
+	ApplicationvndPgrstObjectJSONNullsStripped200 *[]Organizations
+}
+
+// Status returns HTTPResponse.Status
+func (r GetOrganizationsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetOrganizationsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type PatchOrganizationsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+}
+
+// Status returns HTTPResponse.Status
+func (r PatchOrganizationsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PatchOrganizationsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type PostOrganizationsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+}
+
+// Status returns HTTPResponse.Status
+func (r PostOrganizationsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PostOrganizationsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type DeletePortalAccountsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+}
+
+// Status returns HTTPResponse.Status
+func (r DeletePortalAccountsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DeletePortalAccountsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetPortalAccountsResponse struct {
+	Body                                          []byte
+	HTTPResponse                                  *http.Response
+	JSON200                                       *[]PortalAccounts
+	ApplicationvndPgrstObjectJSON200              *[]PortalAccounts
+	ApplicationvndPgrstObjectJSONNullsStripped200 *[]PortalAccounts
+}
+
+// Status returns HTTPResponse.Status
+func (r GetPortalAccountsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetPortalAccountsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type PatchPortalAccountsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+}
+
+// Status returns HTTPResponse.Status
+func (r PatchPortalAccountsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PatchPortalAccountsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type PostPortalAccountsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+}
+
+// Status returns HTTPResponse.Status
+func (r PostPortalAccountsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PostPortalAccountsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type DeletePortalApplicationsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+}
+
+// Status returns HTTPResponse.Status
+func (r DeletePortalApplicationsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DeletePortalApplicationsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetPortalApplicationsResponse struct {
+	Body                                          []byte
+	HTTPResponse                                  *http.Response
+	JSON200                                       *[]PortalApplications
+	ApplicationvndPgrstObjectJSON200              *[]PortalApplications
+	ApplicationvndPgrstObjectJSONNullsStripped200 *[]PortalApplications
+}
+
+// Status returns HTTPResponse.Status
+func (r GetPortalApplicationsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetPortalApplicationsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type PatchPortalApplicationsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+}
+
+// Status returns HTTPResponse.Status
+func (r PatchPortalApplicationsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PatchPortalApplicationsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type PostPortalApplicationsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+}
+
+// Status returns HTTPResponse.Status
+func (r PostPortalApplicationsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PostPortalApplicationsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
 type DeletePortalPlansResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -4472,6 +10155,48 @@ func (r PostPortalPlansResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r PostPortalPlansResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetRpcMeResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+}
+
+// Status returns HTTPResponse.Status
+func (r GetRpcMeResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetRpcMeResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type PostRpcMeResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+}
+
+// Status returns HTTPResponse.Status
+func (r PostRpcMeResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PostRpcMeResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -4748,6 +10473,174 @@ func (c *ClientWithResponses) GetWithResponse(ctx context.Context, reqEditors ..
 	return ParseGetResponse(rsp)
 }
 
+// DeleteApplicationsWithResponse request returning *DeleteApplicationsResponse
+func (c *ClientWithResponses) DeleteApplicationsWithResponse(ctx context.Context, params *DeleteApplicationsParams, reqEditors ...RequestEditorFn) (*DeleteApplicationsResponse, error) {
+	rsp, err := c.DeleteApplications(ctx, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDeleteApplicationsResponse(rsp)
+}
+
+// GetApplicationsWithResponse request returning *GetApplicationsResponse
+func (c *ClientWithResponses) GetApplicationsWithResponse(ctx context.Context, params *GetApplicationsParams, reqEditors ...RequestEditorFn) (*GetApplicationsResponse, error) {
+	rsp, err := c.GetApplications(ctx, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetApplicationsResponse(rsp)
+}
+
+// PatchApplicationsWithBodyWithResponse request with arbitrary body returning *PatchApplicationsResponse
+func (c *ClientWithResponses) PatchApplicationsWithBodyWithResponse(ctx context.Context, params *PatchApplicationsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PatchApplicationsResponse, error) {
+	rsp, err := c.PatchApplicationsWithBody(ctx, params, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePatchApplicationsResponse(rsp)
+}
+
+func (c *ClientWithResponses) PatchApplicationsWithResponse(ctx context.Context, params *PatchApplicationsParams, body PatchApplicationsJSONRequestBody, reqEditors ...RequestEditorFn) (*PatchApplicationsResponse, error) {
+	rsp, err := c.PatchApplications(ctx, params, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePatchApplicationsResponse(rsp)
+}
+
+func (c *ClientWithResponses) PatchApplicationsWithApplicationVndPgrstObjectPlusJSONBodyWithResponse(ctx context.Context, params *PatchApplicationsParams, body PatchApplicationsApplicationVndPgrstObjectPlusJSONRequestBody, reqEditors ...RequestEditorFn) (*PatchApplicationsResponse, error) {
+	rsp, err := c.PatchApplicationsWithApplicationVndPgrstObjectPlusJSONBody(ctx, params, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePatchApplicationsResponse(rsp)
+}
+
+func (c *ClientWithResponses) PatchApplicationsWithApplicationVndPgrstObjectPlusJSONNullsStrippedBodyWithResponse(ctx context.Context, params *PatchApplicationsParams, body PatchApplicationsApplicationVndPgrstObjectPlusJSONNullsStrippedRequestBody, reqEditors ...RequestEditorFn) (*PatchApplicationsResponse, error) {
+	rsp, err := c.PatchApplicationsWithApplicationVndPgrstObjectPlusJSONNullsStrippedBody(ctx, params, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePatchApplicationsResponse(rsp)
+}
+
+// PostApplicationsWithBodyWithResponse request with arbitrary body returning *PostApplicationsResponse
+func (c *ClientWithResponses) PostApplicationsWithBodyWithResponse(ctx context.Context, params *PostApplicationsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostApplicationsResponse, error) {
+	rsp, err := c.PostApplicationsWithBody(ctx, params, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostApplicationsResponse(rsp)
+}
+
+func (c *ClientWithResponses) PostApplicationsWithResponse(ctx context.Context, params *PostApplicationsParams, body PostApplicationsJSONRequestBody, reqEditors ...RequestEditorFn) (*PostApplicationsResponse, error) {
+	rsp, err := c.PostApplications(ctx, params, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostApplicationsResponse(rsp)
+}
+
+func (c *ClientWithResponses) PostApplicationsWithApplicationVndPgrstObjectPlusJSONBodyWithResponse(ctx context.Context, params *PostApplicationsParams, body PostApplicationsApplicationVndPgrstObjectPlusJSONRequestBody, reqEditors ...RequestEditorFn) (*PostApplicationsResponse, error) {
+	rsp, err := c.PostApplicationsWithApplicationVndPgrstObjectPlusJSONBody(ctx, params, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostApplicationsResponse(rsp)
+}
+
+func (c *ClientWithResponses) PostApplicationsWithApplicationVndPgrstObjectPlusJSONNullsStrippedBodyWithResponse(ctx context.Context, params *PostApplicationsParams, body PostApplicationsApplicationVndPgrstObjectPlusJSONNullsStrippedRequestBody, reqEditors ...RequestEditorFn) (*PostApplicationsResponse, error) {
+	rsp, err := c.PostApplicationsWithApplicationVndPgrstObjectPlusJSONNullsStrippedBody(ctx, params, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostApplicationsResponse(rsp)
+}
+
+// DeleteGatewaysWithResponse request returning *DeleteGatewaysResponse
+func (c *ClientWithResponses) DeleteGatewaysWithResponse(ctx context.Context, params *DeleteGatewaysParams, reqEditors ...RequestEditorFn) (*DeleteGatewaysResponse, error) {
+	rsp, err := c.DeleteGateways(ctx, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDeleteGatewaysResponse(rsp)
+}
+
+// GetGatewaysWithResponse request returning *GetGatewaysResponse
+func (c *ClientWithResponses) GetGatewaysWithResponse(ctx context.Context, params *GetGatewaysParams, reqEditors ...RequestEditorFn) (*GetGatewaysResponse, error) {
+	rsp, err := c.GetGateways(ctx, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetGatewaysResponse(rsp)
+}
+
+// PatchGatewaysWithBodyWithResponse request with arbitrary body returning *PatchGatewaysResponse
+func (c *ClientWithResponses) PatchGatewaysWithBodyWithResponse(ctx context.Context, params *PatchGatewaysParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PatchGatewaysResponse, error) {
+	rsp, err := c.PatchGatewaysWithBody(ctx, params, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePatchGatewaysResponse(rsp)
+}
+
+func (c *ClientWithResponses) PatchGatewaysWithResponse(ctx context.Context, params *PatchGatewaysParams, body PatchGatewaysJSONRequestBody, reqEditors ...RequestEditorFn) (*PatchGatewaysResponse, error) {
+	rsp, err := c.PatchGateways(ctx, params, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePatchGatewaysResponse(rsp)
+}
+
+func (c *ClientWithResponses) PatchGatewaysWithApplicationVndPgrstObjectPlusJSONBodyWithResponse(ctx context.Context, params *PatchGatewaysParams, body PatchGatewaysApplicationVndPgrstObjectPlusJSONRequestBody, reqEditors ...RequestEditorFn) (*PatchGatewaysResponse, error) {
+	rsp, err := c.PatchGatewaysWithApplicationVndPgrstObjectPlusJSONBody(ctx, params, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePatchGatewaysResponse(rsp)
+}
+
+func (c *ClientWithResponses) PatchGatewaysWithApplicationVndPgrstObjectPlusJSONNullsStrippedBodyWithResponse(ctx context.Context, params *PatchGatewaysParams, body PatchGatewaysApplicationVndPgrstObjectPlusJSONNullsStrippedRequestBody, reqEditors ...RequestEditorFn) (*PatchGatewaysResponse, error) {
+	rsp, err := c.PatchGatewaysWithApplicationVndPgrstObjectPlusJSONNullsStrippedBody(ctx, params, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePatchGatewaysResponse(rsp)
+}
+
+// PostGatewaysWithBodyWithResponse request with arbitrary body returning *PostGatewaysResponse
+func (c *ClientWithResponses) PostGatewaysWithBodyWithResponse(ctx context.Context, params *PostGatewaysParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostGatewaysResponse, error) {
+	rsp, err := c.PostGatewaysWithBody(ctx, params, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostGatewaysResponse(rsp)
+}
+
+func (c *ClientWithResponses) PostGatewaysWithResponse(ctx context.Context, params *PostGatewaysParams, body PostGatewaysJSONRequestBody, reqEditors ...RequestEditorFn) (*PostGatewaysResponse, error) {
+	rsp, err := c.PostGateways(ctx, params, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostGatewaysResponse(rsp)
+}
+
+func (c *ClientWithResponses) PostGatewaysWithApplicationVndPgrstObjectPlusJSONBodyWithResponse(ctx context.Context, params *PostGatewaysParams, body PostGatewaysApplicationVndPgrstObjectPlusJSONRequestBody, reqEditors ...RequestEditorFn) (*PostGatewaysResponse, error) {
+	rsp, err := c.PostGatewaysWithApplicationVndPgrstObjectPlusJSONBody(ctx, params, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostGatewaysResponse(rsp)
+}
+
+func (c *ClientWithResponses) PostGatewaysWithApplicationVndPgrstObjectPlusJSONNullsStrippedBodyWithResponse(ctx context.Context, params *PostGatewaysParams, body PostGatewaysApplicationVndPgrstObjectPlusJSONNullsStrippedRequestBody, reqEditors ...RequestEditorFn) (*PostGatewaysResponse, error) {
+	rsp, err := c.PostGatewaysWithApplicationVndPgrstObjectPlusJSONNullsStrippedBody(ctx, params, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostGatewaysResponse(rsp)
+}
+
 // DeleteNetworksWithResponse request returning *DeleteNetworksResponse
 func (c *ClientWithResponses) DeleteNetworksWithResponse(ctx context.Context, params *DeleteNetworksParams, reqEditors ...RequestEditorFn) (*DeleteNetworksResponse, error) {
 	rsp, err := c.DeleteNetworks(ctx, params, reqEditors...)
@@ -4832,6 +10725,258 @@ func (c *ClientWithResponses) PostNetworksWithApplicationVndPgrstObjectPlusJSONN
 	return ParsePostNetworksResponse(rsp)
 }
 
+// DeleteOrganizationsWithResponse request returning *DeleteOrganizationsResponse
+func (c *ClientWithResponses) DeleteOrganizationsWithResponse(ctx context.Context, params *DeleteOrganizationsParams, reqEditors ...RequestEditorFn) (*DeleteOrganizationsResponse, error) {
+	rsp, err := c.DeleteOrganizations(ctx, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDeleteOrganizationsResponse(rsp)
+}
+
+// GetOrganizationsWithResponse request returning *GetOrganizationsResponse
+func (c *ClientWithResponses) GetOrganizationsWithResponse(ctx context.Context, params *GetOrganizationsParams, reqEditors ...RequestEditorFn) (*GetOrganizationsResponse, error) {
+	rsp, err := c.GetOrganizations(ctx, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetOrganizationsResponse(rsp)
+}
+
+// PatchOrganizationsWithBodyWithResponse request with arbitrary body returning *PatchOrganizationsResponse
+func (c *ClientWithResponses) PatchOrganizationsWithBodyWithResponse(ctx context.Context, params *PatchOrganizationsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PatchOrganizationsResponse, error) {
+	rsp, err := c.PatchOrganizationsWithBody(ctx, params, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePatchOrganizationsResponse(rsp)
+}
+
+func (c *ClientWithResponses) PatchOrganizationsWithResponse(ctx context.Context, params *PatchOrganizationsParams, body PatchOrganizationsJSONRequestBody, reqEditors ...RequestEditorFn) (*PatchOrganizationsResponse, error) {
+	rsp, err := c.PatchOrganizations(ctx, params, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePatchOrganizationsResponse(rsp)
+}
+
+func (c *ClientWithResponses) PatchOrganizationsWithApplicationVndPgrstObjectPlusJSONBodyWithResponse(ctx context.Context, params *PatchOrganizationsParams, body PatchOrganizationsApplicationVndPgrstObjectPlusJSONRequestBody, reqEditors ...RequestEditorFn) (*PatchOrganizationsResponse, error) {
+	rsp, err := c.PatchOrganizationsWithApplicationVndPgrstObjectPlusJSONBody(ctx, params, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePatchOrganizationsResponse(rsp)
+}
+
+func (c *ClientWithResponses) PatchOrganizationsWithApplicationVndPgrstObjectPlusJSONNullsStrippedBodyWithResponse(ctx context.Context, params *PatchOrganizationsParams, body PatchOrganizationsApplicationVndPgrstObjectPlusJSONNullsStrippedRequestBody, reqEditors ...RequestEditorFn) (*PatchOrganizationsResponse, error) {
+	rsp, err := c.PatchOrganizationsWithApplicationVndPgrstObjectPlusJSONNullsStrippedBody(ctx, params, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePatchOrganizationsResponse(rsp)
+}
+
+// PostOrganizationsWithBodyWithResponse request with arbitrary body returning *PostOrganizationsResponse
+func (c *ClientWithResponses) PostOrganizationsWithBodyWithResponse(ctx context.Context, params *PostOrganizationsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostOrganizationsResponse, error) {
+	rsp, err := c.PostOrganizationsWithBody(ctx, params, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostOrganizationsResponse(rsp)
+}
+
+func (c *ClientWithResponses) PostOrganizationsWithResponse(ctx context.Context, params *PostOrganizationsParams, body PostOrganizationsJSONRequestBody, reqEditors ...RequestEditorFn) (*PostOrganizationsResponse, error) {
+	rsp, err := c.PostOrganizations(ctx, params, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostOrganizationsResponse(rsp)
+}
+
+func (c *ClientWithResponses) PostOrganizationsWithApplicationVndPgrstObjectPlusJSONBodyWithResponse(ctx context.Context, params *PostOrganizationsParams, body PostOrganizationsApplicationVndPgrstObjectPlusJSONRequestBody, reqEditors ...RequestEditorFn) (*PostOrganizationsResponse, error) {
+	rsp, err := c.PostOrganizationsWithApplicationVndPgrstObjectPlusJSONBody(ctx, params, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostOrganizationsResponse(rsp)
+}
+
+func (c *ClientWithResponses) PostOrganizationsWithApplicationVndPgrstObjectPlusJSONNullsStrippedBodyWithResponse(ctx context.Context, params *PostOrganizationsParams, body PostOrganizationsApplicationVndPgrstObjectPlusJSONNullsStrippedRequestBody, reqEditors ...RequestEditorFn) (*PostOrganizationsResponse, error) {
+	rsp, err := c.PostOrganizationsWithApplicationVndPgrstObjectPlusJSONNullsStrippedBody(ctx, params, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostOrganizationsResponse(rsp)
+}
+
+// DeletePortalAccountsWithResponse request returning *DeletePortalAccountsResponse
+func (c *ClientWithResponses) DeletePortalAccountsWithResponse(ctx context.Context, params *DeletePortalAccountsParams, reqEditors ...RequestEditorFn) (*DeletePortalAccountsResponse, error) {
+	rsp, err := c.DeletePortalAccounts(ctx, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDeletePortalAccountsResponse(rsp)
+}
+
+// GetPortalAccountsWithResponse request returning *GetPortalAccountsResponse
+func (c *ClientWithResponses) GetPortalAccountsWithResponse(ctx context.Context, params *GetPortalAccountsParams, reqEditors ...RequestEditorFn) (*GetPortalAccountsResponse, error) {
+	rsp, err := c.GetPortalAccounts(ctx, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetPortalAccountsResponse(rsp)
+}
+
+// PatchPortalAccountsWithBodyWithResponse request with arbitrary body returning *PatchPortalAccountsResponse
+func (c *ClientWithResponses) PatchPortalAccountsWithBodyWithResponse(ctx context.Context, params *PatchPortalAccountsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PatchPortalAccountsResponse, error) {
+	rsp, err := c.PatchPortalAccountsWithBody(ctx, params, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePatchPortalAccountsResponse(rsp)
+}
+
+func (c *ClientWithResponses) PatchPortalAccountsWithResponse(ctx context.Context, params *PatchPortalAccountsParams, body PatchPortalAccountsJSONRequestBody, reqEditors ...RequestEditorFn) (*PatchPortalAccountsResponse, error) {
+	rsp, err := c.PatchPortalAccounts(ctx, params, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePatchPortalAccountsResponse(rsp)
+}
+
+func (c *ClientWithResponses) PatchPortalAccountsWithApplicationVndPgrstObjectPlusJSONBodyWithResponse(ctx context.Context, params *PatchPortalAccountsParams, body PatchPortalAccountsApplicationVndPgrstObjectPlusJSONRequestBody, reqEditors ...RequestEditorFn) (*PatchPortalAccountsResponse, error) {
+	rsp, err := c.PatchPortalAccountsWithApplicationVndPgrstObjectPlusJSONBody(ctx, params, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePatchPortalAccountsResponse(rsp)
+}
+
+func (c *ClientWithResponses) PatchPortalAccountsWithApplicationVndPgrstObjectPlusJSONNullsStrippedBodyWithResponse(ctx context.Context, params *PatchPortalAccountsParams, body PatchPortalAccountsApplicationVndPgrstObjectPlusJSONNullsStrippedRequestBody, reqEditors ...RequestEditorFn) (*PatchPortalAccountsResponse, error) {
+	rsp, err := c.PatchPortalAccountsWithApplicationVndPgrstObjectPlusJSONNullsStrippedBody(ctx, params, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePatchPortalAccountsResponse(rsp)
+}
+
+// PostPortalAccountsWithBodyWithResponse request with arbitrary body returning *PostPortalAccountsResponse
+func (c *ClientWithResponses) PostPortalAccountsWithBodyWithResponse(ctx context.Context, params *PostPortalAccountsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostPortalAccountsResponse, error) {
+	rsp, err := c.PostPortalAccountsWithBody(ctx, params, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostPortalAccountsResponse(rsp)
+}
+
+func (c *ClientWithResponses) PostPortalAccountsWithResponse(ctx context.Context, params *PostPortalAccountsParams, body PostPortalAccountsJSONRequestBody, reqEditors ...RequestEditorFn) (*PostPortalAccountsResponse, error) {
+	rsp, err := c.PostPortalAccounts(ctx, params, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostPortalAccountsResponse(rsp)
+}
+
+func (c *ClientWithResponses) PostPortalAccountsWithApplicationVndPgrstObjectPlusJSONBodyWithResponse(ctx context.Context, params *PostPortalAccountsParams, body PostPortalAccountsApplicationVndPgrstObjectPlusJSONRequestBody, reqEditors ...RequestEditorFn) (*PostPortalAccountsResponse, error) {
+	rsp, err := c.PostPortalAccountsWithApplicationVndPgrstObjectPlusJSONBody(ctx, params, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostPortalAccountsResponse(rsp)
+}
+
+func (c *ClientWithResponses) PostPortalAccountsWithApplicationVndPgrstObjectPlusJSONNullsStrippedBodyWithResponse(ctx context.Context, params *PostPortalAccountsParams, body PostPortalAccountsApplicationVndPgrstObjectPlusJSONNullsStrippedRequestBody, reqEditors ...RequestEditorFn) (*PostPortalAccountsResponse, error) {
+	rsp, err := c.PostPortalAccountsWithApplicationVndPgrstObjectPlusJSONNullsStrippedBody(ctx, params, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostPortalAccountsResponse(rsp)
+}
+
+// DeletePortalApplicationsWithResponse request returning *DeletePortalApplicationsResponse
+func (c *ClientWithResponses) DeletePortalApplicationsWithResponse(ctx context.Context, params *DeletePortalApplicationsParams, reqEditors ...RequestEditorFn) (*DeletePortalApplicationsResponse, error) {
+	rsp, err := c.DeletePortalApplications(ctx, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDeletePortalApplicationsResponse(rsp)
+}
+
+// GetPortalApplicationsWithResponse request returning *GetPortalApplicationsResponse
+func (c *ClientWithResponses) GetPortalApplicationsWithResponse(ctx context.Context, params *GetPortalApplicationsParams, reqEditors ...RequestEditorFn) (*GetPortalApplicationsResponse, error) {
+	rsp, err := c.GetPortalApplications(ctx, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetPortalApplicationsResponse(rsp)
+}
+
+// PatchPortalApplicationsWithBodyWithResponse request with arbitrary body returning *PatchPortalApplicationsResponse
+func (c *ClientWithResponses) PatchPortalApplicationsWithBodyWithResponse(ctx context.Context, params *PatchPortalApplicationsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PatchPortalApplicationsResponse, error) {
+	rsp, err := c.PatchPortalApplicationsWithBody(ctx, params, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePatchPortalApplicationsResponse(rsp)
+}
+
+func (c *ClientWithResponses) PatchPortalApplicationsWithResponse(ctx context.Context, params *PatchPortalApplicationsParams, body PatchPortalApplicationsJSONRequestBody, reqEditors ...RequestEditorFn) (*PatchPortalApplicationsResponse, error) {
+	rsp, err := c.PatchPortalApplications(ctx, params, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePatchPortalApplicationsResponse(rsp)
+}
+
+func (c *ClientWithResponses) PatchPortalApplicationsWithApplicationVndPgrstObjectPlusJSONBodyWithResponse(ctx context.Context, params *PatchPortalApplicationsParams, body PatchPortalApplicationsApplicationVndPgrstObjectPlusJSONRequestBody, reqEditors ...RequestEditorFn) (*PatchPortalApplicationsResponse, error) {
+	rsp, err := c.PatchPortalApplicationsWithApplicationVndPgrstObjectPlusJSONBody(ctx, params, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePatchPortalApplicationsResponse(rsp)
+}
+
+func (c *ClientWithResponses) PatchPortalApplicationsWithApplicationVndPgrstObjectPlusJSONNullsStrippedBodyWithResponse(ctx context.Context, params *PatchPortalApplicationsParams, body PatchPortalApplicationsApplicationVndPgrstObjectPlusJSONNullsStrippedRequestBody, reqEditors ...RequestEditorFn) (*PatchPortalApplicationsResponse, error) {
+	rsp, err := c.PatchPortalApplicationsWithApplicationVndPgrstObjectPlusJSONNullsStrippedBody(ctx, params, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePatchPortalApplicationsResponse(rsp)
+}
+
+// PostPortalApplicationsWithBodyWithResponse request with arbitrary body returning *PostPortalApplicationsResponse
+func (c *ClientWithResponses) PostPortalApplicationsWithBodyWithResponse(ctx context.Context, params *PostPortalApplicationsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostPortalApplicationsResponse, error) {
+	rsp, err := c.PostPortalApplicationsWithBody(ctx, params, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostPortalApplicationsResponse(rsp)
+}
+
+func (c *ClientWithResponses) PostPortalApplicationsWithResponse(ctx context.Context, params *PostPortalApplicationsParams, body PostPortalApplicationsJSONRequestBody, reqEditors ...RequestEditorFn) (*PostPortalApplicationsResponse, error) {
+	rsp, err := c.PostPortalApplications(ctx, params, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostPortalApplicationsResponse(rsp)
+}
+
+func (c *ClientWithResponses) PostPortalApplicationsWithApplicationVndPgrstObjectPlusJSONBodyWithResponse(ctx context.Context, params *PostPortalApplicationsParams, body PostPortalApplicationsApplicationVndPgrstObjectPlusJSONRequestBody, reqEditors ...RequestEditorFn) (*PostPortalApplicationsResponse, error) {
+	rsp, err := c.PostPortalApplicationsWithApplicationVndPgrstObjectPlusJSONBody(ctx, params, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostPortalApplicationsResponse(rsp)
+}
+
+func (c *ClientWithResponses) PostPortalApplicationsWithApplicationVndPgrstObjectPlusJSONNullsStrippedBodyWithResponse(ctx context.Context, params *PostPortalApplicationsParams, body PostPortalApplicationsApplicationVndPgrstObjectPlusJSONNullsStrippedRequestBody, reqEditors ...RequestEditorFn) (*PostPortalApplicationsResponse, error) {
+	rsp, err := c.PostPortalApplicationsWithApplicationVndPgrstObjectPlusJSONNullsStrippedBody(ctx, params, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostPortalApplicationsResponse(rsp)
+}
+
 // DeletePortalPlansWithResponse request returning *DeletePortalPlansResponse
 func (c *ClientWithResponses) DeletePortalPlansWithResponse(ctx context.Context, params *DeletePortalPlansParams, reqEditors ...RequestEditorFn) (*DeletePortalPlansResponse, error) {
 	rsp, err := c.DeletePortalPlans(ctx, params, reqEditors...)
@@ -4914,6 +11059,48 @@ func (c *ClientWithResponses) PostPortalPlansWithApplicationVndPgrstObjectPlusJS
 		return nil, err
 	}
 	return ParsePostPortalPlansResponse(rsp)
+}
+
+// GetRpcMeWithResponse request returning *GetRpcMeResponse
+func (c *ClientWithResponses) GetRpcMeWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetRpcMeResponse, error) {
+	rsp, err := c.GetRpcMe(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetRpcMeResponse(rsp)
+}
+
+// PostRpcMeWithBodyWithResponse request with arbitrary body returning *PostRpcMeResponse
+func (c *ClientWithResponses) PostRpcMeWithBodyWithResponse(ctx context.Context, params *PostRpcMeParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostRpcMeResponse, error) {
+	rsp, err := c.PostRpcMeWithBody(ctx, params, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostRpcMeResponse(rsp)
+}
+
+func (c *ClientWithResponses) PostRpcMeWithResponse(ctx context.Context, params *PostRpcMeParams, body PostRpcMeJSONRequestBody, reqEditors ...RequestEditorFn) (*PostRpcMeResponse, error) {
+	rsp, err := c.PostRpcMe(ctx, params, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostRpcMeResponse(rsp)
+}
+
+func (c *ClientWithResponses) PostRpcMeWithApplicationVndPgrstObjectPlusJSONBodyWithResponse(ctx context.Context, params *PostRpcMeParams, body PostRpcMeApplicationVndPgrstObjectPlusJSONRequestBody, reqEditors ...RequestEditorFn) (*PostRpcMeResponse, error) {
+	rsp, err := c.PostRpcMeWithApplicationVndPgrstObjectPlusJSONBody(ctx, params, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostRpcMeResponse(rsp)
+}
+
+func (c *ClientWithResponses) PostRpcMeWithApplicationVndPgrstObjectPlusJSONNullsStrippedBodyWithResponse(ctx context.Context, params *PostRpcMeParams, body PostRpcMeApplicationVndPgrstObjectPlusJSONNullsStrippedRequestBody, reqEditors ...RequestEditorFn) (*PostRpcMeResponse, error) {
+	rsp, err := c.PostRpcMeWithApplicationVndPgrstObjectPlusJSONNullsStrippedBody(ctx, params, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostRpcMeResponse(rsp)
 }
 
 // DeleteServiceEndpointsWithResponse request returning *DeleteServiceEndpointsResponse
@@ -5184,6 +11371,188 @@ func ParseGetResponse(rsp *http.Response) (*GetResponse, error) {
 	return response, nil
 }
 
+// ParseDeleteApplicationsResponse parses an HTTP response from a DeleteApplicationsWithResponse call
+func ParseDeleteApplicationsResponse(rsp *http.Response) (*DeleteApplicationsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DeleteApplicationsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	return response, nil
+}
+
+// ParseGetApplicationsResponse parses an HTTP response from a GetApplicationsWithResponse call
+func ParseGetApplicationsResponse(rsp *http.Response) (*GetApplicationsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetApplicationsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case rsp.Header.Get("Content-Type") == "application/json" && rsp.StatusCode == 200:
+		var dest []Applications
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case rsp.Header.Get("Content-Type") == "application/vnd.pgrst.object+json" && rsp.StatusCode == 200:
+		var dest []Applications
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationvndPgrstObjectJSON200 = &dest
+
+	case rsp.Header.Get("Content-Type") == "application/vnd.pgrst.object+json;nulls=stripped" && rsp.StatusCode == 200:
+		var dest []Applications
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationvndPgrstObjectJSONNullsStripped200 = &dest
+
+	case rsp.StatusCode == 200:
+		// Content-type (text/csv) unsupported
+
+	}
+
+	return response, nil
+}
+
+// ParsePatchApplicationsResponse parses an HTTP response from a PatchApplicationsWithResponse call
+func ParsePatchApplicationsResponse(rsp *http.Response) (*PatchApplicationsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PatchApplicationsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	return response, nil
+}
+
+// ParsePostApplicationsResponse parses an HTTP response from a PostApplicationsWithResponse call
+func ParsePostApplicationsResponse(rsp *http.Response) (*PostApplicationsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PostApplicationsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	return response, nil
+}
+
+// ParseDeleteGatewaysResponse parses an HTTP response from a DeleteGatewaysWithResponse call
+func ParseDeleteGatewaysResponse(rsp *http.Response) (*DeleteGatewaysResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DeleteGatewaysResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	return response, nil
+}
+
+// ParseGetGatewaysResponse parses an HTTP response from a GetGatewaysWithResponse call
+func ParseGetGatewaysResponse(rsp *http.Response) (*GetGatewaysResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetGatewaysResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case rsp.Header.Get("Content-Type") == "application/json" && rsp.StatusCode == 200:
+		var dest []Gateways
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case rsp.Header.Get("Content-Type") == "application/vnd.pgrst.object+json" && rsp.StatusCode == 200:
+		var dest []Gateways
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationvndPgrstObjectJSON200 = &dest
+
+	case rsp.Header.Get("Content-Type") == "application/vnd.pgrst.object+json;nulls=stripped" && rsp.StatusCode == 200:
+		var dest []Gateways
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationvndPgrstObjectJSONNullsStripped200 = &dest
+
+	case rsp.StatusCode == 200:
+		// Content-type (text/csv) unsupported
+
+	}
+
+	return response, nil
+}
+
+// ParsePatchGatewaysResponse parses an HTTP response from a PatchGatewaysWithResponse call
+func ParsePatchGatewaysResponse(rsp *http.Response) (*PatchGatewaysResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PatchGatewaysResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	return response, nil
+}
+
+// ParsePostGatewaysResponse parses an HTTP response from a PostGatewaysWithResponse call
+func ParsePostGatewaysResponse(rsp *http.Response) (*PostGatewaysResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PostGatewaysResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	return response, nil
+}
+
 // ParseDeleteNetworksResponse parses an HTTP response from a DeleteNetworksWithResponse call
 func ParseDeleteNetworksResponse(rsp *http.Response) (*DeleteNetworksResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -5275,6 +11644,279 @@ func ParsePostNetworksResponse(rsp *http.Response) (*PostNetworksResponse, error
 	return response, nil
 }
 
+// ParseDeleteOrganizationsResponse parses an HTTP response from a DeleteOrganizationsWithResponse call
+func ParseDeleteOrganizationsResponse(rsp *http.Response) (*DeleteOrganizationsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DeleteOrganizationsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	return response, nil
+}
+
+// ParseGetOrganizationsResponse parses an HTTP response from a GetOrganizationsWithResponse call
+func ParseGetOrganizationsResponse(rsp *http.Response) (*GetOrganizationsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetOrganizationsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case rsp.Header.Get("Content-Type") == "application/json" && rsp.StatusCode == 200:
+		var dest []Organizations
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case rsp.Header.Get("Content-Type") == "application/vnd.pgrst.object+json" && rsp.StatusCode == 200:
+		var dest []Organizations
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationvndPgrstObjectJSON200 = &dest
+
+	case rsp.Header.Get("Content-Type") == "application/vnd.pgrst.object+json;nulls=stripped" && rsp.StatusCode == 200:
+		var dest []Organizations
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationvndPgrstObjectJSONNullsStripped200 = &dest
+
+	case rsp.StatusCode == 200:
+		// Content-type (text/csv) unsupported
+
+	}
+
+	return response, nil
+}
+
+// ParsePatchOrganizationsResponse parses an HTTP response from a PatchOrganizationsWithResponse call
+func ParsePatchOrganizationsResponse(rsp *http.Response) (*PatchOrganizationsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PatchOrganizationsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	return response, nil
+}
+
+// ParsePostOrganizationsResponse parses an HTTP response from a PostOrganizationsWithResponse call
+func ParsePostOrganizationsResponse(rsp *http.Response) (*PostOrganizationsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PostOrganizationsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	return response, nil
+}
+
+// ParseDeletePortalAccountsResponse parses an HTTP response from a DeletePortalAccountsWithResponse call
+func ParseDeletePortalAccountsResponse(rsp *http.Response) (*DeletePortalAccountsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DeletePortalAccountsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	return response, nil
+}
+
+// ParseGetPortalAccountsResponse parses an HTTP response from a GetPortalAccountsWithResponse call
+func ParseGetPortalAccountsResponse(rsp *http.Response) (*GetPortalAccountsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetPortalAccountsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case rsp.Header.Get("Content-Type") == "application/json" && rsp.StatusCode == 200:
+		var dest []PortalAccounts
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case rsp.Header.Get("Content-Type") == "application/vnd.pgrst.object+json" && rsp.StatusCode == 200:
+		var dest []PortalAccounts
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationvndPgrstObjectJSON200 = &dest
+
+	case rsp.Header.Get("Content-Type") == "application/vnd.pgrst.object+json;nulls=stripped" && rsp.StatusCode == 200:
+		var dest []PortalAccounts
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationvndPgrstObjectJSONNullsStripped200 = &dest
+
+	case rsp.StatusCode == 200:
+		// Content-type (text/csv) unsupported
+
+	}
+
+	return response, nil
+}
+
+// ParsePatchPortalAccountsResponse parses an HTTP response from a PatchPortalAccountsWithResponse call
+func ParsePatchPortalAccountsResponse(rsp *http.Response) (*PatchPortalAccountsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PatchPortalAccountsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	return response, nil
+}
+
+// ParsePostPortalAccountsResponse parses an HTTP response from a PostPortalAccountsWithResponse call
+func ParsePostPortalAccountsResponse(rsp *http.Response) (*PostPortalAccountsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PostPortalAccountsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	return response, nil
+}
+
+// ParseDeletePortalApplicationsResponse parses an HTTP response from a DeletePortalApplicationsWithResponse call
+func ParseDeletePortalApplicationsResponse(rsp *http.Response) (*DeletePortalApplicationsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DeletePortalApplicationsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	return response, nil
+}
+
+// ParseGetPortalApplicationsResponse parses an HTTP response from a GetPortalApplicationsWithResponse call
+func ParseGetPortalApplicationsResponse(rsp *http.Response) (*GetPortalApplicationsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetPortalApplicationsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case rsp.Header.Get("Content-Type") == "application/json" && rsp.StatusCode == 200:
+		var dest []PortalApplications
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case rsp.Header.Get("Content-Type") == "application/vnd.pgrst.object+json" && rsp.StatusCode == 200:
+		var dest []PortalApplications
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationvndPgrstObjectJSON200 = &dest
+
+	case rsp.Header.Get("Content-Type") == "application/vnd.pgrst.object+json;nulls=stripped" && rsp.StatusCode == 200:
+		var dest []PortalApplications
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationvndPgrstObjectJSONNullsStripped200 = &dest
+
+	case rsp.StatusCode == 200:
+		// Content-type (text/csv) unsupported
+
+	}
+
+	return response, nil
+}
+
+// ParsePatchPortalApplicationsResponse parses an HTTP response from a PatchPortalApplicationsWithResponse call
+func ParsePatchPortalApplicationsResponse(rsp *http.Response) (*PatchPortalApplicationsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PatchPortalApplicationsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	return response, nil
+}
+
+// ParsePostPortalApplicationsResponse parses an HTTP response from a PostPortalApplicationsWithResponse call
+func ParsePostPortalApplicationsResponse(rsp *http.Response) (*PostPortalApplicationsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PostPortalApplicationsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	return response, nil
+}
+
 // ParseDeletePortalPlansResponse parses an HTTP response from a DeletePortalPlansWithResponse call
 func ParseDeletePortalPlansResponse(rsp *http.Response) (*DeletePortalPlansResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -5359,6 +12001,38 @@ func ParsePostPortalPlansResponse(rsp *http.Response) (*PostPortalPlansResponse,
 	}
 
 	response := &PostPortalPlansResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	return response, nil
+}
+
+// ParseGetRpcMeResponse parses an HTTP response from a GetRpcMeWithResponse call
+func ParseGetRpcMeResponse(rsp *http.Response) (*GetRpcMeResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetRpcMeResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	return response, nil
+}
+
+// ParsePostRpcMeResponse parses an HTTP response from a PostRpcMeWithResponse call
+func ParsePostRpcMeResponse(rsp *http.Response) (*PostRpcMeResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PostRpcMeResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -5642,50 +12316,87 @@ func ParsePostServicesResponse(rsp *http.Response) (*PostServicesResponse, error
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"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",
+	"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",
+	"DgAA//+VSNG26gMBAA==",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file

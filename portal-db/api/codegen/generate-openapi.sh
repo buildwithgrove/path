@@ -37,9 +37,21 @@ while [ $attempt -le $max_attempts ]; do
     ((attempt++))
 done
 
+# Generate JWT token for authenticated access to get all endpoints
+echo "🔑 Generating JWT token for authenticated OpenAPI spec..."
+JWT_TOKEN=$(cd ../scripts && ./gen-jwt.sh authenticated 2>/dev/null | grep -A1 "🎟️  Token:" | tail -1)
+
+if [ -z "$JWT_TOKEN" ]; then
+    echo "⚠️  Could not generate JWT token, fetching public endpoints only..."
+    AUTH_HEADER=""
+else
+    echo "✅ JWT token generated, will fetch all endpoints (public + protected)"
+    AUTH_HEADER="Authorization: Bearer $JWT_TOKEN"
+fi
+
 # Fetch OpenAPI specification
 echo "📥 Fetching OpenAPI specification..."
-if curl -s -f -H "Accept: application/openapi+json" "$POSTGREST_URL/" > "$OUTPUT_FILE"; then
+if curl -s -f -H "Accept: application/openapi+json" ${AUTH_HEADER:+-H "$AUTH_HEADER"} "$POSTGREST_URL/" > "$OUTPUT_FILE"; then
     echo "✅ OpenAPI specification saved to: $OUTPUT_FILE"
     
     # Pretty print the JSON
@@ -59,6 +71,11 @@ if curl -s -f -H "Accept: application/openapi+json" "$POSTGREST_URL/" > "$OUTPUT
         echo "   API version: $(jq -r '.info.version // "unknown"' "$OUTPUT_FILE")"
         echo "   Number of paths: $(jq -r '.paths | length' "$OUTPUT_FILE")"
         echo "   Number of schemas: $(jq -r '.components.schemas | length' "$OUTPUT_FILE")"
+        
+        # Log the actual paths that were retrieved
+        echo ""
+        echo "🔍 Retrieved API Paths:"
+        jq -r '.paths | keys[]' "$OUTPUT_FILE" | sed 's/^/   • /'
     fi
     
     echo ""

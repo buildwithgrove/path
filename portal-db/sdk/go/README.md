@@ -30,34 +30,15 @@ func main() {
     
     ctx := context.Background()
     
-    // Example: Get all services with typed response
-    resp, err := client.GetServicesWithResponse(ctx, &portaldb.GetServicesParams{})
+    // Example: Get public data
+    resp, err := client.GetNetworksWithResponse(ctx, &portaldb.GetNetworksParams{})
     if err != nil {
         log.Fatal(err)
     }
     
-    // Check response status and access typed data
-    switch resp.StatusCode() {
-    case 200:
-        if resp.JSON200 != nil {
-            services := *resp.JSON200 // []portaldb.Services
-            fmt.Printf("Found %d services\n", len(services))
-            
-            for _, service := range services {
-                fmt.Printf("- Service: %s (ID: %s)\n", service.ServiceName, service.ServiceId)
-                if service.Active != nil && *service.Active {
-                    fmt.Printf("  Status: Active\n")
-                }
-                if service.ComputeUnitsPerRelay != nil {
-                    fmt.Printf("  Compute Units: %d\n", *service.ComputeUnitsPerRelay)
-                }
-                fmt.Printf("  Domains: %v\n", service.ServiceDomains)
-            }
-        }
-    case 401:
-        fmt.Println("Authentication required")
-    default:
-        fmt.Printf("Unexpected status: %d\n", resp.StatusCode())
+    if resp.StatusCode() == 200 && resp.JSON200 != nil {
+        networks := *resp.JSON200
+        fmt.Printf("Found %d networks\n", len(networks))
     }
 }
 ```
@@ -90,58 +71,90 @@ func authenticatedExample() {
         return nil
     }
     
-    // Make authenticated request with typed response
-    resp, err := client.GetServicesWithResponse(ctx, &portaldb.GetServicesParams{}, requestEditor)
+    // Make authenticated request
+    resp, err := client.GetPortalAccountsWithResponse(
+        ctx, 
+        &portaldb.GetPortalAccountsParams{}, 
+        requestEditor,
+    )
     if err != nil {
         log.Fatal(err)
     }
     
     if resp.StatusCode() == 200 && resp.JSON200 != nil {
-        fmt.Printf("Authenticated: Found %d services\n", len(*resp.JSON200))
+        accounts := *resp.JSON200
+        fmt.Printf("Found %d accounts\n", len(accounts))
     } else {
         fmt.Printf("Authentication failed: %d\n", resp.StatusCode())
     }
 }
 ```
 
-## Available Endpoints
+## Query Features
 
-Based on your PostgREST schema, the SDK includes methods for:
+The SDK supports PostgREST's powerful query features for filtering, selecting, and pagination:
 
-- **Services** (`/services`) - Blockchain services from Pocket Network
-  - `GetServicesWithResponse(ctx, params)` - List all services → `*[]Services`
-  - `PostServicesWithResponse(ctx, params, body)` - Create a new service
-  - `PatchServicesWithResponse(ctx, params, body)` - Update services
-  - `DeleteServicesWithResponse(ctx, params)` - Delete services
+### Filtering and Selection
 
-- **Networks** (`/networks`) - Supported blockchain networks  
-  - `GetNetworksWithResponse(ctx, params)` - List all networks → `*[]Networks`
-  - `PostNetworksWithResponse(ctx, params, body)` - Create a new network
-  - `PatchNetworksWithResponse(ctx, params, body)` - Update networks
-  - `DeleteNetworksWithResponse(ctx, params)` - Delete networks
+```go
+// Filter active services with specific fields
+resp, err := client.GetServicesWithResponse(ctx, &portaldb.GetServicesParams{
+    Active: func() *string { s := "eq.true"; return &s }(),
+    Select: func() *string { s := "service_id,service_name,active,network_id"; return &s }(),
+    Limit:  func() *string { s := "3"; return &s }(),
+})
+if err != nil {
+    log.Fatal(err)
+}
 
-- **Portal Plans** (`/portal_plans`) - Subscription plans
-  - `GetPortalPlansWithResponse(ctx, params)` - List all plans → `*[]PortalPlans`
-  - `PostPortalPlansWithResponse(ctx, params, body)` - Create a new plan
-  - `PatchPortalPlansWithResponse(ctx, params, body)` - Update plans
-  - `DeletePortalPlansWithResponse(ctx, params)` - Delete plans
+if resp.StatusCode() == 200 && resp.JSON200 != nil {
+    services := *resp.JSON200
+    fmt.Printf("Found %d active services\n", len(services))
+}
+```
 
-- **Service Endpoints** (`/service_endpoints`) - Endpoint types for services
-  - `GetServiceEndpointsWithResponse(ctx, params)` - List all endpoints → `*[]ServiceEndpoints`
-  - `PostServiceEndpointsWithResponse(ctx, params, body)` - Create a new endpoint
-  - `PatchServiceEndpointsWithResponse(ctx, params, body)` - Update endpoints
-  - `DeleteServiceEndpointsWithResponse(ctx, params)` - Delete endpoints
+### Specific Resource Lookup
 
-- **Service Fallbacks** (`/service_fallbacks`) - Fallback URLs for services
-  - `GetServiceFallbacksWithResponse(ctx, params)` - List all fallbacks → `*[]ServiceFallbacks`
-  - `PostServiceFallbacksWithResponse(ctx, params, body)` - Create a new fallback
-  - `PatchServiceFallbacksWithResponse(ctx, params, body)` - Update fallbacks
-  - `DeleteServiceFallbacksWithResponse(ctx, params)` - Delete fallbacks
+```go
+// Get a specific service by ID
+resp, err := client.GetServicesWithResponse(ctx, &portaldb.GetServicesParams{
+    ServiceId: func() *string { s := "eq.ethereum-mainnet"; return &s }(),
+})
+if err != nil {
+    log.Fatal(err)
+}
+
+if resp.StatusCode() == 200 && resp.JSON200 != nil {
+    services := *resp.JSON200
+    fmt.Printf("Found service: %s\n", (*services)[0].ServiceName)
+}
+```
+
+## RPC Functions
+
+Access custom database functions via the RPC endpoint:
+
+```go
+// Get current user info from JWT claims
+resp, err := client.PostRpcMeWithResponse(
+    ctx, 
+    &portaldb.PostRpcMeParams{}, 
+    portaldb.PostRpcMeJSONRequestBody{}, 
+    requestEditor,
+)
+if err != nil {
+    log.Fatal(err)
+}
+
+if resp.StatusCode() == 200 {
+    fmt.Printf("User info: %s\n", string(resp.Body))
+}
+```
 
 ## Error Handling
 
 ```go
-resp, err := client.GetServicesWithResponse(ctx, &portaldb.GetServicesParams{})
+resp, err := client.GetNetworksWithResponse(ctx, &portaldb.GetNetworksParams{})
 if err != nil {
     // Handle network/client errors
     log.Printf("Client error: %v", err)
@@ -152,15 +165,9 @@ switch resp.StatusCode() {
 case 200:
     // Success - access typed data
     if resp.JSON200 != nil {
-        services := *resp.JSON200 // []portaldb.Services
-        fmt.Printf("Found %d services\n", len(services))
-        for _, service := range services {
-            fmt.Printf("Service: %s\n", service.ServiceName)
-        }
+        networks := *resp.JSON200
+        fmt.Printf("Found %d networks\n", len(networks))
     }
-case 404:
-    // Not found
-    fmt.Println("Resource not found")
 case 401:
     // Unauthorized
     fmt.Println("Authentication required")
@@ -170,67 +177,25 @@ default:
 }
 ```
 
-## Configuration
-
-You can customize the client behavior:
-
-```go
-import (
-    "net/http"
-    "time"
-)
-
-// Custom HTTP client with timeout
-httpClient := &http.Client{
-    Timeout: 30 * time.Second,
-}
-
-client, err := portaldb.NewClientWithResponses(
-    "http://localhost:3000",
-    portaldb.WithHTTPClient(httpClient),
-)
-```
-
 ## Development
 
-This SDK was generated from the OpenAPI specification served by PostgREST. To regenerate:
+This SDK was generated from the OpenAPI specification served by PostgREST. 
+
+To regenerate run the following make target while the PostgREST API is running:
 
 ```bash
-# From the portal-db/api directory
-make generate-sdks
-
-# Or directly run the script
-cd api/codegen
-./generate-sdks.sh
+# From the portal-db directory
+make generate-all
 ```
 
 ## Generated Files
 
-- `models.go` - Generated data models and type definitions (44KB)
-- `client.go` - Generated API client methods and HTTP logic (189KB)
+- `models.go` - Generated data models and type definitions
+- `client.go` - Generated API client methods and HTTP logic
 - `go.mod` - Go module definition
 - `README.md` - This documentation
-
-### File Organization
-
-For better readability, the SDK is split into two main files:
-- **`models.go`** - Contains all data structures, constants, and type definitions
-- **`client.go`** - Contains the HTTP client, request builders, and API methods
-
-This separation makes it easier to:
-- Browse and understand the data models separately from client logic
-- Navigate large codebases more efficiently
-- Maintain and review changes to specific parts of the SDK
-
-## Support
-
-For issues with the generated SDK, please check:
-1. [API README](../../api/README.md) - PostgREST API documentation
-2. [oapi-codegen documentation](https://github.com/oapi-codegen/oapi-codegen) - SDK generation tool
-3. Your database schema and PostgREST configuration
 
 ## Related Documentation
 
 - **API Documentation**: [../../api/README.md](../../api/README.md)
 - **OpenAPI Specification**: `../../api/openapi/openapi.json`
-- **Database Schema**: `../../schema/001_schema.sql`

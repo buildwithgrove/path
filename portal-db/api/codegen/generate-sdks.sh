@@ -99,9 +99,21 @@ mkdir -p "$OPENAPI_DIR"
 echo "🧹 Cleaning previous OpenAPI files..."
 rm -f "$OPENAPI_V2_FILE" "$OPENAPI_V3_FILE"
 
+# Generate JWT token for authenticated access to get all endpoints
+echo "🔑 Generating JWT token for authenticated OpenAPI spec..."
+JWT_TOKEN=$(cd ../scripts && ./gen-jwt.sh authenticated 2>/dev/null | grep -A1 "🎟️  Token:" | tail -1)
+
+if [ -z "$JWT_TOKEN" ]; then
+    echo "⚠️  Could not generate JWT token, fetching public endpoints only..."
+    AUTH_HEADER=""
+else
+    echo "✅ JWT token generated, will fetch all endpoints (public + protected)"
+    AUTH_HEADER="Authorization: Bearer $JWT_TOKEN"
+fi
+
 # Fetch OpenAPI spec from PostgREST (Swagger 2.0 format)
 echo "📥 Fetching OpenAPI specification from PostgREST..."
-if ! curl -s "$POSTGREST_URL" -H "Accept: application/json" > "$OPENAPI_V2_FILE"; then
+if ! curl -s "$POSTGREST_URL" -H "Accept: application/json" ${AUTH_HEADER:+-H "$AUTH_HEADER"} > "$OPENAPI_V2_FILE"; then
     echo -e "${RED}❌ Failed to fetch OpenAPI specification from $POSTGREST_URL${NC}"
     exit 1
 fi
