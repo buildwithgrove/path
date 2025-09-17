@@ -61,10 +61,14 @@ func unmarshalResponse(
 	var jsonrpcResponse jsonrpc.Response
 	err := json.Unmarshal(data, &jsonrpcResponse)
 	if err != nil {
+		// Get the request payload, for single JSONRPC requests.
+		requestPayload := getSingleJSONRPCRequestPayload(servicePayloads)
+
 		// The response raw payload (e.g. as received from an endpoint) could not be unmarshalled as a JSONRC response.
 		// Return a generic response to the user.
 		payloadStr := string(data)
 		logger.With(
+			"jsonrpc_request", requestPayload,
 			"unmarshal_err", err,
 			"raw_payload", log.Preview(payloadStr),
 			"endpoint_addr", endpointAddr,
@@ -85,7 +89,7 @@ func unmarshalResponse(
 	// Get the JSON-RPC request from the service payload.
 	jsonrpcReq, err := jsonrpc.GetJsonRpcReqFromServicePayload(servicePayload)
 	if err != nil {
-		logger.Error().Err(err).Msg("Failed to get JSONRPC request from service payload")
+		logger.Error().Err(err).Msg("SHOULD NEVER HAPPEN: Failed to get JSONRPC request from service payload")
 		return getGenericJSONRPCErrResponse(logger, getJsonRpcIDForErrorResponse(servicePayloads), data, err), err
 	}
 
@@ -93,12 +97,25 @@ func unmarshalResponse(
 	if err := jsonrpcResponse.Validate(jsonrpcReq.ID); err != nil {
 		payloadStr := string(data)
 		logger.With(
-			"request", jsonrpcReq,
+			"jsonrpc_request", jsonrpcReq,
 			"validation_err", err,
 			"raw_payload", log.Preview(payloadStr),
 			"endpoint_addr", endpointAddr,
-		).Debug().Msg("JSON-RPC response validation failed")
+		).Error().Msg("❌ Failed to unmarshal response payload as valid JSON-RPC")
+
 		return getGenericJSONRPCErrResponse(logger, jsonrpcReq.ID, data, err), err
+	}
+
+	// The parsed JSONRPC response contains an error:
+	// - Log the request and the response
+	// - Used to track potential endpoint quality issues.
+	if jsonrpcResponseErr := jsonrpcResponse.Error; jsonrpcResponseErr != nil {
+		logger.With(
+			"jsonrpc_request", jsonrpcReq,
+			"jsonrpc_response_error_code", jsonrpcResponseErr.Code,
+			"jsonrpc_response_error_message", jsonrpcResponseErr.Message,
+			"endpoint_addr", endpointAddr,
+		).Error().Msg("❌ Endpoint returned JSONRPC response with error")
 	}
 
 	// Unmarshal the JSONRPC response into a method-specific response.
@@ -146,4 +163,23 @@ func findServicePayloadByID(servicePayloads map[jsonrpc.ID]protocol.Payload, tar
 		}
 	}
 	return protocol.Payload{}, false
+}
+
+// TODO_HACK(@adshmh): Drop this once single and batch JSONRPC request handling logic is fully separated.
+// - There should be no need to rely on endpoint's payload to match the request from a batch.
+// - Single JSONRPC requests do not need the complexity of batch request logic.
+//
+// This only targets single JSONRPC requests.
+func getSingleJSONRPCRequestPayload(servicePayloads map[jsonrpc.ID]protocol.Payload) string {
+	if len(servicePayloads) != 1 {
+		return ""
+	}
+
+	for _, payload := range servicePayloads {
+		if len(payload.Data) > 0 {
+			return payload.Data
+		}
+	}
+
+	return ""
 }

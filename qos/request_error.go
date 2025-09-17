@@ -24,3 +24,17 @@ func GetRequestErrorForProtocolError() *qosobservations.RequestError {
 		HttpStatusCode: int32(jsonrpcErrorResponse.GetRecommendedHTTPStatusCode()),
 	}
 }
+
+// GetRequestErrorForJSONRPCBackendServiceUnmarshalError returns a request error for a JSONRPC backend service unmarshaling error.
+// i.e. the payload returned by the endpoint/backend service failed to parse as a valid JSONRPC response.
+func GetRequestErrorForJSONRPCBackendServiceUnmarshalError() *qosobservations.RequestError {
+	err := errors.New("internal error: JSONRPC backend service error: payload failed to parse as valid JSONRPC response")
+	// initialize a JSONRPC error response to derive the HTTP status code.
+	jsonrpcErrorResponse := jsonrpc.NewErrResponseInternalErr(jsonrpc.ID{}, err)
+
+	return &qosobservations.RequestError{
+		ErrorKind:      qosobservations.RequestErrorKind_REQUEST_ERROR_INTERNAL_JSONRPC_BACKEND_SERVICE_UNMARSHAL_ERROR,
+		ErrorDetails:   err.Error(),
+		HttpStatusCode: int32(jsonrpcErrorResponse.GetRecommendedHTTPStatusCode()),
+	}
+}

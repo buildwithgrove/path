@@ -201,6 +201,9 @@ message EVMEndpointObservation {
     // This differs from EVMEmptyResponse as no response was reported by the protocol.
     EVMNoResponse no_response = 7;
   }
+
+  // Only set if the endpoint returned a valid JSONRPC response.
+  optional JsonRpcResponse parsed_jsonrpc_response = 8;
 }
 
 // TODO_MVP(@adshmh): Implement a consolidated SanctionObservation message structure that:

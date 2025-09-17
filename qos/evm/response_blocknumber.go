@@ -87,6 +87,7 @@ type responseToBlockNumber struct {
 // Reference: https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_blocknumber
 func (r responseToBlockNumber) GetObservation() qosobservations.EVMEndpointObservation {
 	return qosobservations.EVMEndpointObservation{
+		ParsedJsonrpcResponse: r.jsonrpcResponse.GetObservation(),
 		ResponseObservation: &qosobservations.EVMEndpointObservation_BlockNumberResponse{
 			BlockNumberResponse: &qosobservations.EVMBlockNumberResponse{
 				HttpStatusCode:          int32(r.getHTTPStatusCode()),

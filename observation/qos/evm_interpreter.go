@@ -180,6 +180,39 @@ func (i *EVMObservationInterpreter) GetEndpointObservations() ([]*EVMEndpointObs
 	return allEndpointObservations, true
 }
 
+// GetJSONRPCErrorCode extracts the JSON-RPC error code from the last endpoint observation.
+// Returns (errorCode, true) if a JSON-RPC error is present in the parsed response
+// Returns (0, false) if no error is present or parsed_jsonrpc_response is nil
+func (i *EVMObservationInterpreter) GetJSONRPCErrorCode() (int, bool) {
+	observations, ok := i.GetEndpointObservations()
+	if !ok {
+		return 0, false
+	}
+
+	// No endpoint observations indicates no responses were received
+	if len(observations) == 0 {
+		return 0, false
+	}
+
+	// Use only the last observation (latest response)
+	lastObs := observations[len(observations)-1]
+
+	// Get the parsed JSON-RPC response
+	parsedResponse := lastObs.GetParsedJsonrpcResponse()
+	if parsedResponse == nil {
+		return 0, false
+	}
+
+	// Check if there's an error in the JSON-RPC response
+	jsonrpcError := parsedResponse.GetError()
+	if jsonrpcError == nil {
+		return 0, false
+	}
+
+	// Return the error code
+	return int(jsonrpcError.GetCode()), true
+}
+
 // checkRequestValidationFailures examines observations for request validation failures
 // Returns (httpStatusCode, requestError) where requestError is non-nil if a validation failure was found
 func (i *EVMObservationInterpreter) checkRequestValidationFailures() (int, *EVMRequestError) {
