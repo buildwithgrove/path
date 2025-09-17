@@ -10,18 +10,18 @@
 
 postgrest-up: ## Start PostgREST API service and PostgreSQL DB
 	@echo "🚀 Starting Portal DB API services..."
-	cd .. && docker compose up -d postgres postgrest
+	docker compose up -d
 	@echo "✅ Services started!"
 	@echo "   PostgreSQL DB: localhost:5435"
 	@echo "   PostgREST API: http://localhost:3000"
 
 postgrest-down: ## Stop PostgREST API service and PostgreSQL DB
 	@echo "🛑 Stopping Portal DB API services..."
-	cd .. && docker compose down
+	docker compose down
 	@echo "✅ Services stopped!"
 
 postgrest-logs: ## Show logs from PostgREST API service and PostgreSQL DB
-	cd .. && docker compose logs -f
+	docker compose logs -f
 
 # ============================================================================
 # DATABASE SETUP
