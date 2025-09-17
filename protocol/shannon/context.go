@@ -90,6 +90,11 @@ type requestContext struct {
 	//   - Set by trackRelayMinerError method and used when building observations.
 	currentRelayMinerError *protocolobservations.ShannonRelayMinerError
 
+	// currentRPCType:
+	//   - Tracks the RPC type of the current relay being processed.
+	//   - Set during relay execution and used when building observations.
+	currentRPCType sharedtypes.RPCType
+
 	// HTTP client used for sending relay requests to endpoints while also capturing various debug metrics
 	httpClient *pathhttp.HTTPClientWithDebugMetrics
 
@@ -129,6 +134,9 @@ func (rc *requestContext) HandleServiceRequest(payloads []protocol.Payload) ([]p
 // sendSingleRelay handles a single relay request with full error handling and observation tracking.
 // Extracted from original HandleServiceRequest logic for reuse in parallel processing.
 func (rc *requestContext) sendSingleRelay(payload protocol.Payload) (protocol.Response, error) {
+	// Store the current RPC type for use in observations
+	rc.currentRPCType = payload.RPCType
+
 	// Record endpoint query time.
 	endpointQueryTime := time.Now()
 
@@ -137,13 +145,13 @@ func (rc *requestContext) sendSingleRelay(payload protocol.Payload) (protocol.Re
 
 	// Failure: Pass the response (which may contain RelayMinerError data) to error handler.
 	if err != nil {
-		return rc.handleEndpointError(endpointQueryTime, err, payload.RPCType)
+		return rc.handleEndpointError(endpointQueryTime, err)
 	}
 
 	// Success:
 	// - Record observation
 	// - Return response received from endpoint.
-	err = rc.handleEndpointSuccess(endpointQueryTime, &relayResponse, payload.RPCType)
+	err = rc.handleEndpointSuccess(endpointQueryTime, &relayResponse)
 	return relayResponse, err
 }
 
@@ -714,7 +722,7 @@ func (rc *requestContext) sendFallbackRelay(
 ) (protocol.Response, error) {
 	// Get the fallback URL for the fallback endpoint.
 	// If the RPC type is unknown or not configured, it will default URL.
-	endpointFallbackURL := fallbackEndpoint.FallbackURL(payload.RPCType)
+	endpointFallbackURL := fallbackEndpoint.GetURL(payload.RPCType)
 
 	// Prepare the fallback URL with optional path
 	fallbackURL := prepareURLFromPayload(endpointFallbackURL, payload)
@@ -807,7 +815,6 @@ func (rc *requestContext) handleInternalError(internalErr error) (protocol.Respo
 func (rc *requestContext) handleEndpointError(
 	endpointQueryTime time.Time,
 	endpointErr error,
-	rpcType sharedtypes.RPCType,
 ) (protocol.Response, error) {
 	rc.hydrateLogger("handleEndpointError")
 	selectedEndpoint := rc.getSelectedEndpoint()
@@ -835,7 +842,7 @@ func (rc *requestContext) handleEndpointError(
 		fmt.Sprintf("relay error: %v", endpointErr),
 		recommendedSanctionType,
 		rc.currentRelayMinerError, // Use RelayMinerError data from request context
-		rpcType,
+		rc.currentRPCType,         // Use RPC type from request context
 	)
 
 	// Track endpoint error observation for metrics and sanctioning
@@ -856,7 +863,6 @@ func (rc *requestContext) handleEndpointError(
 func (rc *requestContext) handleEndpointSuccess(
 	endpointQueryTime time.Time,
 	endpointResponse *protocol.Response,
-	rpcType sharedtypes.RPCType,
 ) error {
 	rc.hydrateLogger("handleEndpointSuccess")
 	rc.logger = rc.logger.With("endpoint_response_payload_len", len(endpointResponse.Bytes))
@@ -871,7 +877,7 @@ func (rc *requestContext) handleEndpointSuccess(
 		time.Now(), // Timestamp: endpoint query completed.
 		endpointResponse,
 		rc.currentRelayMinerError, // Use RelayMinerError data from request context
-		rpcType,
+		rc.currentRPCType,         // Use RPC type from request context
 	)
 
 	// Track endpoint success observation for metrics

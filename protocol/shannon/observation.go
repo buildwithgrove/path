@@ -174,15 +174,8 @@ func buildEndpointObservation(
 
 	// Add endpoint-level details: supplier, URL, isFallback.
 	observation.Supplier = endpoint.Supplier()
-	// TODO_HACK(@adshmh): Remove this after refactoring endpoint interface
-	//   - Create unified GetURL(rpcType) method that handles both fallback and public URLs
-	//   - This will eliminate the conditional logic and simplify endpoint observation
-	if endpoint.IsFallback() {
-		observation.EndpointUrl = endpoint.FallbackURL(rpcType)
-		observation.IsFallbackEndpoint = endpoint.IsFallback()
-	} else {
-		observation.EndpointUrl = endpoint.PublicURL()
-	}
+	observation.EndpointUrl = endpoint.GetURL(rpcType)
+	observation.IsFallbackEndpoint = endpoint.IsFallback()
 
 	// Add endpoint response details if not nil (i.e. success)
 	if endpointResponse != nil {

@@ -27,8 +27,10 @@ type endpoint interface {
 	Session() *sessiontypes.Session
 	Supplier() string
 
-	// TODO_HACK(@adshmh): Remove this after refactoring this interface
-	FallbackURL(sharedtypes.RPCType) string
+	// GetURL returns the appropriate URL for the given RPC type.
+	// For regular endpoints, this returns the public URL regardless of RPC type.
+	// For fallback endpoints, this returns the URL specific to the RPC type.
+	GetURL(rpcType sharedtypes.RPCType) string
 	IsFallback() bool
 }
 
@@ -68,10 +70,8 @@ func (e fallbackEndpoint) PublicURL() string {
 	return ""
 }
 
-// FallbackURL returns the URL of the fallback endpoint.
-// It is defined separately from `PublicURL` due to the requirement
-// to take an RPC type as an argument, which `PublicURL` does not.
-func (e fallbackEndpoint) FallbackURL(rpcType sharedtypes.RPCType) string {
+// GetURL returns the appropriate URL for the given RPC type
+func (e fallbackEndpoint) GetURL(rpcType sharedtypes.RPCType) string {
 	// If the RPC type is unknown, return the default URL.
 	if rpcType == sharedtypes.RPCType_UNKNOWN_RPC {
 		return e.defaultURL
@@ -87,6 +87,7 @@ func (e fallbackEndpoint) FallbackURL(rpcType sharedtypes.RPCType) string {
 	// Return the URL for the configured RPC type.
 	return url
 }
+
 
 func (e fallbackEndpoint) WebsocketURL() (string, error) {
 	websocketURL, ok := e.rpcTypeURLs[sharedtypes.RPCType_WEBSOCKET]
@@ -150,10 +151,11 @@ func (e protocolEndpoint) PublicURL() string {
 	return e.url
 }
 
-// FallbackURL is a no-op for protocol endpoints.
-func (e protocolEndpoint) FallbackURL(_ sharedtypes.RPCType) string {
-	return ""
+// GetURL returns the public URL for any RPC type (regular endpoints don't vary by RPC type)
+func (e protocolEndpoint) GetURL(_ sharedtypes.RPCType) string {
+	return e.url
 }
+
 
 // WebsocketURL returns the URL of the endpoint.
 func (e protocolEndpoint) WebsocketURL() (string, error) {
