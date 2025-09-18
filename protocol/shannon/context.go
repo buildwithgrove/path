@@ -76,6 +76,11 @@ type requestContext struct {
 	selectedEndpoint      endpoint
 	selectedEndpointMutex sync.RWMutex
 
+	// currentRPCType:
+	//   - Tracks the RPC type of the current relay being processed.
+	//   - Set during relay execution and used when building observations.
+	currentRPCType sharedtypes.RPCType
+
 	// requestErrorObservation:
 	//   - Tracks any errors encountered during request processing.
 	requestErrorObservation *protocolobservations.ShannonRequestError
@@ -115,6 +120,11 @@ func (rc *requestContext) HandleServiceRequest(payloads []protocol.Payload) ([]p
 		response, err := rc.handleInternalError(fmt.Errorf("HandleServiceRequest: no payloads provided for service %s", rc.serviceID))
 		return []protocol.Response{response}, err
 	}
+
+	// TODO_TECHDEBT: Account for different payloads having different RPC types
+	// OR refactor the single/parallel code flow altogether
+	// Store the current RPC type for use in observations
+	rc.currentRPCType = payloads[0].RPCType
 
 	// For single payload, handle directly without additional overhead.
 	if len(payloads) == 1 {
@@ -714,7 +724,7 @@ func (rc *requestContext) sendFallbackRelay(
 ) (protocol.Response, error) {
 	// Get the fallback URL for the fallback endpoint.
 	// If the RPC type is unknown or not configured, it will default URL.
-	endpointFallbackURL := fallbackEndpoint.FallbackURL(payload.RPCType)
+	endpointFallbackURL := fallbackEndpoint.GetURL(payload.RPCType)
 
 	// Prepare the fallback URL with optional path
 	fallbackURL := prepareURLFromPayload(endpointFallbackURL, payload)
@@ -834,6 +844,7 @@ func (rc *requestContext) handleEndpointError(
 		fmt.Sprintf("relay error: %v", endpointErr),
 		recommendedSanctionType,
 		rc.currentRelayMinerError, // Use RelayMinerError data from request context
+		rc.currentRPCType,         // Use RPC type from request context
 	)
 
 	// Track endpoint error observation for metrics and sanctioning
@@ -868,6 +879,7 @@ func (rc *requestContext) handleEndpointSuccess(
 		time.Now(), // Timestamp: endpoint query completed.
 		endpointResponse,
 		rc.currentRelayMinerError, // Use RelayMinerError data from request context
+		rc.currentRPCType,         // Use RPC type from request context
 	)
 
 	// Track endpoint success observation for metrics

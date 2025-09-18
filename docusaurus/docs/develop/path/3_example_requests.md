@@ -82,7 +82,7 @@ Which will start sending events like so:
 
 :::info
 
-This is a simple terminal-based WebSocket example and does not contain reconnection logic.
+This is a simple terminal-based Websocket example and does not contain reconnection logic.
 
 Connections will drop on session rollover, which is expected behavior.
 

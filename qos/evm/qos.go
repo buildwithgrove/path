@@ -90,8 +90,8 @@ func (qos *QoS) ParseHTTPRequest(_ context.Context, req *http.Request) (gateway.
 	return qos.validateHTTPRequest(req)
 }
 
-// ParseWebsocketRequest builds a request context from the provided WebSocket request.
-// WebSocket connection requests do not have a body, so we don't need to parse it.
+// ParseWebsocketRequest builds a request context from the provided Websocket request.
+// Websocket connection requests do not have a body, so we don't need to parse it.
 //
 // Implements gateway.QoSService interface.
 func (qos *QoS) ParseWebsocketRequest(_ context.Context) (gateway.RequestQoSContext, bool) {

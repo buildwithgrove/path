@@ -89,11 +89,11 @@ const (
 	// QoS rejected the request.
 	// e.g. malformed payload could not be unmarshaled into JSONRPC
 	GatewayRequestErrorKind_GATEWAY_REQUEST_ERROR_KIND_REJECTED_BY_QOS GatewayRequestErrorKind = 2
-	// WebSocket request was rejected by QoS instance.
-	// e.g. WebSocket subscription request validation failed.
+	// Websocket request was rejected by QoS instance.
+	// e.g. Websocket subscription request validation failed.
 	GatewayRequestErrorKind_GATEWAY_REQUEST_ERROR_KIND_WEBSOCKET_REJECTED_BY_QOS GatewayRequestErrorKind = 3
-	// WebSocket connection establishment failed.
-	// e.g. Failed to upgrade HTTP connection to WebSocket or connect to endpoint.
+	// Websocket connection establishment failed.
+	// e.g. Failed to upgrade HTTP connection to Websocket or connect to endpoint.
 	GatewayRequestErrorKind_GATEWAY_REQUEST_ERROR_KIND_WEBSOCKET_CONNECTION_FAILED GatewayRequestErrorKind = 4
 )
 
@@ -156,11 +156,11 @@ type GatewayObservations struct {
 	ServiceId string `protobuf:"bytes,3,opt,name=service_id,json=serviceId,proto3" json:"service_id,omitempty"`
 	// received_time is when the request was initially received
 	//   - For HTTP requests: when the HTTP request was received
-	//   - For WebSocket requests: when the WebSocket connection was established
+	//   - For Websocket requests: when the Websocket connection was established
 	ReceivedTime *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=received_time,json=receivedTime,proto3" json:"received_time,omitempty"`
 	// completed_time is when request processing finished and response was returned
 	//   - For HTTP requests: when the HTTP response was sent
-	//   - For WebSocket requests: when the WebSocket connection was terminated
+	//   - For Websocket requests: when the Websocket connection was terminated
 	CompletedTime *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=completed_time,json=completedTime,proto3" json:"completed_time,omitempty"`
 	// response_size is the size in bytes of the response payload
 	ResponseSize uint64 `protobuf:"varint,6,opt,name=response_size,json=responseSize,proto3" json:"response_size,omitempty"`
