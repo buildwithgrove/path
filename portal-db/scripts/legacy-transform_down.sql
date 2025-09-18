@@ -15,10 +15,13 @@ TRUNCATE TABLE public.portal_applications RESTART IDENTITY CASCADE;
 -- 3. Remove portal account RBAC (depends on portal_accounts and portal_users)
 TRUNCATE TABLE public.portal_account_rbac RESTART IDENTITY CASCADE;
 
--- 4. Remove RBAC roles
+-- 4. Remove portal user auth (depends on portal_users)
+TRUNCATE TABLE public.portal_user_auth RESTART IDENTITY CASCADE;
+
+-- 5. Remove RBAC roles
 TRUNCATE TABLE public.rbac RESTART IDENTITY CASCADE;
 
--- 5. Remove portal users
+-- 6. Remove portal users
 TRUNCATE TABLE public.portal_users RESTART IDENTITY CASCADE;
 
 -- 6. Remove portal accounts (depends on portal_plans)

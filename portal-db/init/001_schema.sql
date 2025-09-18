@@ -19,6 +19,13 @@ CREATE TYPE plan_interval AS ENUM ('day', 'month', 'year');
 -- Origin - Allow specific IP addresses or URLs
 CREATE TYPE allowlist_type AS ENUM ('service_id', 'contract', 'origin');
 
+-- Add support for multiple auth providers offering different types
+-- Easily extendable should additional authorization providers become necessary 
+-- or requested
+-- For legacy support, only adding auth0 and its relevant types
+CREATE TYPE portal_auth_provider AS ENUM ('auth0');
+CREATE TYPE portal_auth_type AS ENUM ('auth0_github', 'auth0_username', 'auth0_google');
+
 -- ============================================================================
 -- CORE ORGANIZATIONAL TABLES
 -- ============================================================================
@@ -117,6 +124,23 @@ COMMENT ON COLUMN portal_users.portal_admin IS 'Whether user has admin privilege
 -- TODO_IMPROVE: Add user_authentication table for password management
 -- TODO_CONSIDERATION: Add support for MFA/2FA
 -- TODO_CONSIDERATION: Consider session management table
+
+-- Portal User Auth Table
+-- Determines which Auth Provider (portal_auth_provider) and which Auth Type 
+-- (portal_auth_type) a user is authenticated into the Portal by
+CREATE TABLE portal_user_auth (
+    portal_user_auth_id SERIAL PRIMARY KEY,
+    portal_user_id VARCHAR(42),
+    portal_auth_provider portal_auth_provider,
+    portal_auth_type portal_auth_type,
+    auth_provider_user_id VARCHAR(69),
+    federated BOOL DEFAULT FALSE,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (portal_user_id) REFERENCES portal_users(portal_user_id) ON DELETE CASCADE
+);
+
+COMMENT ON TABLE portal_user_auth IS 'Authorization provider and type for each user. Determines how to authenticate a user into the Portal.';
 
 -- Contacts table
 -- Contacts are individuals that are members of an Organization. Can be attached to Portal Users

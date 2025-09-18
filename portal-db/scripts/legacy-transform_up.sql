@@ -188,4 +188,30 @@ FROM legacy_extract.portal_application_whitelists paw
 LEFT JOIN legacy_extract.chains c ON paw.chain_id = c.id
 WHERE paw.type IN ('blockchains', 'origins', 'contracts');  -- Only process known types
 
+-- Transform legacy_extract.user_auth_providers to public.portal_user_auth
+INSERT INTO public.portal_user_auth (
+    portal_user_id,
+    portal_auth_provider,
+    portal_auth_type,
+    auth_provider_user_id,
+    federated,
+    created_at,
+    updated_at
+)
+SELECT 
+    uap.user_id as portal_user_id,
+    'auth0'::portal_auth_provider as portal_auth_provider,  -- Only auth0 provider supported
+    CASE 
+        WHEN uap.type = 'auth0_username' THEN 'auth0_username'::portal_auth_type
+        WHEN uap.type = 'auth0_github' THEN 'auth0_github'::portal_auth_type
+        WHEN uap.type = 'auth0_google' THEN 'auth0_google'::portal_auth_type
+    END as portal_auth_type,
+    uap.provider_user_id as auth_provider_user_id,
+    COALESCE(uap.federated, FALSE) as federated,
+    uap.created_at,
+    uap.created_at as updated_at  -- Use created_at since legacy table doesn't have updated_at
+FROM legacy_extract.user_auth_providers uap
+WHERE uap.provider = 'auth0'  -- Only auth0 provider supported
+  AND uap.type IN ('auth0_username', 'auth0_github', 'auth0_google');
+
 COMMIT;
