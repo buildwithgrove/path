@@ -15,6 +15,12 @@ import (
 	"github.com/buildwithgrove/path/protocol"
 )
 
+// defaultURLKey is the key for the default URL in the fallback endpoints map.
+//   - If a service only supports one RPC type, the default URL is used for all requests.
+//   - If a service supports multiple RPC types, the default URL is not used for requests.
+//   - In all cases, the default URL is used as an identifier in the EndpointAddr.
+const defaultURLKey = "default_url"
+
 const (
 	// Shannon uses secp256k1 key schemes (the cosmos default)
 	// secp256k1 keys are 32 bytes -> 64 hexadecimal characters
@@ -83,12 +89,6 @@ type (
 		SendAllTraffic bool `yaml:"send_all_traffic"`
 	}
 )
-
-// defaultURLKey is the key for the default URL in the fallback endpoints map.
-//   - If a service only supports one RPC type, the default URL is used for all requests.
-//   - If a service supports multiple RPC types, the default URL is not used for requests.
-//   - In all cases, the default URL is used as an identifier in the EndpointAddr.
-const defaultURLKey = "default_url"
 
 func (gc GatewayConfig) Validate() error {
 	if len(gc.GatewayPrivateKeyHex) != shannonPrivateKeyLengthHex {
