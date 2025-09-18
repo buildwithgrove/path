@@ -276,7 +276,7 @@ CREATE TABLE services (
     deleted_at TIMESTAMPTZ,
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (network_id) REFERENCES networks(network_id),
+    FOREIGN KEY (network_id) REFERENCES networks(network_id)
 );
 
 COMMENT ON TABLE services IS 'Supported blockchain services from the Pocket Network';
