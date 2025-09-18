@@ -268,6 +268,8 @@ CREATE TABLE services (
     service_owner_address VARCHAR(50),
     network_id VARCHAR(42),
     active BOOLEAN DEFAULT FALSE,
+    beta BOOLEAN DEFAULT FALSE,
+    coming_soon BOOLEAN DEFAULT FALSE,
     quality_fallback_enabled BOOLEAN DEFAULT FALSE,
     hard_fallback_enabled BOOLEAN DEFAULT FALSE,
     svg_icon TEXT, 
@@ -275,7 +277,6 @@ CREATE TABLE services (
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (network_id) REFERENCES networks(network_id),
-    FOREIGN KEY (service_owner_address) REFERENCES gateways(gateway_address)
 );
 
 COMMENT ON TABLE services IS 'Supported blockchain services from the Pocket Network';

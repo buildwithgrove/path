@@ -9,6 +9,9 @@ BEGIN;
 SET session_replication_role = replica;
 
 -- Delete only the data we inserted (in reverse dependency order)
+--portal_application_allowlists (depends on portal_applications)
+DELETE FROM portal.portal_application_allowlists;
+
 -- portal_applications (depends on portal_accounts)
 DELETE FROM portal.portal_applications;
 

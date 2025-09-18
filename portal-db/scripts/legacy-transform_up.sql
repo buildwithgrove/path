@@ -133,8 +133,6 @@ SELECT
     COALESCE(au.accepted, FALSE) as user_joined_account
 FROM "legacy-extract".account_users au;
 
--- Transform the legacy portal_applications to the new portal_applications structure
--- Consolidates some structures from multiple legacy tables
 INSERT INTO portal.portal_applications (
     portal_application_id,
     portal_account_id,
@@ -160,7 +158,11 @@ SELECT
     NULL as portal_application_user_limit_interval,
     NULL as portal_application_user_limit_rps,
     pa.description as portal_application_description,
-    pas.favorited_chain_ids as favorite_service_ids,
+    (
+        SELECT ARRAY_AGG(c.blockchain) 
+        FROM "legacy-extract".chains c 
+        WHERE c.id = ANY(pas.favorited_chain_ids)
+    ) as favorite_service_ids,
     pas.secret_key as secret_key_hash,
     COALESCE(pas.secret_key_required, FALSE) as secret_key_required,
     CASE 
@@ -172,5 +174,31 @@ SELECT
 FROM "legacy-extract".portal_applications pa
 LEFT JOIN "legacy-extract".portal_application_settings pas ON pa.id = pas.application_id;
 
-COMMIT;
+-- Transform the legacy portal_application_whitelists to the new portal_application_allowlists
+INSERT INTO portal.portal_application_allowlists (
+    portal_application_id,
+    type,
+    value,
+    service_id,
+    created_at,
+    updated_at
+)
+SELECT 
+    paw.application_id::uuid as portal_application_id,
+    CASE 
+        WHEN paw.type = 'blockchains' THEN 'service_id'::allowlist_type
+        WHEN paw.type = 'origins' THEN 'origin'::allowlist_type
+        WHEN paw.type = 'contracts' THEN 'contract'::allowlist_type
+        ELSE paw.type::allowlist_type
+    END as type,
+    paw.value,
+    CASE 
+        WHEN paw.type = 'blockchains' THEN c.blockchain
+        ELSE NULL
+    END as service_id,
+    paw.created_at,
+    paw.created_at as updated_at  -- Using created_at since there's no updated_at in legacy
+FROM "legacy-extract".portal_application_whitelists paw
+LEFT JOIN "legacy-extract".chains c ON paw.chain_id = c.id;
 
+COMMIT;
