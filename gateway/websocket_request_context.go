@@ -30,7 +30,7 @@ var _ websockets.WebsocketMessageProcessor = &websocketRequestContext{}
 //   - Per-message observations instead of per-request observations
 //   - Long-lived connection management vs one-shot request/response
 //
-// TODO_ARCHITECTURE: Separate WebSocket and HTTP request contexts more cleanly
+// TODO_ARCHITECTURE: Separate Websocket and HTTP request contexts more cleanly
 // Current: websocketRequestContext and httpRequestContext share similar patterns but are separate types
 // Suggestion: Create a base requestContext interface with common functionality, then extend for protocol-specific needs
 type websocketRequestContext struct {
@@ -69,7 +69,7 @@ type websocketRequestContext struct {
 
 // ---------- Websocket Connection Establishment ----------
 
-// initFromHTTPRequest builds the required context for serving a WebSocket request.
+// initFromHTTPRequest builds the required context for serving a Websocket request.
 func (wrc *websocketRequestContext) initFromHTTPRequest(httpReq *http.Request) error {
 	// Initialize the logger with the HTTP request attributes.
 	wrc.logger = wrc.getWebSocketConnectionLogger(httpReq)
@@ -100,11 +100,11 @@ func (wrc *websocketRequestContext) buildQoSContextFromHTTP(_ *http.Request) err
 	// TODO_TECHDEBT(@adshmh,@commoddity): Replace with ParseHTTPRequest.
 	qosCtx, isValid := wrc.serviceQoS.ParseWebsocketRequest(wrc.context)
 
-	// Reject invalid WebSocket requests.
+	// Reject invalid Websocket requests.
 	if !isValid {
 		// Update gateway observations for websocket rejection
 		wrc.updateGatewayObservations(errWebsocketRequestRejectedByQoS)
-		logger.Info().Msg("WebSocket request rejected by QoS")
+		logger.Info().Msg("Websocket request rejected by QoS")
 		return errWebsocketRequestRejectedByQoS
 	}
 
@@ -142,7 +142,7 @@ func (wrc *websocketRequestContext) handleWebsocketRequest(
 	// Set the received_time in gateway observations to mark connection establishment
 	wrc.gatewayObservations.ReceivedTime = timestamppb.New(time.Now())
 
-	logger.Info().Msg("🔌 WebSocket connection established successfully")
+	logger.Info().Msg("🔌 Websocket connection established successfully")
 
 	return nil
 }
@@ -176,7 +176,7 @@ func (wrc *websocketRequestContext) buildProtocolContextAndStartBridge(
 	wrc.logger = wrc.logger.With("endpoint_addr", selectedEndpoint)
 
 	// Build protocol context and start bridge for the selected endpoint
-	// This immediately establishes the WebSocket connection and returns a connection observation channel
+	// This immediately establishes the Websocket connection and returns a connection observation channel
 	protocolCtx, connectionObservationChan, err := wrc.protocol.BuildWebsocketRequestContextForEndpoint(
 		wrc.context,
 		wrc.serviceID,
@@ -243,11 +243,11 @@ func (wrc *websocketRequestContext) ProcessEndpointWebsocketMessage(msgData []by
 	messageObservations.Protocol = &protocolObservations
 
 	// TODO_TECHDEBT(@commoddity): process message using QoS context and update the message observations.
-	// For example, for JSON-RPC method send through WebSocket, the QoS context should:
+	// For example, for JSON-RPC method send through Websocket, the QoS context should:
 	//   - Check the request payload.
 	//   - Detect it is a subscription request.
 	//   - Validate the request, e.g. params field.
-	//   - Reject invalid WebSocket requests, similar to HTTP requests. (e.g. invalid params field)
+	//   - Reject invalid Websocket requests, similar to HTTP requests. (e.g. invalid params field)
 	// messageObservations.Qos = wrc.qosCtx.ProcessProtocolEndpointWebsocketMessage(msgData)
 
 	return endpointMessageBz, messageObservations, nil
@@ -312,7 +312,7 @@ func (wrc *websocketRequestContext) listenForConnectionObservations(observationC
 // handleConnectionObservation processes a single connection observation and broadcasts it appropriately
 // based on the connection event type.
 func (wrc *websocketRequestContext) handleConnectionObservation(protocolObs *protocolobservations.Observations) {
-	// Check if this is a Shannon WebSocket connection observation
+	// Check if this is a Shannon Websocket connection observation
 	shannonObs := protocolObs.GetShannon()
 	if shannonObs == nil || len(shannonObs.GetObservations()) == 0 {
 		wrc.logger.Warn().Msg("Received connection observation without Shannon data")
@@ -341,7 +341,7 @@ func (wrc *websocketRequestContext) handleConnectionObservation(protocolObs *pro
 	}
 }
 
-// ---------- WebSocket Message Observations ----------
+// ---------- Websocket Message Observations ----------
 
 // BroadcastMessageObservations delivers the collected details regarding all aspects
 // of the websocket message to all the interested parties.
@@ -398,10 +398,10 @@ func (wrc *websocketRequestContext) initializeMessageObservations() *observation
 	}
 }
 
-// ---------- WebSocket Connection Observations ----------
+// ---------- Websocket Connection Observations ----------
 
 // broadcastWebsocketConnectionEstablished broadcasts a protocol-level observation specifically
-// for connection establishment to inform the metrics system that a WebSocket connection was established.
+// for connection establishment to inform the metrics system that a Websocket connection was established.
 // This method only publishes to the metrics reporter, not the data reporter.
 func (wrc *websocketRequestContext) broadcastWebsocketConnectionEstablished(protocolObservations *protocolobservations.Observations) {
 	// Create a protocol-only observation for connection establishment
@@ -428,7 +428,7 @@ func (wrc *websocketRequestContext) broadcastWebsocketConnectionClosed(protocolO
 	observations := &observation.RequestResponseObservations{
 		Gateway:  wrc.gatewayObservations,
 		Protocol: protocolObservations,
-		// TODO_IMPROVE: add QoS observations for WebSocket connection observations.
+		// TODO_IMPROVE: add QoS observations for Websocket connection observations.
 		Qos: nil,
 	}
 
@@ -441,7 +441,7 @@ func (wrc *websocketRequestContext) broadcastWebsocketConnectionClosed(protocolO
 	}
 }
 
-// updateProtocolObservations updates the stored protocol-level connection observations for WebSocket connections.
+// updateProtocolObservations updates the stored protocol-level connection observations for Websocket connections.
 // It is called at:
 //   - Protocol context setup error during connection establishment
 //   - When broadcasting connection observations
@@ -463,7 +463,7 @@ func (wrc *websocketRequestContext) updateProtocolObservations(
 	wrc.logger.
 		With("service_id", wrc.serviceID).
 		ProbabilisticDebugInfo(polylog.ProbabilisticDebugInfoProb).
-		Msg("SHOULD NEVER HAPPEN: WebSocket protocol context is nil, but no protocol setup observation have been reported.")
+		Msg("SHOULD NEVER HAPPEN: Websocket protocol context is nil, but no protocol setup observation have been reported.")
 }
 
 // updateGatewayObservations updates the gateway-level observations in the websocket request context.
@@ -484,27 +484,27 @@ func (wrc *websocketRequestContext) updateGatewayObservations(err error) {
 		return
 	}
 
-	// Classify WebSocket-specific errors based on error type
+	// Classify Websocket-specific errors based on error type
 	switch {
 	// Service ID not specified
 	case errors.Is(err, ErrGatewayNoServiceIDProvided):
-		wrc.logger.Error().Err(err).Msg("No service ID specified in the HTTP headers. WebSocket request will fail.")
+		wrc.logger.Error().Err(err).Msg("No service ID specified in the HTTP headers. Websocket request will fail.")
 		wrc.gatewayObservations.RequestError = &observation.GatewayRequestError{
 			ErrorKind: observation.GatewayRequestErrorKind_GATEWAY_REQUEST_ERROR_KIND_MISSING_SERVICE_ID,
 			Details:   err.Error(),
 		}
 
-	// WebSocket request was rejected by QoS instance
+	// Websocket request was rejected by QoS instance
 	case errors.Is(err, errWebsocketRequestRejectedByQoS):
-		wrc.logger.Error().Err(err).Msg("QoS instance rejected the WebSocket request. Request will fail.")
+		wrc.logger.Error().Err(err).Msg("QoS instance rejected the Websocket request. Request will fail.")
 		wrc.gatewayObservations.RequestError = &observation.GatewayRequestError{
 			ErrorKind: observation.GatewayRequestErrorKind_GATEWAY_REQUEST_ERROR_KIND_WEBSOCKET_REJECTED_BY_QOS,
 			Details:   err.Error(),
 		}
 
-	// WebSocket connection establishment failed
+	// Websocket connection establishment failed
 	case errors.Is(err, errWebsocketConnectionFailed):
-		wrc.logger.Error().Err(err).Msg("WebSocket connection establishment failed. Request will fail.")
+		wrc.logger.Error().Err(err).Msg("Websocket connection establishment failed. Request will fail.")
 		wrc.gatewayObservations.RequestError = &observation.GatewayRequestError{
 			ErrorKind: observation.GatewayRequestErrorKind_GATEWAY_REQUEST_ERROR_KIND_WEBSOCKET_CONNECTION_FAILED,
 			Details:   err.Error(),
@@ -519,7 +519,7 @@ func (wrc *websocketRequestContext) updateGatewayObservations(err error) {
 		}
 
 	default:
-		wrc.logger.Warn().Err(err).Msg("SHOULD NEVER HAPPEN: unrecognized WebSocket gateway-level request error.")
+		wrc.logger.Warn().Err(err).Msg("SHOULD NEVER HAPPEN: unrecognized Websocket gateway-level request error.")
 		// Set a generic request error observation
 		wrc.gatewayObservations.RequestError = &observation.GatewayRequestError{
 			// unspecified error kind: this should not happen

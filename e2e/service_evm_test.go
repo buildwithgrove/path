@@ -75,7 +75,7 @@ func getEVMTestMethods() []string {
 	}
 }
 
-// getEVMTestMethodsForWebSocket returns all EVM JSON-RPC methods for WebSocket testing.
+// getEVMTestMethodsForWebSocket returns all EVM JSON-RPC methods for Websocket testing.
 // This includes all EVM JSON-RPC methods except batchRequest as EVM websocket connections
 // go not support batch requests.
 func getEVMTestMethodsForWebSocket() []string {

@@ -24,14 +24,14 @@ func getWebsocketMessageSuccessObservation(
 ) protocolobservations.Observations {
 	logger.With("method", "getWebsocketMessageSuccessObservation")
 
-	// Create a new WebSocket message observation for success
+	// Create a new Websocket message observation for success
 	wsMessageObs := buildWebsocketMessageSuccessObservation(
 		logger,
 		selectedEndpoint,
 		int64(len(msgData)),
 	)
 
-	// Update the observations to use the WebSocket message observation
+	// Update the observations to use the Websocket message observation
 	return protocolobservations.Observations{
 		Shannon: &protocolobservations.ShannonObservationsList{
 			Observations: []*protocolobservations.ShannonRequestObservations{
@@ -59,7 +59,7 @@ func getWebsocketMessageErrorObservation(
 	// Error classification based on trusted error sources only
 	endpointErrorType, recommendedSanctionType := classifyRelayError(logger, messageError)
 
-	// Create a new WebSocket message observation for error
+	// Create a new Websocket message observation for error
 	wsMessageObs := buildWebsocketMessageErrorObservation(
 		selectedEndpoint,
 		int64(len(msgData)),
@@ -85,7 +85,7 @@ func getWebsocketMessageErrorObservation(
 
 // ---------- Connection-Level Observations ----------
 
-// getWebsocketConnectionSuccessObservation builds observations for successful WebSocket connection establishment.
+// getWebsocketConnectionSuccessObservation builds observations for successful Websocket connection establishment.
 func getWebsocketConnectionEstablishedObservation(
 	logger polylog.Logger,
 	serviceID protocol.ServiceID,
@@ -132,7 +132,7 @@ func getWebsocketConnectionClosedObservation(
 	}
 }
 
-// getWebsocketConnectionErrorObservation builds observations for failed WebSocket connection establishment.
+// getWebsocketConnectionErrorObservation builds observations for failed Websocket connection establishment.
 func getWebsocketConnectionErrorObservation(
 	logger polylog.Logger,
 	serviceID protocol.ServiceID,
