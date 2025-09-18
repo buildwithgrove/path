@@ -93,7 +93,7 @@ func (rv *requestValidator) buildWebsocketRequestObservations(
 func (rv *requestValidator) createWebsocketUnsupportedRPCTypeContext(
 	rpcType sharedtypes.RPCType,
 ) gateway.RequestQoSContext {
-	err := errors.New("Websocket not supported for this service")
+	err := errors.New("websocket not supported for this service")
 	response := jsonrpc.NewErrResponseInvalidRequest(jsonrpc.ID{}, err)
 
 	observations := rv.createWebsocketUnsupportedRPCTypeObservation(rpcType, response)

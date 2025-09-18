@@ -21,9 +21,9 @@ var (
 
 	// Websocket request was rejected by QoS instance.
 	// e.g. Websocket subscription request validation failed.
-	errWebsocketRequestRejectedByQoS = errors.New("Websocket request rejected by QoS instance")
+	errWebsocketRequestRejectedByQoS = errors.New("websocket request rejected by QoS instance")
 
 	// Websocket connection establishment failed.
 	// e.g. Failed to upgrade HTTP connection to Websocket or connect to endpoint.
-	errWebsocketConnectionFailed = errors.New("Websocket connection establishment failed")
+	errWebsocketConnectionFailed = errors.New("websocket connection establishment failed")
 )
