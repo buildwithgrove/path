@@ -49,16 +49,27 @@ validate_params() {
     fi
 }
 
-# 📊 Function to parse application info from pocketd output
+# 📊 Function to parse application info from pocketd JSON output
 parse_application_info() {
     local app_output="$1"
 
-    # Parse application information from YAML output
-    local app_address=$(echo "$app_output" | grep "address:" | head -1 | awk '{print $2}' | tr -d '"')
-    local gateway_address=$(echo "$app_output" | sed -n '/delegatee_gateway_addresses:/,/^[^ ]/p' | grep "^  - " | head -1 | sed 's/^  - //' | tr -d '"')
-    local service_id=$(echo "$app_output" | sed -n '/service_configs:/,/^[^ ]/p' | grep "service_id:" | head -1 | sed 's/.*service_id:[[:space:]]*//' | tr -d '"')
-    local stake_amount=$(echo "$app_output" | grep -A 5 "stake:" | grep "amount:" | head -1 | awk '{print $2}' | tr -d '"')
-    local stake_denom=$(echo "$app_output" | grep -A 5 "stake:" | grep "denom:" | head -1 | awk '{print $2}' | tr -d '"')
+    # Parse application information from JSON output
+    local app_address=$(echo "$app_output" | jq -r '.application.address // empty' 2>/dev/null)
+    local gateway_address=$(echo "$app_output" | jq -r '.application.delegatee_gateway_addresses[0] // empty' 2>/dev/null)
+    local service_id=$(echo "$app_output" | jq -r '.application.service_configs[0].service_id // empty' 2>/dev/null)
+    local stake_amount=$(echo "$app_output" | jq -r '.application.stake.amount // empty' 2>/dev/null)
+    local stake_denom=$(echo "$app_output" | jq -r '.application.stake.denom // empty' 2>/dev/null)
+
+    # Fallback to text parsing if JSON parsing fails or jq is not available
+    if [ -z "$app_address" ] || ! command -v jq &> /dev/null; then
+        print_status $YELLOW "   📝 Using text parsing (jq not available or JSON parsing failed)"
+        # Parse application information from YAML/text output
+        app_address=$(echo "$app_output" | grep "address:" | head -1 | awk '{print $2}' | tr -d '"')
+        gateway_address=$(echo "$app_output" | sed -n '/delegatee_gateway_addresses:/,/^[^ ]/p' | grep "^  - " | head -1 | sed 's/^  - //' | tr -d '"')
+        service_id=$(echo "$app_output" | sed -n '/service_configs:/,/^[^ ]/p' | grep "service_id:" | head -1 | sed 's/.*service_id:[[:space:]]*//' | tr -d '"')
+        stake_amount=$(echo "$app_output" | grep -A 5 "stake:" | grep "amount:" | head -1 | awk '{print $2}' | tr -d '"')
+        stake_denom=$(echo "$app_output" | grep -A 5 "stake:" | grep "denom:" | head -1 | awk '{print $2}' | tr -d '"')
+    fi
 
     echo "$app_address|$gateway_address|$service_id|$stake_amount|$stake_denom"
 }
@@ -178,6 +189,11 @@ main() {
         exit 1
     fi
 
+    # Check if jq is available for JSON parsing
+    if ! command -v jq &> /dev/null; then
+        print_status $YELLOW "⚠️  jq not found. Will use text parsing as fallback."
+    fi
+
     # Test database connection
     print_status $YELLOW "🔍 Testing database connection..."
     if ! psql "$DB_CONNECTION_STRING" -c "SELECT 1;" > /dev/null 2>&1; then
@@ -243,7 +259,7 @@ main() {
         # Query application information using pocketd with timeout
         print_status $YELLOW "   📡 Fetching application info from blockchain..."
 
-        if ! app_output=$(timeout 30 pocketd q application show-application "$app_address" --node="$NODE" --chain-id="$NETWORK" 2>&1); then
+        if ! app_output=$(timeout 30 pocketd q application show-application "$app_address" --node "$NODE" --chain-id "$NETWORK" --output json 2>&1); then
             print_status $RED "   ❌ Failed to fetch application info for $app_address"
             if echo "$app_output" | grep -q "timeout"; then
                 print_status $RED "   📋 Error: Command timed out after 30 seconds"
