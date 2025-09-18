@@ -1,42 +1,30 @@
 -- legacy-transform_down.sql
-
--- Undoes only the changes made by legacy-transform_up.sql
--- This preserves any other data that might exist in the portal database
+-- Rollback script to truncate all data inserted by legacy-transform_up.sql
+-- This allows for clean re-testing of the migration
 
 BEGIN;
 
--- Disable foreign key checks temporarily to avoid constraint issues
-SET session_replication_role = replica;
+-- Truncate tables in reverse dependency order to avoid foreign key constraint issues
 
--- Delete only the data we inserted (in reverse dependency order)
---portal_application_allowlists (depends on portal_applications)
-DELETE FROM portal.portal_application_allowlists;
+-- 1. Remove portal application allowlists (depends on portal_applications)
+TRUNCATE TABLE public.portal_application_allowlists RESTART IDENTITY CASCADE;
 
--- portal_applications (depends on portal_accounts)
-DELETE FROM portal.portal_applications;
+-- 2. Remove portal applications (depends on portal_accounts)
+TRUNCATE TABLE public.portal_applications RESTART IDENTITY CASCADE;
 
--- portal_account_rbac (depends on portal_accounts and portal_users)
-DELETE FROM portal.portal_account_rbac;
+-- 3. Remove portal account RBAC (depends on portal_accounts and portal_users)
+TRUNCATE TABLE public.portal_account_rbac RESTART IDENTITY CASCADE;
 
--- portal_accounts (depends on portal_plans)
-DELETE FROM portal.portal_accounts;
+-- 4. Remove RBAC roles
+TRUNCATE TABLE public.rbac RESTART IDENTITY CASCADE;
 
--- portal_users
-DELETE FROM portal.portal_users;
+-- 5. Remove portal users
+TRUNCATE TABLE public.portal_users RESTART IDENTITY CASCADE;
 
--- rbac (only the legacy roles we inserted)
-DELETE FROM portal.rbac WHERE role_name IN ('LEGACY_ADMIN', 'LEGACY_OWNER', 'LEGACY_MEMBER');
+-- 6. Remove portal accounts (depends on portal_plans)
+TRUNCATE TABLE public.portal_accounts RESTART IDENTITY CASCADE;
 
--- portal_plans (only the specific plans we inserted)
-DELETE FROM portal.portal_plans WHERE portal_plan_type IN ('PLAN_FREE', 'PLAN_UNLIMITED', 'PLAN_ENTERPRISE', 'PLAN_INTERNAL');
-
--- Re-enable foreign key checks
-SET session_replication_role = DEFAULT;
-
--- Reset sequences to start from 1 (only for tables we populated)
-ALTER SEQUENCE IF EXISTS portal_users_portal_user_id_seq RESTART WITH 1;
-ALTER SEQUENCE IF EXISTS rbac_role_id_seq RESTART WITH 1;
-ALTER SEQUENCE IF EXISTS portal_account_rbac_id_seq RESTART WITH 1;
+-- 7. Remove portal plans (base table)
+TRUNCATE TABLE public.portal_plans RESTART IDENTITY CASCADE;
 
 COMMIT;
-

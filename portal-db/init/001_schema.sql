@@ -71,7 +71,7 @@ COMMENT ON COLUMN portal_plans.plan_rate_limit_rps IS 'Rate limit in requests pe
 -- Portal Accounts can have many applications and many users. Only 1 user can be the OWNER.
 -- When a new user signs up in the Portal, they automatically generate a personal account.
 CREATE TABLE portal_accounts (
-    portal_account_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    portal_account_id VARCHAR(36) PRIMARY KEY DEFAULT gen_random_uuid(),
     organization_id INT,
     portal_plan_type VARCHAR(42) NOT NULL,
     user_account_name VARCHAR(42),
@@ -101,7 +101,7 @@ COMMENT ON COLUMN portal_accounts.stripe_subscription_id IS 'Stripe subscription
 -- Portal users table
 -- Users can belong to multiple Accounts
 CREATE TABLE portal_users (
-    portal_user_id SERIAL PRIMARY KEY,
+    portal_user_id VARCHAR(36) PRIMARY KEY,
     portal_user_email VARCHAR(255) NOT NULL UNIQUE,
     signed_up BOOLEAN DEFAULT FALSE,
     portal_admin BOOLEAN DEFAULT FALSE,
@@ -123,7 +123,7 @@ COMMENT ON COLUMN portal_users.portal_admin IS 'Whether user has admin privilege
 CREATE TABLE contacts (
     contact_id SERIAL PRIMARY KEY,
     organization_id INT,
-    portal_user_id INT,
+    portal_user_id VARCHAR(36),
     contact_telegram_handle VARCHAR(32),
     contact_twitter_handle VARCHAR(15),
     contact_linkedin_handle VARCHAR(30),
@@ -156,8 +156,8 @@ COMMENT ON TABLE rbac IS 'Role definitions and their associated permissions';
 -- Sets the role and access controls for a user on a particular account.
 CREATE TABLE portal_account_rbac (
     id SERIAL PRIMARY KEY,
-    portal_account_id UUID NOT NULL,
-    portal_user_id INT NOT NULL,
+    portal_account_id VARCHAR(36) NOT NULL,
+    portal_user_id VARCHAR(36) NOT NULL,
     role_name VARCHAR(20) NOT NULL,
     user_joined_account BOOLEAN DEFAULT FALSE,
     FOREIGN KEY (portal_account_id) REFERENCES portal_accounts(portal_account_id) ON DELETE CASCADE,
@@ -174,8 +174,8 @@ COMMENT ON TABLE portal_account_rbac IS 'User roles and permissions for specific
 -- Portal applications table
 -- Portal Accounts can have many Portal Applications that have associated settings.
 CREATE TABLE portal_applications (
-    portal_application_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    portal_account_id UUID NOT NULL,
+    portal_application_id VARCHAR(36) PRIMARY KEY DEFAULT gen_random_uuid(),
+    portal_account_id VARCHAR(36) NOT NULL,
     portal_application_name VARCHAR(42),
     emoji VARCHAR(16),
     portal_application_user_limit INT CHECK (portal_application_user_limit >= 0),
@@ -202,8 +202,8 @@ COMMENT ON COLUMN portal_applications.secret_key_hash IS 'Hashed secret key for 
 -- Users must be members of the parent Account in order to have access to a particular application
 CREATE TABLE portal_application_rbac (
     id SERIAL PRIMARY KEY,
-    portal_application_id UUID NOT NULL,
-    portal_user_id INT NOT NULL,
+    portal_application_id VARCHAR(36) NOT NULL,
+    portal_user_id VARCHAR(36) NOT NULL,
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (portal_application_id) REFERENCES portal_applications(portal_application_id) ON DELETE CASCADE,
@@ -343,7 +343,7 @@ COMMENT ON COLUMN applications.application_address IS 'Blockchain address of the
 -- Sets access controls to Portal Applications based on allowlist_type
 CREATE TABLE portal_application_allowlists (
     id SERIAL PRIMARY KEY,
-    portal_application_id UUID NOT NULL,
+    portal_application_id VARCHAR(36) NOT NULL,
     type allowlist_type,
     value VARCHAR(255),
     service_id VARCHAR(42),

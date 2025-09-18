@@ -1,15 +1,9 @@
--- legacy-transform_up.sql
+-- legacy-transform_up.sql (updated without UUID casts and fixed enum casting)
 
-
--- Transform from Legacy Portal DB Data to New Portal DB
--- Order of operations mimics the init script in PATH repo
--- See: https://github.com/buildwithgrove/path
 BEGIN;
 
--- We omit the organizations tables as these are net new and not a hard requirement for any subsequent tables
-
 -- First populate the Portal Plans
-INSERT INTO "portal".portal_plans (
+INSERT INTO public.portal_plans (
     portal_plan_type,
     portal_plan_type_description,
     plan_usage_limit,
@@ -20,14 +14,11 @@ INSERT INTO "portal".portal_plans (
 VALUES
     ('PLAN_FREE', 'Free tier with limited usage', 1000000, 'month', 0, 2),
     ('PLAN_UNLIMITED', 'Unlimited Relays. Unlimited RPS.', 0, NULL, 0, 0),
-    -- Note that we rename ENTERPRISE -> PLAN_ENTERPRISE for consistency
     ('PLAN_ENTERPRISE', 'Special case for Legacy Enterprise customers', 0, NULL, 0, 0),
-    -- Introduce the new plan type so we can separate out Grove-owned services
     ('PLAN_INTERNAL', 'Plan for internal accounts', 0, NULL, 0, 0);
 
 -- Transform the legacy accounts to the new accounts structure
--- If the plan doesn't match one of our new plan types, then move them to `PLAN_FREE`
-INSERT INTO portal.portal_accounts (
+INSERT INTO public.portal_accounts (
     portal_account_id,
     organization_id,
     portal_plan_type,
@@ -45,8 +36,7 @@ INSERT INTO portal.portal_accounts (
     updated_at
 )
 SELECT 
-    -- casts each legacy ID as a uuid
-    a.id::uuid as portal_account_id,
+    a.id as portal_account_id,
     NULL as organization_id,
     CASE 
         WHEN a.plan_type = 'ENTERPRISE' THEN 'PLAN_ENTERPRISE'
@@ -74,11 +64,11 @@ SELECT
     END as deleted_at,
     a.created_at,
     a.updated_at
-FROM "legacy-extract".accounts a
-LEFT JOIN "legacy-extract".account_integrations ai ON a.id = ai.account_id;
+FROM legacy_extract.accounts a
+LEFT JOIN legacy_extract.account_integrations ai ON a.id = ai.account_id;
 
--- Transform the legacy users to the new users table and make sure to grab all relevant data
-INSERT INTO portal.portal_users (
+-- Transform the legacy users to the new users table
+INSERT INTO public.portal_users (
     portal_user_id,
     portal_user_email,
     signed_up,
@@ -95,35 +85,30 @@ SELECT
     NULL as deleted_at,
     u.created_at,
     u.updated_at
-FROM "legacy-extract".users u;
+FROM legacy_extract.users u;
 
--- Update the sequence after inserting users with specific IDs
-SELECT setval('portal_users_portal_user_id_seq', (SELECT MAX(portal_user_id) FROM portal_users));
-
--- Load the RBAC Table with the basic roles we have today, to be adjusted later
--- Note that we tag them with the `LEGACY_` prefix so we can parse these out later
-INSERT INTO portal.rbac (
+-- Load the RBAC Table
+INSERT INTO public.rbac (
     role_id,
     role_name,
     permissions
 )
 VALUES 
-    (DEFAULT, 'LEGACY_ADMIN', ARRAY[]),
-    (DEFAULT, 'LEGACY_OWNER', ARRAY[]),
-    (DEFAULT, 'LEGACY_MEMBER', ARRAY[]);
+    (DEFAULT, 'LEGACY_ADMIN', ARRAY[]::VARCHAR[]),
+    (DEFAULT, 'LEGACY_OWNER', ARRAY[]::VARCHAR[]),
+    (DEFAULT, 'LEGACY_MEMBER', ARRAY[]::VARCHAR[]);
 
 -- Transform the legacy account_users table into the new portal_account_rbac
--- Note that we transform the role names to include a `LEGACY_` prefix so these are easier
--- to parse.
-INSERT INTO portal.portal_account_rbac (
+-- Join on email since we're using new auto-generated portal_user_id values
+INSERT INTO public.portal_account_rbac (
     portal_account_id,
     portal_user_id,
     role_name,
     user_joined_account
 )
 SELECT 
-    au.account_id::uuid as portal_account_id,
-    au.user_id as portal_user_id,
+    au.account_id as portal_account_id,
+    pu.portal_user_id,  -- Use the new auto-generated ID
     CASE 
         WHEN au.role_name = 'ADMIN' THEN 'LEGACY_ADMIN'
         WHEN au.role_name = 'OWNER' THEN 'LEGACY_OWNER'
@@ -131,9 +116,11 @@ SELECT
         ELSE au.role_name
     END as role_name,
     COALESCE(au.accepted, FALSE) as user_joined_account
-FROM "legacy-extract".account_users au;
+FROM legacy_extract.account_users au
+JOIN legacy_extract.users lu ON au.user_id = lu.id
+JOIN public.portal_users pu ON lu.email = pu.portal_user_email;
 
-INSERT INTO portal.portal_applications (
+INSERT INTO public.portal_applications (
     portal_application_id,
     portal_account_id,
     portal_application_name,
@@ -150,17 +137,17 @@ INSERT INTO portal.portal_applications (
     updated_at
 )
 SELECT 
-    pa.id::uuid as portal_application_id,
-    pa.account_id::uuid as portal_account_id,
-    pa.name as portal_application_name,
+    pa.id as portal_application_id,
+    pa.account_id as portal_account_id,
+    LEFT(pa.name, 42) as portal_application_name,  -- Truncate to 42 chars
     pa.app_emoji as emoji,
     NULL as portal_application_user_limit,
     NULL as portal_application_user_limit_interval,
     NULL as portal_application_user_limit_rps,
-    pa.description as portal_application_description,
+    LEFT(pa.description, 255) as portal_application_description,
     (
         SELECT ARRAY_AGG(c.blockchain) 
-        FROM "legacy-extract".chains c 
+        FROM legacy_extract.chains c 
         WHERE c.id = ANY(pas.favorited_chain_ids)
     ) as favorite_service_ids,
     pas.secret_key as secret_key_hash,
@@ -171,11 +158,11 @@ SELECT
     END as deleted_at,
     pa.created_at,
     COALESCE(pas.updated_at, pa.updated_at) as updated_at
-FROM "legacy-extract".portal_applications pa
-LEFT JOIN "legacy-extract".portal_application_settings pas ON pa.id = pas.application_id;
+FROM legacy_extract.portal_applications pa
+LEFT JOIN legacy_extract.portal_application_settings pas ON pa.id = pas.application_id;
 
 -- Transform the legacy portal_application_whitelists to the new portal_application_allowlists
-INSERT INTO portal.portal_application_allowlists (
+INSERT INTO public.portal_application_allowlists (
     portal_application_id,
     type,
     value,
@@ -184,12 +171,11 @@ INSERT INTO portal.portal_application_allowlists (
     updated_at
 )
 SELECT 
-    paw.application_id::uuid as portal_application_id,
+    paw.application_id as portal_application_id,
     CASE 
         WHEN paw.type = 'blockchains' THEN 'service_id'::allowlist_type
         WHEN paw.type = 'origins' THEN 'origin'::allowlist_type
         WHEN paw.type = 'contracts' THEN 'contract'::allowlist_type
-        ELSE paw.type::allowlist_type
     END as type,
     paw.value,
     CASE 
@@ -197,8 +183,9 @@ SELECT
         ELSE NULL
     END as service_id,
     paw.created_at,
-    paw.created_at as updated_at  -- Using created_at since there's no updated_at in legacy
-FROM "legacy-extract".portal_application_whitelists paw
-LEFT JOIN "legacy-extract".chains c ON paw.chain_id = c.id;
+    paw.created_at as updated_at
+FROM legacy_extract.portal_application_whitelists paw
+LEFT JOIN legacy_extract.chains c ON paw.chain_id = c.id
+WHERE paw.type IN ('blockchains', 'origins', 'contracts');  -- Only process known types
 
 COMMIT;
