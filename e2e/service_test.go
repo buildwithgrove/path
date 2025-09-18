@@ -44,7 +44,7 @@ type (
 		ServiceType   serviceType        `yaml:"service_type"`         // Type of service to test (evm, cometbft, solana, anvil)
 		Alias         string             `yaml:"alias,omitempty"`      // Alias for the service
 		Archival      bool               `yaml:"archival,omitempty"`   // Whether this is an archival test (historical data access)
-		WebSockets    bool               `yaml:"websockets,omitempty"` // Whether this service should run WebSocket tests in addition to HTTP tests
+		WebSockets    bool               `yaml:"websockets,omitempty"` // Whether this service should run Websocket tests in addition to HTTP tests
 		ServiceParams ServiceParams      `yaml:"service_params"`       // Service-specific parameters for test requests
 		SupportedAPIs []string           `yaml:"supported_apis"`       // List of APIs supported by the service
 		// Not marshaled from YAML; set in test case.
@@ -98,14 +98,14 @@ func (ts *TestService) getVegetaTargets(gatewayURL string) (map[string]vegeta.Ta
 	return nil, fmt.Errorf("unsupported service type: %s", ts.ServiceType)
 }
 
-// supportsWebSockets returns true if the service is configured for WebSocket testing
+// supportsWebSockets returns true if the service is configured for Websocket testing
 func (ts *TestService) supportsWebSockets() bool {
 	return ts.WebSockets
 }
 
-// supportsEVMWebSockets returns true if the service supports WebSocket EVM JSON-RPC tests
+// supportsEVMWebSockets returns true if the service supports Websocket EVM JSON-RPC tests
 func (ts *TestService) supportsEVMWebSockets() bool {
-	// Only EVM-like services can run EVM WebSocket tests
+	// Only EVM-like services can run EVM Websocket tests
 	// This includes pure EVM services and Cosmos SDK services with EVM support (like XRPLEVM)
 	return ts.supportsWebSockets() && (ts.ServiceType == serviceTypeEVM ||
 		(ts.ServiceType == serviceTypeCosmosSDK && ts.ServiceParams.ContractAddress != ""))

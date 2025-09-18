@@ -175,11 +175,11 @@ const (
 	ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_HTTP_NON_2XX_STATUS ShannonEndpointErrorType = 37
 	// The relay request sent to the endpoint via HTTP failed with `context deadline exceeded` error
 	ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_HTTP_CONTEXT_DEADLINE_EXCEEDED ShannonEndpointErrorType = 38
-	// The relay request sent to the endpoint via WebSocket failed to establish a connection.
+	// The relay request sent to the endpoint via Websocket failed to establish a connection.
 	ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_WEBSOCKET_CONNECTION_FAILED ShannonEndpointErrorType = 39
-	// The relay request sent to the endpoint via WebSocket failed to sign the request.
+	// The relay request sent to the endpoint via Websocket failed to sign the request.
 	ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_WEBSOCKET_REQUEST_SIGNING_FAILED ShannonEndpointErrorType = 40
-	// The relay request sent to the endpoint via WebSocket failed to validate the relay response.
+	// The relay request sent to the endpoint via Websocket failed to validate the relay response.
 	ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_WEBSOCKET_RELAY_RESPONSE_VALIDATION_FAILED ShannonEndpointErrorType = 41
 	// RelayMiner returned a 4XX HTTP status code
 	ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_RELAY_MINER_HTTP_4XX ShannonEndpointErrorType = 42
@@ -533,12 +533,12 @@ func (x *ShannonRelayMinerError) GetMessage() string {
 	return ""
 }
 
-// ShannonWebsocketConnectionObservation stores observations from a WebSocket connection lifecycle
+// ShannonWebsocketConnectionObservation stores observations from a Websocket connection lifecycle
 type ShannonWebsocketConnectionObservation struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// Supplier of the endpoint handling the WebSocket connection
+	// Supplier of the endpoint handling the Websocket connection
 	Supplier string `protobuf:"bytes,1,opt,name=supplier,proto3" json:"supplier,omitempty"`
-	// URL of the WebSocket endpoint
+	// URL of the Websocket endpoint
 	EndpointUrl string `protobuf:"bytes,2,opt,name=endpoint_url,json=endpointUrl,proto3" json:"endpoint_url,omitempty"`
 	// Application address associated with the endpoint
 	EndpointAppAddress string `protobuf:"bytes,3,opt,name=endpoint_app_address,json=endpointAppAddress,proto3" json:"endpoint_app_address,omitempty"`
@@ -550,7 +550,7 @@ type ShannonWebsocketConnectionObservation struct {
 	SessionStartHeight int64 `protobuf:"varint,6,opt,name=session_start_height,json=sessionStartHeight,proto3" json:"session_start_height,omitempty"`
 	// session end height
 	SessionEndHeight int64 `protobuf:"varint,7,opt,name=session_end_height,json=sessionEndHeight,proto3" json:"session_end_height,omitempty"`
-	// Error type if WebSocket connection establishment or operation failed
+	// Error type if Websocket connection establishment or operation failed
 	ErrorType *ShannonEndpointErrorType `protobuf:"varint,8,opt,name=error_type,json=errorType,proto3,enum=path.protocol.ShannonEndpointErrorType,oneof" json:"error_type,omitempty"`
 	// Additional error details when available
 	ErrorDetails *string `protobuf:"bytes,9,opt,name=error_details,json=errorDetails,proto3,oneof" json:"error_details,omitempty"`
@@ -694,12 +694,12 @@ func (x *ShannonWebsocketConnectionObservation) GetEventType() ShannonWebsocketC
 	return ShannonWebsocketConnectionObservation_CONNECTION_EVENT_TYPE_UNSPECIFIED
 }
 
-// ShannonWebsocketMessageObservation stores observations from individual WebSocket messages
+// ShannonWebsocketMessageObservation stores observations from individual Websocket messages
 type ShannonWebsocketMessageObservation struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// Supplier of the endpoint handling the WebSocket message
+	// Supplier of the endpoint handling the Websocket message
 	Supplier string `protobuf:"bytes,1,opt,name=supplier,proto3" json:"supplier,omitempty"`
-	// URL of the WebSocket endpoint
+	// URL of the Websocket endpoint
 	EndpointUrl string `protobuf:"bytes,2,opt,name=endpoint_url,json=endpointUrl,proto3" json:"endpoint_url,omitempty"`
 	// Application address associated with the endpoint
 	EndpointAppAddress string `protobuf:"bytes,3,opt,name=endpoint_app_address,json=endpointAppAddress,proto3" json:"endpoint_app_address,omitempty"`
@@ -967,12 +967,12 @@ type ShannonRequestObservations_HttpObservations struct {
 }
 
 type ShannonRequestObservations_WebsocketConnectionObservation struct {
-	// Single WebSocket connection lifecycle observation
+	// Single Websocket connection lifecycle observation
 	WebsocketConnectionObservation *ShannonWebsocketConnectionObservation `protobuf:"bytes,4,opt,name=websocket_connection_observation,json=websocketConnectionObservation,proto3,oneof"`
 }
 
 type ShannonRequestObservations_WebsocketMessageObservation struct {
-	// Single WebSocket message observation
+	// Single Websocket message observation
 	WebsocketMessageObservation *ShannonWebsocketMessageObservation `protobuf:"bytes,5,opt,name=websocket_message_observation,json=websocketMessageObservation,proto3,oneof"`
 }
 

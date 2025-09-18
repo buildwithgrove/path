@@ -144,8 +144,8 @@ jobs:
       - build-and-test-docker-image
     strategy:
       matrix:
-        # DEV_NOTE: Only xrplevm supports WebSocket testing currently
-        service_id: [xrplevm]
+        # DEV_NOTE: Add new services here if they should be tested as part of the Shannon E2E CI suite
+        service_id: [xrplevm, eth]
     steps:
       - uses: actions/checkout@v4
 
@@ -178,5 +178,5 @@ jobs:
       - name: Set Docker container to log to stdout in CI environment
         run: ./e2e/scripts/ci/set_docker_log.sh
 
-      - name: Run WebSocket E2E test - Service ID ${{ matrix.service_id }}
+      - name: Run Websocket E2E test - Service ID ${{ matrix.service_id }}
         run: make e2e_test_websocket ${{ matrix.service_id }}

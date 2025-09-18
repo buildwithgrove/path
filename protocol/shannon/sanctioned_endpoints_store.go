@@ -77,7 +77,7 @@ func (ses *sanctionedEndpointsStore) ApplyObservations(shannonObservations []*pr
 			ses.processHTTPConnectionObservationForSanctions(logger, httpObservations)
 		}
 
-		// Process WebSocket connection observations
+		// Process Websocket connection observations
 		websocketConnectionObs := observationSet.GetWebsocketConnectionObservation()
 		if websocketConnectionObs != nil {
 			ses.processWebSocketConnectionObservationForSanctions(logger, websocketConnectionObs)
@@ -135,19 +135,19 @@ func (ses *sanctionedEndpointsStore) processHTTPConnectionObservationForSanction
 	}
 }
 
-// processWebSocketConnectionObservationForSanctions processes a WebSocket connection observation for sanctions
+// processWebSocketConnectionObservationForSanctions processes a Websocket connection observation for sanctions
 func (ses *sanctionedEndpointsStore) processWebSocketConnectionObservationForSanctions(
 	logger polylog.Logger,
 	websocketConnectionObs *protocolobservations.ShannonWebsocketConnectionObservation,
 ) {
-	// Build endpoint from WebSocket connection observation
+	// Build endpoint from Websocket connection observation
 	endpoint := buildEndpointFromWebSocketConnectionObservation(websocketConnectionObs)
 
 	// Hydrate logger with endpoint context
 	logger = hydrateLoggerWithEndpoint(logger, endpoint).With("method", "processWebSocketConnectionObservationForSanctions")
 	logger.Debug().
 		Str("recommended_sanction", websocketConnectionObs.GetRecommendedSanction().String()).
-		Msg("processing WebSocket connection observation for sanctions")
+		Msg("processing Websocket connection observation for sanctions")
 
 	// Skip if no sanction is recommended
 	recommendedSanction := websocketConnectionObs.GetRecommendedSanction()
@@ -155,7 +155,7 @@ func (ses *sanctionedEndpointsStore) processWebSocketConnectionObservationForSan
 		return
 	}
 
-	// Build sanction from WebSocket connection observation
+	// Build sanction from Websocket connection observation
 	sanctionData := buildSanctionFromWebSocketConnectionObservation(websocketConnectionObs)
 
 	// Apply the sanction

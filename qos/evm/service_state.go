@@ -60,7 +60,7 @@ type serviceState struct {
 // using synthetic service requests.
 var _ gateway.QoSEndpointCheckGenerator = &serviceState{}
 
-// CheckWebsocketConnection returns true if the endpoint supports WebSocket connections.
+// CheckWebsocketConnection returns true if the endpoint supports Websocket connections.
 func (ss *serviceState) CheckWebsocketConnection() bool {
 	_, supportsWebsockets := ss.serviceQoSConfig.getSupportedAPIs()[sharedtypes.RPCType_WEBSOCKET]
 	return supportsWebsockets

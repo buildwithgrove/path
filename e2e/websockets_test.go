@@ -1,12 +1,12 @@
 //go:build e2e
 
-// Package e2e provides WebSocket testing functionality for PATH E2E tests.
-// This file contains the WebSocket test client and related functions for testing
-// JSON-RPC over WebSocket connections, with full integration into the existing
+// Package e2e provides Websocket testing functionality for PATH E2E tests.
+// This file contains the Websocket test client and related functions for testing
+// JSON-RPC over Websocket connections, with full integration into the existing
 // E2E test framework and validation logic.
 //
 // WEBSOCKET ARCHITECTURE:
-// - Uses a single persistent WebSocket connection per service to test all EVM methods
+// - Uses a single persistent Websocket connection per service to test all EVM methods
 // - Sends the configured number of requests per method sequentially over the same connection
 // - Provides progress bars and metrics collection similar to HTTP tests
 // - Only tests EVM JSON-RPC methods (not CometBFT or REST endpoints)
@@ -30,12 +30,12 @@ import (
 	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
 
-// websocketTestClient handles WebSocket connections and JSON-RPC requests.
+// websocketTestClient handles Websocket connections and JSON-RPC requests.
 //
-// This client provides a complete WebSocket testing solution that:
-// - Converts HTTP/HTTPS gateway URLs to WebSocket (WS/WSS) equivalents
-// - Establishes persistent WebSocket connections with proper headers
-// - Sends JSON-RPC requests over WebSocket and validates responses
+// This client provides a complete Websocket testing solution that:
+// - Converts HTTP/HTTPS gateway URLs to Websocket (WS/WSS) equivalents
+// - Establishes persistent Websocket connections with proper headers
+// - Sends JSON-RPC requests over Websocket and validates responses
 // - Integrates with the existing E2E test validation framework
 // - Supports all EVM JSON-RPC methods defined in service_evm_test.go
 //
@@ -53,7 +53,7 @@ type websocketTestClient struct {
 	closed     bool
 }
 
-// newWebSocketTestClient creates a new WebSocket test client
+// newWebSocketTestClient creates a new Websocket test client
 func newWebSocketTestClient(gatewayURL, serviceID string) *websocketTestClient {
 	return &websocketTestClient{
 		serviceID:  serviceID,
@@ -61,7 +61,7 @@ func newWebSocketTestClient(gatewayURL, serviceID string) *websocketTestClient {
 	}
 }
 
-// connect establishes a WebSocket connection to the PATH gateway
+// connect establishes a Websocket connection to the PATH gateway
 func (c *websocketTestClient) connect(ctx context.Context) error {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
@@ -69,7 +69,7 @@ func (c *websocketTestClient) connect(ctx context.Context) error {
 	// Convert HTTP/HTTPS URL to WS/WSS URL
 	wsURL, err := convertToWebSocketURL(c.gatewayURL)
 	if err != nil {
-		return fmt.Errorf("failed to convert gateway URL to WebSocket URL: %w", err)
+		return fmt.Errorf("failed to convert gateway URL to Websocket URL: %w", err)
 	}
 
 	// Set up headers including the Target-Service-Id
@@ -77,18 +77,18 @@ func (c *websocketTestClient) connect(ctx context.Context) error {
 		"Target-Service-Id": []string{c.serviceID},
 	}
 
-	// Create WebSocket dialer with timeout
+	// Create Websocket dialer with timeout
 	dialer := websocket.Dialer{
 		HandshakeTimeout: 30 * time.Second,
 	}
 
-	// Establish WebSocket connection
+	// Establish Websocket connection
 	conn, resp, err := dialer.DialContext(ctx, wsURL, headers)
 	if err != nil {
 		if resp != nil {
-			return fmt.Errorf("WebSocket dial failed with status %d: %w", resp.StatusCode, err)
+			return fmt.Errorf("Websocket dial failed with status %d: %w", resp.StatusCode, err)
 		}
-		return fmt.Errorf("WebSocket dial failed: %w", err)
+		return fmt.Errorf("Websocket dial failed: %w", err)
 	}
 
 	c.conn = conn
@@ -97,12 +97,12 @@ func (c *websocketTestClient) connect(ctx context.Context) error {
 	return nil
 }
 
-// sendJSONRPCRequest sends a JSON-RPC request over the WebSocket connection
+// sendJSONRPCRequest sends a JSON-RPC request over the Websocket connection
 func (c *websocketTestClient) sendJSONRPCRequest(ctx context.Context, req jsonrpc.Request) (*jsonrpc.Response, error) {
 	c.mutex.RLock()
 	if c.closed || c.conn == nil {
 		c.mutex.RUnlock()
-		return nil, fmt.Errorf("WebSocket connection is not open")
+		return nil, fmt.Errorf("Websocket connection is not open")
 	}
 	conn := c.conn
 	c.mutex.RUnlock()
@@ -120,7 +120,7 @@ func (c *websocketTestClient) sendJSONRPCRequest(ctx context.Context, req jsonrp
 
 	// Send the request
 	if err := conn.WriteMessage(websocket.TextMessage, reqBytes); err != nil {
-		return nil, fmt.Errorf("failed to send WebSocket message: %w", err)
+		return nil, fmt.Errorf("failed to send Websocket message: %w", err)
 	}
 
 	// Set read deadline
@@ -131,7 +131,7 @@ func (c *websocketTestClient) sendJSONRPCRequest(ctx context.Context, req jsonrp
 	// Read the response
 	_, respBytes, err := conn.ReadMessage()
 	if err != nil {
-		return nil, fmt.Errorf("failed to read WebSocket response: %w", err)
+		return nil, fmt.Errorf("failed to read Websocket response: %w", err)
 	}
 
 	// Parse the JSON-RPC response
@@ -143,7 +143,7 @@ func (c *websocketTestClient) sendJSONRPCRequest(ctx context.Context, req jsonrp
 	return &resp, nil
 }
 
-// close closes the WebSocket connection
+// close closes the Websocket connection
 func (c *websocketTestClient) close() error {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
@@ -194,7 +194,7 @@ func convertToWebSocketURL(httpURL string) (string, error) {
 	return u.String(), nil
 }
 
-// websocketTestResult represents the result of a WebSocket test
+// websocketTestResult represents the result of a Websocket test
 type websocketTestResult struct {
 	Method   string
 	Request  jsonrpc.Request
@@ -203,8 +203,8 @@ type websocketTestResult struct {
 	Duration time.Duration
 }
 
-// validateWebSocketResults validates WebSocket test results using the existing validation logic
-func validateWebSocketResults(results []*websocketTestResult, serviceID string) map[string]*methodMetrics {
+// validateWebSocketResults validates Websocket test results using the existing validation logic
+func validateWebSocketResults(results []*websocketTestResult) map[string]*methodMetrics {
 	metrics := make(map[string]*methodMetrics)
 
 	for _, result := range results {
@@ -230,13 +230,13 @@ func validateWebSocketResults(results []*websocketTestResult, serviceID string) 
 		if result.Error != nil {
 			methodMetrics.failed++
 			methodMetrics.errors[result.Error.Error()]++
-			vegetaResult.Code = 0 // No HTTP status for WebSocket errors
+			vegetaResult.Code = 0 // No HTTP status for Websocket errors
 			vegetaResult.Error = result.Error.Error()
-			// For WebSocket errors, we don't have a valid response body
+			// For Websocket errors, we don't have a valid response body
 			vegetaResult.Body = []byte{}
 		} else {
 			methodMetrics.success++
-			vegetaResult.Code = 200 // Simulate successful WebSocket connection
+			vegetaResult.Code = 200 // Simulate successful Websocket connection
 
 			// Validate JSON-RPC response if we have one
 			if result.Response != nil {
@@ -263,8 +263,8 @@ func validateWebSocketResults(results []*websocketTestResult, serviceID string) 
 	return metrics
 }
 
-// runWebSocketServiceTest runs WebSocket-based E2E tests for a single service.
-// This function uses a single WebSocket connection to test all EVM methods sequentially.
+// runWebSocketServiceTest runs Websocket-based E2E tests for a single service.
+// This function uses a single Websocket connection to test all EVM methods sequentially.
 func runWebSocketServiceTest(
 	t *testing.T,
 	ctx context.Context,
@@ -272,9 +272,9 @@ func runWebSocketServiceTest(
 	results map[string]*methodMetrics,
 	resultsMutex *sync.Mutex,
 ) (serviceTestFailed bool) {
-	fmt.Printf("\n%s🔌 Starting WebSocket tests for %s%s\n", BOLD_CYAN, ts.ServiceID, RESET)
+	fmt.Printf("\n%s🔌 Starting Websocket tests for %s%s\n", BOLD_CYAN, ts.ServiceID, RESET)
 
-	// Get only EVM methods for WebSocket testing
+	// Get only EVM methods for Websocket testing
 	evmMethods := getEVMTestMethodsForWebSocket()
 
 	// Get the service config from any method (they all share the same config)
@@ -290,49 +290,49 @@ func runWebSocketServiceTest(
 		evmMethodsMap[method] = serviceConfig
 	}
 
-	// Create progress bars for WebSocket tests (EVM methods only)
+	// Create progress bars for Websocket tests (EVM methods only)
 	progBars, err := newProgressBars(evmMethodsMap)
 	if err != nil {
-		t.Fatalf("Failed to create progress bars for WebSocket tests: %v", err)
+		t.Fatalf("Failed to create progress bars for Websocket tests: %v", err)
 	}
 	defer func() {
 		if err := progBars.finish(); err != nil {
-			fmt.Printf("Error stopping WebSocket progress bars: %v", err)
+			fmt.Printf("Error stopping Websocket progress bars: %v", err)
 		}
 	}()
 
-	// Create a single WebSocket client for all methods
+	// Create a single Websocket client for all methods
 	client := newWebSocketTestClient(serviceConfig.target.URL, string(ts.ServiceID))
 
-	// Connect to WebSocket once
+	// Connect to Websocket once
 	if err := client.connect(ctx); err != nil {
-		t.Errorf("❌ Failed to connect WebSocket for service %s: %v", ts.ServiceID, err)
+		t.Errorf("❌ Failed to connect Websocket for service %s: %v", ts.ServiceID, err)
 		return true
 	}
 	defer client.close()
 
-	fmt.Printf("✅ WebSocket connected successfully for service %s\n", ts.ServiceID)
+	fmt.Printf("✅ Websocket connected successfully for service %s\n", ts.ServiceID)
 
 	// Run all method tests sequentially using the single connection
 	allResults := runAllMethodsOnSingleConnection(ctx, client, evmMethods, ts, progBars)
 
 	// Finish progress bars
 	if err := progBars.finish(); err != nil {
-		fmt.Printf("Error stopping WebSocket progress bars: %v", err)
+		fmt.Printf("Error stopping Websocket progress bars: %v", err)
 	}
 
-	// Convert WebSocket results to method metrics and validate
-	websocketMetrics := validateWebSocketResults(allResults, string(ts.ServiceID))
+	// Convert Websocket results to method metrics and validate
+	websocketMetrics := validateWebSocketResults(allResults)
 
 	// Use the service configuration we retrieved earlier
 	wsServiceConfig := serviceConfig.serviceConfig
 
-	// Add WebSocket results to the results map (no labeling needed since tests are separate)
+	// Add Websocket results to the results map (no labeling needed since tests are separate)
 	resultsMutex.Lock()
 	for method, metrics := range websocketMetrics {
 		results[method] = metrics
 
-		// Validate individual WebSocket method results using existing assertion logic
+		// Validate individual Websocket method results using existing assertion logic
 		if !validateMethodResults(t, ts.ServiceID, metrics, wsServiceConfig, ts.ServiceParams) {
 			serviceTestFailed = true
 		}
@@ -340,15 +340,15 @@ func runWebSocketServiceTest(
 	resultsMutex.Unlock()
 
 	if serviceTestFailed {
-		fmt.Printf("%s❌ WebSocket tests failed for service %s%s\n", RED, ts.ServiceID, RESET)
+		fmt.Printf("%s❌ Websocket tests failed for service %s%s\n", RED, ts.ServiceID, RESET)
 	} else {
-		fmt.Printf("%s✅ WebSocket tests passed for service %s%s\n", GREEN, ts.ServiceID, RESET)
+		fmt.Printf("%s✅ Websocket tests passed for service %s%s\n", GREEN, ts.ServiceID, RESET)
 	}
 
 	return serviceTestFailed
 }
 
-// runAllMethodsOnSingleConnection runs load tests for all EVM methods using a single WebSocket connection.
+// runAllMethodsOnSingleConnection runs load tests for all EVM methods using a single Websocket connection.
 // This function sends the configured number of requests per method sequentially over the same connection.
 func runAllMethodsOnSingleConnection(
 	ctx context.Context,

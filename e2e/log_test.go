@@ -3,7 +3,7 @@
 // Package e2e provides logging, formatting, and progress bar utilities for PATH E2E tests.
 //
 // This file contains all visual output helpers, ANSI color constants, and progress bar
-// management for both HTTP and WebSocket testing modes. It handles terminal formatting,
+// management for both HTTP and Websocket testing modes. It handles terminal formatting,
 // colored output, and interactive progress visualization during load tests.
 //
 // VISUAL OUTPUT FEATURES:
