@@ -43,8 +43,10 @@ services:
       - ./tmp/portal_db_data:/var/lib/postgresql/data
       # Initialization scripts (run in alphabetical order on first startup)
       # Documentation: https://hub.docker.com/_/postgres#initialization-scripts
+      # 001_schema.sql: Initial PostgreSQL schema
       - ./schema/001_schema.sql:/docker-entrypoint-initdb.d/001_schema.sql:ro
-      - ./api/postgrest/init.sql:/docker-entrypoint-initdb.d/999_postgrest_init.sql:ro
+      # 002_postgrest_init.sql: PostgREST API setup
+      - ./schema/002_postgrest_init.sql:/docker-entrypoint-initdb.d/002_postgrest_init.sql:ro
     healthcheck:
       # Health check to ensure database is ready before starting PostgREST
       test: ["CMD", "pg_isready", "-U", "postgres", "-d", "portal_db"]
@@ -65,9 +67,9 @@ services:
       # PostgREST API and documentation server
       - "3000:3000"
     volumes:
-      # Mount PostgREST configuration file (see api/postgrest/postgrest.conf)
+      # Mount PostgREST configuration file (see api/postgrest.conf)
       # Configuration docs: https://docs.postgrest.org/en/v13/references/configuration.html
-      - ./api/postgrest/postgrest.conf:/etc/postgrest/postgrest.conf:ro
+      - ./api/postgrest.conf:/etc/postgrest/postgrest.conf:ro
     command: ["postgrest", "/etc/postgrest/postgrest.conf"]
     depends_on:
       postgres:

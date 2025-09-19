@@ -59,8 +59,8 @@ networks, _ := client.GetNetworksWithResponse(context.Background(), nil)
   - [🏗️ How it Works](#️-how-it-works)
   - [📁 Folder Structure](#-folder-structure)
   - [⚙️ Configuration](#️-configuration)
-    - [PostgREST Configuration (`postgrest/postgrest.conf`)](#postgrest-configuration-postgrestpostgrestconf)
-    - [Database Roles (`postgrest/init.sql`)](#database-roles-postgrestinitsql)
+    - [PostgREST Configuration (`postgrest.conf`)](#postgrest-configuration-postgrestconf)
+    - [Database Roles (`../schema/002_postgrest_init.sql`)](#database-roles-schema002_postgrest_initsql)
   - [🔐 Authentication](#-authentication)
     - [How JWT Authentication Works](#how-jwt-authentication-works)
     - [Generate JWT Tokens](#generate-jwt-tokens)
@@ -109,9 +109,6 @@ Database Schema  →  PostgREST  →  OpenAPI Spec  →  Go SDK
 
 ```
 api/
-├── postgrest/              # PostgREST configuration
-│   ├── postgrest.conf      # Main PostgREST config file
-│   └── init.sql            # **Database** roles and JWT setup
 ├── scripts/                # Helper scripts
 │   ├── gen-jwt.sh          # Generate JWT tokens for testing
 │   └── test-auth.sh        # Test authentication flow
@@ -121,12 +118,13 @@ api/
 │   └── generate-sdks.sh    # SDK generation scripts
 ├── openapi/                # Generated API documentation
 │   └── openapi.json        # OpenAPI 3.0 specification
+├── postgrest.conf           # Main PostgREST config file
 └── README.md               # This file
 ```
 
 ## ⚙️ Configuration
 
-### PostgREST Configuration (`postgrest/postgrest.conf`)
+### PostgREST Configuration (`postgrest.conf`)
 
 Key settings for PostgREST:
 
@@ -145,7 +143,7 @@ server-host = "0.0.0.0"
 server-port = 3000
 ```
 
-### Database Roles (`postgrest/init.sql`)
+### Database Roles (`../schema/002_postgrest_init.sql`)
 
 <!-- TODO_FUTURE(@commoddity): add more granular permissions -->
 
