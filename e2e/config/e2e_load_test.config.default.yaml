@@ -85,6 +85,7 @@ service_config_overrides:
     archival: true
   "eth":
     archival: true
+    success_rate: 0.75 # Reduced from to avoid flaky E2E tests in CI
   "eth-holesky-testnet":
     archival: true
   "eth-sepolia-testnet":

@@ -68,6 +68,10 @@ func NewRouter(
 	return r
 }
 
+// handleRoutes sets up the router's routes
+// TODO_INVESTIGATE: How do we handle and/or customize routs on a per service basis?
+// E.g. Hyperliquid requires adding /evm endpoint, and this COULD (should?) exist directly on the protocol.
+// The router can act as an interim solution.
 func (r *router) handleRoutes() {
 	// GET /healthz - returns a JSON health check response indicating the ready status of PATH
 	r.mux.HandleFunc("GET /healthz", methodCheckMiddleware(r.healthChecker.HealthzHandler))

@@ -684,6 +684,35 @@ var shannonServices = []ServiceQoSConfig{
 		sharedtypes.RPCType_JSON_RPC: {},
 	}),
 
+	// Hyperliquid
+	evm.NewEVMServiceQoSConfig("hyperliquid", "0x3e7",
+		nil,
+		// TODO(@olshansk): Add archival check config and test locally
+		// evm.NewEVMArchivalCheckConfig(
+		// 	// https://app.hyperliquid.xyz/explorer/address/0x162cc7c861ebd0c06b3d72319201150482518185
+		// 	"0x162cc7c861ebd0c06b3d72319201150482518185",
+		// 	// Contract start block
+		// 	???,
+		// ),
+		map[sharedtypes.RPCType]struct{}{
+			sharedtypes.RPCType_JSON_RPC: {},
+		}),
+
+	// Unichain
+	evm.NewEVMServiceQoSConfig("unichain", "0x82",
+		nil,
+		// TODO(@olshansk): Add archival check config and test locally
+		// evm.NewEVMArchivalCheckConfig(
+		// 	// https://unichain.blockscout.com/
+		// 	"0x0000000000000000000000000000000000000000",
+		// 	// Contract start block
+		// 	???,
+		// ),
+		map[sharedtypes.RPCType]struct{}{
+			sharedtypes.RPCType_JSON_RPC: {},
+		},
+	),
+
 	// TODO_TECHDEBT: Add support for Radix QoS
 	// Radix
 	// radix.NewRadixServiceQoSConfig("radix", "", nil),
@@ -926,7 +955,12 @@ var shannonServices = []ServiceQoSConfig{
 
 	// Solana
 	solana.NewSolanaServiceQoSConfig("solana", "solana"),
+
+	// *** LLM Services ***
+
 }
+
+// 3. deepseek
 
 // TODO(@olshansk): Make sure all of these are supported
 // sonieum
@@ -953,6 +987,16 @@ var shannonServices = []ServiceQoSConfig{
 // passage
 // provenance
 // quicksilver
-// side-protol
+// side-protocol
 // stargaze
 // stride
+// grok
+// qwen
+// gpt-oss
+// bittensor
+// bittensor-testnet
+// planq
+// stellar-soroban
+// stellar-soroban-testnet
+// stellar-horizon
+// stellar-horizon-testnet
