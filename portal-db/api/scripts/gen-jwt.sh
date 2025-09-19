@@ -21,6 +21,29 @@ set -e  # Exit on any error
 # JWT secret from postgrest.conf (must match exactly)
 JWT_SECRET="supersecretjwtsecretforlocaldevelopment123456789"
 
+# Check for help flag first
+if [[ "$1" == "--help" || "$1" == "-h" ]]; then
+    cat << 'EOF'
+# ============================================================================
+# JWT Token Generator for PostgREST (Shell Script Version)
+# ============================================================================
+# Generates JWT tokens for PostgREST authentication using shell commands
+# Following PostgREST Tutorial: https://docs.postgrest.org/en/v13/tutorials/tut1.html
+#
+# Dependencies:
+#   - openssl (for HMAC-SHA256 signing)
+#   - base64 (for encoding)
+#   - jq (for JSON processing)
+#
+# Usage:
+#   ./gen-jwt.sh                           # Generate token for 'authenticated' role
+#   ./gen-jwt.sh anon                      # Generate token for 'anon' role
+#   ./gen-jwt.sh authenticated user@email  # Generate token with specific email
+#   ./gen-jwt.sh --help                    # Show this help message
+EOF
+    exit 0
+fi
+
 # Get command line arguments
 ROLE="${1:-authenticated}"
 EMAIL="${2:-john@doe.com}"

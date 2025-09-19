@@ -10,6 +10,13 @@ The Portal DB includes a **PostgREST API** that automatically generates REST end
 
 **➡️ [View PostgREST API Documentation](api/README.md)** for setup, authentication, and SDK usage.
 
+## 💻 REST API Client SDKs
+
+The Portal DB includes client SDKs for both Go and TypeScript.
+
+**➡️ [View Go SDK Documentation](sdk/go/README.md)**
+**➡️ [View TypeScript SDK Documentation](sdk/typescript/README.md)**
+
 :::info TODO: Revisit docs location
 
 Consider if this should be moved into `docusaurus/docs` so it is discoverable as part of [path.grove.city](https://path.grove.city/).
@@ -19,6 +26,7 @@ Consider if this should be moved into `docusaurus/docs` so it is discoverable as
 ## Table of Contents <!-- omit in toc -->
 
 - [🌐 REST API Access](#-rest-api-access)
+- [💻 REST API Client SDKs](#-rest-api-client-sdks)
 - [Quickstart (for Grove Engineering)](#quickstart-for-grove-engineering)
 - [Interacting with the database](#interacting-with-the-database)
   - [`make` Targets](#make-targets)

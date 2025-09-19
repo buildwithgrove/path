@@ -1,0 +1,20 @@
+{
+  "name": "@grove/portal-db-sdk",
+  "version": "1.0.0",
+  "description": "TypeScript SDK for Grove Portal DB API",
+  "main": "index.ts",
+  "types": "types.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "type-check": "tsc --noEmit"
+  },
+  "keywords": ["grove", "portal", "db", "api", "sdk", "typescript"],
+  "author": "Grove Team",
+  "license": "MIT",
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "peerDependencies": {
+    "typescript": ">=4.5.0"
+  }
+}
