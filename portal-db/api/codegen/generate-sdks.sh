@@ -74,19 +74,37 @@ fi
 
 echo -e "${GREEN}✅ npm is installed: $(npm --version)${NC}"
 
-# Check if openapi-typescript is installed
-if ! command -v openapi-typescript >/dev/null 2>&1; then
-    echo "📦 Installing openapi-typescript..."
-    npm install -g openapi-typescript
+# Check if Java is installed
+if ! command -v java >/dev/null 2>&1; then
+    echo -e "${RED}❌ Java is not installed. OpenAPI Generator requires Java.${NC}"
+    echo "   Install Java: brew install openjdk"
+    exit 1
+fi
+
+# Verify Java is working properly
+if ! java -version >/dev/null 2>&1; then
+    echo -e "${RED}❌ Java is installed but not working properly. OpenAPI Generator requires Java.${NC}"
+    echo "   Fix Java installation: brew install openjdk"
+    echo "   Add to PATH: export PATH=\"/opt/homebrew/opt/openjdk/bin:\$PATH\""
+    exit 1
+fi
+
+JAVA_VERSION=$(java -version 2>&1 | head -n1)
+echo -e "${GREEN}✅ Java is available: $JAVA_VERSION${NC}"
+
+# Check if openapi-generator-cli is installed  
+if ! command -v openapi-generator-cli >/dev/null 2>&1; then
+    echo "📦 Installing openapi-generator-cli..."
+    npm install -g @openapitools/openapi-generator-cli
     
     # Verify installation
-    if ! command -v openapi-typescript >/dev/null 2>&1; then
-        echo -e "${RED}❌ Failed to install openapi-typescript. Please check your Node.js/npm installation.${NC}"
+    if ! command -v openapi-generator-cli >/dev/null 2>&1; then
+        echo -e "${RED}❌ Failed to install openapi-generator-cli. Please check your Node.js/npm installation.${NC}"
         exit 1
     fi
 fi
 
-echo -e "${GREEN}✅ openapi-typescript is available: $(openapi-typescript --version 2>/dev/null || echo 'installed')${NC}"
+echo -e "${GREEN}✅ openapi-generator-cli is available: $(openapi-generator-cli version 2>/dev/null || echo 'installed')${NC}"
 
 # Check if PostgREST is running
 echo "🌐 Checking PostgREST availability..."
@@ -221,96 +239,20 @@ mkdir -p "$TS_OUTPUT_DIR"
 
 # Clean previous generated TypeScript files (keep permanent files)
 echo "🧹 Cleaning previous TypeScript generated files..."
-rm -f "$TS_OUTPUT_DIR/types.d.ts"
+rm -rf "$TS_OUTPUT_DIR/src" "$TS_OUTPUT_DIR/models" "$TS_OUTPUT_DIR/apis"
 
-# Generate TypeScript types using openapi-typescript (following official best practices)
-echo "   Generating types.d.ts..."
-if ! openapi-typescript "$OPENAPI_V3_FILE" --output "$TS_OUTPUT_DIR/types.d.ts"; then
-    echo -e "${RED}❌ Failed to generate TypeScript types${NC}"
+# Generate TypeScript client using openapi-generator-cli (auto-generates client methods)
+echo "   Generating TypeScript client with built-in methods..."
+if ! openapi-generator-cli generate \
+    -i "$OPENAPI_V3_FILE" \
+    -g typescript-fetch \
+    -o "$TS_OUTPUT_DIR" \
+    --skip-validate-spec \
+    --additional-properties=npmName="@grove/portal-db-sdk",typescriptThreePlus=true; then
+    echo -e "${RED}❌ Failed to generate TypeScript client${NC}"
     exit 1
 fi
 
-# Create index.ts file for easy imports (following official patterns)
-if [ ! -f "$TS_OUTPUT_DIR/index.ts" ]; then
-    echo "   Creating index.ts..."
-    cat > "$TS_OUTPUT_DIR/index.ts" << 'EOF'
-/**
- * Grove Portal DB TypeScript SDK
- * 
- * Generated types from OpenAPI specification using openapi-typescript.
- * For a complete fetch client, consider using openapi-fetch alongside these types.
- * 
- * @see https://openapi-ts.dev/introduction
- */
-
-// Export all generated types
-export type * from './types';
-
-// Re-export commonly used types for convenience
-export type { paths, components, operations } from './types';
-
-/**
- * Basic fetch wrapper with type safety
- * 
- * For production use, consider openapi-fetch:
- * npm install openapi-fetch
- * 
- * Example with openapi-fetch:
- * ```typescript
- * import createClient from 'openapi-fetch';
- * import type { paths } from './types';
- * 
- * const client = createClient<paths>({ baseUrl: 'http://localhost:3000' });
- * const { data, error } = await client.GET('/users');
- * ```
- */
-export async function createTypedFetch<T extends keyof paths>(
-  baseUrl: string,
-  options?: {
-    headers?: Record<string, string>;
-    timeout?: number;
-  }
-) {
-  const defaultHeaders = {
-    'Content-Type': 'application/json',
-    ...options?.headers,
-  };
-
-  return {
-    async request<
-      Path extends keyof paths,
-      Method extends keyof paths[Path],
-      RequestBody = paths[Path][Method] extends { requestBody: { content: { 'application/json': infer T } } } ? T : never,
-      ResponseBody = paths[Path][Method] extends { responses: { 200: { content: { 'application/json': infer T } } } } ? T : unknown
-    >(
-      method: Method,
-      path: Path,
-      init?: RequestInit & { body?: RequestBody }
-    ): Promise<ResponseBody> {
-      const url = `${baseUrl}${String(path)}`;
-      
-      const response = await fetch(url, {
-        method: String(method).toUpperCase(),
-        headers: defaultHeaders,
-        body: init?.body ? JSON.stringify(init.body) : undefined,
-        ...init,
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      const contentType = response.headers.get('content-type');
-      if (contentType?.includes('application/json')) {
-        return await response.json();
-      }
-
-      return {} as ResponseBody;
-    }
-  };
-}
-EOF
-fi
 
 echo -e "${GREEN}✅ TypeScript SDK generated successfully${NC}"
 
@@ -401,7 +343,7 @@ if [ ! -f "tsconfig.json" ]; then
     "declarationMap": true,
     "outDir": "./dist"
   },
-  "include": ["types.d.ts", "index.ts"],
+  "include": ["src/**/*", "models/**/*", "apis/**/*"],
   "exclude": ["node_modules", "dist"]
 }
 EOF
@@ -452,8 +394,8 @@ echo -e "${BLUE}🔷 TypeScript SDK:${NC}"
 echo "   Package:  @grove/portal-db-sdk"
 echo "   Runtime:  Zero dependencies (uses native fetch)"
 echo "   Files:"
-echo "   • types.d.ts      - Generated TypeScript types (updated)"
-echo "   • index.ts        - Main entry point with utilities (permanent)"
+echo "   • apis/           - Generated API client classes (updated)"
+echo "   • models/         - Generated TypeScript models (updated)"
 echo "   • package.json    - Node.js package definition (permanent)"
 echo "   • tsconfig.json   - TypeScript configuration (permanent)"
 echo "   • README.md       - Documentation (permanent)"
@@ -470,17 +412,16 @@ echo "   3. Import in your project: go get github.com/grove/path/portal-db/sdk/g
 echo "   4. Check documentation: cat $GO_OUTPUT_DIR/README.md"
 echo ""
 echo -e "${BLUE}TypeScript SDK:${NC}"
-echo "   1. Review generated types: cat $TS_OUTPUT_DIR/types.d.ts | head -50"
-echo "   2. Review main entry: cat $TS_OUTPUT_DIR/index.ts | head -30"
+echo "   1. Review generated APIs: ls $TS_OUTPUT_DIR/apis/"
+echo "   2. Review generated models: ls $TS_OUTPUT_DIR/models/"
 echo "   3. Copy to your React project or publish as npm package"
-echo "   4. Import types: import type { paths, components } from './types'"
-echo "   5. Use with fetch: await createTypedFetch('http://localhost:3000')"
-echo "   6. Or use openapi-fetch: npm install openapi-fetch (recommended)"
-echo "   7. Check documentation: cat $TS_OUTPUT_DIR/README.md"
+echo "   4. Import client: import { DefaultApi } from './apis'"
+echo "   5. Use built-in methods: await client.portalApplicationsGet()"
+echo "   6. Check documentation: cat $TS_OUTPUT_DIR/README.md"
 echo ""
 echo -e "${BLUE}💡 Tips:${NC}"
 echo "   • Go: Full client with methods, types separated for readability"
-echo "   • TypeScript: Generated types + optional type-safe client helper"
+echo "   • TypeScript: Auto-generated client classes with built-in methods"
 echo "   • Both SDKs update automatically when you run this script"
 echo "   • Run after database schema changes to stay in sync"
 echo "   • TypeScript SDK has zero runtime dependencies"
