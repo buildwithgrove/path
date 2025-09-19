@@ -2,7 +2,7 @@
 # Provides convenient commands for managing the PostgREST API
 
 .PHONY: postgrest-up postgrest-down postgrest-logs
-.PHONY: generate-openapi generate-sdks generate-all test-auth
+.PHONY: generate-openapi generate-sdks generate-all test-auth test-portal-app
 .PHONY: hydrate-testdata hydrate-services hydrate-applications hydrate-gateways
 
 # ============================================================================
@@ -65,6 +65,15 @@ test-auth: ## Test JWT authentication flow
 		exit 1; \
 	fi
 	cd api/scripts && ./test-auth.sh
+
+test-portal-app: ## Test portal application creation and retrieval
+	@echo "🧪 Testing portal application creation..."
+	@if ! docker ps | grep -q portal-db-api; then \
+		echo "❌ PostgREST API is not running. Please start it first:"; \
+		echo "   make postgrest-up"; \
+		exit 1; \
+	fi
+	cd api/scripts && ./test-portal-app-creation.sh
 
 gen-jwt: ## Generate JWT token
 	@echo "🔑 Generating JWT token..."

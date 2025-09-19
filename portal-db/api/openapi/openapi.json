@@ -870,6 +870,12 @@
                         "$ref": "#/components/parameters/rowFilter.services.active"
                     },
                     {
+                        "$ref": "#/components/parameters/rowFilter.services.beta"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.services.coming_soon"
+                    },
+                    {
                         "$ref": "#/components/parameters/rowFilter.services.quality_fallback_enabled"
                     },
                     {
@@ -1002,6 +1008,12 @@
                         "$ref": "#/components/parameters/rowFilter.services.active"
                     },
                     {
+                        "$ref": "#/components/parameters/rowFilter.services.beta"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.services.coming_soon"
+                    },
+                    {
                         "$ref": "#/components/parameters/rowFilter.services.quality_fallback_enabled"
                     },
                     {
@@ -1055,6 +1067,12 @@
                     },
                     {
                         "$ref": "#/components/parameters/rowFilter.services.active"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.services.beta"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.services.coming_soon"
                     },
                     {
                         "$ref": "#/components/parameters/rowFilter.services.quality_fallback_enabled"
@@ -2090,6 +2108,354 @@
                     "(rpc) me"
                 ]
             }
+        },
+        "/rpc/create_portal_application": {
+            "get": {
+                "description": "Validates user membership in the account before creation. \nReturns the application details including the generated secret key.\nThis function is exposed via PostgREST as POST /rpc/create_portal_application",
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "p_portal_account_id",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "character varying"
+                        }
+                    },
+                    {
+                        "in": "query",
+                        "name": "p_portal_user_id",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "character varying"
+                        }
+                    },
+                    {
+                        "in": "query",
+                        "name": "p_portal_application_name",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "character varying"
+                        }
+                    },
+                    {
+                        "in": "query",
+                        "name": "p_emoji",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "character varying"
+                        }
+                    },
+                    {
+                        "in": "query",
+                        "name": "p_portal_application_user_limit",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "format": "integer"
+                        }
+                    },
+                    {
+                        "in": "query",
+                        "name": "p_portal_application_user_limit_interval",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "plan_interval"
+                        }
+                    },
+                    {
+                        "in": "query",
+                        "name": "p_portal_application_user_limit_rps",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "format": "integer"
+                        }
+                    },
+                    {
+                        "in": "query",
+                        "name": "p_portal_application_description",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "character varying"
+                        }
+                    },
+                    {
+                        "in": "query",
+                        "name": "p_favorite_service_ids",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "character varying[]"
+                        }
+                    },
+                    {
+                        "in": "query",
+                        "name": "p_secret_key_required",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean",
+                            "format": "boolean"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                },
+                "summary": "Creates a portal application with all associated RBAC entries in a single atomic transaction. ",
+                "tags": [
+                    "(rpc) create_portal_application"
+                ]
+            },
+            "post": {
+                "description": "Validates user membership in the account before creation. \nReturns the application details including the generated secret key.\nThis function is exposed via PostgREST as POST /rpc/create_portal_application",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/preferParams"
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "description": "Creates a portal application with all associated RBAC entries in a single atomic transaction. \nValidates user membership in the account before creation. \nReturns the application details including the generated secret key.\nThis function is exposed via PostgREST as POST /rpc/create_portal_application",
+                                "properties": {
+                                    "p_emoji": {
+                                        "format": "character varying",
+                                        "type": "string"
+                                    },
+                                    "p_favorite_service_ids": {
+                                        "format": "character varying[]",
+                                        "items": {
+                                            "type": "string"
+                                        },
+                                        "type": "array"
+                                    },
+                                    "p_portal_account_id": {
+                                        "format": "character varying",
+                                        "type": "string"
+                                    },
+                                    "p_portal_application_description": {
+                                        "format": "character varying",
+                                        "type": "string"
+                                    },
+                                    "p_portal_application_name": {
+                                        "format": "character varying",
+                                        "type": "string"
+                                    },
+                                    "p_portal_application_user_limit": {
+                                        "format": "integer",
+                                        "type": "integer"
+                                    },
+                                    "p_portal_application_user_limit_interval": {
+                                        "format": "plan_interval",
+                                        "type": "string"
+                                    },
+                                    "p_portal_application_user_limit_rps": {
+                                        "format": "integer",
+                                        "type": "integer"
+                                    },
+                                    "p_portal_user_id": {
+                                        "format": "character varying",
+                                        "type": "string"
+                                    },
+                                    "p_secret_key_required": {
+                                        
+                                        "type": "boolean"
+                                    }
+                                },
+                                "required": [
+                                    "p_portal_account_id",
+                                    "p_portal_user_id"
+                                ],
+                                "type": "object"
+                            }
+                        },
+                        "application/vnd.pgrst.object+json;nulls=stripped": {
+                            "schema": {
+                                "description": "Creates a portal application with all associated RBAC entries in a single atomic transaction. \nValidates user membership in the account before creation. \nReturns the application details including the generated secret key.\nThis function is exposed via PostgREST as POST /rpc/create_portal_application",
+                                "properties": {
+                                    "p_emoji": {
+                                        "format": "character varying",
+                                        "type": "string"
+                                    },
+                                    "p_favorite_service_ids": {
+                                        "format": "character varying[]",
+                                        "items": {
+                                            "type": "string"
+                                        },
+                                        "type": "array"
+                                    },
+                                    "p_portal_account_id": {
+                                        "format": "character varying",
+                                        "type": "string"
+                                    },
+                                    "p_portal_application_description": {
+                                        "format": "character varying",
+                                        "type": "string"
+                                    },
+                                    "p_portal_application_name": {
+                                        "format": "character varying",
+                                        "type": "string"
+                                    },
+                                    "p_portal_application_user_limit": {
+                                        "format": "integer",
+                                        "type": "integer"
+                                    },
+                                    "p_portal_application_user_limit_interval": {
+                                        "format": "plan_interval",
+                                        "type": "string"
+                                    },
+                                    "p_portal_application_user_limit_rps": {
+                                        "format": "integer",
+                                        "type": "integer"
+                                    },
+                                    "p_portal_user_id": {
+                                        "format": "character varying",
+                                        "type": "string"
+                                    },
+                                    "p_secret_key_required": {
+                                        
+                                        "type": "boolean"
+                                    }
+                                },
+                                "required": [
+                                    "p_portal_account_id",
+                                    "p_portal_user_id"
+                                ],
+                                "type": "object"
+                            }
+                        },
+                        "application/vnd.pgrst.object+json": {
+                            "schema": {
+                                "description": "Creates a portal application with all associated RBAC entries in a single atomic transaction. \nValidates user membership in the account before creation. \nReturns the application details including the generated secret key.\nThis function is exposed via PostgREST as POST /rpc/create_portal_application",
+                                "properties": {
+                                    "p_emoji": {
+                                        "format": "character varying",
+                                        "type": "string"
+                                    },
+                                    "p_favorite_service_ids": {
+                                        "format": "character varying[]",
+                                        "items": {
+                                            "type": "string"
+                                        },
+                                        "type": "array"
+                                    },
+                                    "p_portal_account_id": {
+                                        "format": "character varying",
+                                        "type": "string"
+                                    },
+                                    "p_portal_application_description": {
+                                        "format": "character varying",
+                                        "type": "string"
+                                    },
+                                    "p_portal_application_name": {
+                                        "format": "character varying",
+                                        "type": "string"
+                                    },
+                                    "p_portal_application_user_limit": {
+                                        "format": "integer",
+                                        "type": "integer"
+                                    },
+                                    "p_portal_application_user_limit_interval": {
+                                        "format": "plan_interval",
+                                        "type": "string"
+                                    },
+                                    "p_portal_application_user_limit_rps": {
+                                        "format": "integer",
+                                        "type": "integer"
+                                    },
+                                    "p_portal_user_id": {
+                                        "format": "character varying",
+                                        "type": "string"
+                                    },
+                                    "p_secret_key_required": {
+                                        
+                                        "type": "boolean"
+                                    }
+                                },
+                                "required": [
+                                    "p_portal_account_id",
+                                    "p_portal_user_id"
+                                ],
+                                "type": "object"
+                            }
+                        },
+                        "text/csv": {
+                            "schema": {
+                                "description": "Creates a portal application with all associated RBAC entries in a single atomic transaction. \nValidates user membership in the account before creation. \nReturns the application details including the generated secret key.\nThis function is exposed via PostgREST as POST /rpc/create_portal_application",
+                                "properties": {
+                                    "p_emoji": {
+                                        "format": "character varying",
+                                        "type": "string"
+                                    },
+                                    "p_favorite_service_ids": {
+                                        "format": "character varying[]",
+                                        "items": {
+                                            "type": "string"
+                                        },
+                                        "type": "array"
+                                    },
+                                    "p_portal_account_id": {
+                                        "format": "character varying",
+                                        "type": "string"
+                                    },
+                                    "p_portal_application_description": {
+                                        "format": "character varying",
+                                        "type": "string"
+                                    },
+                                    "p_portal_application_name": {
+                                        "format": "character varying",
+                                        "type": "string"
+                                    },
+                                    "p_portal_application_user_limit": {
+                                        "format": "integer",
+                                        "type": "integer"
+                                    },
+                                    "p_portal_application_user_limit_interval": {
+                                        "format": "plan_interval",
+                                        "type": "string"
+                                    },
+                                    "p_portal_application_user_limit_rps": {
+                                        "format": "integer",
+                                        "type": "integer"
+                                    },
+                                    "p_portal_user_id": {
+                                        "format": "character varying",
+                                        "type": "string"
+                                    },
+                                    "p_secret_key_required": {
+                                        
+                                        "type": "boolean"
+                                    }
+                                },
+                                "required": [
+                                    "p_portal_account_id",
+                                    "p_portal_user_id"
+                                ],
+                                "type": "object"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                },
+                "summary": "Creates a portal application with all associated RBAC entries in a single atomic transaction. ",
+                "tags": [
+                    "(rpc) create_portal_application"
+                ]
+            }
         }
     },
     "externalDocs": {
@@ -2410,7 +2776,7 @@
                 "in": "query",
                 "schema": {
                     "type": "string",
-                    "format": "uuid"
+                    "format": "character varying"
                 }
             },
             "rowFilter.portal_applications.portal_account_id": {
@@ -2419,7 +2785,7 @@
                 "in": "query",
                 "schema": {
                     "type": "string",
-                    "format": "uuid"
+                    "format": "character varying"
                 }
             },
             "rowFilter.portal_applications.portal_application_name": {
@@ -2596,6 +2962,24 @@
                     "format": "boolean"
                 }
             },
+            "rowFilter.services.beta": {
+                "name": "beta",
+                "required": false,
+                "in": "query",
+                "schema": {
+                    "type": "string",
+                    "format": "boolean"
+                }
+            },
+            "rowFilter.services.coming_soon": {
+                "name": "coming_soon",
+                "required": false,
+                "in": "query",
+                "schema": {
+                    "type": "string",
+                    "format": "boolean"
+                }
+            },
             "rowFilter.services.quality_fallback_enabled": {
                 "name": "quality_fallback_enabled",
                 "required": false,
@@ -2657,7 +3041,7 @@
                 "in": "query",
                 "schema": {
                     "type": "string",
-                    "format": "uuid"
+                    "format": "character varying"
                 }
             },
             "rowFilter.portal_accounts.organization_id": {
@@ -3357,12 +3741,14 @@
                     "portal_application_id": {
                         "default": "gen_random_uuid()",
                         "description": "Note:\nThis is a Primary Key.<pk/>",
-                        "format": "uuid",
+                        "format": "character varying",
+                        "maxLength": 36,
                         "type": "string"
                     },
                     "portal_account_id": {
                         "description": "Note:\nThis is a Foreign Key to `portal_accounts.portal_account_id`.<fk table='portal_accounts' column='portal_account_id'/>",
-                        "format": "uuid",
+                        "format": "character varying",
+                        "maxLength": 36,
                         "type": "string"
                     },
                     "portal_application_name": {
@@ -3465,7 +3851,6 @@
                         "type": "array"
                     },
                     "service_owner_address": {
-                        "description": "Note:\nThis is a Foreign Key to `gateways.gateway_address`.<fk table='gateways' column='gateway_address'/>",
                         "format": "character varying",
                         "maxLength": 50,
                         "type": "string"
@@ -3477,6 +3862,16 @@
                         "type": "string"
                     },
                     "active": {
+                        "default": false,
+                        
+                        "type": "boolean"
+                    },
+                    "beta": {
+                        "default": false,
+                        
+                        "type": "boolean"
+                    },
+                    "coming_soon": {
                         "default": false,
                         
                         "type": "boolean"
@@ -3522,7 +3917,8 @@
                     "portal_account_id": {
                         "default": "gen_random_uuid()",
                         "description": "Unique identifier for the portal account\n\nNote:\nThis is a Primary Key.<pk/>",
-                        "format": "uuid",
+                        "format": "character varying",
+                        "maxLength": 36,
                         "type": "string"
                     },
                     "organization_id": {

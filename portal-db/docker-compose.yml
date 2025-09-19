@@ -47,6 +47,8 @@ services:
       - ./schema/001_schema.sql:/docker-entrypoint-initdb.d/001_schema.sql:ro
       # 002_postgrest_init.sql: PostgREST API setup
       - ./schema/002_postgrest_init.sql:/docker-entrypoint-initdb.d/002_postgrest_init.sql:ro
+      # 003_postgrest_transactions.sql: Custom transaction functions
+      - ./schema/003_postgrest_transactions.sql:/docker-entrypoint-initdb.d/003_postgrest_transactions.sql:ro
     healthcheck:
       # Health check to ensure database is ready before starting PostgREST
       test: ["CMD", "pg_isready", "-U", "postgres", "-d", "portal_db"]

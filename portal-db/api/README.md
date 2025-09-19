@@ -67,6 +67,7 @@ networks, _ := client.GetNetworksWithResponse(context.Background(), nil)
     - [Use JWT Tokens](#use-jwt-tokens)
     - [Permission Levels](#permission-levels)
     - [Test Authentication](#test-authentication)
+  - [💾 Database Transactions](#-database-transactions)
   - [🛠️ Go SDK Generation](#️-go-sdk-generation)
     - [Generate SDK](#generate-sdk)
     - [Generated Files](#generated-files)
@@ -231,6 +232,36 @@ This tests:
 - JWT token generation
 - Authenticated access to protected data
 - JWT claims access via `/rpc/me`
+
+## 💾 Database Transactions
+
+For complex multi-step operations, create PostgreSQL functions that PostgREST automatically exposes as RPC endpoints:
+
+```sql
+-- Example: ../schema/003_postgrest_transactions.sql
+CREATE OR REPLACE FUNCTION public.create_portal_application(
+    p_portal_account_id VARCHAR(36),
+    p_portal_user_id VARCHAR(36),
+    p_portal_application_name VARCHAR(42) DEFAULT NULL
+) RETURNS JSON AS $$
+BEGIN
+    -- Multi-step transaction logic here
+    -- All operations are atomic within the function
+END;
+$$ LANGUAGE plpgsql VOLATILE SECURITY DEFINER;
+```
+
+**Usage:**
+```bash
+curl -X POST http://localhost:3000/rpc/create_portal_application \
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{"p_portal_account_id": "...", "p_portal_user_id": "..."}'
+```
+
+**Test transactions:**
+```bash
+make test-portal-app
+```
 
 ## 🛠️ Go SDK Generation
 

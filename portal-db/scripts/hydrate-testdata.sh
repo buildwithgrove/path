@@ -109,16 +109,23 @@ WHERE NOT EXISTS (
 );
 
 -- Insert test portal users (has UNIQUE constraint, so ON CONFLICT works)
-INSERT INTO portal_users (portal_user_email, signed_up, portal_admin) VALUES
-    ('admin@grove.city', true, true),
-    ('alice@acme.com', true, false),
-    ('bob@techinnovators.com', true, false),
-    ('charlie@blockchain.com', false, false)
+-- Using deterministic UUIDs for reliable testing
+INSERT INTO portal_users (portal_user_id, portal_user_email, signed_up, portal_admin) VALUES
+    ('00000000-0000-0000-0000-000000000001', 'admin@grove.city', true, true),
+    ('00000000-0000-0000-0000-000000000002', 'alice@acme.com', true, false),
+    ('00000000-0000-0000-0000-000000000003', 'bob@techinnovators.com', true, false),
+    ('00000000-0000-0000-0000-000000000004', 'charlie@blockchain.com', false, false)
 ON CONFLICT (portal_user_email) DO NOTHING;
 
--- Insert test portal accounts
-INSERT INTO portal_accounts (organization_id, portal_plan_type, user_account_name, internal_account_name, billing_type) 
+-- Insert test portal accounts with deterministic UUIDs
+INSERT INTO portal_accounts (portal_account_id, organization_id, portal_plan_type, user_account_name, internal_account_name, billing_type) 
 SELECT 
+    CASE 
+        WHEN org.organization_name = 'Acme Corporation' THEN '10000000-0000-0000-0000-000000000001'
+        WHEN org.organization_name = 'Tech Innovators LLC' THEN '10000000-0000-0000-0000-000000000002'
+        WHEN org.organization_name = 'Blockchain Solutions Inc' THEN '10000000-0000-0000-0000-000000000003'
+        ELSE '10000000-0000-0000-0000-000000000004'
+    END,
     org.organization_id,
     CASE 
         WHEN org.organization_name = 'Acme Corporation' THEN 'ENTERPRISE'
@@ -145,8 +152,30 @@ WHERE NOT EXISTS (
     WHERE pa.organization_id = org.organization_id
 );
 
--- Insert test portal applications
+-- Insert test portal account RBAC (link users to accounts)
+INSERT INTO portal_account_rbac (portal_account_id, portal_user_id, role_name, user_joined_account)
+SELECT 
+    pa.portal_account_id,
+    pu.portal_user_id,
+    'OWNER',
+    true
+FROM portal_accounts pa
+CROSS JOIN portal_users pu
+WHERE (
+    (pa.user_account_name = 'acme-corp' AND pu.portal_user_email = 'alice@acme.com') OR
+    (pa.user_account_name = 'tech-innovators' AND pu.portal_user_email = 'bob@techinnovators.com') OR  
+    (pa.user_account_name = 'blockchain-solutions' AND pu.portal_user_email = 'charlie@blockchain.com') OR
+    (pa.user_account_name = 'web3-builders' AND pu.portal_user_email = 'admin@grove.city')
+)
+AND NOT EXISTS (
+    SELECT 1 FROM portal_account_rbac rbac 
+    WHERE rbac.portal_account_id = pa.portal_account_id 
+    AND rbac.portal_user_id = pu.portal_user_id
+);
+
+-- Insert test portal applications with deterministic UUIDs
 INSERT INTO portal_applications (
+    portal_application_id,
     portal_account_id, 
     portal_application_name, 
     emoji, 
@@ -155,6 +184,12 @@ INSERT INTO portal_applications (
     secret_key_required
 ) 
 SELECT 
+    CASE 
+        WHEN pa.user_account_name = 'acme-corp' THEN '20000000-0000-0000-0000-000000000001'
+        WHEN pa.user_account_name = 'tech-innovators' THEN '20000000-0000-0000-0000-000000000002'
+        WHEN pa.user_account_name = 'blockchain-solutions' THEN '20000000-0000-0000-0000-000000000003'
+        ELSE '20000000-0000-0000-0000-000000000004'
+    END,
     pa.portal_account_id,
     CASE 
         WHEN pa.user_account_name = 'acme-corp' THEN 'DeFi Dashboard'
