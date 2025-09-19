@@ -36,17 +36,17 @@ e2e_test: shannon_e2e_config_warning ## Run HTTP-only E2E tests with specified s
 	fi
 	(cd e2e && TEST_MODE=e2e TEST_PROTOCOL=shannon TEST_SERVICE_IDS=$(filter-out $@,$(MAKECMDGOALS)) go test -v -tags=e2e -count=1 -run Test_PATH_E2E)
 
-# WebSocket E2E Tests
+# Websocket E2E Tests
 .PHONY: e2e_test_websocket_all
-e2e_test_websocket_all: shannon_e2e_config_warning ## Run WebSocket-only E2E tests for all WebSocket-compatible services
+e2e_test_websocket_all: shannon_e2e_config_warning ## Run Websocket-only E2E tests for all Websocket-compatible services
 	(cd e2e && TEST_MODE=e2e TEST_PROTOCOL=shannon TEST_WEBSOCKETS=true go test -v -tags=e2e -count=1 -run Test_PATH_E2E)
 
 .PHONY: e2e_test_websocket
-e2e_test_websocket: shannon_e2e_config_warning ## Run WebSocket-only E2E tests with specified service IDs (e.g. make e2e_test_websocket xrplevm)
+e2e_test_websocket: shannon_e2e_config_warning ## Run Websocket-only E2E tests with specified service IDs (e.g. make e2e_test_websocket xrplevm)
 	@if [ "$(filter-out $@,$(MAKECMDGOALS))" = "" ]; then \
 		echo "❌ Error: Service IDs are required (comma-separated list)"; \
 		echo "  👀 Example: make e2e_test_websocket xrplevm,xrplevm-testnet"; \
-		echo "  💡 To run all WebSocket-compatible services, use: make e2e_test_websocket_all"; \
+		echo "  💡 To run all Websocket-compatible services, use: make e2e_test_websocket_all"; \
 		exit 1; \
 	fi
 	(cd e2e && TEST_MODE=e2e TEST_PROTOCOL=shannon TEST_SERVICE_IDS=$(filter-out $@,$(MAKECMDGOALS)) TEST_WEBSOCKETS=true go test -v -tags=e2e -count=1 -run Test_PATH_E2E)
@@ -81,17 +81,17 @@ load_test: ## Run HTTP-only load tests with specified service IDs (e.g. make loa
 	fi
 	@(cd e2e && TEST_MODE=load TEST_PROTOCOL=shannon TEST_SERVICE_IDS=$(filter-out $@,$(MAKECMDGOALS)) go test -v -tags=e2e -count=1 -run Test_PATH_E2E)
 
-# WebSocket Load Tests
+# Websocket Load Tests
 .PHONY: load_test_websocket_all
-load_test_websocket_all: ## Run WebSocket-only load tests for all WebSocket-compatible services
+load_test_websocket_all: ## Run Websocket-only load tests for all Websocket-compatible services
 	(cd e2e && TEST_MODE=load TEST_PROTOCOL=shannon TEST_WEBSOCKETS=true go test -v -tags=e2e -count=1 -run Test_PATH_E2E)
 
 .PHONY: load_test_websocket
-load_test_websocket: ## Run WebSocket-only load tests with specified service IDs (e.g. make load_test_websocket xrplevm)
+load_test_websocket: ## Run Websocket-only load tests with specified service IDs (e.g. make load_test_websocket xrplevm)
 	@if [ "$(filter-out $@,$(MAKECMDGOALS))" = "" ]; then \
 		echo "❌ Error: Service IDs are required (comma-separated list)"; \
 		echo "  👀 Example: make load_test_websocket xrplevm,xrplevm-testnet"; \
-		echo "  💡 To run all WebSocket-compatible services, use: make load_test_websocket_all"; \
+		echo "  💡 To run all Websocket-compatible services, use: make load_test_websocket_all"; \
 		exit 1; \
 	fi
 	@(cd e2e && TEST_MODE=load TEST_PROTOCOL=shannon TEST_SERVICE_IDS=$(filter-out $@,$(MAKECMDGOALS)) TEST_WEBSOCKETS=true go test -v -tags=e2e -count=1 -run Test_PATH_E2E)

@@ -12,7 +12,7 @@ import (
 )
 
 // TODO_IMPROVE(@commoddity): Make all of these configurable
-// TODO_CONFIG: Make WebSocket timeouts configurable
+// TODO_CONFIG: Make Websocket timeouts configurable
 // Current: Hardcoded timeouts in websockets/connection.go:15-24
 // Suggestion: Move to configuration file with sensible defaults
 const (
@@ -30,7 +30,7 @@ const (
 // messageSource is used to identify the source of a message in a bidirectional websocket connection.
 // Possible values are `client` and `endpoint`.
 //
-// Full data flow: Client <------> PATH <------> WebSocket Endpoint
+// Full data flow: Client <------> PATH <------> Websocket Endpoint
 type messageSource string
 
 const (
@@ -68,8 +68,8 @@ type websocketConnection struct {
 	msgChan chan<- message
 }
 
-// upgradeClientWebsocketConnection upgrades an HTTP connection to a WebSocket.
-// Used to upgrade a Client's HTTP request to a WebSocket connection.
+// upgradeClientWebsocketConnection upgrades an HTTP connection to a Websocket.
+// Used to upgrade a Client's HTTP request to a Websocket connection.
 //
 // DEV_NOTE: This function uses a permissive CheckOrigin policy (always returns true),
 // eliminating origin-based rejections as a potential cause of upgrade failures.
@@ -85,7 +85,7 @@ func upgradeClientWebsocketConnection(
 		CheckOrigin: func(r *http.Request) bool { return true },
 	}
 
-	// Upgrade the HTTP connection to a WebSocket connection.
+	// Upgrade the HTTP connection to a Websocket connection.
 	clientConn, err := upgrader.Upgrade(w, req, nil)
 	if err != nil {
 		// Upgrade errors are often client-side protocol violations.

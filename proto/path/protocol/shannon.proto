@@ -116,13 +116,13 @@ enum ShannonEndpointErrorType {
   // The relay request sent to the endpoint via HTTP failed with `context deadline exceeded` error
   SHANNON_ENDPOINT_ERROR_HTTP_CONTEXT_DEADLINE_EXCEEDED = 38;
 
-  // The relay request sent to the endpoint via WebSocket failed to establish a connection.
+  // The relay request sent to the endpoint via Websocket failed to establish a connection.
   SHANNON_ENDPOINT_ERROR_WEBSOCKET_CONNECTION_FAILED = 39;
 
-  // The relay request sent to the endpoint via WebSocket failed to sign the request.
+  // The relay request sent to the endpoint via Websocket failed to sign the request.
   SHANNON_ENDPOINT_ERROR_WEBSOCKET_REQUEST_SIGNING_FAILED = 40;
 
-  // The relay request sent to the endpoint via WebSocket failed to validate the relay response.
+  // The relay request sent to the endpoint via Websocket failed to validate the relay response.
   SHANNON_ENDPOINT_ERROR_WEBSOCKET_RELAY_RESPONSE_VALIDATION_FAILED = 41;
 
   // RelayMiner returned a 4XX HTTP status code
@@ -151,12 +151,12 @@ message ShannonRelayMinerError {
   string message = 3;
 }
 
-// ShannonWebsocketConnectionObservation stores observations from a WebSocket connection lifecycle
+// ShannonWebsocketConnectionObservation stores observations from a Websocket connection lifecycle
 message ShannonWebsocketConnectionObservation {
-  // Supplier of the endpoint handling the WebSocket connection
+  // Supplier of the endpoint handling the Websocket connection
   string supplier = 1;
 
-  // URL of the WebSocket endpoint
+  // URL of the Websocket endpoint
   string endpoint_url = 2;
 
   // Application address associated with the endpoint
@@ -174,7 +174,7 @@ message ShannonWebsocketConnectionObservation {
   // session end height
   int64 session_end_height = 7;
 
-  // Error type if WebSocket connection establishment or operation failed
+  // Error type if Websocket connection establishment or operation failed
   optional ShannonEndpointErrorType error_type = 8;
 
   // Additional error details when available
@@ -200,12 +200,12 @@ message ShannonWebsocketConnectionObservation {
   ConnectionEventType event_type = 14;
 }
 
-// ShannonWebsocketMessageObservation stores observations from individual WebSocket messages
+// ShannonWebsocketMessageObservation stores observations from individual Websocket messages
 message ShannonWebsocketMessageObservation {
-  // Supplier of the endpoint handling the WebSocket message
+  // Supplier of the endpoint handling the Websocket message
   string supplier = 1;
 
-  // URL of the WebSocket endpoint
+  // URL of the Websocket endpoint
   string endpoint_url = 2;
 
   // Application address associated with the endpoint
@@ -261,10 +261,10 @@ message ShannonRequestObservations {
     // HTTP endpoint observations (multiple possible due to retries)
     ShannonHTTPEndpointObservations http_observations = 3;
 
-    // Single WebSocket connection lifecycle observation
+    // Single Websocket connection lifecycle observation
     ShannonWebsocketConnectionObservation websocket_connection_observation = 4;
 
-    // Single WebSocket message observation
+    // Single Websocket message observation
     ShannonWebsocketMessageObservation websocket_message_observation = 5;
   }
 }

@@ -58,10 +58,10 @@ func Test_validateWebsocketRequest(t *testing.T) {
 				// For unsupported case, we expect some kind of error context
 				// We can't easily type assert the exact error context type without more imports,
 				// but we can verify it's not nil and success is false
-				require.False(t, success, "should return false for unsupported WebSocket")
+				require.False(t, success, "should return false for unsupported Websocket")
 			} else {
 				// For supported case, we expect success
-				require.True(t, success, "should return true for supported WebSocket")
+				require.True(t, success, "should return true for supported Websocket")
 			}
 		})
 	}

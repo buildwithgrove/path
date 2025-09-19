@@ -34,7 +34,7 @@ func (NoOpQoS) ParseHTTPRequest(_ context.Context, httpRequest *http.Request) (g
 	}, true
 }
 
-// ParseWebsocketRequest builds a request context from the provided WebSocket request.
+// ParseWebsocketRequest builds a request context from the provided Websocket request.
 // This method implements the gateway.QoSService interface.
 func (q NoOpQoS) ParseWebsocketRequest(_ context.Context) (gateway.RequestQoSContext, bool) {
 	return &requestContext{}, true
@@ -46,8 +46,8 @@ func (NoOpQoS) ApplyObservations(_ *qosobservations.Observations) error {
 	return nil
 }
 
-// CheckWebsocketConnection returns true if the endpoint supports WebSocket connections.
-// NoOp QoS does not support WebSocket connections.
+// CheckWebsocketConnection returns true if the endpoint supports Websocket connections.
+// NoOp QoS does not support Websocket connections.
 func (NoOpQoS) CheckWebsocketConnection() bool {
 	return false
 }

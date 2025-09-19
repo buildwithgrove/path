@@ -27,8 +27,8 @@ type WebsocketMessageProcessor interface {
 }
 
 // bridge routes data between an Endpoint and a Client.
-// One bridge represents a single WebSocket connection
-// between a Client and a WebSocket Endpoint.
+// One bridge represents a single Websocket connection
+// between a Client and a Websocket Endpoint.
 //
 // This is a generic websocket bridge that handles the websocket protocol
 // and message routing, while delegating Gateway-level message processing to the
@@ -46,16 +46,16 @@ type WebsocketMessageProcessor interface {
 //
 // Full data flow: Client <---clientConn---> PATH bridge <---endpointConn---> Relay Miner bridge <------> Endpoint
 //
-// TODO_DOCS: Create WebSocket architecture diagram
+// TODO_DOCS: Create Websocket architecture diagram
 // - Document the full flow from client through bridge to endpoint
 // - Include observation flow and error handling paths
-// - Show interaction between gateway, protocol, and QoS layers for WebSocket messages
+// - Show interaction between gateway, protocol, and QoS layers for Websocket messages
 type bridge struct {
 	// ctx is used to stop the bridge when the context is canceled from either connection
 	ctx    context.Context
 	logger polylog.Logger
 
-	// endpointConn is the connection to the WebSocket Endpoint
+	// endpointConn is the connection to the Websocket Endpoint
 	endpointConn *websocketConnection
 	// clientConn is the connection to the Client
 	clientConn *websocketConnection
@@ -89,7 +89,7 @@ func StartBridge(
 	logger = logger.With("component", "websocket_bridge")
 
 	// Create a bridge-specific context that can be canceled from connections
-	// This is a child of the shared WebSocket context
+	// This is a child of the shared Websocket context
 	bridgeCtx, cancelCtx := context.WithCancel(ctx)
 
 	// Upgrade HTTP request from client to websocket connection.
@@ -200,11 +200,11 @@ func (b *bridge) start() {
 // Usage:
 // - Application-level errors: Call shutdown() directly for immediate cleanup
 // - Message processing failures, protocol errors, write failures to connections
-// - Ensures proper WebSocket close frames are sent before terminating connections
+// - Ensures proper Websocket close frames are sent before terminating connections
 //
 // Cleanup sequence:
-// 1. Sends WebSocket close frames to both client and endpoint with appropriate close codes
-// 2. Closes both WebSocket connections
+// 1. Sends Websocket close frames to both client and endpoint with appropriate close codes
+// 2. Closes both Websocket connections
 // 3. Closes message channel to stop the message processing loop
 //
 // Close Codes:
@@ -247,7 +247,7 @@ func (b *bridge) shutdown(err error) {
 	})
 }
 
-// determineCloseCodeAndMessage determines the appropriate WebSocket close code and message
+// determineCloseCodeAndMessage determines the appropriate Websocket close code and message
 // based on the error that caused the bridge shutdown. This guides client reconnection behavior.
 //
 // Close Code Guidelines (RFC 6455):

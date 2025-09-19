@@ -2,7 +2,7 @@ package websockets
 
 import "errors"
 
-// Bridge shutdown error types used to determine appropriate WebSocket close codes
+// Bridge shutdown error types used to determine appropriate Websocket close codes
 var (
 	// ErrBridgeContextCanceled indicates the bridge was shut down due to context cancellation
 	// This typically happens during graceful shutdown or when the gateway context is canceled

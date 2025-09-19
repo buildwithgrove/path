@@ -15,7 +15,7 @@ import (
 // ===== JSON-RPC Response Validation =====
 
 // validateJSONRPCResponse validates a JSON-RPC response and updates metrics
-// This is decoupled from HTTP/WebSocket transport and can be used for both
+// This is decoupled from HTTP/Websocket transport and can be used for both
 func validateJSONRPCResponse(
 	responseBody []byte,
 	expectedID jsonrpc.ID,

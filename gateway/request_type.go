@@ -9,7 +9,7 @@ const (
 	// httpServiceRequest represents a standard HTTP request.
 	httpServiceRequest serviceRequestType = iota
 
-	// websocketServiceRequest represents a WebSocket connection request.
+	// websocketServiceRequest represents a Websocket connection request.
 	websocketServiceRequest
 )
 
@@ -23,7 +23,7 @@ func determineServiceRequestType(httpReq *http.Request) serviceRequestType {
 	}
 }
 
-// isWebsocketRequest checks if the incoming HTTP request is a WebSocket connection request.
+// isWebsocketRequest checks if the incoming HTTP request is a Websocket connection request.
 func isWebsocketRequest(httpReq *http.Request) bool {
 	upgradeHeader := httpReq.Header.Get("Upgrade")
 	connectionHeader := httpReq.Header.Get("Connection")

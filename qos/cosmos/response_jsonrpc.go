@@ -13,9 +13,9 @@ import (
 
 const (
 	// error codes to use as the JSONRPC response's error code if the endpoint returns a malformed response.
-	// -32000 Error code will result in returning a 500 HTTP Status Code to the client.
-	errCodeUnmarshaling  = -32000
-	errCodeEmptyResponse = -32000
+	// `jsonrpc.ResponseCodeBackendServerErr`, i.e. code -31002, will result in returning a 500 HTTP Status Code to the client.
+	errCodeUnmarshaling  = jsonrpc.ResponseCodeBackendServerErr
+	errCodeEmptyResponse = jsonrpc.ResponseCodeBackendServerErr
 
 	// Error messages for JSONRPC response validation failures
 	errMsgJSONRPCUnmarshaling  = "the JSONRPC response returned by the endpoint is not valid"

@@ -13,7 +13,7 @@ Add a gif of load tests running locally.
 _tl;dr Fully featured Load Tests to verify PATH works correctly._
 
 - [Load Testing using Local PATH](#load-testing-using-local-path)
-  - [WebSocket Load Tests](#websocket-load-tests)
+  - [Websocket Load Tests](#websocket-load-tests)
 - [Load Testing using Grove Portal](#load-testing-using-grove-portal)
 - [Load Testing Grove Fallback Endpoints](#load-testing-grove-fallback-endpoints)
 
@@ -39,19 +39,19 @@ Or, run HTTP load tests for all service IDs:
 make load_test_all
 ```
 
-### WebSocket Load Tests
+### Websocket Load Tests
 
-For services that support WebSocket connections (like XRPLEVM), you can run WebSocket-specific load tests separately:
+For services that support Websocket connections (like XRPLEVM), you can run Websocket-specific load tests separately:
 
 ```bash
-# Run WebSocket load tests for specific service IDs
+# Run Websocket load tests for specific service IDs
 make load_test_websocket xrplevm,xrplevm-testnet
 
-# Run WebSocket load tests for all WebSocket-compatible services  
+# Run Websocket load tests for all Websocket-compatible services  
 make load_test_websocket_all
 ```
 
-**Note:** WebSocket load tests are completely separate from HTTP tests. Use the regular `make load_test` commands for HTTP-only testing, and the `make load_test_websocket` commands for WebSocket-only testing.
+**Note:** Websocket load tests are completely separate from HTTP tests. Use the regular `make load_test` commands for HTTP-only testing, and the `make load_test_websocket` commands for Websocket-only testing.
 
 ## Load Testing using Grove Portal
 
@@ -94,10 +94,10 @@ make load_test eth,xrplevm
 # HTTP load tests with all service IDs
 make load_test_all
 
-# WebSocket load tests with specified service IDs only
+# Websocket load tests with specified service IDs only
 make load_test_websocket xrplevm,xrplevm-testnet
 
-# WebSocket load tests with all WebSocket-compatible service IDs
+# Websocket load tests with all Websocket-compatible service IDs
 make load_test_websocket_all
 ```
 

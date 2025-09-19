@@ -60,7 +60,7 @@ definitions:
         description: "Whether this is an archival test (historical data access)"
         type: boolean
       websockets:
-        description: "Whether this service should run WebSocket tests in addition to HTTP tests"
+        description: "Whether this service should run Websocket tests in addition to HTTP tests"
         type: boolean
       service_params:
         $ref: "#/definitions/evm_service_params"
@@ -129,7 +129,7 @@ definitions:
         type: string
         examples: ["solana-mainnet"]
       websockets:
-        description: "Whether this service should run WebSocket tests in addition to HTTP tests"
+        description: "Whether this service should run Websocket tests in addition to HTTP tests"
         type: boolean
       service_params:
         $ref: "#/definitions/solana_service_params"
@@ -197,7 +197,7 @@ definitions:
         description: "(Optional) Alias for the service, used for subdomain routing or test aliasing. Only present if different from shannonServiceId."
         type: string
       websockets:
-        description: "Whether this service should run WebSocket tests in addition to HTTP tests"
+        description: "Whether this service should run Websocket tests in addition to HTTP tests"
         type: boolean
       # Some Cosmos SDK services have EVM-like parameters, so we use the same schema for them
       service_params:
@@ -235,5 +235,5 @@ definitions:
         description: "(Optional) Alias for the service, used for subdomain routing or test aliasing. Only present if different from shannonServiceId."
         type: string
       websockets:
-        description: "Whether this service should run WebSocket tests in addition to HTTP tests"
+        description: "Whether this service should run Websocket tests in addition to HTTP tests"
         type: boolean

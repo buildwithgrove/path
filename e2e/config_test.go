@@ -28,7 +28,7 @@ const (
 	// If not set, all service IDs for the protocol will be used.
 	envTestServiceIDs = "TEST_SERVICE_IDS"
 
-	// [OPTIONAL] Run only WebSocket tests (skips HTTP tests entirely).
+	// [OPTIONAL] Run only Websocket tests (skips HTTP tests entirely).
 	// If not set, only HTTP tests will run.
 	envTestWebSockets = "TEST_WEBSOCKETS"
 )
@@ -47,7 +47,7 @@ func getEnvConfig() (envConfig, error) {
 		}
 	}
 
-	// Parse WebSocket-only mode
+	// Parse Websocket-only mode
 	websocketsOnly, _ := strconv.ParseBool(os.Getenv(envTestWebSockets))
 
 	return envConfig{

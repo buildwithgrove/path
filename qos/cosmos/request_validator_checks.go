@@ -18,7 +18,7 @@ import (
 // It generates requests for both JSONRPC and REST endpoints.
 var _ gateway.QoSEndpointCheckGenerator = &requestValidator{}
 
-// CheckWebsocketConnection returns true if the endpoint supports WebSocket connections.
+// CheckWebsocketConnection returns true if the endpoint supports Websocket connections.
 func (rv *requestValidator) CheckWebsocketConnection() bool {
 	_, supportsWebsockets := rv.serviceState.serviceQoSConfig.getSupportedAPIs()[sharedtypes.RPCType_WEBSOCKET]
 	return supportsWebsockets

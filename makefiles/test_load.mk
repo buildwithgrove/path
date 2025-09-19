@@ -5,8 +5,8 @@
 check_websocket_load_test:
 	@if ! command -v websocket-load-test &> /dev/null; then \
 		echo "####################################################################################################"; \
-		echo "WebSocket Load Test is not installed." \
-		echo "To use any WebSocket Load Test make targets to send load testing requests please install WebSocket Load Test with:"; \
+		echo "Websocket Load Test is not installed." \
+		echo "To use any Websocket Load Test make targets to send load testing requests please install Websocket Load Test with:"; \
 		echo "go install github.com/commoddity/websocket-load-test@latest"; \
 		echo "####################################################################################################"; \
 	fi

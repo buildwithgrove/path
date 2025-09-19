@@ -6,6 +6,7 @@ import (
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
 	sessiontypes "github.com/pokt-network/poktroll/x/session/types"
+	sharedtypes "github.com/pokt-network/poktroll/x/shared/types"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	protocolobservations "github.com/buildwithgrove/path/observation/protocol"
@@ -111,9 +112,10 @@ func buildEndpointSuccessObservation(
 	endpointResponseTimestamp time.Time,
 	endpointResponse *protocol.Response,
 	relayMinerError *protocolobservations.ShannonRelayMinerError,
+	rpcType sharedtypes.RPCType,
 ) *protocolobservations.ShannonEndpointObservation {
 	// initialize an observation with endpoint details: URL, app, etc.
-	endpointObs := buildEndpointObservation(logger, endpoint, endpointResponse)
+	endpointObs := buildEndpointObservation(logger, endpoint, endpointResponse, rpcType)
 
 	// Update the observation with endpoint query and response timestamps.
 	endpointObs.EndpointQueryTimestamp = timestamppb.New(endpointQueryTimestamp)
@@ -138,9 +140,10 @@ func buildEndpointErrorObservation(
 	errorDetails string,
 	sanctionType protocolobservations.ShannonSanctionType,
 	relayMinerError *protocolobservations.ShannonRelayMinerError,
+	rpcType sharedtypes.RPCType,
 ) *protocolobservations.ShannonEndpointObservation {
 	// initialize an observation with endpoint details: URL, app, etc.
-	endpointObs := buildEndpointObservation(logger, endpoint, nil)
+	endpointObs := buildEndpointObservation(logger, endpoint, nil, rpcType)
 
 	// Update the observation with endpoint query/response timestamps.
 	endpointObs.EndpointQueryTimestamp = timestamppb.New(endpointQueryTimestamp)
@@ -163,6 +166,7 @@ func buildEndpointObservation(
 	logger polylog.Logger,
 	endpoint endpoint,
 	endpointResponse *protocol.Response,
+	rpcType sharedtypes.RPCType,
 ) *protocolobservations.ShannonEndpointObservation {
 	// Add session fields to the observation:
 	// app, serviceID, session ID, session start and end heights
@@ -170,7 +174,7 @@ func buildEndpointObservation(
 
 	// Add endpoint-level details: supplier, URL, isFallback.
 	observation.Supplier = endpoint.Supplier()
-	observation.EndpointUrl = endpoint.PublicURL()
+	observation.EndpointUrl = endpoint.GetURL(rpcType)
 	observation.IsFallbackEndpoint = endpoint.IsFallback()
 
 	// Add endpoint response details if not nil (i.e. success)

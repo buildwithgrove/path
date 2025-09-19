@@ -62,7 +62,7 @@ type Protocol interface {
 
 	// BuildWebsocketRequestContextForEndpoint builds and returns a ProtocolRequestContextWebsocket containing a single selected endpoint.
 	// One `ProtocolRequestContextWebsocket` corresponds to a single long-lived websocket connection to a single endpoint.
-	// This method immediately establishes the WebSocket connection and starts the bridge.
+	// This method immediately establishes the Websocket connection and starts the bridge.
 	//
 	// If the Pocket Network Gateway is in delegated mode, the staked application is passed via
 	// the `App-Address` header. In all other modes, *http.Request will be nil.

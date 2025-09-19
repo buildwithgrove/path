@@ -225,7 +225,8 @@ var shannonServices = []ServiceQoSConfig{
 			12_300_000,
 		),
 		map[sharedtypes.RPCType]struct{}{
-			sharedtypes.RPCType_JSON_RPC: {},
+			sharedtypes.RPCType_JSON_RPC:  {},
+			sharedtypes.RPCType_WEBSOCKET: {},
 		},
 	),
 

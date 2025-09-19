@@ -5,8 +5,15 @@ import (
 )
 
 const (
-	ResponseCodeDefaultInternalErr = -32000 // JSON-RPC standard server error code; https://www.org/historical/json-rpc-2-0.html
-	ResponseCodeDefaultBadRequest  = -32600 // JSON-RPC error code indicating bad user request
+	// DEV_NOTE: Intentionallly using Non-reserved JSONRPC error code for internal errors.
+	// Allows distinguishing errors coming from PATH from backend server errors.
+	// e.g.
+	// -32000: indicates a backend server (ETH, Solana, etc.) returned the error.
+	// -31001: indicates PATH consturcted the JSONRPC error response (e.g. if the endpoint payload failed to parse as a JSONRPC response)
+	ResponseCodeDefaultInternalErr = -31001 // JSON-RPC server error code; https://www.jsonrpc.org/specification#error_object
+	ResponseCodeBackendServerErr   = -31002 // Indicates a backend server error: e.g. payload could not be parsed into a valid JSON-RPC response.
+
+	ResponseCodeDefaultBadRequest = -32600 // JSON-RPC error code indicating bad user request
 )
 
 // NewErrResponseInternalErr creates a JSON-RPC error response when an internal error has occurred (e.g. reading HTTP request's body)
@@ -52,8 +59,8 @@ func NewErrResponseInvalidRequest(requestID ID, err error) Response {
 //   - Marks error as retryable for safe client retry
 func NewErrResponseEmptyEndpointResponse(requestID ID) Response {
 	return GetErrorResponse(
-		requestID, // Use request's original ID if present
-		-32000,    // JSON-RPC standard server error code; https://www.jsonrpc.org/historical/json-rpc-2-0.html
+		requestID,                    // Use request's original ID if present
+		ResponseCodeBackendServerErr, // Indicates a backend server error caught by PATH.
 		"Endpoint (data/service node error): Received an empty response. The endpoint will be dropped from the selection pool. Please try again.", // Error Response Message
 		map[string]string{
 			// Custom extension - not part of the official JSON-RPC spec
@@ -71,8 +78,8 @@ func NewErrResponseEmptyEndpointResponse(requestID ID) Response {
 //   - Provides actionable message for clients
 func NewErrResponseNoEndpointResponse(requestID ID) Response {
 	return GetErrorResponse(
-		requestID, // Use request's original ID if present
-		-32000,    // JSON-RPC standard server error code; https://www.jsonrpc.org/historical/json-rpc-2-0.html
+		requestID,                      // Use request's original ID if present
+		ResponseCodeDefaultInternalErr, // Used to indicate an internal PATH/protocol error (e.g. endpoint timed out).
 		"Failed to receive any response from endpoints. This could be due to network issues or high load. Please try again.", // Error Response Message
 		map[string]string{
 			// Custom extension - not part of the official JSON-RPC spec
@@ -87,8 +94,8 @@ func NewErrResponseNoEndpointResponse(requestID ID) Response {
 // Uses null ID per JSON-RPC spec for batch-level errors that cannot be correlated to specific requests.
 func NewErrResponseBatchMarshalFailure(err error) Response {
 	return GetErrorResponse(
-		ID{},   // Use null ID for batch-level failures per JSON-RPC spec
-		-32000, // JSON-RPC standard server error code; https://www.jsonrpc.org/historical/json-rpc-2-0.html
+		ID{},                           // Use null ID for batch-level failures per JSON-RPC spec
+		ResponseCodeDefaultInternalErr, // Used to indicate an internal PATH/protocol error: here it indicates failure to marshal a batch JSON-RPC response.
 		fmt.Sprintf("Failed to marshal batch response: %s", err.Error()), // Error Message
 		map[string]string{
 			"error": err.Error(),

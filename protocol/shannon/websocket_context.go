@@ -21,7 +21,7 @@ import (
 )
 
 // The requestContext implements the gateway.ProtocolRequestContextWebsocket interface.
-// It handles protocol-level WebSocket message processing for both client and endpoint messages.
+// It handles protocol-level Websocket message processing for both client and endpoint messages.
 // For example, client messages are signed and endpoint messages are validated.
 var _ gateway.ProtocolRequestContextWebsocket = &websocketRequestContext{}
 
@@ -46,15 +46,15 @@ type websocketRequestContext struct {
 
 // ---------- Websocket Request Context Setup  ----------
 
-// BuildWebsocketRequestContextForEndpoint creates a new WebSocket protocol request context for a specified service and endpoint.
-// This method immediately establishes the WebSocket connection and starts the bridge.
+// BuildWebsocketRequestContextForEndpoint creates a new Websocket protocol request context for a specified service and endpoint.
+// This method immediately establishes the Websocket connection and starts the bridge.
 //
 // Parameters:
 //   - ctx: Context for cancellation, deadlines, and logging.
 //   - serviceID: The unique identifier of the target service.
 //   - selectedEndpointAddr: The address of the endpoint to use for the request.
-//   - httpReq: HTTP request used for WebSocket upgrade and delegated mode app extraction.
-//   - httpResponseWriter: HTTP response writer for WebSocket upgrade.
+//   - httpReq: HTTP request used for Websocket upgrade and delegated mode app extraction.
+//   - httpResponseWriter: HTTP response writer for Websocket upgrade.
 //   - messageObservationsChan: Channel for sending message-level observations to the gateway.
 func (p *Protocol) BuildWebsocketRequestContextForEndpoint(
 	ctx context.Context,
@@ -87,7 +87,7 @@ func (p *Protocol) BuildWebsocketRequestContextForEndpoint(
 		return nil, nil, err
 	}
 
-	// Create WebSocket request context for the pre-selected endpoint
+	// Create Websocket request context for the pre-selected endpoint
 	wrc := &websocketRequestContext{
 		logger:             logger,
 		fullNode:           p.FullNode,
@@ -100,7 +100,7 @@ func (p *Protocol) BuildWebsocketRequestContextForEndpoint(
 	// Buffer size of 10 should be sufficient for connection lifecycle events
 	connectionObservationChan := make(chan *protocolobservations.Observations, 10)
 
-	// Start the WebSocket bridge immediately
+	// Start the Websocket bridge immediately
 	// This handles connection establishment and message processing
 	err = wrc.startWebSocketBridge(
 		ctx,
@@ -113,8 +113,8 @@ func (p *Protocol) BuildWebsocketRequestContextForEndpoint(
 	if err != nil {
 		// Close the observation channel on error to prevent resource leaks
 		close(connectionObservationChan)
-		logger.Error().Err(err).Msg("Failed to start WebSocket bridge")
-		return nil, nil, fmt.Errorf("failed to start WebSocket bridge: %w", err)
+		logger.Error().Err(err).Msg("Failed to start Websocket bridge")
+		return nil, nil, fmt.Errorf("failed to start Websocket bridge: %w", err)
 	}
 
 	return wrc, connectionObservationChan, nil
@@ -241,7 +241,7 @@ func (p *Protocol) ApplyWebSocketObservations(observations *protocolobservations
 
 // ---------- Connection Establishment ----------
 
-// startWebSocketBridge creates and starts a WebSocket bridge between client and endpoint.
+// startWebSocketBridge creates and starts a Websocket bridge between client and endpoint.
 // It handles all protocol-specific setup including headers, URL generation, and connection establishment.
 // This is a private method called by BuildWebsocketRequestContextForEndpoint.
 func (wrc *websocketRequestContext) startWebSocketBridge(
@@ -291,7 +291,7 @@ func (wrc *websocketRequestContext) startWebSocketBridge(
 	)
 	if err != nil {
 		err = fmt.Errorf("%w: failed to start websocket bridge: %s", errCreatingWebSocketConnection, err.Error())
-		wrc.logger.Error().Err(err).Msg("❌ Failed to start WebSocket bridge")
+		wrc.logger.Error().Err(err).Msg("❌ Failed to start Websocket bridge")
 
 		connectionObservationChan <- getWebsocketConnectionErrorObservation(wrc.logger, wrc.serviceID, wrc.selectedEndpoint, err)
 
@@ -303,13 +303,13 @@ func (wrc *websocketRequestContext) startWebSocketBridge(
 		defer close(connectionObservationChan)
 
 		// Send establishment observation immediately (buffered channel ensures it's captured)
-		wrc.logger.Info().Msg("✅ WebSocket bridge started successfully, sending establishment observation")
+		wrc.logger.Info().Msg("✅ Websocket bridge started successfully, sending establishment observation")
 		connectionObservationChan <- getWebsocketConnectionEstablishedObservation(wrc.logger, wrc.serviceID, wrc.selectedEndpoint)
 
-		// Wait for the bridge to complete (blocks until WebSocket connection terminates)
+		// Wait for the bridge to complete (blocks until Websocket connection terminates)
 		<-bridgeCompletionChan
 		// Send closure observation
-		wrc.logger.Info().Msg("🔌 WebSocket connection closed, sending closure observation")
+		wrc.logger.Info().Msg("🔌 Websocket connection closed, sending closure observation")
 		connectionObservationChan <- getWebsocketConnectionClosedObservation(wrc.logger, wrc.serviceID, wrc.selectedEndpoint)
 	}()
 

@@ -36,8 +36,8 @@ description: Deep dive into End-to-End Tests for PATH
 | ------------------------------------ | --------------------------------- | ----------------------------------------------------------------------------- |
 | **HTTP Test All Services**           | `make e2e_test_all`               | HTTP-only end-to-end testing that starts PATH in an isolated Docker container |
 | **HTTP Test Specific Services**      | `make e2e_test eth,xrplevm`       | HTTP-only end-to-end testing that starts PATH in an isolated Docker container |
-| **WebSocket Test All Services**      | `make e2e_test_websocket_all`     | WebSocket-only testing for all WebSocket-compatible services                  |
-| **WebSocket Test Specific Services** | `make e2e_test_websocket xrplevm` | WebSocket-only testing for specified WebSocket-compatible services            |
+| **Websocket Test All Services**      | `make e2e_test_websocket_all`     | Websocket-only testing for all Websocket-compatible services                  |
+| **Websocket Test Specific Services** | `make e2e_test_websocket xrplevm` | Websocket-only testing for specified Websocket-compatible services            |
 
 What the above make target does:
 
@@ -86,7 +86,7 @@ These environment variables are set by the test make targets, but if you wish to
 | TEST_MODE        | Determines the test execution mode                                                                | `e2e`                               | Yes      |
 | TEST_PROTOCOL    | Specifies which protocol to test                                                                  | `shannon`                           | Yes      |
 | TEST_SERVICE_IDS | Specifies which service IDs to test. If not set, all service IDs for the protocol will be tested. | Comma-separated list of service IDs | No       |
-| TEST_WEBSOCKETS  | Run only WebSocket tests, skipping HTTP tests entirely                                            | `true` or `false`                   | No       |
+| TEST_WEBSOCKETS  | Run only Websocket tests, skipping HTTP tests entirely                                            | `true` or `false`                   | No       |
 </details>
 
 ## Extending/Updating/Adding EVM E2E Tests
@@ -128,34 +128,34 @@ The E2E tests collect and validate comprehensive metrics across multiple dimensi
 | **JSON-RPC Validation**   | - Response unmarshaling success <br/> - JSON-RPC error field validation <br/> - Result field validation <br/> - Protocol-specific validation                 |
 | **Service-Level Metrics** | - Per-service success aggregation <br/> - Cross-method performance comparison <br/> - Service reliability scoring <br/> - Error categorization and reporting |
 
-## WebSocket Testing
+## Websocket Testing
 
-PATH E2E tests support WebSocket testing for compatible services. Currently, XRPLEVM services are configured with WebSocket support.
+PATH E2E tests support Websocket testing for compatible services. Currently, XRPLEVM services are configured with Websocket support.
 
-### WebSocket Test Features
+### Websocket Test Features
 
 - **Transport-Agnostic Validation**: Uses the same JSON-RPC validation logic as HTTP tests
-- **Real-time Connection**: Establishes persistent WebSocket connections to test real-time communication
-- **EVM JSON-RPC Support**: Tests all standard EVM JSON-RPC methods over WebSocket
-- **Separate from HTTP**: WebSocket tests run independently from HTTP tests
+- **Real-time Connection**: Establishes persistent Websocket connections to test real-time communication
+- **EVM JSON-RPC Support**: Tests all standard EVM JSON-RPC methods over Websocket
+- **Separate from HTTP**: Websocket tests run independently from HTTP tests
 
-### WebSocket Test Modes
+### Websocket Test Modes
 
 | Mode                       | Command                           | Description                                                |
 | -------------------------- | --------------------------------- | ---------------------------------------------------------- |
 | **HTTP Only**              | `make e2e_test xrplevm`           | Runs only HTTP tests (default behavior)                    |
-| **WebSocket Only**         | `make e2e_test_websocket xrplevm` | Runs only WebSocket tests, skipping HTTP tests entirely    |
-| **All WebSocket Services** | `make e2e_test_websocket_all`     | Runs WebSocket tests for all WebSocket-compatible services |
+| **Websocket Only**         | `make e2e_test_websocket xrplevm` | Runs only Websocket tests, skipping HTTP tests entirely    |
+| **All Websocket Services** | `make e2e_test_websocket_all`     | Runs Websocket tests for all Websocket-compatible services |
 
 ### Service Configuration
 
-To enable WebSocket testing for a service, add `websockets: true` to the service configuration in `services_shannon.yaml`:
+To enable Websocket testing for a service, add `websockets: true` to the service configuration in `services_shannon.yaml`:
 
 ```yaml
 - name: "Shannon - xrplevm (XRPL EVM MainNet) Test"
   service_id: "xrplevm" 
   service_type: "cosmos_sdk"
-  websockets: true  # Enable WebSocket testing
+  websockets: true  # Enable Websocket testing
   supported_apis: ["json_rpc", "rest", "comet_bft", "websocket"]
   # ... rest of configuration
 ```

@@ -40,7 +40,7 @@ PATH load tests support multiple modes of operation:
 | ------------------ | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
 | **Local PATH**     | HTTP performance testing against local PATH instances | 1. Requires completed [Getting Started](../path/1_getting_started.md) and [Pocket Cheat Sheet](../path/2_cheatsheet_pocket.md) setup <br/> 2. Tests against local PATH instance | - Local development testing <br/> - Feature validation <br/> - Development iteration                                |
 | **Grove Portal**   | HTTP performance testing against Grove Portal         | 1. Sends HTTP requests to Grove Portal gateway URL <br/> 2. Requires Grove Portal credentials or pre-configured files                                                           | - Testing production gateway <br/> - Production performance validation <br/> - Benchmarking                         |
-| **WebSocket Only** | WebSocket-specific performance testing                | 1. Tests only WebSocket connections, skipping HTTP tests entirely <br/> 2. Available for WebSocket-compatible services (e.g., XRPLEVM)                                          | - WebSocket-specific performance validation <br/> - Real-time connection testing <br/> - WebSocket scaling analysis |
+| **Websocket Only** | Websocket-specific performance testing                | 1. Tests only Websocket connections, skipping HTTP tests entirely <br/> 2. Available for Websocket-compatible services (e.g., XRPLEVM)                                          | - Websocket-specific performance validation <br/> - Real-time connection testing <br/> - Websocket scaling analysis |
 
 ### Local PATH Mode
 
@@ -64,16 +64,16 @@ You will need one of the following:
    - Get credentials from the [Grove Portal](https://www.portal.grove.city)
    - Use `make config_copy_e2e_load_test` to set up
 
-### WebSocket Mode
+### Websocket Mode
 
-For WebSocket load testing, you can run tests exclusively on WebSocket-compatible services:
+For Websocket load testing, you can run tests exclusively on Websocket-compatible services:
 
 1. **Prerequisites**: Same as Local PATH or Grove Portal mode  
 2. **Supported Services**: Currently XRPLEVM and XRPLEVM-testnet services
-3. **Test Transport**: Uses WebSocket connections instead of HTTP
+3. **Test Transport**: Uses Websocket connections instead of HTTP
 4. **Commands**:
-   - `make load_test_websocket xrplevm` - Test specific WebSocket services
-   - `make load_test_websocket_all` - Test all WebSocket-compatible services
+   - `make load_test_websocket xrplevm` - Test specific Websocket services
+   - `make load_test_websocket_all` - Test all Websocket-compatible services
 
 ## Load Test Configuration
 
