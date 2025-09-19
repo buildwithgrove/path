@@ -88,7 +88,7 @@ CREATE OR REPLACE FUNCTION public.create_portal_application(
     p_portal_application_user_limit_rps INT DEFAULT NULL,
     p_portal_application_description VARCHAR(255) DEFAULT NULL,
     p_favorite_service_ids VARCHAR[] DEFAULT NULL,
-    p_secret_key_required BOOLEAN DEFAULT false
+    p_secret_key_required TEXT DEFAULT 'false'
 ) RETURNS JSON AS $$
 DECLARE
     v_new_app_id VARCHAR(36);
@@ -96,11 +96,19 @@ DECLARE
     v_secret_key TEXT;
     v_secret_key_hash VARCHAR(255);
     v_user_is_account_member BOOLEAN := FALSE;
+    v_secret_key_required_bool BOOLEAN;
     v_result JSON;
 BEGIN
     -- ========================================================================
     -- VALIDATION PHASE
     -- ========================================================================
+    
+    -- Convert text parameter to boolean for internal use
+    -- This avoids OpenAPI/SDK generation issues with boolean parameters
+    v_secret_key_required_bool := CASE 
+        WHEN LOWER(p_secret_key_required) IN ('true', 't', '1', 'yes', 'y') THEN TRUE
+        ELSE FALSE
+    END;
     
     -- Validate required parameters
     -- PostgreSQL will enforce NOT NULL constraints, but we provide better error messages
@@ -189,7 +197,7 @@ BEGIN
         p_portal_application_description,
         p_favorite_service_ids,
         v_secret_key_hash,
-        p_secret_key_required,
+        v_secret_key_required_bool,
         CURRENT_TIMESTAMP,
         CURRENT_TIMESTAMP
     );
@@ -225,7 +233,7 @@ BEGIN
         'portal_account_id', p_portal_account_id,
         'portal_application_name', p_portal_application_name,
         'secret_key', v_secret_key,
-        'secret_key_required', p_secret_key_required,
+        'secret_key_required', v_secret_key_required_bool,
         'created_at', CURRENT_TIMESTAMP,
         'message', 'Portal application created successfully',
         'warning', 'Store the secret key securely - it cannot be retrieved again'

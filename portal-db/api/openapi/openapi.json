@@ -2199,8 +2199,8 @@
                         "name": "p_secret_key_required",
                         "required": false,
                         "schema": {
-                            "type": "boolean",
-                            "format": "boolean"
+                            "type": "string",
+                            "format": "text"
                         }
                     }
                 ],
@@ -2267,8 +2267,8 @@
                                         "type": "string"
                                     },
                                     "p_secret_key_required": {
-                                        
-                                        "type": "boolean"
+                                        "format": "text",
+                                        "type": "string"
                                     }
                                 },
                                 "required": [
@@ -2322,8 +2322,8 @@
                                         "type": "string"
                                     },
                                     "p_secret_key_required": {
-                                        
-                                        "type": "boolean"
+                                        "format": "text",
+                                        "type": "string"
                                     }
                                 },
                                 "required": [
@@ -2377,8 +2377,8 @@
                                         "type": "string"
                                     },
                                     "p_secret_key_required": {
-                                        
-                                        "type": "boolean"
+                                        "format": "text",
+                                        "type": "string"
                                     }
                                 },
                                 "required": [
@@ -2432,8 +2432,8 @@
                                         "type": "string"
                                     },
                                     "p_secret_key_required": {
-                                        
-                                        "type": "boolean"
+                                        "format": "text",
+                                        "type": "string"
                                     }
                                 },
                                 "required": [

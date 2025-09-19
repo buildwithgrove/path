@@ -59,7 +59,8 @@ create_portal_app() {
             \"p_portal_user_id\": \"00000000-0000-0000-0000-000000000002\",
             \"p_portal_application_name\": \"$APP_NAME\",
             \"p_portal_application_description\": \"Test application created via automated test\",
-            \"p_emoji\": \"🧪\"
+            \"p_emoji\": \"🧪\",
+            \"p_secret_key_required\": \"false\"
         }")
     
     # Check if the response contains an error
