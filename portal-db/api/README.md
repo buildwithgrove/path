@@ -1,5 +1,7 @@
 # Portal Database API
 
+<!-- TODO_DOCUMENTATION(@commoddity): Add section describing potential deployment to production using Pulumi, similar to how Porta database itself is deploted in the infra repo. -->
+
 This folder contains **PostgREST configuration** and **SDK generation tools** for the Portal Database. 
 
 PostgREST automatically creates a REST API from the Portal DB PostgreSQL database schema.
