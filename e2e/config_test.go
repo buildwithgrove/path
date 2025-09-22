@@ -143,7 +143,7 @@ func loadE2ELoadTestConfig() (*Config, error) {
 		fmt.Printf("🔧 Using Shannon config: %se2e/%s%s\n", CYAN, shannonConfigFile, RESET)
 		fmt.Printf("⚠️  %sIMPORTANT:%s E2E tests will fail for services without owned app private keys in %s%s%s\n",
 			YELLOW, RESET, CYAN, shannonConfigFile, RESET)
-		fmt.Printf("   Check that 'owned_apps_private_keys_hex' includes apps for all services you're testing.\n")
+		fmt.Printf("   Check that %s'owned_apps_private_keys_hex'%s includes apps for all services you're testing. ⚠️\n", CYAN, RESET)
 	} else {
 		fmt.Printf("❌ %sWARNING:%s Shannon config file not found at %se2e/%s%s\n",
 			RED, RESET, CYAN, shannonConfigFile, RESET)

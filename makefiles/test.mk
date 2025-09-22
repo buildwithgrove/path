@@ -72,6 +72,26 @@ e2e_test_eth_fallback: shannon_e2e_config_warning check_docker ## Run an E2E Sha
 	fi
 	./e2e/scripts/run_eth_fallback_test.sh $(filter-out $@,$(MAKECMDGOALS))
 
+##########################
+### Signing Benchmarks ###
+##########################
+
+.PHONY: bench_signing_compare
+bench_signing_compare: ## Run comprehensive signing performance comparison (with and without ethereum_secp256k1)
+	@echo "$(BOLD)$(CYAN)🔐 Running comprehensive Shannon signing performance comparison...$(RESET)"
+	@echo "$(YELLOW)📊 This will test both with and without ethereum_secp256k1 build tag$(RESET)"
+	./e2e/scripts/compare_signing_performance.sh
+
+.PHONY: bench_signing_with_slow_signatures
+bench_signing_with_slow_signatures: ## Run Shannon signing performance benchmark WITHOUT ethereum_secp256k1 optimization (10s)
+	@echo "$(CYAN)🔐 Running Shannon signing performance benchmark...$(RESET)"
+	(cd e2e && go test -bench=BenchmarkShannonSigningDirect -benchtime=10s -tags=bench -count=1 -v)
+
+.PHONY: bench_signing_with_fast_signatures
+bench_signing_with_fast_signatures: ## Run Shannon signing performance benchmark WITH ethereum_secp256k1 optimization (10s)
+	@echo "$(CYAN)🔐 Running Shannon signing performance benchmark with ethereum_secp256k1 tag...$(RESET)"
+	(cd e2e && go test -bench=BenchmarkShannonSigningDirect -benchtime=10s -tags=bench,ethereum_secp256k1 -count=1 -v)
+
 ##################
 ### Load Tests ###
 ##################

@@ -168,3 +168,6 @@ build_ghcr_image_current_branch: ## Trigger the main-build workflow using the cu
 	gh workflow run main-build.yml --ref $$BRANCH
 	@echo "Workflow triggered for branch: ${CYAN} $$(git rev-parse --abbrev-ref HEAD)${RESET}"
 	@echo "Check the workflow status at: ${BLUE}https://github.com/$(shell git config --get remote.origin.url | sed 's/.*github.com[:/]\([^/]*\/[^.]*\).*/\1/')/actions/workflows/main-build.yml${RESET}"
+
+.PHONY: release_ghcr_image_current_branch
+release_ghcr_image_current_branch: build_ghcr_image_current_branch ## Trigger the main-build workflow using the current branch to push an image to ghcr.io/buildwithgrove/path
