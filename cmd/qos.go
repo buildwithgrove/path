@@ -62,7 +62,7 @@ func getServiceQoSInstances(
 		serviceID := qosServiceConfig.GetServiceID()
 		// Skip service IDs that are not configured for the PATH instance.
 		if _, found := gatewayServiceIDs[serviceID]; !found {
-			hydratedLogger.Warn().Msgf("Service ID %s has an available QoS configuration but is not configured for the gateway. Skipping...", serviceID)
+			hydratedLogger.Warn().Msgf("⚠️  🔍 Service ID '%s' has QoS configuration defined BUT no owned apps configured! 🚫 This service will fallback to NoOp QoS and likely fail. Configure owned app private keys for this service to enable proper QoS.", serviceID)
 			continue
 		}
 

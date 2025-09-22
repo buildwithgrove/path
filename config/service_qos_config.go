@@ -611,7 +611,7 @@ var shannonServices = []ServiceQoSConfig{
 
 	// zkSync
 	evm.NewEVMServiceQoSConfig(
-		"zksync-era",
+		"zksync_era",
 		"0x144",
 		evm.NewEVMArchivalCheckConfig(
 			// https://explorer.zksync.io/address/0x03AC0b1b952C643d66A4Dc1fBc75118109cC074C

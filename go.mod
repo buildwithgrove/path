@@ -3,7 +3,8 @@ module github.com/buildwithgrove/path
 go 1.24.3
 
 // DEVELOPER_TIP: Uncomment to use a local copy of poktroll
-// replace github.com/pokt-network/shannon-sdk => /Users/olshansky/workspace/pocket/shannon-sdk
+replace github.com/pokt-network/shannon-sdk => /Users/olshansky/workspace/pocket/shannon-sdk
+
 // replace github.com/pokt-network/poktroll => /Users/olshansky/workspace/pocket/poktroll2
 
 require (
@@ -120,6 +121,7 @@ require (
 	github.com/emicklei/dot v1.6.2 // indirect
 	github.com/envoyproxy/go-control-plane/envoy v1.32.4 // indirect
 	github.com/envoyproxy/protoc-gen-validate v1.2.1 // indirect
+	github.com/ethereum/go-ethereum v1.16.3 // indirect
 	github.com/fatih/color v1.18.0 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
@@ -138,7 +140,7 @@ require (
 	github.com/golang/glog v1.2.4 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.5.4 // indirect
-	github.com/golang/snappy v0.0.4 // indirect
+	github.com/golang/snappy v0.0.5-0.20220116011046-fa5810519dcb // indirect
 	github.com/google/btree v1.1.3 // indirect
 	github.com/google/flatbuffers v1.12.1 // indirect
 	github.com/google/go-cmp v0.7.0 // indirect

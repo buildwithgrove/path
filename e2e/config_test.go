@@ -114,7 +114,7 @@ func loadE2ELoadTestConfig() (*Config, error) {
 		fmt.Printf("💽 Using CUSTOM config file: %se2e/%s%s\n\n", CYAN, customConfigFile, RESET)
 		cfgPath = customConfigFile
 	} else {
-		fmt.Printf("💾 Using DEFAULT config file: %se2e/%s%s\n\n", CYAN, defaultConfigFile, RESET)
+		fmt.Printf("💾 Using DEFAULT config file: %se2e/%s%s\n", CYAN, defaultConfigFile, RESET)
 		cfgPath = defaultConfigFile
 	}
 
@@ -136,6 +136,20 @@ func loadE2ELoadTestConfig() (*Config, error) {
 		return nil, fmt.Errorf("failed to load test services: %w", err)
 	}
 	cfg.services = services
+
+	// Log configuration files being used
+	fmt.Printf("📋 Using services config: %se2e/%s%s\n", CYAN, servicesFile, RESET)
+	if _, err := os.Stat(shannonConfigFile); err == nil {
+		fmt.Printf("🔧 Using Shannon config: %se2e/%s%s\n", CYAN, shannonConfigFile, RESET)
+		fmt.Printf("⚠️  %sIMPORTANT:%s E2E tests will fail for services without owned app private keys in %s%s%s\n",
+			YELLOW, RESET, CYAN, shannonConfigFile, RESET)
+		fmt.Printf("   Check that 'owned_apps_private_keys_hex' includes apps for all services you're testing.\n")
+	} else {
+		fmt.Printf("❌ %sWARNING:%s Shannon config file not found at %se2e/%s%s\n",
+			RED, RESET, CYAN, shannonConfigFile, RESET)
+		fmt.Printf("   E2E tests will fail! Run: %smake config_prepare_shannon_e2e%s\n", CYAN, RESET)
+	}
+	fmt.Printf("\n")
 
 	// Validate the configuration
 	if err := cfg.validate(); err != nil {
