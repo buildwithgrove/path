@@ -30,7 +30,6 @@ EVM_SERVICES=(
     "eth"
     "eth-holesky-testnet"
     "eth-sepolia-testnet"
-    "evmos"
     "fantom"
     "fraxtal"
     "fuse"
