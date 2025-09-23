@@ -73,6 +73,12 @@ type Protocol struct {
 	// Each service can have a SendAllTraffic flag to send all traffic to
 	// fallback endpoints, regardless of the health of the protocol endpoints.
 	serviceFallbackMap map[protocol.ServiceID]serviceFallback
+
+	// Optional.
+	// Puts the Gateway in LoadTesting mode if specified.
+	// All relays will be sent to a fixed URL.
+	// Allows measuring performance of PATH and full node(s) in isolation.
+	loadTestingConfig *LoadTestingConfig
 }
 
 // serviceFallback holds the fallback information for a service,
@@ -122,6 +128,9 @@ func NewProtocol(
 
 		// serviceFallbacks contains the fallback information for each service.
 		serviceFallbackMap: config.getServiceFallbackMap(),
+
+		// load testing config, if specified.
+		loadTestingConfig: config.LoadTestingConfig,
 	}
 
 	return protocolInstance, nil
@@ -333,6 +342,7 @@ func (p *Protocol) BuildHTTPRequestContextForEndpoint(
 		relayRequestSigner: permittedSigner,
 		httpClient:         p.httpClient,
 		fallbackEndpoints:  fallbackEndpoints,
+		loadTestingConfig:  p.loadTestingConfig,
 	}, protocolobservations.Observations{}, nil
 }
 

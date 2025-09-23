@@ -73,6 +73,11 @@ type (
 		GatewayPrivateKeyHex    string               `yaml:"gateway_private_key_hex"`
 		OwnedAppsPrivateKeysHex []string             `yaml:"owned_apps_private_keys_hex"`
 		ServiceFallback         []ServiceFallback    `yaml:"service_fallback"`
+		// Optional.
+		// Puts the Gateway in LoadTesting mode if specified.
+		// All relays will be sent to a fixed URL.
+		// Allows measuring performance of PATH and full node(s) in isolation.
+		LoadTestingConfig *LoadTestingConfig `yaml:"load_testing_config"`
 	}
 
 	// TODO_TECHDEBT(@adshmh): Make configuration and implementation explicit:
@@ -87,6 +92,18 @@ type (
 		// If true, all traffic will be sent to the fallback endpoints for the service,
 		// regardless of the health of the protocol endpoints.
 		SendAllTraffic bool `yaml:"send_all_traffic"`
+	}
+
+	// Load testing configuration.
+	// Used to track Gateway's performance when using "perfect" endpoints.
+	// If specified:
+	// - Directs all relays to the specified backend service URL
+	// - No protocol or fallback endpoint used.
+	// - Assumes high throughput backend service (e.g. nginx with a fixed response)
+	LoadTestingConfig struct {
+		// The URL to use for sending relays.
+		BackendServiceURL string `yaml:"backend_service_url"`
+		// TODO_UPNEXT(@adshmh): Support using a fixed URL for a Shannon endpoint/RelayMiner during load testing.
 	}
 )
 
