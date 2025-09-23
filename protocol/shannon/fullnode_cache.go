@@ -359,7 +359,6 @@ func (cfn *cachingFullNode) GetSession(
 }
 
 // TODO_UPNEXT(@adshmh): Refactor to handle height-based session retrieval from the cache.
-// =================================================
 //
 // GetSessionWithExtendedValidity implements session retrieval with support for
 // Pocket Network's "session grace period" business logic.
