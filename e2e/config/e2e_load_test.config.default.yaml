@@ -90,8 +90,6 @@ service_config_overrides:
     archival: true
   "eth-sepolia-testnet":
     archival: true
-  "evmos":
-    archival: true
   "fantom":
     archival: true
   "fraxtal":
