@@ -5,8 +5,8 @@ package e2e
 import (
 	"context"
 	"encoding/hex"
+	"os"
 	"testing"
-	"time"
 
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
@@ -91,39 +91,54 @@ func (m *mockPublicKeyFetcher) GetPubKeyFromAddress(ctx context.Context, address
 }
 
 // Additional benchmark for just the signer creation (key operations)
+var benchSink any
+
+func withSilencedOutput(fn func()) {
+    // Best-effort: silence stdout/stderr during noisy operations
+    oldStdout, oldStderr := os.Stdout, os.Stderr
+    devnull, err := os.Open(os.DevNull)
+    if err == nil {
+        os.Stdout = devnull
+        os.Stderr = devnull
+        defer func() {
+            os.Stdout = oldStdout
+            os.Stderr = oldStderr
+            _ = devnull.Close()
+        }()
+    }
+    fn()
+}
+
 func BenchmarkShannonKeyOperations(b *testing.B) {
-	testPrivateKeyHex := "1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
+    testPrivateKeyHex := "1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
 
-	b.ResetTimer()
+    b.ResetTimer()
 
-	for range b.N {
-		start := time.Now()
-
-		// Benchmark key creation/parsing
-		_, err := sdkcrypto.NewCryptoSigner(testPrivateKeyHex)
-		if err != nil {
-			b.Fatalf("Failed to create signer: %v", err)
-		}
-
-		duration := time.Since(start)
-		b.ReportMetric(float64(duration.Nanoseconds()), "ns/op")
-	}
+    for i := 0; i < b.N; i++ {
+        withSilencedOutput(func() {
+            s, err := sdkcrypto.NewCryptoSigner(testPrivateKeyHex)
+            if err != nil {
+                b.Fatalf("Failed to create signer: %v", err)
+            }
+            benchSink = s
+        })
+    }
 }
 
 // Benchmark for the complete signing pipeline
 func BenchmarkShannonCompleteSigningPipeline(b *testing.B) {
-	testPrivateKeyHex := "1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
+    // Use a consistent keypair between signer and ring
+    appPrivKey := secp256k1.GenPrivKey()
+    supplierPrivKey1 := secp256k1.GenPrivKey()
+    supplierPrivKey2 := secp256k1.GenPrivKey()
 
-	// Pre-create signer to isolate signing performance
-	sdkSigner, err := sdkcrypto.NewCryptoSigner(testPrivateKeyHex)
-	if err != nil {
-		b.Fatalf("Failed to create signer: %v", err)
-	}
+    privateKeyHex := hex.EncodeToString(appPrivKey.Bytes())
 
-	// Pre-create test application and ring setup like the optimized benchmark
-	appPrivKey := secp256k1.GenPrivKey()
-	supplierPrivKey1 := secp256k1.GenPrivKey()
-	supplierPrivKey2 := secp256k1.GenPrivKey()
+    // Pre-create signer to isolate signing performance
+    sdkSigner, err := sdkcrypto.NewCryptoSigner(privateKeyHex)
+    if err != nil {
+        b.Fatalf("Failed to create signer: %v", err)
+    }
 
 	pubKeyFetcher := &mockPublicKeyFetcher{
 		publicKeys: map[string]cryptotypes.PubKey{
@@ -149,18 +164,12 @@ func BenchmarkShannonCompleteSigningPipeline(b *testing.B) {
 		Payload: []byte(`{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}`),
 	}
 
-	b.ResetTimer()
+    b.ResetTimer()
 
-	for range b.N {
-		start := time.Now()
-
-		// Just benchmark the actual signing operation
-		_, err := sdkSigner.Sign(context.Background(), relayRequest, ring)
-		if err != nil {
-			b.Fatalf("Failed to sign request: %v", err)
-		}
-
-		duration := time.Since(start)
-		b.ReportMetric(float64(duration.Nanoseconds()), "ns/op")
-	}
+    for i := 0; i < b.N; i++ {
+        _, err := sdkSigner.Sign(context.Background(), relayRequest, ring)
+        if err != nil {
+            b.Fatalf("Failed to sign request: %v", err)
+        }
+    }
 }

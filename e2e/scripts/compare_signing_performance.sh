@@ -91,13 +91,18 @@ run_benchmark() {
 # Function to extract metrics from benchmark output
 extract_metrics() {
     local output_file="$1"
-    local description="$2"
+    local bench_name="$2"
+    local description="$3"
 
-    # Extract Go benchmark results (iterations and time per operation)
-    # Handle case where benchmark line might be corrupted by log output
-    # Look for the pattern: numbers + "ns/op"
-    local iterations=$(grep -E "^\s*[0-9]+\s+[0-9]+\s+ns/op" "$output_file" | awk '{print $1}' | tail -1 || echo "N/A")
-    local ns_per_op=$(grep -E "^\s*[0-9]+\s+[0-9]+\s+ns/op" "$output_file" | awk '{print $2}' | tail -1 || echo "N/A")
+    # Find the benchmark result line for this benchmark
+    # Format: BenchmarkName-XX <ITER> <NS> ns/op ...
+    local line=$(grep -E "^${bench_name}-[0-9]+\s+" "$output_file" | tail -1 || true)
+    local iterations="N/A"
+    local ns_per_op="N/A"
+    if [[ -n "$line" ]]; then
+        iterations=$(echo "$line" | awk '{print $2}')
+        ns_per_op=$(echo "$line" | awk '{print $3}')
+    fi
 
     # Convert ns to more readable format
     local time_per_op="N/A"
@@ -149,8 +154,8 @@ EOF
         local with_output="${OUTPUT_DIR}/signing_${name_sanitized}_with_tag_${TIMESTAMP}.txt"
 
         # Extract metrics
-        local without_metrics=$(extract_metrics "$without_output" "Decred (default)")
-        local with_metrics=$(extract_metrics "$with_output" "Ethereum (libsecp256k1)")
+        local without_metrics=$(extract_metrics "$without_output" "$bench_name" "Decred (default)")
+        local with_metrics=$(extract_metrics "$with_output" "$bench_name" "Ethereum (libsecp256k1)")
 
         IFS='|' read -r desc1 time1 iter1 ns1 <<< "$without_metrics"
         IFS='|' read -r desc2 time2 iter2 ns2 <<< "$with_metrics"
