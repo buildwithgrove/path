@@ -14,7 +14,12 @@ set -euo pipefail
 # Configuration
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
-BENCHMARK_NAME="BenchmarkShannonSigningDirect"
+# Benchmarks to run (each in its own invocation for clean parsing)
+BENCHMARKS=(
+  "BenchmarkShannonKeyOperations"
+  "BenchmarkShannonSigningDirect"
+  "BenchmarkShannonCompleteSigningPipeline"
+)
 
 # Default benchmark parameters
 BENCHTIME="${1:-5s}"
@@ -32,8 +37,6 @@ NC='\033[0m' # No Color
 # Output files
 TIMESTAMP="$(date +%Y%m%d_%H%M%S)"
 OUTPUT_DIR="${PROJECT_ROOT}/bench_results"
-WITHOUT_TAG_OUTPUT="${OUTPUT_DIR}/signing_bench_without_tag_${TIMESTAMP}.txt"
-WITH_TAG_OUTPUT="${OUTPUT_DIR}/signing_bench_with_tag_${TIMESTAMP}.txt"
 COMPARISON_OUTPUT="${OUTPUT_DIR}/signing_comparison_${TIMESTAMP}.txt"
 
 # Create output directory
@@ -41,7 +44,8 @@ mkdir -p "$OUTPUT_DIR"
 
 echo -e "${BOLD}🔐 Shannon Signing Performance Comparison${NC}"
 echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-echo -e "${YELLOW}📊 Benchmark:${NC} $BENCHMARK_NAME"
+BENCHMARK_LIST=$(printf "%s, " "${BENCHMARKS[@]}"); BENCHMARK_LIST=${BENCHMARK_LIST%, } || true
+echo -e "${YELLOW}📊 Benchmarks:${NC} $BENCHMARK_LIST"
 echo -e "${YELLOW}⏱️  Duration:${NC} $BENCHTIME"
 echo -e "${YELLOW}📁 Output:${NC} $OUTPUT_DIR"
 echo ""
@@ -50,16 +54,18 @@ echo ""
 run_benchmark() {
     local description="$1"
     local build_tags="$2"
-    local output_file="$3"
+    local bench_name="$3"
+    local output_file="$4"
 
     echo -e "${BLUE}🏃 Running benchmark: ${BOLD}$description${NC}"
     echo -e "${CYAN}   Build tags: $build_tags${NC}"
     echo -e "${CYAN}   Output: $(basename "$output_file")${NC}"
+    echo -e "${CYAN}   Benchmark: $bench_name${NC}"
 
     cd "$PROJECT_ROOT"
 
     # Build the benchmark command - use e2e directory benchmark
-    local cmd="go test -bench=$BENCHMARK_NAME -benchtime=$BENCHTIME -tags=\"bench"
+    local cmd="go test -bench=^$bench_name$ -benchtime=$BENCHTIME -tags=\"bench"
     if [[ -n "$build_tags" ]]; then
         cmd="$cmd,$build_tags"
     fi
@@ -76,8 +82,8 @@ run_benchmark() {
     if eval "$cmd" 2>&1 | tee "$output_file"; then
         echo -e "${GREEN}✅ Benchmark completed successfully${NC}"
     else
-        echo -e "${RED}❌ Benchmark failed${NC}"
-        return 1
+        echo -e "${RED}❌ Benchmark failed (continuing)${NC}"
+        echo "FAILED" >> "$output_file" || true
     fi
     echo ""
 }
@@ -120,54 +126,71 @@ extract_metrics() {
     echo "$description|$time_per_op|$formatted_iterations|$ns_per_op"
 }
 
-# Function to create comparison report
+sanitize_name() {
+    echo "$1" | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9]+/_/g'
+}
+
+# Function to create comparison report for many benchmarks
 create_comparison_report() {
     echo -e "${BOLD}📊 Creating comparison report...${NC}"
-
-    # Extract metrics from both runs
-    local without_metrics=$(extract_metrics "$WITHOUT_TAG_OUTPUT" "Decred (default)")
-    local with_metrics=$(extract_metrics "$WITH_TAG_OUTPUT" "Ethereum (libsecp256k1)")
-
-    # Parse metrics
-    IFS='|' read -r desc1 time1 iter1 ns1 <<< "$without_metrics"
-    IFS='|' read -r desc2 time2 iter2 ns2 <<< "$with_metrics"
-
-    # Determine winner
-    local winner=""
-    local performance_change=""
-    if [[ "$ns1" != "N/A" && "$ns2" != "N/A" && "$ns1" =~ ^[0-9]+$ && "$ns2" =~ ^[0-9]+$ ]]; then
-        if (( ns2 < ns1 )); then
-            winner="🥇"
-            local improvement=$(echo "scale=1; ($ns1 - $ns2) / $ns1 * 100" | bc -l 2>/dev/null || echo "0")
-            performance_change="$(echo $improvement | sed 's/^\./0./')% faster"
-        elif (( ns1 < ns2 )); then
-            winner="🥈"
-            local degradation=$(echo "scale=1; ($ns2 - $ns1) / $ns1 * 100" | bc -l 2>/dev/null || echo "0")
-            performance_change="$(echo $degradation | sed 's/^\./0./')% slower"
-        else
-            winner="🤝"
-            performance_change="equivalent performance"
-        fi
-    fi
 
     cat > "$COMPARISON_OUTPUT" << EOF
 🔬 Shannon SDK Signing Performance Benchmark
 ══════════════════════════════════════════════════════════════════
 
-📊 SIGNING PERFORMANCE COMPARISON:
-┌──────────────────────────┬─────────────┬─────────────┬────────────┐
-│ Implementation           │ Time/op     │ Iterations  │ Result     │
-├──────────────────────────┼─────────────┼─────────────┼────────────┤
-│ $(printf "%-24s" "$desc1") │ $(printf "%-11s" "$time1") │ $(printf "%-11s" "$iter1") │            │
-│ $(printf "%-24s" "$desc2") │ $(printf "%-11s" "$time2") │ $(printf "%-11s" "$iter2") │ $winner          │
-└──────────────────────────┴─────────────┴─────────────┴────────────┘
+Test Duration: $BENCHTIME per benchmark
+Environment: Shannon SDK E2E signing pipeline
 
-💡 Performance Summary:
-   🥇 = Winner    🥈 = Second place    🤝 = Equivalent
+EOF
 
-   • $desc2: $performance_change vs $desc1
-   • Test Duration: $BENCHTIME per implementation
-   • Environment: Shannon SDK E2E signing pipeline
+    for bench_name in "${BENCHMARKS[@]}"; do
+        local name_sanitized=$(sanitize_name "$bench_name")
+        local without_output="${OUTPUT_DIR}/signing_${name_sanitized}_without_tag_${TIMESTAMP}.txt"
+        local with_output="${OUTPUT_DIR}/signing_${name_sanitized}_with_tag_${TIMESTAMP}.txt"
+
+        # Extract metrics
+        local without_metrics=$(extract_metrics "$without_output" "Decred (default)")
+        local with_metrics=$(extract_metrics "$with_output" "Ethereum (libsecp256k1)")
+
+        IFS='|' read -r desc1 time1 iter1 ns1 <<< "$without_metrics"
+        IFS='|' read -r desc2 time2 iter2 ns2 <<< "$with_metrics"
+
+        # Determine winner
+        local winner=""
+        local performance_change=""
+        if [[ "$ns1" != "N/A" && "$ns2" != "N/A" && "$ns1" =~ ^[0-9]+$ && "$ns2" =~ ^[0-9]+$ ]]; then
+            if (( ns2 < ns1 )); then
+                winner="🥇"
+                local improvement=$(echo "scale=1; ($ns1 - $ns2) / $ns1 * 100" | bc -l 2>/dev/null || echo "0")
+                performance_change="$(echo $improvement | sed 's/^\./0./')% faster"
+            elif (( ns1 < ns2 )); then
+                winner="🥈"
+                local degradation=$(echo "scale=1; ($ns2 - $ns1) / $ns1 * 100" | bc -l 2>/dev/null || echo "0")
+                performance_change="$(echo $degradation | sed 's/^\./0./')% slower"
+            else
+                winner="🤝"
+                performance_change="equivalent performance"
+            fi
+        fi
+
+        {
+            echo ""
+            echo "📊 ${bench_name}:"
+            echo "┌──────────────────────────┬─────────────┬─────────────┬────────────┐"
+            echo "│ Implementation           │ Time/op     │ Iterations  │ Result     │"
+            echo "├──────────────────────────┼─────────────┼─────────────┼────────────┤"
+            printf "│ %-24s │ %-11s │ %-11s │            │\n" "$desc1" "$time1" "$iter1"
+            printf "│ %-24s │ %-11s │ %-11s │ %s          │\n" "$desc2" "$time2" "$iter2" "$winner"
+            echo "└──────────────────────────┴─────────────┴─────────────┴────────────┘"
+            echo ""
+            echo "   • $desc2: $performance_change vs $desc1"
+        } >> "$COMPARISON_OUTPUT"
+    done
+
+    cat >> "$COMPARISON_OUTPUT" << EOF
+
+Legend:
+  🥇 = Winner    🥈 = Second place    🤝 = Equivalent
 
 Build Tag Configuration:
 ├─ ethereum_secp256k1: Enables libsecp256k1 C library (fastest, requires CGO)
@@ -197,11 +220,17 @@ main() {
     echo -e "${GREEN}✅ Prerequisites check passed${NC}"
     echo ""
 
-    # Run benchmark without ethereum_secp256k1 tag
-    run_benchmark "Without ethereum_secp256k1 optimization" "" "$WITHOUT_TAG_OUTPUT"
+    # Run all benchmarks without and with ethereum_secp256k1 tag
+    for bench_name in "${BENCHMARKS[@]}"; do
+        name_sanitized=$(sanitize_name "$bench_name")
+        WITHOUT_TAG_OUTPUT="${OUTPUT_DIR}/signing_${name_sanitized}_without_tag_${TIMESTAMP}.txt"
+        WITH_TAG_OUTPUT="${OUTPUT_DIR}/signing_${name_sanitized}_with_tag_${TIMESTAMP}.txt"
 
-    # Run benchmark with ethereum_secp256k1 tag
-    run_benchmark "With ethereum_secp256k1 optimization" "ethereum_secp256k1" "$WITH_TAG_OUTPUT"
+        # Without tag
+        run_benchmark "Without ethereum_secp256k1 optimization" "" "$bench_name" "$WITHOUT_TAG_OUTPUT"
+        # With tag
+        run_benchmark "With ethereum_secp256k1 optimization" "ethereum_secp256k1" "$bench_name" "$WITH_TAG_OUTPUT"
+    done
 
     # Create comparison report
     create_comparison_report
