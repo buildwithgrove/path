@@ -45,15 +45,15 @@ var (
 //   - any empty response, regardless of method
 func unmarshalResponse(
 	logger polylog.Logger,
-	jsonrpcReqs map[string]jsonrpc.Request,
+	servicePayloads map[jsonrpc.ID]protocol.Payload,
 	data []byte,
 	endpointAddr protocol.EndpointAddr,
 ) (response, error) {
 	// Create a specialized response for empty endpoint response.
 	if len(data) == 0 {
 		return responseEmpty{
-			logger:      logger,
-			jsonrpcReqs: jsonrpcReqs,
+			logger:          logger,
+			servicePayloads: servicePayloads,
 		}, nil
 	}
 
@@ -61,37 +61,61 @@ func unmarshalResponse(
 	var jsonrpcResponse jsonrpc.Response
 	err := json.Unmarshal(data, &jsonrpcResponse)
 	if err != nil {
+		// Get the request payload, for single JSONRPC requests.
+		requestPayload := getSingleJSONRPCRequestPayload(servicePayloads)
+
 		// The response raw payload (e.g. as received from an endpoint) could not be unmarshalled as a JSONRC response.
 		// Return a generic response to the user.
 		payloadStr := string(data)
 		logger.With(
-			"requests", jsonrpcReqs,
+			"jsonrpc_request", requestPayload,
 			"unmarshal_err", err,
 			"raw_payload", log.Preview(payloadStr),
 			"endpoint_addr", endpointAddr,
-		).Debug().Msg("Failed to unmarshal response payload as JSON-RPC")
+		).Error().Msg("❌ Failed to unmarshal response payload as JSON-RPC")
 
-		return getGenericJSONRPCErrResponse(logger, getJsonRpcIDForErrorResponse(jsonrpcReqs), data, err), err
+		return getGenericJSONRPCErrResponse(logger, getJsonRpcIDForErrorResponse(servicePayloads), data, err), err
 	}
 
-	// Get the corresponding JSONRPC request for the response.
-	jsonrpcReq, ok := jsonrpcReqs[jsonrpcResponse.ID.String()]
+	// Get the corresponding service payload for the response.
+	servicePayload, ok := findServicePayloadByID(servicePayloads, jsonrpcResponse.ID)
 	if !ok {
+		// TODO_TECHDEBT(@commoddity): Add QoS check for if endpoint fails to return the correct ID in the response.
 		logger.Error().Msg("SHOULD NEVER HAPPEN: JSON-RPC ID not found in the response")
 		err := fmt.Errorf("JSON-RPC ID not found in the response")
-		return getGenericJSONRPCErrResponse(logger, getJsonRpcIDForErrorResponse(jsonrpcReqs), data, err), err
+		return getGenericJSONRPCErrResponse(logger, getJsonRpcIDForErrorResponse(servicePayloads), data, err), err
+	}
+
+	// Get the JSON-RPC request from the service payload.
+	jsonrpcReq, err := jsonrpc.GetJsonRpcReqFromServicePayload(servicePayload)
+	if err != nil {
+		logger.Error().Err(err).Msg("SHOULD NEVER HAPPEN: Failed to get JSONRPC request from service payload")
+		return getGenericJSONRPCErrResponse(logger, getJsonRpcIDForErrorResponse(servicePayloads), data, err), err
 	}
 
 	// Validate the JSONRPC response.
 	if err := jsonrpcResponse.Validate(jsonrpcReq.ID); err != nil {
 		payloadStr := string(data)
 		logger.With(
-			"request", jsonrpcReq,
+			"jsonrpc_request", jsonrpcReq,
 			"validation_err", err,
 			"raw_payload", log.Preview(payloadStr),
 			"endpoint_addr", endpointAddr,
-		).Debug().Msg("JSON-RPC response validation failed")
+		).Error().Msg("❌ Failed to unmarshal response payload as valid JSON-RPC")
+
 		return getGenericJSONRPCErrResponse(logger, jsonrpcReq.ID, data, err), err
+	}
+
+	// The parsed JSONRPC response contains an error:
+	// - Log the request and the response
+	// - Used to track potential endpoint quality issues.
+	if jsonrpcResponseErr := jsonrpcResponse.Error; jsonrpcResponseErr != nil {
+		logger.With(
+			"jsonrpc_request", jsonrpcReq,
+			"jsonrpc_response_error_code", jsonrpcResponseErr.Code,
+			"jsonrpc_response_error_message", jsonrpcResponseErr.Message,
+			"endpoint_addr", endpointAddr,
+		).Error().Msg("❌ Endpoint returned JSONRPC response with error")
 	}
 
 	// Unmarshal the JSONRPC response into a method-specific response.
@@ -120,11 +144,42 @@ func unmarshalResponse(
 //
 // This approach ensures specification compliance and clear error semantics for clients.
 // Reference: https://www.jsonrpc.org/specification#response_object
-func getJsonRpcIDForErrorResponse(jsonrpcReqs map[string]jsonrpc.Request) jsonrpc.ID {
-	if len(jsonrpcReqs) == 1 {
-		for id := range jsonrpcReqs {
-			return jsonrpc.IDFromStr(id)
+func getJsonRpcIDForErrorResponse(servicePayloads map[jsonrpc.ID]protocol.Payload) jsonrpc.ID {
+	if len(servicePayloads) == 1 {
+		for id := range servicePayloads {
+			return id
 		}
 	}
 	return jsonrpc.ID{}
+}
+
+// findServicePayloadByID finds a service payload by ID using value-based comparison.
+// This handles the case where JSON unmarshaling creates new ID structs with different
+// pointer addresses but equivalent values.
+func findServicePayloadByID(servicePayloads map[jsonrpc.ID]protocol.Payload, targetID jsonrpc.ID) (protocol.Payload, bool) {
+	for id, payload := range servicePayloads {
+		if id.Equal(targetID) {
+			return payload, true
+		}
+	}
+	return protocol.Payload{}, false
+}
+
+// TODO_HACK(@adshmh): Drop this once single and batch JSONRPC request handling logic is fully separated.
+// - There should be no need to rely on endpoint's payload to match the request from a batch.
+// - Single JSONRPC requests do not need the complexity of batch request logic.
+//
+// This only targets single JSONRPC requests.
+func getSingleJSONRPCRequestPayload(servicePayloads map[jsonrpc.ID]protocol.Payload) string {
+	if len(servicePayloads) != 1 {
+		return ""
+	}
+
+	for _, payload := range servicePayloads {
+		if len(payload.Data) > 0 {
+			return payload.Data
+		}
+	}
+
+	return ""
 }

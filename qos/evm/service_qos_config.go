@@ -1,6 +1,10 @@
 package evm
 
-import "github.com/buildwithgrove/path/protocol"
+import (
+	sharedtypes "github.com/pokt-network/poktroll/x/shared/types"
+
+	"github.com/buildwithgrove/path/protocol"
+)
 
 // QoSType is the QoS type for the EVM blockchain.
 const QoSType = "evm"
@@ -29,6 +33,7 @@ type EVMServiceQoSConfig interface {
 	getSyncAllowance() uint64
 	getEVMArchivalCheckConfig() evmArchivalCheckConfig
 	archivalCheckEnabled() bool
+	getSupportedAPIs() map[sharedtypes.RPCType]struct{}
 }
 
 // evmArchivalCheckConfig is the configuration for the archival check.
@@ -54,11 +59,13 @@ func NewEVMServiceQoSConfig(
 	serviceID protocol.ServiceID,
 	evmChainID string,
 	archivalCheckConfig *evmArchivalCheckConfig,
+	supportedAPIs map[sharedtypes.RPCType]struct{},
 ) EVMServiceQoSConfig {
 	return evmServiceQoSConfig{
 		serviceID:           serviceID,
 		evmChainID:          evmChainID,
 		archivalCheckConfig: archivalCheckConfig,
+		supportedAPIs:       supportedAPIs,
 	}
 }
 
@@ -81,6 +88,7 @@ type evmServiceQoSConfig struct {
 	evmChainID          string
 	syncAllowance       uint64
 	archivalCheckConfig *evmArchivalCheckConfig
+	supportedAPIs       map[sharedtypes.RPCType]struct{}
 }
 
 // GetServiceID returns the ID of the service.
@@ -120,4 +128,10 @@ func (c evmServiceQoSConfig) archivalCheckEnabled() bool {
 // Implements the EVMServiceQoSConfig interface.
 func (c evmServiceQoSConfig) getEVMArchivalCheckConfig() evmArchivalCheckConfig {
 	return *c.archivalCheckConfig
+}
+
+// getSupportedAPIs returns the RPC types supported by the service.
+// Implements the EVMServiceQoSConfig interface.
+func (c evmServiceQoSConfig) getSupportedAPIs() map[sharedtypes.RPCType]struct{} {
+	return c.supportedAPIs
 }

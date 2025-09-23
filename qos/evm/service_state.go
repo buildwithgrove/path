@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
+	sharedtypes "github.com/pokt-network/poktroll/x/shared/types"
 
 	"github.com/buildwithgrove/path/gateway"
 	"github.com/buildwithgrove/path/metrics/devtools"
@@ -59,6 +60,12 @@ type serviceState struct {
 // using synthetic service requests.
 var _ gateway.QoSEndpointCheckGenerator = &serviceState{}
 
+// CheckWebsocketConnection returns true if the endpoint supports Websocket connections.
+func (ss *serviceState) CheckWebsocketConnection() bool {
+	_, supportsWebsockets := ss.serviceQoSConfig.getSupportedAPIs()[sharedtypes.RPCType_WEBSOCKET]
+	return supportsWebsockets
+}
+
 // GetRequiredQualityChecks returns the list of quality checks required for an endpoint.
 // It is called in the `gateway/hydrator.go` file on each run of the hydrator.
 func (ss *serviceState) GetRequiredQualityChecks(endpointAddr protocol.EndpointAddr) []gateway.RequestQoSContext {
@@ -69,12 +76,12 @@ func (ss *serviceState) GetRequiredQualityChecks(endpointAddr protocol.EndpointA
 
 	var checks = []gateway.RequestQoSContext{
 		// Block number check should always run
-		ss.getEndpointCheck(endpoint.checkBlockNumber.getRequest()),
+		ss.getEndpointCheck(endpoint.checkBlockNumber.getRequestID(), endpoint.checkBlockNumber.getServicePayload()),
 	}
 
 	// Chain ID check runs infrequently as an endpoint's EVM chain ID is very unlikely to change regularly.
 	if ss.shouldChainIDCheckRun(endpoint.checkChainID) {
-		checks = append(checks, ss.getEndpointCheck(endpoint.checkChainID.getRequest()))
+		checks = append(checks, ss.getEndpointCheck(endpoint.checkChainID.getRequestID(), endpoint.checkChainID.getServicePayload()))
 	}
 
 	// Archival check runs infrequently as the result of a request for an archival block is not expected to change regularly.
@@ -82,7 +89,7 @@ func (ss *serviceState) GetRequiredQualityChecks(endpointAddr protocol.EndpointA
 	if ss.archivalState.shouldArchivalCheckRun(endpoint.checkArchival) {
 		checks = append(
 			checks,
-			ss.getEndpointCheck(endpoint.checkArchival.getRequest(ss.archivalState)),
+			ss.getEndpointCheck(endpoint.checkArchival.getRequestID(), endpoint.checkArchival.getServicePayload(ss.archivalState)),
 		)
 	}
 
@@ -93,13 +100,13 @@ func (ss *serviceState) GetRequiredQualityChecks(endpointAddr protocol.EndpointA
 // The pre-selected endpoint address is assigned to the request context in the `endpoint.getChecks` method.
 // It is called in the individual `check_*.go` files to build the request context.
 // getEndpointCheck prepares a request context for a specific endpoint check.
-func (ss *serviceState) getEndpointCheck(jsonrpcReq jsonrpc.Request) *requestContext {
+func (ss *serviceState) getEndpointCheck(jsonrpcReqID jsonrpc.ID, servicePayload protocol.Payload) *requestContext {
 	return &requestContext{
 		logger:       ss.logger,
 		serviceState: ss,
 		// Wrap single request in map for consistency
-		jsonrpcReqs: map[string]jsonrpc.Request{
-			jsonrpcReq.ID.String(): jsonrpcReq,
+		servicePayloads: map[jsonrpc.ID]protocol.Payload{
+			jsonrpcReqID: servicePayload,
 		},
 		// Set the chain and Service ID: this is required to generate observations with the correct chain ID.
 		chainID:   ss.serviceQoSConfig.getEVMChainID(),
@@ -151,14 +158,14 @@ func (ss *serviceState) updateFromEndpoints(updatedEndpoints map[protocol.Endpoi
 
 		// Do not update the perceived block number if the chain ID is invalid.
 		if err := ss.isChainIDValid(endpoint.checkChainID); err != nil {
-			logger.Error().Err(err).Msgf("❌ Skipping endpoint because it has an invalid chain id: %s", endpointAddr)
+			logger.Warn().Err(err).Msgf("⚠️ SKIPPING endpoint because it has an invalid chain id: %s", endpointAddr)
 			continue
 		}
 
 		// Retrieve the block number from the endpoint.
 		blockNumber, err := endpoint.checkBlockNumber.getBlockNumber()
 		if err != nil {
-			logger.Error().Err(err).Msgf("❌ Skipping endpoint because it has an invalid block number: %s", endpointAddr)
+			logger.Warn().Err(err).Msgf("⚠️ SKIPPING endpoint because it has an invalid block number: %s", endpointAddr)
 			continue
 		}
 

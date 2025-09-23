@@ -10,10 +10,7 @@ import (
 	protocolobservations "github.com/buildwithgrove/path/observation/protocol"
 )
 
-// TODO_TECHDEBT: Replace 'endpoint_domain' in the metrics to align with 'endpoint_url'
-// used through the codebase or vice versa.
-//
-// TODO_METRICS: Add additional WebSocket-specific metrics
+// TODO_METRICS(@commoddity): Add additional Websocket-specific metrics
 // - Message latency distribution (time between request and response for each message)
 // - Connection duration histogram (time from connection establishment to termination)
 // - Message size percentiles (distribution of message payload sizes)
@@ -28,21 +25,26 @@ const (
 	relaysErrorsTotalMetric    = "shannon_relay_errors_total"
 	relaysActiveRequestsMetric = "shannon_relays_active"
 
-	// WebSocket connection metrics
-	websocketConnectionsTotalMetric = "shannon_websocket_connections_total"
-	websocketConnectionErrorsMetric = "shannon_websocket_connection_errors_total"
+	// Websocket connection metrics
+	websocketConnectionsTotalMetric  = "shannon_websocket_connections_total"
+	websocketConnectionErrorsMetric  = "shannon_websocket_connection_errors_total"
 	websocketConnectionsActiveMetric = "shannon_websocket_connections_active"
 
-	// WebSocket message metrics
+	// Websocket connection duration metrics
+	websocketConnectionDurationMetric = "shannon_websocket_connection_duration_seconds"
+
+	// Websocket message metrics
 	websocketMessagesTotalMetric = "shannon_websocket_messages_total"
 	websocketMessageErrorsMetric = "shannon_websocket_message_errors_total"
-
-	// Sanctions metrics (shared across HTTP and WebSocket)
+	// Sanctions metrics (shared across HTTP and Websocket)
 	sanctionsByDomainMetric = "shannon_sanctions_by_domain"
 
 	// Latency metrics (currently HTTP only)
 	endpointLatencyMetric       = "shannon_endpoint_latency_seconds"
 	relayMinerErrorsTotalMetric = "shannon_relay_miner_errors_total"
+
+	// The default value for a domain if it cannot be extracted from an endpoint URL
+	ErrDomain = "error_extracting_domain"
 )
 
 var (
@@ -62,14 +64,15 @@ func init() {
 	prometheus.MustRegister(relaysErrorsTotal)
 	prometheus.MustRegister(activeRelays)
 
-	// WebSocket metrics
+	// Websocket metrics
 	prometheus.MustRegister(websocketConnectionsTotal)
 	prometheus.MustRegister(websocketConnectionErrors)
 	prometheus.MustRegister(websocketMessagesTotal)
 	prometheus.MustRegister(websocketMessageErrors)
 	prometheus.MustRegister(activeWebsocketConnections)
+	prometheus.MustRegister(websocketConnectionDuration)
 
-	// Sanctions metrics (shared across HTTP and WebSocket)
+	// Sanctions metrics (shared across HTTP and Websocket)
 	prometheus.MustRegister(sanctionsByDomain)
 
 	// Latency metrics
@@ -85,9 +88,7 @@ var (
 	//   - success: Whether the relay was successful (true if at least one endpoint had no error)
 	//   - error_type: type of error encountered processing the request
 	//   - used_fallback: Whether the request was served using a fallback endpoint.
-	//
-	// Exemplars:
-	//   - endpoint_url: URL of the endpoint (from the last entry in observations list)
+	//   - endpoint_domain: Effective TLD+1 domain extracted from endpoint URL
 	//
 	// Low-cardinality labels are used for core metrics while high-cardinality data is
 	// moved to exemplars to reduce Prometheus storage and query overhead while still
@@ -104,18 +105,17 @@ var (
 			Name:      relaysTotalMetric,
 			Help:      "Total number of relays processed by Shannon protocol instance(s)",
 		},
-		[]string{"service_id", "success", "error_type", "used_fallback"},
+		[]string{"service_id", "success", "error_type", "used_fallback", "endpoint_domain"},
 	)
 
+	// TODO_IMPROVE(@adshmh): This should be called endpointErrorsTotal
+	//
 	// relaysErrorsTotal tracks relay errors from Shannon protocol
 	// Labels:
 	//   - service_id: Target service identifier
-	//   - endpoint_domain: Effective TLD+1 domain extracted from endpoint URL
 	//   - error_type: Type of error encountered (based on trusted classification)
 	//   - sanction_type: Type of sanction recommended (based on trusted classification)
-	//
-	// Exemplars:
-	//   - endpoint_url: URL of the endpoint
+	//   - endpoint_domain: Effective TLD+1 domain extracted from endpoint URL
 	//
 	// Use to analyze:
 	//   - Shannon protocol errors by service and type
@@ -128,7 +128,7 @@ var (
 			Name:      relaysErrorsTotalMetric,
 			Help:      "Total relay errors by service, endpoint domain, error type, and sanction type",
 		},
-		[]string{"service_id", "endpoint_domain", "error_type", "sanction_type"},
+		[]string{"service_id", "error_type", "sanction_type", "endpoint_domain"},
 	)
 
 	// activeRelays tracks the current number of active Shannon HTTP requests.
@@ -149,102 +149,93 @@ var (
 		[]string{"request_type"},
 	)
 
-	// websocketConnectionsTotal tracks the total WebSocket connection attempts processed.
+	// websocketConnectionsTotal tracks the total Websocket connection events processed.
 	// Labels:
 	//   - service_id: Target service identifier (i.e. chain id in Shannon)
 	//   - success: Whether the connection was successful (true if no connection error)
 	//   - error_type: type of error encountered during connection setup
 	//   - used_fallback: Whether the connection used a fallback endpoint.
-	//
-	// Exemplars:
-	//   - endpoint_url: URL of the WebSocket endpoint
+	//   - endpoint_domain: Effective TLD+1 domain extracted from endpoint URL
 	//
 	// Use to analyze:
-	//   - WebSocket connection volume by service
+	//   - Websocket connection volume by service and event type
 	//   - Connection success rates by service
-	//   - Distribution between protocol and fallback endpoints for WebSocket connections
+	//   - Active connections (established - closed)
+	//   - Distribution between protocol and fallback endpoints for Websocket connections
 	websocketConnectionsTotal = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Subsystem: pathProcess,
 			Name:      websocketConnectionsTotalMetric,
-			Help:      "Total number of WebSocket connections processed by Shannon protocol instance(s)",
+			Help:      "Total number of Websocket connection events processed by Shannon protocol instance(s)",
 		},
-		[]string{"service_id", "success", "error_type", "used_fallback"},
+		[]string{"service_id", "success", "error_type", "used_fallback", "event_type", "endpoint_domain"},
 	)
 
-	// websocketConnectionErrors tracks WebSocket connection establishment errors
+	// websocketConnectionErrors tracks Websocket connection establishment errors
 	// Labels:
 	//   - service_id: Target service identifier
-	//   - endpoint_domain: Effective TLD+1 domain extracted from endpoint URL
 	//   - error_type: Type of connection error encountered (based on trusted classification)
 	//   - sanction_type: Type of sanction recommended (based on trusted classification)
-	//
-	// Exemplars:
-	//   - endpoint_url: URL of the WebSocket endpoint
-	//
+	//   - endpoint_domain: Effective TLD+1 domain extracted from endpoint URL
+
 	// Use to analyze:
-	//   - WebSocket connection errors by service and type
+	//   - Websocket connection errors by service and type
 	//   - Sanctions recommended for connection failures
 	websocketConnectionErrors = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Subsystem: pathProcess,
 			Name:      websocketConnectionErrorsMetric,
-			Help:      "Total WebSocket connection errors by service, endpoint domain, error type, and sanction type",
+			Help:      "Total Websocket connection errors by service, endpoint domain, error type, and sanction type",
 		},
-		[]string{"service_id", "endpoint_domain", "error_type", "sanction_type"},
+		[]string{"service_id", "error_type", "sanction_type", "endpoint_domain"},
 	)
 
-	// websocketMessagesTotal tracks the total WebSocket messages processed.
+	// websocketMessagesTotal tracks the total Websocket messages processed.
 	// Labels:
 	//   - service_id: Target service identifier (i.e. chain id in Shannon)
 	//   - success: Whether the message was processed successfully (true if no message error)
 	//   - error_type: type of error encountered processing the message
 	//   - used_fallback: Whether the message was processed using a fallback endpoint.
-	//
-	// Exemplars:
-	//   - endpoint_url: URL of the WebSocket endpoint
+	//   - endpoint_domain: Effective TLD+1 domain extracted from endpoint URL
 	//
 	// Use to analyze:
-	//   - WebSocket message volume by service
+	//   - Websocket message volume by service
 	//   - Message processing success rates by service
-	//   - Distribution between protocol and fallback endpoints for WebSocket messages
+	//   - Distribution between protocol and fallback endpoints for Websocket messages
 	websocketMessagesTotal = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Subsystem: pathProcess,
 			Name:      websocketMessagesTotalMetric,
-			Help:      "Total number of WebSocket messages processed by Shannon protocol instance(s)",
+			Help:      "Total number of Websocket messages processed by Shannon protocol instance(s)",
 		},
-		[]string{"service_id", "success", "error_type", "used_fallback"},
+		[]string{"service_id", "success", "error_type", "used_fallback", "endpoint_domain"},
 	)
 
-	// websocketMessageErrors tracks WebSocket message processing errors
+	// websocketMessageErrors tracks Websocket message processing errors
 	// Labels:
 	//   - service_id: Target service identifier
-	//   - endpoint_domain: Effective TLD+1 domain extracted from endpoint URL
 	//   - error_type: Type of message error encountered (based on trusted classification)
 	//   - sanction_type: Type of sanction recommended (based on trusted classification)
-	//
-	// Exemplars:
-	//   - endpoint_url: URL of the WebSocket endpoint
+	//   - endpoint_domain: Effective TLD+1 domain extracted from endpoint URL
 	//
 	// Use to analyze:
-	//   - WebSocket message errors by service and type
+	//   - Websocket message errors by service and type
 	//   - Sanctions recommended for message processing failures
 	websocketMessageErrors = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Subsystem: pathProcess,
 			Name:      websocketMessageErrorsMetric,
-			Help:      "Total WebSocket message errors by service, endpoint domain, error type, and sanction type",
+			Help:      "Total Websocket message errors by service, endpoint domain, error type, and sanction type",
 		},
-		[]string{"service_id", "endpoint_domain", "error_type", "sanction_type"},
+		[]string{"service_id", "error_type", "sanction_type", "endpoint_domain"},
 	)
 
-	// activeWebsocketConnections tracks the current number of active WebSocket connections.
-	// This gauge metric shows the real-time WebSocket connection count for monitoring
+	// activeWebsocketConnections tracks the current number of active Websocket connections.
+	// This gauge metric shows the real-time Websocket connection count for monitoring
 	// persistent connection load and identifying potential bottlenecks.
 	//
 	// Use to analyze:
-	//   - Current WebSocket connection counts
+	//   - Current Websocket connection counts
 	//   - Connection load patterns over time
 	//   - Capacity planning for persistent connections
 	//   - Identifying connection spikes and bottlenecks
@@ -252,23 +243,44 @@ var (
 		prometheus.GaugeOpts{
 			Subsystem: pathProcess,
 			Name:      websocketConnectionsActiveMetric,
-			Help:      "Current number of active Shannon WebSocket connections",
+			Help:      "Current number of active Shannon Websocket connections",
 		},
+	)
+
+	// websocketConnectionDuration tracks the duration of Websocket connections.
+	// Labels:
+	//   - service_id: Target service identifier
+	//   - endpoint_domain: Effective TLD+1 domain extracted from endpoint URL
+	//   - success: Whether the connection completed successfully (not prematurely closed due to errors)
+	//   - close_reason: Reason for connection closure (normal, error, timeout, etc.)
+	//
+	// Use to analyze:
+	//   - Connection duration patterns and stability
+	//   - Session length distribution by service and endpoint
+	//   - Connection health and disconnect patterns
+	websocketConnectionDuration = prometheus.NewHistogramVec(
+		prometheus.HistogramOpts{
+			Subsystem: pathProcess,
+			Name:      websocketConnectionDurationMetric,
+			Help:      "Histogram of Websocket connection durations in seconds",
+			Buckets:   []float64{1, 5, 10, 30, 60, 300, 600, 1800, 3600}, // 1s to 1h
+		},
+		[]string{"service_id", "endpoint_domain", "success", "close_reason"},
 	)
 
 	// sanctionsByDomain tracks sanctions applied by domain.
 	// Labels:
 	//   - service_id: Target service identifier
-	//   - endpoint_domain: Effective TLD+1 domain extracted from endpoint URL
 	//   - sanction_type: Type of sanction (based on trusted classification)
 	//   - sanction_reason: The endpoint error type that caused the sanction (trusted)
+	//   - endpoint_domain: Effective TLD+1 domain extracted from endpoint URL
 	sanctionsByDomain = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Subsystem: pathProcess,
 			Name:      sanctionsByDomainMetric,
 			Help:      "Total sanctions by service, endpoint domain (TLD+1), sanction type, and reason",
 		},
-		[]string{"service_id", "endpoint_domain", "sanction_type", "sanction_reason"},
+		[]string{"service_id", "sanction_type", "sanction_reason", "endpoint_domain"},
 	)
 
 	// endpointLatency tracks the latency distribution of endpoint responses.
@@ -364,8 +376,23 @@ func PublishMetrics(
 
 	// Process each observation for metrics
 	for _, observationSet := range shannonObservations {
+
+		// Check for request processing errors.
+		// e.g. error fetching a session for the target service.
+		if observationSet.GetRequestError() != nil {
+			// Record the relay total with success/failure status
+			recordRelayTotal(logger, observationSet)
+
+			// Request processing encountered error.
+			// Skip endpoint observations.
+			continue
+		}
+
+		// TODO_IMPROVE(@adshmh): Replace dynamic type casts with nil checks.
+		//
 		// Handle different types of observations based on the oneof field
 		switch obsData := observationSet.GetObservationData().(type) {
+
 		case *protocolobservations.ShannonRequestObservations_HttpObservations:
 			// HTTP observations - existing metrics processing
 			httpObservations := obsData.HttpObservations
@@ -390,26 +417,25 @@ func PublishMetrics(
 			processRelayMinerErrors(logger, observationSet.GetServiceId(), httpObservations.GetEndpointObservations())
 
 		case *protocolobservations.ShannonRequestObservations_WebsocketConnectionObservation:
-			// WebSocket connection observation - new metrics processing
+			// Websocket connection observation - new metrics processing
 			wsConnectionObs := obsData.WebsocketConnectionObservation
 			if wsConnectionObs == nil {
-				logger.Warn().Msg("❌ SHOULD NEVER HAPPEN: skipping processing: received empty WebSocket connection observation")
+				logger.Warn().Msg("❌ SHOULD NEVER HAPPEN: skipping processing: received empty Websocket connection observation")
 				continue
 			}
 
-			// Record WebSocket connection metrics
-			recordWebsocketConnectionTotal(logger, observationSet)
-			processWebsocketConnectionErrors(logger, observationSet.GetServiceId(), wsConnectionObs)
+			// Handle different connection events
+			handleWebSocketConnectionObservation(logger, wsConnectionObs, observationSet)
 
 		case *protocolobservations.ShannonRequestObservations_WebsocketMessageObservation:
-			// WebSocket message observation - new metrics processing
+			// Websocket message observation - new metrics processing
 			wsMessageObs := obsData.WebsocketMessageObservation
 			if wsMessageObs == nil {
-				logger.Warn().Msg("❌ SHOULD NEVER HAPPEN: skipping processing: received empty WebSocket message observation")
+				logger.Warn().Msg("❌ SHOULD NEVER HAPPEN: skipping processing: received empty Websocket message observation")
 				continue
 			}
 
-			// Record WebSocket message metrics
+			// Record Websocket message metrics
 			recordWebsocketMessageTotal(logger, observationSet)
 			processWebsocketMessageErrors(logger, observationSet.GetServiceId(), wsMessageObs)
 
@@ -419,11 +445,37 @@ func PublishMetrics(
 	}
 }
 
+// handleWebSocketConnectionObservation handles different connection events for Websocket connection observations.
+// For example, it handles the CONNECTION_ESTABLISHED, CONNECTION_ESTABLISHMENT_FAILED, and CONNECTION_CLOSED events separately.
+func handleWebSocketConnectionObservation(
+	logger polylog.Logger,
+	wsConnectionObs *protocolobservations.ShannonWebsocketConnectionObservation,
+	observationSet *protocolobservations.ShannonRequestObservations,
+) {
+	// Handle different connection events
+	switch wsConnectionObs.GetEventType() {
+	case protocolobservations.ShannonWebsocketConnectionObservation_CONNECTION_ESTABLISHED:
+		// Record Websocket connection establishment metrics
+		recordWebsocketConnectionTotal(logger, observationSet)
+		processWebsocketConnectionErrors(logger, observationSet.GetServiceId(), wsConnectionObs)
+
+	case protocolobservations.ShannonWebsocketConnectionObservation_CONNECTION_ESTABLISHMENT_FAILED:
+		// Record Websocket connection establishment failure metrics
+		recordWebsocketConnectionTotal(logger, observationSet)
+		processWebsocketConnectionErrors(logger, observationSet.GetServiceId(), wsConnectionObs)
+
+	case protocolobservations.ShannonWebsocketConnectionObservation_CONNECTION_CLOSED:
+		// Record connection closure metrics AND duration
+		recordWebsocketConnectionTotal(logger, observationSet)
+		recordWebsocketConnectionDuration(logger, observationSet.GetServiceId(), wsConnectionObs)
+	}
+}
+
 // recordRelayTotal tracks relay counts with exemplars for high-cardinality data.
 // Success determination varies by observation type:
 // - HTTP observations: Success if ANY endpoint observation has ErrorType = UNSPECIFIED (supports parallel requests)
-// - WebSocket connection observations: Success if ErrorType = UNSPECIFIED (single connection establishment)
-// - WebSocket message observations: Success if ErrorType = UNSPECIFIED (individual message processing)
+// - Websocket connection observations: Success if ErrorType = UNSPECIFIED (single connection establishment)
+// - Websocket message observations: Success if ErrorType = UNSPECIFIED (individual message processing)
 func recordRelayTotal(
 	logger polylog.Logger,
 	observations *protocolobservations.ShannonRequestObservations,
@@ -432,6 +484,7 @@ func recordRelayTotal(
 
 	serviceID := observations.GetServiceId()
 
+	// === FAILED RELAY ===
 	// Relay request failed before reaching out to any endpoints.
 	// e.g. there were no available endpoints.
 	// Skip processing endpoint observations.
@@ -443,13 +496,16 @@ func recordRelayTotal(
 				"error_type": requestErrorType,
 				// Relay request failed before reaching out to any endpoints so no fallback was used.
 				// Must be set to avoid inconsistent label cardinality error
-				"used_fallback": "false",
+				"used_fallback":   "false",
+				"endpoint_domain": ErrDomain,
 			},
 		).Inc()
 
 		// Request has an error: no endpoint observations to process.
 		return
 	}
+
+	// === SUCCESSFUL RELAY ===
 
 	// Extract endpoint observations and metrics data based on observation type
 	var endpointURL string
@@ -479,7 +535,7 @@ func recordRelayTotal(
 		usedFallbackEndpoint = isFallbackEndpointUsed(endpointObservations)
 
 	case *protocolobservations.ShannonRequestObservations_WebsocketConnectionObservation:
-		// WebSocket connection observations track the establishment/termination of a single WebSocket connection.
+		// Websocket connection observations track the establishment/termination of a single Websocket connection.
 		// Success is determined by whether the connection was established successfully (no ErrorType set).
 		// This represents the initial handshake and connection setup phase, not individual message processing.
 		wsConnectionObs := obsData.WebsocketConnectionObservation
@@ -488,7 +544,7 @@ func recordRelayTotal(
 		usedFallbackEndpoint = wsConnectionObs.GetIsFallbackEndpoint()
 
 	case *protocolobservations.ShannonRequestObservations_WebsocketMessageObservation:
-		// WebSocket message observations track individual message processing within an established connection.
+		// Websocket message observations track individual message processing within an established connection.
 		// Success is determined by whether the specific message was processed without errors.
 		// This represents the processing of a single request/response or subscription event within the connection.
 		wsMessageObs := obsData.WebsocketMessageObservation
@@ -501,28 +557,27 @@ func recordRelayTotal(
 		return
 	}
 
-	// Create exemplar with high-cardinality data
-	// Truncate to 128 runes (Prometheus exemplar limit)
-	// See `ExemplarMaxRunes` below:
-	// https://pkg.go.dev/github.com/prometheus/client_golang/prometheus#pkg-constants
-	exLabels := prometheus.Labels{
-		"endpoint_url": endpointURL[:min(len(endpointURL), 128)],
+	// Extract effective TLD+1 from endpoint URL
+	// This function handles edge cases like IP addresses, localhost, invalid URLs
+	endpointDomain, err := ExtractDomainOrHost(endpointURL)
+	if err != nil {
+		logger.Error().Err(err).Msgf("Could not extract domain from Shannon endpoint URL %s for relay errors metric", endpointURL)
+		endpointDomain = ErrDomain
 	}
 
 	// Increment the relay total counter with exemplars
 	relaysTotal.With(
 		prometheus.Labels{
-			"service_id":    serviceID,
-			"success":       fmt.Sprintf("%t", success),
-			"error_type":    "",
-			"used_fallback": fmt.Sprintf("%t", usedFallbackEndpoint),
+			"service_id":      serviceID,
+			"success":         fmt.Sprintf("%t", success),
+			"error_type":      "",
+			"used_fallback":   fmt.Sprintf("%t", usedFallbackEndpoint),
+			"endpoint_domain": endpointDomain,
 		},
-	// This dynamic type cast is safe:
-	// https://pkg.go.dev/github.com/prometheus/client_golang@v1.22.0/prometheus#NewCounter
-	).(prometheus.ExemplarAdder).AddWithExemplar(float64(1), exLabels)
+	).Add(1)
 }
 
-// extractRequestError  extracts from the observations the stauts (success/failure) and the first encountered error, if any.
+// extractRequestError  extracts from the observations the status (success/failure) and the first encountered error, if any.
 // Returns:
 // - false, "" if the relay was successful.
 // - true, error_type if the relay failed.
@@ -547,17 +602,17 @@ func isAnyObservationSuccessful(observations []*protocolobservations.ShannonEndp
 	return false
 }
 
-// isWebsocketConnectionSuccessful returns true if the WebSocket connection observation indicates success.
-// For WebSocket connections, success is determined by checking if ErrorType is UNSPECIFIED.
-// Unlike HTTP observations which can have multiple endpoint attempts, WebSocket connections
+// isWebsocketConnectionSuccessful returns true if the Websocket connection observation indicates success.
+// For Websocket connections, success is determined by checking if ErrorType is UNSPECIFIED.
+// Unlike HTTP observations which can have multiple endpoint attempts, Websocket connections
 // use a single endpoint and have a single success/failure status.
 func isWebsocketConnectionSuccessful(wsConnectionObs *protocolobservations.ShannonWebsocketConnectionObservation) bool {
 	return wsConnectionObs.GetErrorType() == protocolobservations.ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_UNSPECIFIED
 }
 
-// isWebsocketMessageSuccessful returns true if the WebSocket message observation indicates success.
-// For WebSocket messages, success is determined by checking if ErrorType is UNSPECIFIED.
-// Each WebSocket message is processed individually and has its own success/failure status.
+// isWebsocketMessageSuccessful returns true if the Websocket message observation indicates success.
+// For Websocket messages, success is determined by checking if ErrorType is UNSPECIFIED.
+// Each Websocket message is processed individually and has its own success/failure status.
 func isWebsocketMessageSuccessful(wsMessageObs *protocolobservations.ShannonWebsocketMessageObservation) bool {
 	return wsMessageObs.GetErrorType() == protocolobservations.ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_UNSPECIFIED
 }
@@ -585,16 +640,11 @@ func processEndpointErrors(
 			continue
 		}
 
-		// Extract effective TLD+1 from endpoint URL
-		// This function handles edge cases like IP addresses, localhost, invalid URLs
+		// Extract effective TLD+1 from endpoint URL.
 		endpointDomain, err := ExtractDomainOrHost(endpointObs.GetEndpointUrl())
 		if err != nil {
-			logger.With(
-				"endpoint_url", endpointObs.EndpointUrl,
-			).
-				ProbabilisticDebugInfo(polylog.ProbabilisticDebugInfoProb).
-				Err(err).Msg("SHOULD NEVER HAPPEN: Could not extract domain from Shannon endpoint URL for relay errors metric")
-			continue
+			logger.Error().Err(err).Msgf("Could not extract domain from Shannon endpoint URL %s for relay errors metric", endpointObs.GetEndpointUrl())
+			endpointDomain = ErrDomain
 		}
 
 		// Extract low-cardinality labels (based on trusted error classification)
@@ -606,24 +656,15 @@ func processEndpointErrors(
 			sanctionType = endpointObs.RecommendedSanction.String()
 		}
 
-		// Extract high-cardinality values for exemplars
-		endpointURL := endpointObs.EndpointUrl
-
-		// Create exemplar with high-cardinality data
-		// Truncate to 128 runes (Prometheus exemplar limit)
-		exLabels := prometheus.Labels{
-			"endpoint_url": endpointURL[:min(len(endpointURL), 128)],
-		}
-
 		// Record relay error
 		relaysErrorsTotal.With(
 			prometheus.Labels{
 				"service_id":      serviceID,
-				"endpoint_domain": endpointDomain,
 				"error_type":      errorType,
 				"sanction_type":   sanctionType,
+				"endpoint_domain": endpointDomain,
 			},
-		).(prometheus.ExemplarAdder).AddWithExemplar(float64(1), exLabels)
+		).Inc()
 	}
 }
 
@@ -633,22 +674,20 @@ func processSanctionsByDomain(
 	serviceID string,
 	observations []*protocolobservations.ShannonEndpointObservation,
 ) {
+	logger = logger.With("method", "processSanctionsByDomain")
+
 	for _, endpointObs := range observations {
 		// Skip if there's no recommended sanction (based on trusted error classification)
 		if endpointObs.RecommendedSanction == nil {
 			continue
 		}
 
-		// Extract effective domain from endpoint URL
-		endpointDomain, err := ExtractDomainOrHost(endpointObs.GetEndpointUrl())
-		// error extracting TLD+1, skip.
+		// Extract effective TLD+1 from endpoint URL.
+		endpointUrl := endpointObs.GetEndpointUrl()
+		endpointDomain, err := ExtractDomainOrHost(endpointUrl)
 		if err != nil {
-			logger.With(
-				"endpoint_url", endpointObs.GetEndpointUrl(),
-			).
-				ProbabilisticDebugInfo(polylog.ProbabilisticDebugInfoProb).
-				Err(err).Msg("SHOULD NEVER HAPPEN: Could not extract domain from Shannon endpoint URL")
-			continue
+			logger.Error().Err(err).Msgf("Could not extract domain from endpoint URL %s.", endpointUrl)
+			endpointDomain = ErrDomain
 		}
 
 		// Extract the sanction reason from the endpoint error type (trusted classification)
@@ -661,9 +700,9 @@ func processSanctionsByDomain(
 		sanctionsByDomain.With(
 			prometheus.Labels{
 				"service_id":      serviceID,
-				"endpoint_domain": endpointDomain,
 				"sanction_type":   endpointObs.GetRecommendedSanction().String(),
 				"sanction_reason": sanctionReason,
+				"endpoint_domain": endpointDomain,
 			},
 		).Inc()
 	}
@@ -677,6 +716,8 @@ func processEndpointLatency(
 	serviceID string,
 	observations []*protocolobservations.ShannonEndpointObservation,
 ) {
+	logger = logger.With("method", "processEndpointLatency")
+
 	// Calculate overall success status for the request
 	success := isAnyObservationSuccessful(observations)
 
@@ -690,6 +731,14 @@ func processEndpointLatency(
 			continue
 		}
 
+		// Extract effective TLD+1 from endpoint URL.
+		endpointUrl := endpointObs.GetEndpointUrl()
+		endpointDomain, err := ExtractDomainOrHost(endpointUrl)
+		if err != nil {
+			logger.Error().Str("endpoint_url", endpointUrl).Err(err).Msg("Could not extract domain from endpoint URL")
+			endpointDomain = ErrDomain
+		}
+
 		// Calculate latency in seconds
 		queryTimestamp := queryTime.AsTime()
 		responseTimestamp := responseTime.AsTime()
@@ -697,21 +746,7 @@ func processEndpointLatency(
 
 		// Skip negative latencies (invalid timestamps)
 		if latencySeconds < 0 {
-			logger.With(
-				"endpoint_url", endpointObs.GetEndpointUrl(),
-				"latency_seconds", latencySeconds,
-			).ProbabilisticDebugInfo(polylog.ProbabilisticDebugInfoProb).
-				Msg("SHOULD RARELY HAPPEN: Negative latency detected, skipping metric")
-			continue
-		}
-
-		// Extract effective domain from endpoint URL
-		endpointDomain, err := ExtractDomainOrHost(endpointObs.GetEndpointUrl())
-		if err != nil {
-			logger.With(
-				"endpoint_url", endpointObs.GetEndpointUrl(),
-			).ProbabilisticDebugInfo(polylog.ProbabilisticDebugInfoProb).
-				Err(err).Msg("SHOULD NEVER HAPPEN: Could not extract domain from Shannon endpoint URL for latency metric")
+			logger.Error().Msgf("SHOULD NEVER HAPPEN: Negative latency (%f) detected, skipping metric for endpoint %s", latencySeconds, endpointUrl)
 			continue
 		}
 
@@ -719,8 +754,8 @@ func processEndpointLatency(
 		endpointLatency.With(
 			prometheus.Labels{
 				"service_id":      serviceID,
-				"endpoint_domain": endpointDomain,
 				"success":         fmt.Sprintf("%t", success),
+				"endpoint_domain": endpointDomain,
 			}).Observe(latencySeconds)
 
 		// Record response size
@@ -728,8 +763,8 @@ func processEndpointLatency(
 		endpointResponseSize.With(
 			prometheus.Labels{
 				"service_id":      serviceID,
-				"endpoint_domain": endpointDomain,
 				"success":         fmt.Sprintf("%t", success),
+				"endpoint_domain": endpointDomain,
 			}).Observe(responseSize)
 	}
 }
@@ -740,6 +775,8 @@ func processRelayMinerErrors(
 	serviceID string,
 	observations []*protocolobservations.ShannonEndpointObservation,
 ) {
+	logger = logger.With("method", "processRelayMinerErrors")
+
 	for _, endpointObs := range observations {
 		// Skip if there's no RelayMinerError
 		if endpointObs.RelayMinerError == nil {
@@ -747,14 +784,11 @@ func processRelayMinerErrors(
 		}
 
 		// Extract effective domain from endpoint URL
-		endpointDomain, err := ExtractDomainOrHost(endpointObs.GetEndpointUrl())
+		endpointUrl := endpointObs.GetEndpointUrl()
+		endpointDomain, err := ExtractDomainOrHost(endpointUrl)
 		if err != nil {
-			logger.With(
-				"endpoint_url", endpointObs.GetEndpointUrl(),
-			).
-				ProbabilisticDebugInfo(polylog.ProbabilisticDebugInfoProb).
-				Err(err).Msg("SHOULD NEVER HAPPEN: Could not extract domain from Shannon endpoint URL for RelayMinerError metric")
-			continue
+			logger.Error().Err(err).Msgf("Could not extract domain from endpoint URL %s.", endpointUrl)
+			endpointDomain = ErrDomain
 		}
 
 		// Extract RelayMinerError details
@@ -771,10 +805,10 @@ func processRelayMinerErrors(
 		relayMinerErrorsTotal.With(
 			prometheus.Labels{
 				"service_id":            serviceID,
-				"endpoint_domain":       endpointDomain,
 				"endpoint_error_type":   endpointErrorType,
 				"relay_miner_codespace": relayMinerCodespace,
 				"relay_miner_code":      relayMinerCode,
+				"endpoint_domain":       endpointDomain,
 			},
 		).Inc()
 	}
@@ -789,18 +823,18 @@ func SetActiveHTTPRelays(activeCount int64) {
 	}).Set(float64(activeCount))
 }
 
-// SetActiveWebsocketConnections updates the gauge metric with the current number of active WebSocket connections.
-// This should be called whenever the WebSocket connection count changes.
+// SetActiveWebsocketConnections updates the gauge metric with the current number of active Websocket connections.
+// This should be called whenever the Websocket connection count changes.
 func SetActiveWebsocketConnections(activeCount int64) {
 	activeWebsocketConnections.Set(float64(activeCount))
 }
 
-// recordWebsocketConnectionTotal tracks WebSocket connection counts.
+// recordWebsocketConnectionTotal tracks Websocket connection counts.
 func recordWebsocketConnectionTotal(
 	logger polylog.Logger,
 	observations *protocolobservations.ShannonRequestObservations,
 ) {
-	hydratedLogger := logger.With("method", "recordWebsocketConnectionTotal")
+	logger = logger.With("method", "recordWebsocketConnectionTotal")
 
 	serviceID := observations.GetServiceId()
 
@@ -808,10 +842,11 @@ func recordWebsocketConnectionTotal(
 	if requestHasErr, requestErrorType := extractRequestError(observations); requestHasErr {
 		websocketConnectionsTotal.With(
 			prometheus.Labels{
-				"service_id":    serviceID,
-				"success":       "false",
-				"error_type":    requestErrorType,
-				"used_fallback": "false",
+				"service_id":      serviceID,
+				"success":         "false",
+				"error_type":      requestErrorType,
+				"used_fallback":   "false",
+				"endpoint_domain": ErrDomain,
 			},
 		).Inc()
 		return
@@ -819,7 +854,7 @@ func recordWebsocketConnectionTotal(
 
 	wsConnectionObs := observations.GetWebsocketConnectionObservation()
 	if wsConnectionObs == nil {
-		hydratedLogger.Warn().Msg("WebSocket connection observation is nil")
+		logger.Warn().Msg("Websocket connection observation is nil")
 		return
 	}
 
@@ -827,29 +862,46 @@ func recordWebsocketConnectionTotal(
 	success := isWebsocketConnectionSuccessful(wsConnectionObs)
 	usedFallbackEndpoint := wsConnectionObs.GetIsFallbackEndpoint()
 
-	// Extract endpoint URL for exemplars
-	endpointURL := wsConnectionObs.GetEndpointUrl()
-	exLabels := prometheus.Labels{
-		"endpoint_url": endpointURL[:min(len(endpointURL), 128)],
+	// Determine event type from the observation
+	var eventType string
+	switch wsConnectionObs.GetEventType() {
+	case protocolobservations.ShannonWebsocketConnectionObservation_CONNECTION_ESTABLISHED:
+		eventType = "established"
+	case protocolobservations.ShannonWebsocketConnectionObservation_CONNECTION_CLOSED:
+		eventType = "closed"
+	case protocolobservations.ShannonWebsocketConnectionObservation_CONNECTION_ESTABLISHMENT_FAILED:
+		eventType = "failed"
+	default:
+		eventType = "unknown"
 	}
 
-	// Record WebSocket connection total
+	// Extract endpoint URL for exemplars
+	endpointURL := wsConnectionObs.GetEndpointUrl()
+	endpointDomain, err := ExtractDomainOrHost(endpointURL)
+	if err != nil {
+		logger.Error().Err(err).Msgf("Could not extract domain from endpoint URL %s.", endpointURL)
+		endpointDomain = ErrDomain
+	}
+
+	// Record Websocket connection total
 	websocketConnectionsTotal.With(
 		prometheus.Labels{
-			"service_id":    serviceID,
-			"success":       fmt.Sprintf("%t", success),
-			"error_type":    "",
-			"used_fallback": fmt.Sprintf("%t", usedFallbackEndpoint),
+			"service_id":      serviceID,
+			"success":         fmt.Sprintf("%t", success),
+			"error_type":      "",
+			"used_fallback":   fmt.Sprintf("%t", usedFallbackEndpoint),
+			"event_type":      eventType,
+			"endpoint_domain": endpointDomain,
 		},
-	).(prometheus.ExemplarAdder).AddWithExemplar(1, exLabels)
+	).Add(1)
 }
 
-// recordWebsocketMessageTotal tracks WebSocket message counts.
+// recordWebsocketMessageTotal tracks Websocket message counts.
 func recordWebsocketMessageTotal(
 	logger polylog.Logger,
 	observations *protocolobservations.ShannonRequestObservations,
 ) {
-	hydratedLogger := logger.With("method", "recordWebsocketMessageTotal")
+	logger = logger.With("method", "recordWebsocketMessageTotal")
 
 	serviceID := observations.GetServiceId()
 
@@ -857,10 +909,11 @@ func recordWebsocketMessageTotal(
 	if requestHasErr, requestErrorType := extractRequestError(observations); requestHasErr {
 		websocketMessagesTotal.With(
 			prometheus.Labels{
-				"service_id":    serviceID,
-				"success":       "false",
-				"error_type":    requestErrorType,
-				"used_fallback": "false",
+				"service_id":      serviceID,
+				"success":         "false",
+				"error_type":      requestErrorType,
+				"used_fallback":   "false",
+				"endpoint_domain": ErrDomain,
 			},
 		).Inc()
 		return
@@ -868,7 +921,7 @@ func recordWebsocketMessageTotal(
 
 	wsMessageObs := observations.GetWebsocketMessageObservation()
 	if wsMessageObs == nil {
-		hydratedLogger.Warn().Msg("WebSocket message observation is nil")
+		logger.Warn().Msg("Websocket message observation is nil")
 		return
 	}
 
@@ -878,41 +931,42 @@ func recordWebsocketMessageTotal(
 
 	// Extract endpoint URL for exemplars
 	endpointURL := wsMessageObs.GetEndpointUrl()
-	exLabels := prometheus.Labels{
-		"endpoint_url": endpointURL[:min(len(endpointURL), 128)],
+	endpointDomain, err := ExtractDomainOrHost(endpointURL)
+	if err != nil {
+		logger.Error().Err(err).Msgf("Could not extract domain from endpoint URL %s.", endpointURL)
+		endpointDomain = ErrDomain
 	}
 
-	// Record WebSocket message total
+	// Record Websocket message total
 	websocketMessagesTotal.With(
 		prometheus.Labels{
-			"service_id":    serviceID,
-			"success":       fmt.Sprintf("%t", success),
-			"error_type":    "",
-			"used_fallback": fmt.Sprintf("%t", usedFallbackEndpoint),
-		},
-	).(prometheus.ExemplarAdder).AddWithExemplar(1, exLabels)
+			"service_id":      serviceID,
+			"success":         fmt.Sprintf("%t", success),
+			"error_type":      "",
+			"used_fallback":   fmt.Sprintf("%t", usedFallbackEndpoint),
+			"endpoint_domain": endpointDomain,
+		}).Inc()
 }
 
-// processWebsocketConnectionErrors records WebSocket connection error metrics.
+// processWebsocketConnectionErrors records Websocket connection error metrics.
 func processWebsocketConnectionErrors(
 	logger polylog.Logger,
 	serviceID string,
 	wsConnectionObs *protocolobservations.ShannonWebsocketConnectionObservation,
 ) {
+	logger = logger.With("method", "processWebsocketConnectionErrors")
+
 	// Skip if there's no error
 	if wsConnectionObs.ErrorType == nil {
 		return
 	}
 
-	// Extract effective TLD+1 from endpoint URL
-	endpointDomain, err := ExtractDomainOrHost(wsConnectionObs.GetEndpointUrl())
+	// Extract effective TLD+1 from endpoint URL.
+	endpointUrl := wsConnectionObs.GetEndpointUrl()
+	endpointDomain, err := ExtractDomainOrHost(endpointUrl)
 	if err != nil {
-		logger.With(
-			"endpoint_url", wsConnectionObs.EndpointUrl,
-		).
-			ProbabilisticDebugInfo(polylog.ProbabilisticDebugInfoProb).
-			Err(err).Msg("Could not extract domain from WebSocket endpoint URL for connection errors metric")
-		return
+		logger.Error().Err(err).Msgf("Could not extract domain from endpoint URL %s.", endpointUrl)
+		endpointDomain = ErrDomain
 	}
 
 	// Extract error information
@@ -922,71 +976,46 @@ func processWebsocketConnectionErrors(
 		sanctionType = wsConnectionObs.RecommendedSanction.String()
 	}
 
-	// Extract endpoint URL for exemplars
-	endpointURL := wsConnectionObs.EndpointUrl
-	exLabels := prometheus.Labels{
-		"endpoint_url": endpointURL[:min(len(endpointURL), 128)],
-	}
-
-	// Record WebSocket connection error
+	// Record Websocket connection error
 	websocketConnectionErrors.With(
 		prometheus.Labels{
 			"service_id":      serviceID,
-			"endpoint_domain": endpointDomain,
 			"error_type":      errorType,
 			"sanction_type":   sanctionType,
-		},
-	).(prometheus.ExemplarAdder).AddWithExemplar(float64(1), exLabels)
+			"endpoint_domain": endpointDomain,
+		}).Inc()
 
 	// Record sanction if recommended
 	if wsConnectionObs.RecommendedSanction != nil {
 		sanctionsByDomain.With(
 			prometheus.Labels{
 				"service_id":      serviceID,
-				"endpoint_domain": endpointDomain,
 				"sanction_type":   sanctionType,
 				"sanction_reason": errorType,
-			},
-		).Inc()
-	}
-
-	// Record RelayMinerError if present
-	if wsConnectionObs.RelayMinerError != nil {
-		relayMinerCodespace := wsConnectionObs.RelayMinerError.GetCodespace()
-		relayMinerCode := fmt.Sprintf("%d", wsConnectionObs.RelayMinerError.GetCode())
-
-		relayMinerErrorsTotal.With(
-			prometheus.Labels{
-				"service_id":            serviceID,
-				"endpoint_domain":       endpointDomain,
-				"endpoint_error_type":   errorType,
-				"relay_miner_codespace": relayMinerCodespace,
-				"relay_miner_code":      relayMinerCode,
-			},
-		).Inc()
+				"endpoint_domain": endpointDomain,
+			}).Inc()
 	}
 }
 
-// processWebsocketMessageErrors records WebSocket message error metrics.
+// processWebsocketMessageErrors records Websocket message error metrics.
 func processWebsocketMessageErrors(
 	logger polylog.Logger,
 	serviceID string,
 	wsMessageObs *protocolobservations.ShannonWebsocketMessageObservation,
 ) {
+	logger = logger.With("method", "processWebsocketMessageErrors")
+
 	// Skip if there's no error
 	if wsMessageObs.ErrorType == nil {
 		return
 	}
 
-	// Extract effective TLD+1 from endpoint URL
-	endpointDomain, err := ExtractDomainOrHost(wsMessageObs.GetEndpointUrl())
+	// Extract effective TLD+1 from endpoint URL.
+	endpointUrl := wsMessageObs.GetEndpointUrl()
+	endpointDomain, err := ExtractDomainOrHost(endpointUrl)
 	if err != nil {
-		logger.With(
-			"endpoint_url", wsMessageObs.EndpointUrl,
-		).
-			ProbabilisticDebugInfo(polylog.ProbabilisticDebugInfoProb).
-			Err(err).Msg("Could not extract domain from WebSocket endpoint URL for message errors metric")
-		return
+		logger.Error().Err(err).Msgf("Could not extract domain from endpoint URL %s.", endpointUrl)
+		endpointDomain = ErrDomain
 	}
 
 	// Extract error information
@@ -996,32 +1025,24 @@ func processWebsocketMessageErrors(
 		sanctionType = wsMessageObs.RecommendedSanction.String()
 	}
 
-	// Extract endpoint URL for exemplars
-	endpointURL := wsMessageObs.EndpointUrl
-	exLabels := prometheus.Labels{
-		"endpoint_url": endpointURL[:min(len(endpointURL), 128)],
-	}
-
-	// Record WebSocket message error
+	// Record Websocket message error
 	websocketMessageErrors.With(
 		prometheus.Labels{
 			"service_id":      serviceID,
-			"endpoint_domain": endpointDomain,
 			"error_type":      errorType,
 			"sanction_type":   sanctionType,
-		},
-	).(prometheus.ExemplarAdder).AddWithExemplar(float64(1), exLabels)
+			"endpoint_domain": endpointDomain,
+		}).Inc()
 
 	// Record sanction if recommended
 	if wsMessageObs.RecommendedSanction != nil {
 		sanctionsByDomain.With(
 			prometheus.Labels{
 				"service_id":      serviceID,
-				"endpoint_domain": endpointDomain,
 				"sanction_type":   sanctionType,
 				"sanction_reason": errorType,
-			},
-		).Inc()
+				"endpoint_domain": endpointDomain,
+			}).Inc()
 	}
 
 	// Record RelayMinerError if present
@@ -1032,11 +1053,57 @@ func processWebsocketMessageErrors(
 		relayMinerErrorsTotal.With(
 			prometheus.Labels{
 				"service_id":            serviceID,
-				"endpoint_domain":       endpointDomain,
 				"endpoint_error_type":   errorType,
 				"relay_miner_codespace": relayMinerCodespace,
 				"relay_miner_code":      relayMinerCode,
-			},
-		).Inc()
+				"endpoint_domain":       endpointDomain,
+			}).Inc()
 	}
+}
+
+// recordWebsocketConnectionDuration records the duration of a Websocket connection when it closes.
+// Only processes CONNECTION_CLOSED events with both establishment and closure timestamps.
+func recordWebsocketConnectionDuration(
+	logger polylog.Logger,
+	serviceID string,
+	wsConnectionObs *protocolobservations.ShannonWebsocketConnectionObservation,
+) {
+	// Only record duration for CONNECTION_CLOSED events
+	if wsConnectionObs.GetEventType() != protocolobservations.ShannonWebsocketConnectionObservation_CONNECTION_CLOSED {
+		return
+	}
+
+	establishedTime := wsConnectionObs.GetConnectionEstablishedTimestamp()
+	closedTime := wsConnectionObs.GetConnectionClosedTimestamp()
+
+	if establishedTime == nil || closedTime == nil {
+		logger.Warn().Msg("Missing timestamps for Websocket connection duration, skipping metric")
+		return
+	}
+
+	duration := closedTime.AsTime().Sub(establishedTime.AsTime()).Seconds()
+	if duration < 0 {
+		logger.Warn().Msg("Negative connection duration detected, skipping metric")
+		return
+	}
+
+	// Extract domain for labeling
+	endpointDomain, err := ExtractDomainOrHost(wsConnectionObs.GetEndpointUrl())
+	if err != nil {
+		logger.Warn().Err(err).Msg("Could not extract domain for connection duration metric")
+		return
+	}
+
+	// Determine success based on whether connection had errors
+	success := wsConnectionObs.GetErrorType() == protocolobservations.ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_UNSPECIFIED
+
+	// Default close reason since we removed the close_reason field per user request
+	closeReason := "normal"
+
+	websocketConnectionDuration.With(prometheus.Labels{
+		"service_id":      serviceID,
+		"endpoint_domain": endpointDomain,
+		"success":         fmt.Sprintf("%t", success),
+		"close_reason":    closeReason,
+	}).Observe(duration)
 }

@@ -68,7 +68,6 @@ func (r *DisqualifiedEndpointReporter) ReportEndpointStatus(serviceID protocol.S
 	r.Logger.Info().Msgf("DisqualifiedEndpointReporter.Report: Successfully hydrated disqualified endpoint details for service ID: %s", serviceID)
 
 	details.DisqualifiedServiceEndpointsCount = details.GetDisqualifiedEndpointsCount()
-	details.QualifiedServiceEndpointsCount = details.GetValidServiceEndpointsCount()
 
 	return details, nil
 }

@@ -34,7 +34,7 @@ func (NoOpQoS) ParseHTTPRequest(_ context.Context, httpRequest *http.Request) (g
 	}, true
 }
 
-// ParseWebsocketRequest builds a request context from the provided WebSocket request.
+// ParseWebsocketRequest builds a request context from the provided Websocket request.
 // This method implements the gateway.QoSService interface.
 func (q NoOpQoS) ParseWebsocketRequest(_ context.Context) (gateway.RequestQoSContext, bool) {
 	return &requestContext{}, true
@@ -44,6 +44,12 @@ func (q NoOpQoS) ParseWebsocketRequest(_ context.Context) (gateway.RequestQoSCon
 // Implements the gateway.QoSService interface.
 func (NoOpQoS) ApplyObservations(_ *qosobservations.Observations) error {
 	return nil
+}
+
+// CheckWebsocketConnection returns true if the endpoint supports Websocket connections.
+// NoOp QoS does not support Websocket connections.
+func (NoOpQoS) CheckWebsocketConnection() bool {
+	return false
 }
 
 // GetRequiredQualityChecks on noop QoS only fulfills the interface requirements and does not perform any actions.
@@ -56,10 +62,7 @@ func (NoOpQoS) GetRequiredQualityChecks(_ protocol.EndpointAddr) []gateway.Reque
 // The returned requestContext will returns a user-facing HTTP request with the supplied error when it GetHTTPResponse method is called.
 func requestContextFromError(err error) *requestContext {
 	return &requestContext{
-		presetFailureResponse: &HTTPResponse{
-			httpStatusCode: http.StatusOK,
-			payload:        []byte(fmt.Sprintf("Error processing the request: %v", err)),
-		},
+		presetFailureResponse: getRequestProcessingError(err),
 	}
 }
 

@@ -56,9 +56,9 @@ type Gateway struct {
 // HandleServiceRequest implements PATH gateway's service request processing.
 //
 // This method acts as a request router that:
-// 1. Determines the type of incoming request (e.g. HTTP or WebSocket upgrade)
+// 1. Determines the type of incoming request (e.g. HTTP or Websocket upgrade)
 // 2. Delegates to the appropriate handler:
-//   - WebSocket: Long-lived bidirectional connection with message-based observations
+//   - Websocket: Long-lived bidirectional connection with message-based observations
 //   - HTTP: Request-response cycle with single observation broadcast
 //
 // This separation allows for different processing flows while maintaining a unified entry point.
@@ -74,9 +74,9 @@ func (g Gateway) HandleServiceRequest(
 	// Determine the type of service request and handle it accordingly.
 	switch determineServiceRequestType(httpReq) {
 
-	// Handle WebSocket service request.
+	// Handle Websocket service request.
 	case websocketServiceRequest:
-		// The WebSocket upgrade must happen in the same goroutine as the HTTP handler,
+		// The Websocket upgrade must happen in the same goroutine as the HTTP handler,
 		// but the bridge will run in its own goroutine and we'll wait for completion.
 		g.handleWebSocketRequest(httpReq, responseWriter)
 
@@ -105,13 +105,6 @@ func (g Gateway) handleHTTPServiceRequest(
 		dataReporter:        g.DataReporter,
 	}
 
-	// Initialize the GatewayRequestContext struct using the HTTP request.
-	// e.g. extract the target service ID from the HTTP request.
-	err := gatewayRequestCtx.InitFromHTTPRequest(httpReq)
-	if err != nil {
-		return
-	}
-
 	defer func() {
 		// Write the user-facing HTTP response.
 		gatewayRequestCtx.WriteHTTPUserResponse(responseWriter)
@@ -119,6 +112,13 @@ func (g Gateway) handleHTTPServiceRequest(
 		// Broadcast all observations, e.g. protocol-level, QoS-level, etc. contained in the gateway request context.
 		gatewayRequestCtx.BroadcastAllObservations()
 	}()
+
+	// Initialize the GatewayRequestContext struct using the HTTP request.
+	// e.g. extract the target service ID from the HTTP request.
+	err := gatewayRequestCtx.InitFromHTTPRequest(httpReq)
+	if err != nil {
+		return
+	}
 
 	// TODO_CHECK_IF_DONE(@adshmh): Pass the context with deadline to QoS once it can handle deadlines.
 	// Build the QoS context for the target service ID using the HTTP request's payload.
@@ -158,15 +158,15 @@ func (g Gateway) handleHTTPServiceRequest(
 	}
 }
 
-// handleWebSocketRequest handles WebSocket connection requests.
+// handleWebSocketRequest handles Websocket connection requests.
 func (g Gateway) handleWebSocketRequest(
 	httpReq *http.Request,
 	w http.ResponseWriter,
 ) {
 	logger := g.Logger.With("method", "handleWebSocketRequest")
 
-	// Use a background context for the long-lived WebSocket connection lifecycle.
-	// Unlike HTTP requests, WebSocket connections are long-lived and should not be tied to the HTTP request context.
+	// Use a background context for the long-lived Websocket connection lifecycle.
+	// Unlike HTTP requests, Websocket connections are long-lived and should not be tied to the HTTP request context.
 	// The HTTP request context gets canceled when the HTTP handler returns, which would stop the observation listener.
 	// The bridge will handle its own context lifecycle management.
 	websocketCtx := context.Background()
@@ -180,26 +180,13 @@ func (g Gateway) handleWebSocketRequest(
 		httpRequestParser:   g.HTTPRequestParser,
 		metricsReporter:     g.MetricsReporter,
 		dataReporter:        g.DataReporter,
-		// Note: We do NOT close messageObservationsChan here because WebSocket connections
-		// outlive the HTTP handler. The channel will be closed when the WebSocket actually disconnects.
+		// Note: We do NOT close messageObservationsChan here because Websocket connections
+		// outlive the HTTP handler. The channel will be closed when the Websocket actually disconnects.
 		// TODO_CONFIG: Add configuration for message channel buffer sizes
 		// Current: Hardcoded buffer size (1000 for observations)
 		// Suggestion: Make configurable based on expected load
 		messageObservationsChan: make(chan *observation.RequestResponseObservations, 1_000),
 	}
-
-	// Defer broadcasting connection observations to ensure they are sent ONLY when the connection terminates.
-	// This implements the TODO requirement to broadcast observations with complete connection duration.
-	//
-	// Key timing: This defer block executes AFTER HandleWebsocketRequest returns, which happens AFTER
-	// the bridge shuts down completely. This provides:
-	// 	 - Complete connection duration from establishment to termination
-	// 	 - Final connection status (success/error and termination reason)
-	// 	 - Accurate connection lifecycle observations (not immediate success observations)
-	defer func() {
-		logger.Info().Msg("🔍 Broadcasting WebSocket connection observations with complete duration")
-		websocketRequestCtx.BroadcastWebsocketConnectionRequestObservations()
-	}()
 
 	// Initialize the websocket request context using the HTTP request.
 	err := websocketRequestCtx.initFromHTTPRequest(httpReq)
@@ -216,25 +203,18 @@ func (g Gateway) handleWebSocketRequest(
 		return
 	}
 
-	// Build the protocol context for the websocket request.
-	err = websocketRequestCtx.buildProtocolContextFromHTTPRequest(httpReq)
-	if err != nil {
-		logger.Error().Err(err).Msg("❌ Error building protocol context for websocket request")
-		return
-	}
-
 	// Handle the websocket connection request using the websocket request context.
-	// This method blocks until the WebSocket bridge completely shuts down.
+	// This builds the protocol context, starts the bridge, and handles observations.
 	err = websocketRequestCtx.handleWebsocketRequest(httpReq, w)
 	if err != nil {
 		logger.Error().Err(err).Msg("❌ Error processing websocket request")
 		return
 	}
 
-	// At this point, the WebSocket connection has terminated and the bridge has shut down.
+	// At this point, the Websocket connection has terminated and the bridge has shut down.
 	// The defer block above will now execute and broadcast connection observations with:
 	//   - Complete connection duration (from establishment to termination)
 	//   - Final connection status and termination reason
-	// This ensures we send only ONE connection observation per WebSocket connection.
-	logger.Info().Msg("✅ WebSocket connection and bridge shutdown complete, ready to broadcast final observations")
+	// This ensures we send only ONE connection observation per Websocket connection.
+	logger.Info().Msg("✅ Websocket connection and bridge shutdown complete, ready to broadcast final observations")
 }

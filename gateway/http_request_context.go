@@ -173,7 +173,7 @@ func (rc *requestContext) BuildProtocolContextsFromHTTPRequest(httpReq *http.Req
 	logger := rc.logger.With("method", "BuildProtocolContextsFromHTTPRequest").With("service_id", rc.serviceID)
 
 	// Retrieve the list of available endpoints for the requested service.
-	availableEndpoints, endpointLookupObs, err := rc.protocol.AvailableEndpoints(rc.context, rc.serviceID, httpReq)
+	availableEndpoints, endpointLookupObs, err := rc.protocol.AvailableHTTPEndpoints(rc.context, rc.serviceID, httpReq)
 	if err != nil {
 		// error encountered: use the supplied observations as protocol observations.
 		rc.updateProtocolObservations(&endpointLookupObs)
@@ -202,7 +202,7 @@ func (rc *requestContext) BuildProtocolContextsFromHTTPRequest(httpReq *http.Req
 
 	for i, endpointAddr := range selectedEndpoints {
 		logger.Debug().Msgf("Building protocol context for endpoint %d/%d: %s", i+1, numSelectedEndpoints, endpointAddr)
-		protocolCtx, protocolCtxSetupErrObs, err := rc.protocol.BuildRequestContextForEndpoint(rc.context, rc.serviceID, endpointAddr, httpReq)
+		protocolCtx, protocolCtxSetupErrObs, err := rc.protocol.BuildHTTPRequestContextForEndpoint(rc.context, rc.serviceID, endpointAddr, httpReq)
 		if err != nil {
 			lastProtocolCtxSetupErrObs = &protocolCtxSetupErrObs
 			logger.Warn().Err(err).Str("endpoint_addr", string(endpointAddr)).Msgf("Failed to build protocol context for endpoint %d/%d, skipping", i+1, numSelectedEndpoints)
@@ -299,7 +299,7 @@ func (rc *requestContext) BroadcastAllObservations() {
 		// update protocol-level observations: no errors encountered setting up the protocol context.
 		rc.updateProtocolObservations(nil)
 		if rc.protocolObservations != nil {
-			err := rc.protocol.ApplyObservations(rc.protocolObservations)
+			err := rc.protocol.ApplyHTTPObservations(rc.protocolObservations)
 			if err != nil {
 				rc.logger.Warn().Err(err).Msg("error applying protocol observations.")
 			}
@@ -328,10 +328,10 @@ func (rc *requestContext) BroadcastAllObservations() {
 		if rc.metricsReporter != nil {
 			rc.metricsReporter.Publish(observations)
 		}
-
 		// Need to account for an empty `data_reporter_config` field in the YAML config file.
 		// E.g. This can happen when running the Gateway in a local environment.
-		if rc.dataReporter != nil {
+		// TODO_DELETE: Skip data reporting for "hey" service
+		if rc.dataReporter != nil && rc.serviceID != "hey" {
 			rc.dataReporter.Publish(observations)
 		}
 	}()

@@ -67,12 +67,12 @@ type QoSContextBuilder interface {
 	ParseHTTPRequest(context.Context, *http.Request) (RequestQoSContext, bool)
 
 	// ParseWebsocketRequest:
-	// - Ensures a WebSocket request is valid for the target service.
-	// - WebSocket connection requests have no body, so no parsing needed.
-	// - If service supports WebSocket, returns a valid RequestQoSContext.
+	// - Ensures a Websocket request is valid for the target service.
+	// - Websocket connection requests have no body, so no parsing needed.
+	// - If service supports Websocket, returns a valid RequestQoSContext.
 	//
 	// TODO_TECHDEBT(@adshmh,@commoddity): Remove ParseWebsocketRequest and update ParseHTTPRequest to be the single entry point to QoS.
-	// It should perform basic validation of the HTTP handshake request in the case that it is a WebSocket request.
+	// It should perform basic validation of the HTTP handshake request in the case that it is a Websocket request.
 	// eg. check that the request is a websocket request, check headers, etc.
 	ParseWebsocketRequest(context.Context) (RequestQoSContext, bool)
 }
@@ -90,6 +90,20 @@ type QoSEndpointCheckGenerator interface {
 	// - Returns required quality checks for a QoS instance to assess endpoint validity.
 	// - Example: EVM QoS may skip block height check if chain ID check already failed.
 	GetRequiredQualityChecks(protocol.EndpointAddr) []RequestQoSContext
+
+	// TODO_TECHDEBT(@commoddity): Currently websocket QoS only performs a protocol-level check
+	// which determines if an endpoint connection request is successful or not.
+	//
+	// This only require a simple bool that tells the hydrator if the endpoint should be checked
+	// for Websocket connection and applies protocol-level sanctions if it fails.
+	//
+	// In the future, we may want to add QoS-level checks that take into account specific endpoint
+	// responses to apply websocket-related filtering at the QoS level.
+	//
+	// CheckWebsocketConnection
+	//  - Checks if the endpoint supports Websocket connections.
+	//  - Returns a boolean indicating whether the endpoint should be checked for Websocket connection.
+	CheckWebsocketConnection() bool
 }
 
 // TODO_IMPLEMENT:

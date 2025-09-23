@@ -192,8 +192,13 @@ type EVMRequestObservations struct {
 	RequestObservations []*EVMRequestObservation `protobuf:"bytes,10,rep,name=request_observations,json=requestObservations,proto3" json:"request_observations,omitempty"`
 	// endpoint_selection_metadata contains metadata about the endpoint selection process.
 	EndpointSelectionMetadata *EndpointSelectionMetadata `protobuf:"bytes,9,opt,name=endpoint_selection_metadata,json=endpointSelectionMetadata,proto3" json:"endpoint_selection_metadata,omitempty"`
-	unknownFields             protoimpl.UnknownFields
-	sizeCache                 protoimpl.SizeCache
+	// Internal error encountered processing the request, if any.
+	// Example: no endpoint responses received.
+	// On single JSONRPC request: applies to the single request.
+	// On batch JSONRPC requests: only set if the entire batch failed (e.g. no endpoint responses for any of the requests of the batch)
+	RequestError  *RequestError `protobuf:"bytes,11,opt,name=request_error,json=requestError,proto3,oneof" json:"request_error,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *EVMRequestObservations) Reset() {
@@ -293,6 +298,13 @@ func (x *EVMRequestObservations) GetEndpointSelectionMetadata() *EndpointSelecti
 	return nil
 }
 
+func (x *EVMRequestObservations) GetRequestError() *RequestError {
+	if x != nil {
+		return x.RequestError
+	}
+	return nil
+}
+
 type isEVMRequestObservations_RequestValidationFailure interface {
 	isEVMRequestObservations_RequestValidationFailure()
 }
@@ -313,6 +325,8 @@ func (*EVMRequestObservations_EvmHttpBodyReadFailure) isEVMRequestObservations_R
 func (*EVMRequestObservations_EvmRequestUnmarshalingFailure) isEVMRequestObservations_RequestValidationFailure() {
 }
 
+// EVMRequestObservation stores a single observation from an endpoint servicing the protocol response.
+// This is necessary to support batch requests.
 type EVMRequestObservation struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The EVM blockchain service's JSON-RPC request.
@@ -524,8 +538,10 @@ type EVMEndpointObservation struct {
 	//	*EVMEndpointObservation_EmptyResponse
 	//	*EVMEndpointObservation_NoResponse
 	ResponseObservation isEVMEndpointObservation_ResponseObservation `protobuf_oneof:"response_observation"`
-	unknownFields       protoimpl.UnknownFields
-	sizeCache           protoimpl.SizeCache
+	// Only set if the endpoint returned a valid JSONRPC response.
+	ParsedJsonrpcResponse *JsonRpcResponse `protobuf:"bytes,8,opt,name=parsed_jsonrpc_response,json=parsedJsonrpcResponse,proto3,oneof" json:"parsed_jsonrpc_response,omitempty"`
+	unknownFields         protoimpl.UnknownFields
+	sizeCache             protoimpl.SizeCache
 }
 
 func (x *EVMEndpointObservation) Reset() {
@@ -622,6 +638,13 @@ func (x *EVMEndpointObservation) GetNoResponse() *EVMNoResponse {
 		if x, ok := x.ResponseObservation.(*EVMEndpointObservation_NoResponse); ok {
 			return x.NoResponse
 		}
+	}
+	return nil
+}
+
+func (x *EVMEndpointObservation) GetParsedJsonrpcResponse() *JsonRpcResponse {
+	if x != nil {
+		return x.ParsedJsonrpcResponse
 	}
 	return nil
 }
@@ -1088,7 +1111,7 @@ var File_path_qos_evm_proto protoreflect.FileDescriptor
 
 const file_path_qos_evm_proto_rawDesc = "" +
 	"\n" +
-	"\x12path/qos/evm.proto\x12\bpath.qos\x1a\x16path/qos/jsonrpc.proto\x1a\x1dpath/qos/request_origin.proto\x1a*path/qos/endpoint_selection_metadata.proto\x1a\x1cpath/metadata/metadata.proto\"\xa7\x05\n" +
+	"\x12path/qos/evm.proto\x12\bpath.qos\x1a\x16path/qos/jsonrpc.proto\x1a\x1dpath/qos/request_origin.proto\x1a*path/qos/endpoint_selection_metadata.proto\x1a\x1cpath/qos/request_error.proto\x1a\x1cpath/metadata/metadata.proto\"\xfb\x05\n" +
 	"\x16EVMRequestObservations\x12\x19\n" +
 	"\bchain_id\x18\x01 \x01(\tR\achainId\x12\x1d\n" +
 	"\n" +
@@ -1099,8 +1122,10 @@ const file_path_qos_evm_proto_rawDesc = "" +
 	" evm_request_unmarshaling_failure\x18\x04 \x01(\v2'.path.qos.EVMRequestUnmarshalingFailureH\x00R\x1devmRequestUnmarshalingFailure\x12R\n" +
 	"\x14request_observations\x18\n" +
 	" \x03(\v2\x1f.path.qos.EVMRequestObservationR\x13requestObservations\x12c\n" +
-	"\x1bendpoint_selection_metadata\x18\t \x01(\v2#.path.qos.EndpointSelectionMetadataR\x19endpointSelectionMetadataB\x1c\n" +
-	"\x1arequest_validation_failureJ\x04\b\x05\x10\x06J\x04\b\x06\x10\aR\x0fjsonrpc_requestR\x15endpoint_observations\"\xb1\x01\n" +
+	"\x1bendpoint_selection_metadata\x18\t \x01(\v2#.path.qos.EndpointSelectionMetadataR\x19endpointSelectionMetadata\x12@\n" +
+	"\rrequest_error\x18\v \x01(\v2\x16.path.qos.RequestErrorH\x01R\frequestError\x88\x01\x01B\x1c\n" +
+	"\x1arequest_validation_failureB\x10\n" +
+	"\x0e_request_errorJ\x04\b\x05\x10\x06J\x04\b\x06\x10\aR\x0fjsonrpc_requestR\x15endpoint_observations\"\xb1\x01\n" +
 	"\x15EVMRequestObservation\x12A\n" +
 	"\x0fjsonrpc_request\x18\x05 \x01(\v2\x18.path.qos.JsonRpcRequestR\x0ejsonrpcRequest\x12U\n" +
 	"\x15endpoint_observations\x18\x06 \x03(\v2 .path.qos.EVMEndpointObservationR\x14endpointObservations\"\xce\x01\n" +
@@ -1113,7 +1138,7 @@ const file_path_qos_evm_proto_rawDesc = "" +
 	"\x10http_status_code\x18\x01 \x01(\x05R\x0ehttpStatusCode\x12N\n" +
 	"\x10validation_error\x18\x02 \x01(\x0e2#.path.qos.EVMRequestValidationErrorR\x0fvalidationError\x12(\n" +
 	"\rerror_details\x18\x03 \x01(\tH\x00R\ferrorDetails\x88\x01\x01B\x10\n" +
-	"\x0e_error_details\"\xa9\x04\n" +
+	"\x0e_error_details\"\x9d\x05\n" +
 	"\x16EVMEndpointObservation\x12#\n" +
 	"\rendpoint_addr\x18\x01 \x01(\tR\fendpointAddr\x12J\n" +
 	"\x11chain_id_response\x18\x02 \x01(\v2\x1c.path.qos.EVMChainIDResponseH\x00R\x0fchainIdResponse\x12V\n" +
@@ -1122,8 +1147,10 @@ const file_path_qos_evm_proto_rawDesc = "" +
 	"\x15unrecognized_response\x18\x05 \x01(\v2!.path.qos.EVMUnrecognizedResponseH\x00R\x14unrecognizedResponse\x12C\n" +
 	"\x0eempty_response\x18\x06 \x01(\v2\x1a.path.qos.EVMEmptyResponseH\x00R\remptyResponse\x12:\n" +
 	"\vno_response\x18\a \x01(\v2\x17.path.qos.EVMNoResponseH\x00R\n" +
-	"noResponseB\x16\n" +
-	"\x14response_observation\"\x8d\x02\n" +
+	"noResponse\x12V\n" +
+	"\x17parsed_jsonrpc_response\x18\b \x01(\v2\x19.path.qos.JsonRpcResponseH\x01R\x15parsedJsonrpcResponse\x88\x01\x01B\x16\n" +
+	"\x14response_observationB\x1a\n" +
+	"\x18_parsed_jsonrpc_response\"\x8d\x02\n" +
 	"\x12EVMChainIDResponse\x12(\n" +
 	"\x10http_status_code\x18\x01 \x01(\x05R\x0ehttpStatusCode\x12*\n" +
 	"\x11chain_id_response\x18\x02 \x01(\tR\x0fchainIdResponse\x12\x82\x01\n" +
@@ -1192,8 +1219,9 @@ var file_path_qos_evm_proto_goTypes = []any{
 	(*EVMNoResponse)(nil),                 // 12: path.qos.EVMNoResponse
 	(RequestOrigin)(0),                    // 13: path.qos.RequestOrigin
 	(*EndpointSelectionMetadata)(nil),     // 14: path.qos.EndpointSelectionMetadata
-	(*JsonRpcRequest)(nil),                // 15: path.qos.JsonRpcRequest
-	(*JsonRpcResponse)(nil),               // 16: path.qos.JsonRpcResponse
+	(*RequestError)(nil),                  // 15: path.qos.RequestError
+	(*JsonRpcRequest)(nil),                // 16: path.qos.JsonRpcRequest
+	(*JsonRpcResponse)(nil),               // 17: path.qos.JsonRpcResponse
 }
 var file_path_qos_evm_proto_depIdxs = []int32{
 	13, // 0: path.qos.EVMRequestObservations.request_origin:type_name -> path.qos.RequestOrigin
@@ -1201,28 +1229,30 @@ var file_path_qos_evm_proto_depIdxs = []int32{
 	5,  // 2: path.qos.EVMRequestObservations.evm_request_unmarshaling_failure:type_name -> path.qos.EVMRequestUnmarshalingFailure
 	3,  // 3: path.qos.EVMRequestObservations.request_observations:type_name -> path.qos.EVMRequestObservation
 	14, // 4: path.qos.EVMRequestObservations.endpoint_selection_metadata:type_name -> path.qos.EndpointSelectionMetadata
-	15, // 5: path.qos.EVMRequestObservation.jsonrpc_request:type_name -> path.qos.JsonRpcRequest
-	6,  // 6: path.qos.EVMRequestObservation.endpoint_observations:type_name -> path.qos.EVMEndpointObservation
-	0,  // 7: path.qos.EVMHTTPBodyReadFailure.validation_error:type_name -> path.qos.EVMRequestValidationError
-	0,  // 8: path.qos.EVMRequestUnmarshalingFailure.validation_error:type_name -> path.qos.EVMRequestValidationError
-	7,  // 9: path.qos.EVMEndpointObservation.chain_id_response:type_name -> path.qos.EVMChainIDResponse
-	8,  // 10: path.qos.EVMEndpointObservation.block_number_response:type_name -> path.qos.EVMBlockNumberResponse
-	9,  // 11: path.qos.EVMEndpointObservation.get_balance_response:type_name -> path.qos.EVMGetBalanceResponse
-	10, // 12: path.qos.EVMEndpointObservation.unrecognized_response:type_name -> path.qos.EVMUnrecognizedResponse
-	11, // 13: path.qos.EVMEndpointObservation.empty_response:type_name -> path.qos.EVMEmptyResponse
-	12, // 14: path.qos.EVMEndpointObservation.no_response:type_name -> path.qos.EVMNoResponse
-	1,  // 15: path.qos.EVMChainIDResponse.response_validation_error:type_name -> path.qos.EVMResponseValidationError
-	1,  // 16: path.qos.EVMBlockNumberResponse.response_validation_error:type_name -> path.qos.EVMResponseValidationError
-	1,  // 17: path.qos.EVMGetBalanceResponse.response_validation_error:type_name -> path.qos.EVMResponseValidationError
-	16, // 18: path.qos.EVMUnrecognizedResponse.jsonrpc_response:type_name -> path.qos.JsonRpcResponse
-	1,  // 19: path.qos.EVMUnrecognizedResponse.response_validation_error:type_name -> path.qos.EVMResponseValidationError
-	1,  // 20: path.qos.EVMEmptyResponse.response_validation_error:type_name -> path.qos.EVMResponseValidationError
-	1,  // 21: path.qos.EVMNoResponse.response_validation_error:type_name -> path.qos.EVMResponseValidationError
-	22, // [22:22] is the sub-list for method output_type
-	22, // [22:22] is the sub-list for method input_type
-	22, // [22:22] is the sub-list for extension type_name
-	22, // [22:22] is the sub-list for extension extendee
-	0,  // [0:22] is the sub-list for field type_name
+	15, // 5: path.qos.EVMRequestObservations.request_error:type_name -> path.qos.RequestError
+	16, // 6: path.qos.EVMRequestObservation.jsonrpc_request:type_name -> path.qos.JsonRpcRequest
+	6,  // 7: path.qos.EVMRequestObservation.endpoint_observations:type_name -> path.qos.EVMEndpointObservation
+	0,  // 8: path.qos.EVMHTTPBodyReadFailure.validation_error:type_name -> path.qos.EVMRequestValidationError
+	0,  // 9: path.qos.EVMRequestUnmarshalingFailure.validation_error:type_name -> path.qos.EVMRequestValidationError
+	7,  // 10: path.qos.EVMEndpointObservation.chain_id_response:type_name -> path.qos.EVMChainIDResponse
+	8,  // 11: path.qos.EVMEndpointObservation.block_number_response:type_name -> path.qos.EVMBlockNumberResponse
+	9,  // 12: path.qos.EVMEndpointObservation.get_balance_response:type_name -> path.qos.EVMGetBalanceResponse
+	10, // 13: path.qos.EVMEndpointObservation.unrecognized_response:type_name -> path.qos.EVMUnrecognizedResponse
+	11, // 14: path.qos.EVMEndpointObservation.empty_response:type_name -> path.qos.EVMEmptyResponse
+	12, // 15: path.qos.EVMEndpointObservation.no_response:type_name -> path.qos.EVMNoResponse
+	17, // 16: path.qos.EVMEndpointObservation.parsed_jsonrpc_response:type_name -> path.qos.JsonRpcResponse
+	1,  // 17: path.qos.EVMChainIDResponse.response_validation_error:type_name -> path.qos.EVMResponseValidationError
+	1,  // 18: path.qos.EVMBlockNumberResponse.response_validation_error:type_name -> path.qos.EVMResponseValidationError
+	1,  // 19: path.qos.EVMGetBalanceResponse.response_validation_error:type_name -> path.qos.EVMResponseValidationError
+	17, // 20: path.qos.EVMUnrecognizedResponse.jsonrpc_response:type_name -> path.qos.JsonRpcResponse
+	1,  // 21: path.qos.EVMUnrecognizedResponse.response_validation_error:type_name -> path.qos.EVMResponseValidationError
+	1,  // 22: path.qos.EVMEmptyResponse.response_validation_error:type_name -> path.qos.EVMResponseValidationError
+	1,  // 23: path.qos.EVMNoResponse.response_validation_error:type_name -> path.qos.EVMResponseValidationError
+	24, // [24:24] is the sub-list for method output_type
+	24, // [24:24] is the sub-list for method input_type
+	24, // [24:24] is the sub-list for extension type_name
+	24, // [24:24] is the sub-list for extension extendee
+	0,  // [0:24] is the sub-list for field type_name
 }
 
 func init() { file_path_qos_evm_proto_init() }
@@ -1233,6 +1263,7 @@ func file_path_qos_evm_proto_init() {
 	file_path_qos_jsonrpc_proto_init()
 	file_path_qos_request_origin_proto_init()
 	file_path_qos_endpoint_selection_metadata_proto_init()
+	file_path_qos_request_error_proto_init()
 	file_path_qos_evm_proto_msgTypes[0].OneofWrappers = []any{
 		(*EVMRequestObservations_EvmHttpBodyReadFailure)(nil),
 		(*EVMRequestObservations_EvmRequestUnmarshalingFailure)(nil),

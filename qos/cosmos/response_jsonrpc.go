@@ -13,9 +13,9 @@ import (
 
 const (
 	// error codes to use as the JSONRPC response's error code if the endpoint returns a malformed response.
-	// -32000 Error code will result in returning a 500 HTTP Status Code to the client.
-	errCodeUnmarshaling  = -32000
-	errCodeEmptyResponse = -32000
+	// `jsonrpc.ResponseCodeBackendServerErr`, i.e. code -31002, will result in returning a 500 HTTP Status Code to the client.
+	errCodeUnmarshaling  = jsonrpc.ResponseCodeBackendServerErr
+	errCodeEmptyResponse = jsonrpc.ResponseCodeBackendServerErr
 
 	// Error messages for JSONRPC response validation failures
 	errMsgJSONRPCUnmarshaling  = "the JSONRPC response returned by the endpoint is not valid"
@@ -54,11 +54,15 @@ var (
 // The raw byte is returned by an endpoint in response to a JSONRPC request.
 func unmarshalJSONRPCRequestEndpointResponse(
 	logger polylog.Logger,
-	jsonrpcReq jsonrpc.Request,
+	jsonrpcReqs map[jsonrpc.ID]jsonrpc.Request,
 	data []byte,
 ) response {
 	// Parse and validate the raw payload as a JSONRPC response.
-	jsonrpcResponse, responseValidationErr := unmarshalAsJSONRPCResponse(logger, jsonrpcReq.ID, data)
+	jsonrpcResponse, jsonrpcReq, responseValidationErr := unmarshalAsJSONRPCResponse(
+		logger,
+		jsonrpcReqs,
+		data,
+	)
 
 	// TODO_TECHDEBT(@adshmh): Separate User-response, which could be a generic response indicating an endpoint error, from the parsed response.
 	// Endpoint response failed validation.
@@ -91,9 +95,9 @@ func unmarshalJSONRPCRequestEndpointResponse(
 // The second return value contains the validation failure, if any.
 func unmarshalAsJSONRPCResponse(
 	logger polylog.Logger,
-	jsonrpcRequestID jsonrpc.ID,
+	jsonrpcReqs map[jsonrpc.ID]jsonrpc.Request,
 	data []byte,
-) (jsonrpc.Response, *qosobservations.CosmosResponseValidationError) {
+) (jsonrpc.Response, jsonrpc.Request, *qosobservations.CosmosResponseValidationError) {
 	// Empty payload is invalid.
 	if len(data) == 0 {
 		errEmptyPayload := errors.New("failed to unmarshal endpoint payload as JSONRPC: endpoint returned an empty response")
@@ -104,7 +108,12 @@ func unmarshalAsJSONRPCResponse(
 
 		// Create a generic JSONRPC response for the user.
 		validationErr := qosobservations.CosmosResponseValidationError_COSMOS_RESPONSE_VALIDATION_ERROR_EMPTY
-		return getGenericJSONRPCErrResponse(logger, jsonrpcRequestID, errCodeEmptyResponse, errMsgJSONRPCEmptyResponse), &validationErr
+		return getGenericJSONRPCErrResponse(
+			logger,
+			getJsonRpcIDForErrorResponse(jsonrpcReqs),
+			errCodeEmptyResponse,
+			errMsgJSONRPCEmptyResponse,
+		), jsonrpc.Request{}, &validationErr
 	}
 
 	// Unmarshal the raw response payload into a JSONRPC response.
@@ -122,11 +131,27 @@ func unmarshalAsJSONRPCResponse(
 
 		// Create a generic JSONRPC response for the user.
 		validationErr := qosobservations.CosmosResponseValidationError_COSMOS_RESPONSE_VALIDATION_ERROR_UNMARSHAL
-		return getGenericJSONRPCErrResponse(logger, jsonrpcRequestID, errCodeUnmarshaling, errMsgJSONRPCUnmarshaling), &validationErr
+		return getGenericJSONRPCErrResponse(
+			logger,
+			getJsonRpcIDForErrorResponse(jsonrpcReqs),
+			errCodeUnmarshaling,
+			errMsgJSONRPCUnmarshaling,
+		), jsonrpc.Request{}, &validationErr
+	}
+
+	jsonrpcReq, ok := findJsonRpcRequestByID(jsonrpcReqs, jsonrpcResponse.ID)
+	if !ok {
+		validationErr := qosobservations.CosmosResponseValidationError_COSMOS_RESPONSE_VALIDATION_ERROR_FORMAT_MISMATCH
+		return getGenericJSONRPCErrResponse(
+			logger,
+			getJsonRpcIDForErrorResponse(jsonrpcReqs),
+			errCodeUnmarshaling,
+			errMsgJSONRPCUnmarshaling,
+		), jsonrpc.Request{}, &validationErr
 	}
 
 	// Validate the JSONRPC response.
-	if err := jsonrpcResponse.Validate(jsonrpcRequestID); err != nil {
+	if err := jsonrpcResponse.Validate(jsonrpcReq.ID); err != nil {
 		payloadStr := string(data)
 		logger.With(
 			"unmarshal_err", err,
@@ -135,11 +160,16 @@ func unmarshalAsJSONRPCResponse(
 		).Debug().Msg("Failed to unmarshal endpoint payload as JSONRPC: JSONRPC response failed validation.")
 
 		validationErr := qosobservations.CosmosResponseValidationError_COSMOS_RESPONSE_VALIDATION_ERROR_FORMAT_MISMATCH
-		return getGenericJSONRPCErrResponse(logger, jsonrpcRequestID, errCodeUnmarshaling, errMsgJSONRPCUnmarshaling), &validationErr
+		return getGenericJSONRPCErrResponse(
+			logger,
+			jsonrpcReq.ID,
+			errCodeUnmarshaling,
+			errMsgJSONRPCUnmarshaling,
+		), jsonrpc.Request{}, &validationErr
 	}
 
 	// JSONRPC response successfully validated.
-	return jsonrpcResponse, nil
+	return jsonrpcResponse, jsonrpcReq, nil
 }
 
 // getGenericJSONRPCErrResponse returns a generic response wrapped around a JSONRPC error response with the supplied ID, error, and the invalid payload in the "data" field.
@@ -154,4 +184,40 @@ func getGenericJSONRPCErrResponse(
 	}
 
 	return jsonrpc.GetErrorResponse(id, errCode, errMsg, errData)
+}
+
+// getJsonRpcIDForErrorResponse determines the appropriate ID to use in error responses when no endpoint response was received.
+// Follows JSON-RPC 2.0 specification guidelines for ID handling in error scenarios:
+//
+// Single request (len == 1):
+//   - Returns the original request's ID to maintain proper request-response correlation
+//   - Allows client to match the error response back to the specific request that failed
+//
+// Batch request or no requests (len != 1):
+//   - Returns null ID (empty jsonrpc.ID{}) per JSON-RPC spec requirement
+//   - Per spec: "If there was an error in detecting the id in the Request object, it MUST be Null"
+//   - For batch requests, no single ID represents the entire failed batch
+//   - For zero requests, no valid ID exists to return
+//
+// This approach ensures specification compliance and clear error semantics for clients.
+// Reference: https://www.jsonrpc.org/specification#response_object
+func getJsonRpcIDForErrorResponse(servicePayloads map[jsonrpc.ID]jsonrpc.Request) jsonrpc.ID {
+	if len(servicePayloads) == 1 {
+		for id := range servicePayloads {
+			return id
+		}
+	}
+	return jsonrpc.ID{}
+}
+
+// findJsonRpcRequestByID finds a JSONRPC request by ID using value-based comparison.
+// This handles the case where JSON unmarshaling creates new ID structs with different
+// pointer addresses but equivalent values.
+func findJsonRpcRequestByID(servicePayloads map[jsonrpc.ID]jsonrpc.Request, targetID jsonrpc.ID) (jsonrpc.Request, bool) {
+	for id, payload := range servicePayloads {
+		if id.Equal(targetID) {
+			return payload, true
+		}
+	}
+	return jsonrpc.Request{}, false
 }

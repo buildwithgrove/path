@@ -10,7 +10,7 @@ var (
 	// CosmosSDK response IDs for different request types:
 	// * JSON-RPC id for REST responses: -1
 	// TODO_NEXT(@adshmh): Use proper JSON-RPC ID response validation that works for all Cosmos SDK chains.
-	jsonRPCIdForRESTResponses = jsonrpc.IDFromInt(-1)
+	jsonrpcIdForRESTResponses = jsonrpc.IDFromInt(-1)
 )
 
 // unmarshalRESTRequestEndpointResponse routes REST endpoint responses to appropriate validators.
@@ -32,20 +32,26 @@ func unmarshalRESTRequestEndpointResponse(
 		// Build a JSONRPC request with the correct method and ID to use JSONRPC validator.
 		// `/status` returns a JSONRPC response.
 		jsonrpcReq := jsonrpc.Request{
-			ID:     jsonRPCIdForRESTResponses,
+			ID:     jsonrpcIdForRESTResponses,
 			Method: "status",
 		}
-		return unmarshalJSONRPCRequestEndpointResponse(logger, jsonrpcReq, endpointResponseBz)
+		jsonRpcReqs := map[jsonrpc.ID]jsonrpc.Request{
+			jsonrpcIdForRESTResponses: jsonrpcReq,
+		}
+		return unmarshalJSONRPCRequestEndpointResponse(logger, jsonRpcReqs, endpointResponseBz)
 
 	// CometBFT /health endpoint returns a JSONRPC response.
 	// Reference: https://docs.cometbft.com/v1.0/spec/rpc/#health
 	case "/health":
 		// TODO_TECHDEBT(@adshmh): Refactor to properly separate response validation functionality shared between REST and JSONRPC.
 		jsonrpcReq := jsonrpc.Request{
-			ID:     jsonRPCIdForRESTResponses,
+			ID:     jsonrpcIdForRESTResponses,
 			Method: "health",
 		}
-		return unmarshalJSONRPCRequestEndpointResponse(logger, jsonrpcReq, endpointResponseBz)
+		jsonRpcReqs := map[jsonrpc.ID]jsonrpc.Request{
+			jsonrpcIdForRESTResponses: jsonrpcReq,
+		}
+		return unmarshalJSONRPCRequestEndpointResponse(logger, jsonRpcReqs, endpointResponseBz)
 
 	// Cosmos SDK /cosmos/base/node/v1beta1/status endpoint returns a REST JSON response.
 	// Reference: https://docs.cosmos.network/api#tag/Service/operation/Status

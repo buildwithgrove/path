@@ -3,6 +3,7 @@ package evm
 import (
 	"fmt"
 
+	"github.com/buildwithgrove/path/protocol"
 	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
 
@@ -38,14 +39,21 @@ type endpointCheckBlockNumber struct {
 	parsedBlockNumberResponse *uint64
 }
 
+func (e *endpointCheckBlockNumber) getRequestID() jsonrpc.ID {
+	return jsonrpc.IDFromInt(idBlockNumberCheck)
+}
+
 // getRequest returns a JSONRPC request to check the block number.
 // eg. '{"jsonrpc":"2.0","id":1,"method":"eth_blockNumber"}'
-func (e *endpointCheckBlockNumber) getRequest() jsonrpc.Request {
-	return jsonrpc.Request{
+func (e *endpointCheckBlockNumber) getServicePayload() protocol.Payload {
+	req := jsonrpc.Request{
 		JSONRPC: jsonrpc.Version2,
 		ID:      jsonrpc.IDFromInt(idBlockNumberCheck),
 		Method:  jsonrpc.Method(methodBlockNumber),
 	}
+	// Hardcoded request will never fail to build the payload
+	payload, _ := req.BuildPayload()
+	return payload
 }
 
 // getBlockNumber returns the parsed block number value for the endpoint.

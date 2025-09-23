@@ -6,21 +6,38 @@ import (
 
 	"github.com/buildwithgrove/path/health"
 	"github.com/buildwithgrove/path/metrics/devtools"
+	"github.com/buildwithgrove/path/observation"
 	protocolobservations "github.com/buildwithgrove/path/observation/protocol"
 	"github.com/buildwithgrove/path/protocol"
+	"github.com/buildwithgrove/path/websockets"
 )
 
 // Protocol defines the core functionality of a protocol from the perspective of a gateway.
 // The gateway expects a protocol to build and return a request context for a particular service ID.
 type Protocol interface {
-	// AvailableEndpoints returns the list of available endpoints matching both the service ID
+	// AvailableHTTPEndpoints returns the list of available HTTP endpoints matching both the service ID
 	//
-	// (Shannon only: in Delegated mode, the staked application is passed in the request header, which
-	// filters the list of available endpoints. In all other modes, *http.Request will be nil.)
+	// If the Pocket Network Gateway is in delegated mode, the staked application is passed via
+	// the `App-Address` header. In all other modes, *http.Request will be nil.
+	//
 	// Context may contain a deadline that protocol should respect on best-effort basis.
 	// Return observation if endpoint lookup fails.
 	// Used as protocol observation for the request when no protocol context exists.
-	AvailableEndpoints(
+	AvailableHTTPEndpoints(
+		context.Context,
+		protocol.ServiceID,
+		*http.Request,
+	) (protocol.EndpointAddrList, protocolobservations.Observations, error)
+
+	// AvailableWebsocketEndpoints returns the list of available websocket endpoints matching both the service ID
+	//
+	// If the Pocket Network Gateway is in delegated mode, the staked application is passed via
+	// the `App-Address` header. In all other modes, *http.Request will be nil.
+	//
+	// Context may contain a deadline that protocol should respect on best-effort basis.
+	// Return observation if endpoint lookup fails.
+	// Used as protocol observation for the request when no protocol context exists.
+	AvailableWebsocketEndpoints(
 		context.Context,
 		protocol.ServiceID,
 		*http.Request,
@@ -29,28 +46,57 @@ type Protocol interface {
 	// BuildRequestContextForEndpoint builds and returns a ProtocolRequestContext containing a single selected endpoint.
 	// One `ProtocolRequestContext` correspond to a single request, which is sent to a single endpoint.
 	//
-	// (Shannon only: in Delegated mode, the staked application is passed in the request header, which
-	// filters the list of available endpoints. In all other modes, *http.Request will be nil.)
+	// If the Pocket Network Gateway is in delegated mode, the staked application is passed via
+	// the `App-Address` header. In all other modes, *http.Request will be nil.
+	//
 	// Context may contain a deadline that protocol should respect on best-effort basis.
+	//
 	// Return observation if the context setup fails.
 	// Used as protocol observation for the request when no protocol context exists.
-	BuildRequestContextForEndpoint(
+	BuildHTTPRequestContextForEndpoint(
 		context.Context,
 		protocol.ServiceID,
 		protocol.EndpointAddr,
 		*http.Request,
 	) (ProtocolRequestContext, protocolobservations.Observations, error)
 
+	// BuildWebsocketRequestContextForEndpoint builds and returns a ProtocolRequestContextWebsocket containing a single selected endpoint.
+	// One `ProtocolRequestContextWebsocket` corresponds to a single long-lived websocket connection to a single endpoint.
+	// This method immediately establishes the Websocket connection and starts the bridge.
+	//
+	// If the Pocket Network Gateway is in delegated mode, the staked application is passed via
+	// the `App-Address` header. In all other modes, *http.Request will be nil.
+	//
+	// Return observation channel for connection-level observations (establishment, closure, errors).
+	// Message observations are sent through the provided messageObservationsChan.
+	// Return error if the context setup or connection establishment fails.
+	BuildWebsocketRequestContextForEndpoint(
+		context.Context,
+		protocol.ServiceID,
+		protocol.EndpointAddr,
+		websockets.WebsocketMessageProcessor,
+		*http.Request,
+		http.ResponseWriter,
+		chan *observation.RequestResponseObservations, // messageObservationsChan
+	) (ProtocolRequestContextWebsocket, <-chan *protocolobservations.Observations, error)
+
 	// SupportedGatewayModes returns the Gateway modes supported by the protocol instance.
 	// See protocol/gateway_mode.go for more details.
 	SupportedGatewayModes() []protocol.GatewayMode
 
-	// ApplyObservations applies the supplied observations to the protocol instance's internal state.
+	// ApplyHTTPObservations applies the supplied observations to the protocol instance's internal state.
 	// Hypothetical example (for illustrative purposes only):
 	// 	- protocol: Shannon
 	// 	- observation: "endpoint maxed-out or over-serviced (i.e. onchain rate limiting)"
 	// 	- result: skip the endpoint for a set time period until a new session begins.
-	ApplyObservations(*protocolobservations.Observations) error
+	ApplyHTTPObservations(*protocolobservations.Observations) error
+
+	// ApplyWebSocketObservations applies the supplied observations to the protocol instance's internal state.
+	// Hypothetical example (for illustrative purposes only):
+	// 	- protocol: Shannon
+	// 	- observation: "endpoint maxed-out or over-serviced (i.e. onchain rate limiting)"
+	// 	- result: skip the endpoint for a set time period until a new session begins.
+	ApplyWebSocketObservations(*protocolobservations.Observations) error
 
 	// TODO_FUTURE(@adshmh): support specifying the app(s) used for sending/signing synthetic relay requests by the hydrator.
 	// TODO_TECHDEBT: Enable the hydrator for gateway modes beyond Centralized only.
@@ -64,6 +110,9 @@ type Protocol interface {
 
 	// HydrateDisqualifiedEndpointsResponse hydrates the disqualified endpoint response with the protocol-specific data.
 	HydrateDisqualifiedEndpointsResponse(protocol.ServiceID, *devtools.DisqualifiedEndpointResponse)
+
+	// CheckWebsocketConnection checks if the websocket connection to the endpoint is established.
+	CheckWebsocketConnection(context.Context, protocol.ServiceID, protocol.EndpointAddr) *protocolobservations.Observations
 
 	// health.Check interface is used to verify protocol instance's health status.
 	health.Check
@@ -94,27 +143,11 @@ type ProtocolRequestContext interface {
 	// Then the observation can be:
 	//  - `maxed-out endpoint` on `endpoint_101`.
 	GetObservations() protocolobservations.Observations
-
-	// TODO_TECHDEBT(@commodity, @adshmh): Revisit all the Websocket specific functions
-	// in ProtocolRequestContext.
-	// - Too many websocket specific functions are exposed explicitly implying a poor interface.
-	// - Revisit the need for exposing these at all through a refactor?
-	//
-	// TODO_TECHDEBT(@commodity, @adshmh): Revisit casing of websocket vs Websocket vs WebSocket through.
-	ProtocolRequestContextWebsocket
 }
 
 // ProtocolRequestContextWebsocket defines the functionality expected by the gateway from the protocol,
 // specifically for websocket requests
 type ProtocolRequestContextWebsocket interface {
-	// GetWebsocketConnectionHeaders returns protocol-specific headers needed for websocket connections.
-	// These headers contain protocol-specific information like session data, service IDs, etc.
-	GetWebsocketConnectionHeaders() (http.Header, error)
-
-	// GetWebsocketEndpointURL returns the websocket URL for the selected endpoint.
-	// This URL is used to establish the websocket connection to the endpoint.
-	GetWebsocketEndpointURL() (string, error)
-
 	// ProcessProtocolClientWebsocketMessage processes a message from the client.
 	ProcessProtocolClientWebsocketMessage([]byte) ([]byte, error)
 

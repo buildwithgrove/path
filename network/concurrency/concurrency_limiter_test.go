@@ -302,7 +302,8 @@ func TestConcurrencyLimiterConcurrentAccess(t *testing.T) {
 
 func TestConcurrencyLimiterRaceConditions(t *testing.T) {
 	cl := NewConcurrencyLimiter(10)
-	ctx := context.Background()
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
 
 	var wg sync.WaitGroup
 
@@ -310,7 +311,12 @@ func TestConcurrencyLimiterRaceConditions(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			cl.Acquire(ctx)
+			// Use context with timeout to avoid blocking forever
+			if cl.Acquire(ctx) {
+				// If we acquired, release it after a short time
+				time.Sleep(time.Microsecond)
+				cl.Release()
+			}
 		}()
 	}
 

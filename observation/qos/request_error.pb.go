@@ -25,15 +25,16 @@ const (
 type RequestErrorKind int32
 
 const (
-	RequestErrorKind_REQUEST_ERROR_UNSPECIFIED                                RequestErrorKind = 0
-	RequestErrorKind_REQUEST_ERROR_INTERNAL_READ_HTTP_ERROR                   RequestErrorKind = 1 // Internal error: reading HTTP request's body failed.
-	RequestErrorKind_REQUEST_ERROR_INTERNAL_PROTOCOL_ERROR                    RequestErrorKind = 2 // Internal error: protocol error: e.g. no endpoint responses received.
-	RequestErrorKind_REQUEST_ERROR_USER_ERROR_JSONRPC_PARSE_ERROR             RequestErrorKind = 3 // User error: Request failed to parse as JSONRPC.
-	RequestErrorKind_REQUEST_ERROR_USER_ERROR_JSONRPC_SERVICE_DETECTION_ERROR RequestErrorKind = 4 // User error: Failed to detect service type from JSONRPC method.
-	RequestErrorKind_REQUEST_ERROR_USER_ERROR_JSONRPC_UNSUPPORTED_RPC_TYPE    RequestErrorKind = 5 // User error: JSONRPC method maps to unsupported RPC type.
-	RequestErrorKind_REQUEST_ERROR_INTERNAL_JSONRPC_PAYLOAD_BUILD_ERROR       RequestErrorKind = 6 // Internal error: Failed to build service payload from JSONRPC request.
-	RequestErrorKind_REQUEST_ERROR_USER_ERROR_REST_SERVICE_DETECTION_ERROR    RequestErrorKind = 7 // User error: Failed to detect service type from REST request.
-	RequestErrorKind_REQUEST_ERROR_USER_ERROR_REST_UNSUPPORTED_RPC_TYPE       RequestErrorKind = 8 // User error: unsupported service type in REST request.
+	RequestErrorKind_REQUEST_ERROR_UNSPECIFIED                                      RequestErrorKind = 0
+	RequestErrorKind_REQUEST_ERROR_INTERNAL_READ_HTTP_ERROR                         RequestErrorKind = 1 // Internal error: reading HTTP request's body failed.
+	RequestErrorKind_REQUEST_ERROR_INTERNAL_PROTOCOL_ERROR                          RequestErrorKind = 2 // Internal error: protocol error: e.g. no endpoint responses received.
+	RequestErrorKind_REQUEST_ERROR_USER_ERROR_JSONRPC_PARSE_ERROR                   RequestErrorKind = 3 // User error: Request failed to parse as JSONRPC.
+	RequestErrorKind_REQUEST_ERROR_USER_ERROR_JSONRPC_SERVICE_DETECTION_ERROR       RequestErrorKind = 4 // User error: Failed to detect service type from JSONRPC method.
+	RequestErrorKind_REQUEST_ERROR_USER_ERROR_JSONRPC_UNSUPPORTED_RPC_TYPE          RequestErrorKind = 5 // User error: JSONRPC method maps to unsupported RPC type.
+	RequestErrorKind_REQUEST_ERROR_INTERNAL_JSONRPC_PAYLOAD_BUILD_ERROR             RequestErrorKind = 6 // Internal error: Failed to build service payload from JSONRPC request.
+	RequestErrorKind_REQUEST_ERROR_USER_ERROR_REST_SERVICE_DETECTION_ERROR          RequestErrorKind = 7 // User error: Failed to detect service type from REST request.
+	RequestErrorKind_REQUEST_ERROR_USER_ERROR_REST_UNSUPPORTED_RPC_TYPE             RequestErrorKind = 8 // User error: unsupported service type in REST request.
+	RequestErrorKind_REQUEST_ERROR_INTERNAL_JSONRPC_BACKEND_SERVICE_UNMARSHAL_ERROR RequestErrorKind = 9 // Internal error: JSONRPC backend service payload failed to unmarshal as valid JSONRPC response.
 )
 
 // Enum value maps for RequestErrorKind.
@@ -48,17 +49,19 @@ var (
 		6: "REQUEST_ERROR_INTERNAL_JSONRPC_PAYLOAD_BUILD_ERROR",
 		7: "REQUEST_ERROR_USER_ERROR_REST_SERVICE_DETECTION_ERROR",
 		8: "REQUEST_ERROR_USER_ERROR_REST_UNSUPPORTED_RPC_TYPE",
+		9: "REQUEST_ERROR_INTERNAL_JSONRPC_BACKEND_SERVICE_UNMARSHAL_ERROR",
 	}
 	RequestErrorKind_value = map[string]int32{
-		"REQUEST_ERROR_UNSPECIFIED":                                0,
-		"REQUEST_ERROR_INTERNAL_READ_HTTP_ERROR":                   1,
-		"REQUEST_ERROR_INTERNAL_PROTOCOL_ERROR":                    2,
-		"REQUEST_ERROR_USER_ERROR_JSONRPC_PARSE_ERROR":             3,
-		"REQUEST_ERROR_USER_ERROR_JSONRPC_SERVICE_DETECTION_ERROR": 4,
-		"REQUEST_ERROR_USER_ERROR_JSONRPC_UNSUPPORTED_RPC_TYPE":    5,
-		"REQUEST_ERROR_INTERNAL_JSONRPC_PAYLOAD_BUILD_ERROR":       6,
-		"REQUEST_ERROR_USER_ERROR_REST_SERVICE_DETECTION_ERROR":    7,
-		"REQUEST_ERROR_USER_ERROR_REST_UNSUPPORTED_RPC_TYPE":       8,
+		"REQUEST_ERROR_UNSPECIFIED":                                      0,
+		"REQUEST_ERROR_INTERNAL_READ_HTTP_ERROR":                         1,
+		"REQUEST_ERROR_INTERNAL_PROTOCOL_ERROR":                          2,
+		"REQUEST_ERROR_USER_ERROR_JSONRPC_PARSE_ERROR":                   3,
+		"REQUEST_ERROR_USER_ERROR_JSONRPC_SERVICE_DETECTION_ERROR":       4,
+		"REQUEST_ERROR_USER_ERROR_JSONRPC_UNSUPPORTED_RPC_TYPE":          5,
+		"REQUEST_ERROR_INTERNAL_JSONRPC_PAYLOAD_BUILD_ERROR":             6,
+		"REQUEST_ERROR_USER_ERROR_REST_SERVICE_DETECTION_ERROR":          7,
+		"REQUEST_ERROR_USER_ERROR_REST_UNSUPPORTED_RPC_TYPE":             8,
+		"REQUEST_ERROR_INTERNAL_JSONRPC_BACKEND_SERVICE_UNMARSHAL_ERROR": 9,
 	}
 )
 
@@ -164,7 +167,7 @@ const file_path_qos_request_error_proto_rawDesc = "" +
 	"\n" +
 	"error_kind\x18\x01 \x01(\x0e2\x1a.path.qos.RequestErrorKindR\terrorKind\x12#\n" +
 	"\rerror_details\x18\x02 \x01(\tR\ferrorDetails\x12(\n" +
-	"\x10http_status_code\x18\x03 \x01(\x05R\x0ehttpStatusCode*\xde\x03\n" +
+	"\x10http_status_code\x18\x03 \x01(\x05R\x0ehttpStatusCode*\xa2\x04\n" +
 	"\x10RequestErrorKind\x12\x1d\n" +
 	"\x19REQUEST_ERROR_UNSPECIFIED\x10\x00\x12*\n" +
 	"&REQUEST_ERROR_INTERNAL_READ_HTTP_ERROR\x10\x01\x12)\n" +
@@ -174,7 +177,8 @@ const file_path_qos_request_error_proto_rawDesc = "" +
 	"5REQUEST_ERROR_USER_ERROR_JSONRPC_UNSUPPORTED_RPC_TYPE\x10\x05\x126\n" +
 	"2REQUEST_ERROR_INTERNAL_JSONRPC_PAYLOAD_BUILD_ERROR\x10\x06\x129\n" +
 	"5REQUEST_ERROR_USER_ERROR_REST_SERVICE_DETECTION_ERROR\x10\a\x126\n" +
-	"2REQUEST_ERROR_USER_ERROR_REST_UNSUPPORTED_RPC_TYPE\x10\bB0Z.github.com/buildwithgrove/path/observation/qosb\x06proto3"
+	"2REQUEST_ERROR_USER_ERROR_REST_UNSUPPORTED_RPC_TYPE\x10\b\x12B\n" +
+	">REQUEST_ERROR_INTERNAL_JSONRPC_BACKEND_SERVICE_UNMARSHAL_ERROR\x10\tB0Z.github.com/buildwithgrove/path/observation/qosb\x06proto3"
 
 var (
 	file_path_qos_request_error_proto_rawDescOnce sync.Once

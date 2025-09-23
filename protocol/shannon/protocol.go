@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
+	sharedtypes "github.com/pokt-network/poktroll/x/shared/types"
 
 	"github.com/buildwithgrove/path/gateway"
 	"github.com/buildwithgrove/path/health"
@@ -51,8 +52,12 @@ type Protocol struct {
 	// ownedApps is the list of apps owned by the gateway operator
 	ownedApps map[protocol.ServiceID][]string
 
-	// sanctionedEndpointsStore tracks sanctioned endpoints
-	sanctionedEndpointsStore *sanctionedEndpointsStore
+	// TODO_TECHDEBT(@adshmh,@commoddity,@olshansk): JSON_RPC RPC type should more correctly be called HTTP
+	// when used in this context. Add an HTTP RPC-type to the enum in poktroll and update this map when it is done.
+	//
+	// sanctionedEndpointsStores tracks sanctioned endpoints per RPC type
+	// currently only JSON_RPC (stand-in for HTTP) and WEBSOCKET are supported
+	sanctionedEndpointsStores map[sharedtypes.RPCType]*sanctionedEndpointsStore
 
 	// HTTP client used for sending relay requests to endpoints while also capturing & publishing various debug metrics.
 	httpClient *pathhttp.HTTPClientWithDebugMetrics
@@ -102,8 +107,12 @@ func NewProtocol(
 		gatewayAddr:          config.GatewayAddress,
 		gatewayPrivateKeyHex: config.GatewayPrivateKeyHex,
 		gatewayMode:          config.GatewayMode,
-		// tracks sanctioned endpoints
-		sanctionedEndpointsStore: newSanctionedEndpointsStore(logger),
+		// tracks sanctioned endpoints per RPC type
+		// currently only JSON_RPC and WEBSOCKET are supported
+		sanctionedEndpointsStores: map[sharedtypes.RPCType]*sanctionedEndpointsStore{
+			sharedtypes.RPCType_JSON_RPC:  newSanctionedEndpointsStore(logger),
+			sharedtypes.RPCType_WEBSOCKET: newSanctionedEndpointsStore(logger),
+		},
 
 		// ownedApps is the list of apps owned by the gateway operator
 		ownedApps: ownedApps,
@@ -118,7 +127,7 @@ func NewProtocol(
 	return protocolInstance, nil
 }
 
-// AvailableEndpoints returns the available endpoints for a given service ID.
+// AvailableHTTPEndpoints returns the available endpoints for a given service ID.
 //
 // - Provides the list of endpoints that can serve the specified service ID.
 // - Returns a list of valid endpoint addresses, protocol observations, and any error encountered.
@@ -131,7 +140,7 @@ func NewProtocol(
 //   - protocol.EndpointAddrList: the discovered endpoints for the service.
 //   - protocolobservations.Observations: contextual observations (e.g., error context).
 //   - error: if any error occurs during endpoint discovery or validation.
-func (p *Protocol) AvailableEndpoints(
+func (p *Protocol) AvailableHTTPEndpoints(
 	ctx context.Context,
 	serviceID protocol.ServiceID,
 	httpReq *http.Request,
@@ -161,8 +170,7 @@ func (p *Protocol) AvailableEndpoints(
 	// endpoints will be used to populate the list of endpoints.
 	//
 	// The final boolean parameter sets whether to filter out sanctioned endpoints.
-
-	endpoints, err := p.getUniqueEndpoints(ctx, serviceID, activeSessions, true)
+	endpoints, err := p.getUniqueEndpoints(ctx, serviceID, activeSessions, true, sharedtypes.RPCType_JSON_RPC)
 	if err != nil {
 		logger.Error().Err(err).Msg(err.Error())
 		return nil, buildProtocolContextSetupErrorObservation(serviceID, err), err
@@ -180,7 +188,68 @@ func (p *Protocol) AvailableEndpoints(
 	return endpointAddrs, buildSuccessfulEndpointLookupObservation(serviceID), nil
 }
 
-// BuildRequestContextForEndpoint creates a new protocol request context for a specified service and endpoint.
+// AvailableWebsocketEndpoints returns the available endpoints for a given service ID.
+//
+// - Provides the list of endpoints that can serve the specified service ID.
+// - Returns a list of valid endpoint addresses, protocol observations, and any error encountered.
+//
+// Usage:
+//   - In Delegated mode, httpReq must contain the appropriate headers for app selection.
+//   - In Centralized mode, httpReq may be nil.
+//
+// Returns:
+//   - protocol.EndpointAddrList: the discovered endpoints for the service.
+//   - protocolobservations.Observations: contextual observations (e.g., error context).
+//   - error: if any error occurs during endpoint discovery or validation.
+func (p *Protocol) AvailableWebsocketEndpoints(
+	ctx context.Context,
+	serviceID protocol.ServiceID,
+	httpReq *http.Request,
+) (protocol.EndpointAddrList, protocolobservations.Observations, error) {
+	// hydrate the logger.
+	logger := p.logger.With(
+		"service", serviceID,
+		"method", "AvailableEndpoints",
+		"gateway_mode", p.gatewayMode,
+	)
+
+	// TODO_TECHDEBT(@adshmh): validate "serviceID" is a valid onchain Shannon service.
+	activeSessions, err := p.getActiveGatewaySessions(ctx, serviceID, httpReq)
+	if err != nil {
+		logger.Error().Err(err).Msg("Relay request will fail: error building the active sessions for service.")
+		return nil, buildProtocolContextSetupErrorObservation(serviceID, err), err
+	}
+
+	logger = logger.With("number_of_valid_sessions", len(activeSessions))
+	logger.Debug().Msg("fetched the set of active sessions.")
+
+	// Retrieve a list of all unique endpoints for the given service ID filtered by
+	// the list of apps this gateway/application owns and can send relays on behalf of.
+	//
+	// This includes fallback logic: if all session endpoints are sanctioned and the
+	// requested service is configured with at least one fallback URL, the fallback
+	// endpoints will be used to populate the list of endpoints.
+	//
+	// The final boolean parameter sets whether to filter out sanctioned endpoints.
+	endpoints, err := p.getUniqueEndpoints(ctx, serviceID, activeSessions, true, sharedtypes.RPCType_WEBSOCKET)
+	if err != nil {
+		logger.Error().Err(err).Msg(err.Error())
+		return nil, buildProtocolContextSetupErrorObservation(serviceID, err), err
+	}
+
+	logger = logger.With("number_of_unique_endpoints", len(endpoints))
+	logger.Debug().Msg("Successfully fetched the set of available endpoints for the selected apps.")
+
+	// Convert the list of endpoints to a list of endpoint addresses
+	endpointAddrs := make(protocol.EndpointAddrList, 0, len(endpoints))
+	for endpointAddr := range endpoints {
+		endpointAddrs = append(endpointAddrs, endpointAddr)
+	}
+
+	return endpointAddrs, buildSuccessfulEndpointLookupObservation(serviceID), nil
+}
+
+// BuildHTTPRequestContextForEndpoint creates a new protocol request context for a specified service and endpoint.
 //
 // Parameters:
 //   - ctx: Context for cancellation, deadlines, and logging.
@@ -198,14 +267,14 @@ func (p *Protocol) AvailableEndpoints(
 //   - On failure, logs the error, returns a context setup observation, and a non-nil error.
 //
 // Implements the gateway.Protocol interface.
-func (p *Protocol) BuildRequestContextForEndpoint(
+func (p *Protocol) BuildHTTPRequestContextForEndpoint(
 	ctx context.Context,
 	serviceID protocol.ServiceID,
 	selectedEndpointAddr protocol.EndpointAddr,
 	httpReq *http.Request,
 ) (gateway.ProtocolRequestContext, protocolobservations.Observations, error) {
 	logger := p.logger.With(
-		"method", "BuildRequestContextForEndpoint",
+		"method", "BuildHTTPRequestContextForEndpoint",
 		"service_id", serviceID,
 		"endpoint_addr", selectedEndpointAddr,
 	)
@@ -220,7 +289,7 @@ func (p *Protocol) BuildRequestContextForEndpoint(
 	// that can service RPC requests for the given service ID for the given apps.
 	// This includes fallback logic if session endpoints are unavailable.
 	// The final boolean parameter sets whether to filter out sanctioned endpoints.
-	endpoints, err := p.getUniqueEndpoints(ctx, serviceID, activeSessions, true)
+	endpoints, err := p.getUniqueEndpoints(ctx, serviceID, activeSessions, true, sharedtypes.RPCType_JSON_RPC)
 	if err != nil {
 		logger.Error().Err(err).Msg(err.Error())
 		return nil, buildProtocolContextSetupErrorObservation(serviceID, err), err
@@ -267,27 +336,31 @@ func (p *Protocol) BuildRequestContextForEndpoint(
 	}, protocolobservations.Observations{}, nil
 }
 
-// ApplyObservations updates protocol instance state based on endpoint observations.
+// ApplyHTTPObservations updates protocol instance state based on endpoint observations.
 // Examples:
 // - Mark endpoints as invalid based on response quality
 // - Disqualify endpoints for a time period
 //
 // Implements gateway.Protocol interface.
-func (p *Protocol) ApplyObservations(observations *protocolobservations.Observations) error {
+func (p *Protocol) ApplyHTTPObservations(observations *protocolobservations.Observations) error {
 	// Sanity check the input
 	if observations == nil || observations.GetShannon() == nil {
-		p.logger.ProbabilisticDebugInfo(polylog.ProbabilisticDebugInfoProb).Msg("SHOULD RARELY HAPPEN: ApplyObservations called with nil input or nil Shannon observation list.")
+		p.logger.ProbabilisticDebugInfo(polylog.ProbabilisticDebugInfoProb).Msg("SHOULD RARELY HAPPEN: ApplyHTTPObservations called with nil input or nil Shannon observation list.")
 		return nil
 	}
 
 	shannonObservations := observations.GetShannon().GetObservations()
 	if len(shannonObservations) == 0 {
-		p.logger.ProbabilisticDebugInfo(polylog.ProbabilisticDebugInfoProb).Msg("SHOULD RARELY HAPPEN: ApplyObservations called with nil set of Shannon request observations.")
+		p.logger.ProbabilisticDebugInfo(polylog.ProbabilisticDebugInfoProb).Msg("SHOULD RARELY HAPPEN: ApplyHTTPObservations called with nil set of Shannon request observations.")
 		return nil
 	}
-
 	// hand over the observations to the sanctioned endpoints store for adding any applicable sanctions.
-	p.sanctionedEndpointsStore.ApplyObservations(shannonObservations)
+	sanctionedEndpointsStore, ok := p.sanctionedEndpointsStores[sharedtypes.RPCType_JSON_RPC]
+	if !ok {
+		p.logger.Error().Msgf("SHOULD NEVER HAPPEN: sanctioned endpoints store not found for RPC type: %s", sharedtypes.RPCType_JSON_RPC)
+		return nil
+	}
+	sanctionedEndpointsStore.ApplyObservations(shannonObservations)
 
 	return nil
 }
@@ -329,6 +402,7 @@ func (p *Protocol) getUniqueEndpoints(
 	serviceID protocol.ServiceID,
 	activeSessions []hydratedSession,
 	filterSanctioned bool,
+	rpcType sharedtypes.RPCType,
 ) (map[protocol.EndpointAddr]endpoint, error) {
 	logger := p.logger.With(
 		"method", "getUniqueEndpoints",
@@ -347,7 +421,7 @@ func (p *Protocol) getUniqueEndpoints(
 	}
 
 	// Try to get session endpoints first.
-	sessionEndpoints, err := p.getSessionsUniqueEndpoints(ctx, serviceID, activeSessions, filterSanctioned)
+	sessionEndpoints, err := p.getSessionsUniqueEndpoints(ctx, serviceID, activeSessions, rpcType)
 	if err != nil {
 		logger.Error().Err(err).Msgf("Error getting session endpoints for service %s: %v", serviceID, err)
 	}
@@ -381,7 +455,7 @@ func (p *Protocol) getSessionsUniqueEndpoints(
 	_ context.Context,
 	serviceID protocol.ServiceID,
 	activeSessions []hydratedSession,
-	filterSanctioned bool, // will be true for calls made by service request handling.
+	filterByRPCType sharedtypes.RPCType,
 ) (map[protocol.EndpointAddr]endpoint, error) {
 	logger := p.logger.With(
 		"method", "getSessionsUniqueEndpoints",
@@ -406,22 +480,25 @@ func (p *Protocol) getSessionsUniqueEndpoints(
 		logger = hydrateLoggerWithSession(logger, hydratedSession.session)
 		logger.ProbabilisticDebugInfo(polylog.ProbabilisticDebugInfoProb).Msgf("Finding unique endpoints for session %s for app %s for service %s.", hydratedSession.session.SessionId, app.Address, serviceID)
 
-		// Retrieve all endpoints for the session.
+		// Initialize the qualified endpoints as the full set of session endpoints.
+		// Sanctioned endpoints will be filtered out below if a valid RPC type is provided.
 		qualifiedEndpoints := hydratedSession.endpoints
 
-		// Filter out sanctioned endpoints if requested.
-		if filterSanctioned {
+		// Filter out sanctioned endpoints if a valid RPC type is provided.
+		// If no valid RPC type is provided, don't filter out sanctioned endpoints.
+		// As of PR #424 the only supported RPC types are JSON_RPC and WEBSOCKET.
+		if sanctionedEndpointsStore, ok := p.sanctionedEndpointsStores[filterByRPCType]; ok {
 			logger.Debug().Msgf(
 				"app %s has %d endpoints before filtering sanctioned endpoints.",
 				app.Address, len(hydratedSession.endpoints),
 			)
 
 			// Filter out any sanctioned endpoints
-			filteredEndpoints := p.sanctionedEndpointsStore.FilterSanctionedEndpoints(qualifiedEndpoints)
+			filteredEndpoints := sanctionedEndpointsStore.FilterSanctionedEndpoints(qualifiedEndpoints)
 			// All endpoints are sanctioned: log a warning and skip this app.
 			if len(filteredEndpoints) == 0 {
 				logger.Error().Msgf(
-					"All %d session endpoints are sanctioned for service %s, app %s. Skipping the app.",
+					"❌ All %d session endpoints are sanctioned for service %s, app %s. SKIPPING the app.",
 					len(hydratedSession.endpoints), serviceID, app.Address,
 				)
 				continue
@@ -481,7 +558,8 @@ func (p *Protocol) GetTotalServiceEndpointsCount(serviceID protocol.ServiceID, h
 	}
 
 	// Get all endpoints for the service ID without filtering sanctioned endpoints.
-	endpoints, err := p.getSessionsUniqueEndpoints(ctx, serviceID, activeSessions, false)
+	// Since we don't want to filter sanctioned endpoints, we use an unsupported RPC type.
+	endpoints, err := p.getSessionsUniqueEndpoints(ctx, serviceID, activeSessions, sharedtypes.RPCType_UNKNOWN_RPC)
 	if err != nil {
 		return 0, err
 	}
@@ -494,5 +572,10 @@ func (p *Protocol) GetTotalServiceEndpointsCount(serviceID protocol.ServiceID, h
 //   - called by the devtools.DisqualifiedEndpointReporter to fill it with the protocol-specific data.
 func (p *Protocol) HydrateDisqualifiedEndpointsResponse(serviceID protocol.ServiceID, details *devtools.DisqualifiedEndpointResponse) {
 	p.logger.Info().Msgf("hydrating disqualified endpoints response for service ID: %s", serviceID)
-	details.ProtocolLevelDisqualifiedEndpoints = p.sanctionedEndpointsStore.getSanctionDetails(serviceID)
+
+	details.ProtocolLevelDisqualifiedEndpoints = make(map[string]devtools.ProtocolLevelDataResponse)
+
+	for rpcType, sanctionedEndpointsStore := range p.sanctionedEndpointsStores {
+		details.ProtocolLevelDisqualifiedEndpoints[rpcType.String()] = sanctionedEndpointsStore.getSanctionDetails(serviceID)
+	}
 }

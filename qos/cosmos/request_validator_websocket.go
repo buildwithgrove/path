@@ -21,23 +21,23 @@ import (
 //   - Consider recreating the QoS context per endpoint message
 //   - How to apply the observations for early detection of endpoint errors.
 //
-// TODO_IMPROVE(@commoddity): Add endpoint-level QoS checks to determine WebSocket support.
-// Currently validates WebSocket upgrade requests at the service level only.
+// TODO_IMPROVE(@commoddity): Add endpoint-level QoS checks to determine Websocket support.
+// Currently validates Websocket upgrade requests at the service level only.
 
-// validateWebsocketRequest validates WebSocket upgrade requests for Cosmos SDK services.
-// Returns (requestContext, true) if WebSocket is supported.
-// Returns (errorContext, false) if WebSocket is not configured for this service.
+// validateWebsocketRequest validates Websocket upgrade requests for Cosmos SDK services.
+// Returns (requestContext, true) if Websocket is supported.
+// Returns (errorContext, false) if Websocket is not configured for this service.
 func (rv *requestValidator) validateWebsocketRequest() (gateway.RequestQoSContext, bool) {
 	logger := rv.logger.With(
-		"validator", "WebSocket",
+		"validator", "Websocket",
 		"method", "validateWebsocketRequest",
 	)
 	rpcType := sharedtypes.RPCType_WEBSOCKET
 	logger = logger.With("rpc_type", rpcType.String())
 
-	// Verify WebSocket support in service configuration
+	// Verify Websocket support in service configuration
 	if _, supported := rv.supportedAPIs[sharedtypes.RPCType_WEBSOCKET]; !supported {
-		logger.Warn().Msg("Request uses unsupported WebSocket RPC type")
+		logger.Warn().Msg("Request uses unsupported Websocket RPC type")
 		return rv.createWebsocketUnsupportedRPCTypeContext(rpcType), false
 	}
 
@@ -48,7 +48,7 @@ func (rv *requestValidator) validateWebsocketRequest() (gateway.RequestQoSContex
 	), true
 }
 
-// buildWebsocketRequestContext builds a request context for WebSocket upgrade requests.
+// buildWebsocketRequestContext builds a request context for Websocket upgrade requests.
 func (rv *requestValidator) buildWebsocketRequestContext(
 	rpcType sharedtypes.RPCType,
 	requestOrigin qosobservations.RequestOrigin,
@@ -68,7 +68,7 @@ func (rv *requestValidator) buildWebsocketRequestContext(
 	}
 }
 
-// buildWebsocketRequestObservations builds a request observation for WebSocket upgrade requests.
+// buildWebsocketRequestObservations builds a request observation for Websocket upgrade requests.
 func (rv *requestValidator) buildWebsocketRequestObservations(
 	rpcType sharedtypes.RPCType,
 	requestOrigin qosobservations.RequestOrigin,
@@ -78,20 +78,22 @@ func (rv *requestValidator) buildWebsocketRequestObservations(
 		CosmosChainId: rv.cosmosChainID,
 		ServiceId:     string(rv.serviceID),
 		RequestOrigin: requestOrigin,
-		RequestProfile: &qosobservations.CosmosRequestProfile{
-			BackendServiceDetails: &qosobservations.BackendServiceDetails{
-				BackendServiceType: convertToProtoBackendServiceType(rpcType),
-				SelectionReason:    "WebSocket upgrade request detection",
+		RequestProfiles: []*qosobservations.CosmosRequestProfile{
+			{
+				BackendServiceDetails: &qosobservations.BackendServiceDetails{
+					BackendServiceType: convertToProtoBackendServiceType(rpcType),
+					SelectionReason:    "Websocket upgrade request detection",
+				},
 			},
 		},
 	}
 }
 
-// createWebsocketUnsupportedRPCTypeContext creates error context when WebSocket is not configured
+// createWebsocketUnsupportedRPCTypeContext creates error context when Websocket is not configured
 func (rv *requestValidator) createWebsocketUnsupportedRPCTypeContext(
 	rpcType sharedtypes.RPCType,
 ) gateway.RequestQoSContext {
-	err := errors.New("WebSocket not supported for this service")
+	err := errors.New("websocket not supported for this service")
 	response := jsonrpc.NewErrResponseInvalidRequest(jsonrpc.ID{}, err)
 
 	observations := rv.createWebsocketUnsupportedRPCTypeObservation(rpcType, response)
@@ -107,7 +109,7 @@ func (rv *requestValidator) createWebsocketUnsupportedRPCTypeContext(
 	}
 }
 
-// createWebsocketUnsupportedRPCTypeObservation creates an observation for unsupported WebSocket requests
+// createWebsocketUnsupportedRPCTypeObservation creates an observation for unsupported Websocket requests
 func (rv *requestValidator) createWebsocketUnsupportedRPCTypeObservation(
 	rpcType sharedtypes.RPCType,
 	jsonrpcResponse jsonrpc.Response,
@@ -116,10 +118,12 @@ func (rv *requestValidator) createWebsocketUnsupportedRPCTypeObservation(
 		ServiceId:     string(rv.serviceID),
 		CosmosChainId: rv.cosmosChainID,
 		RequestOrigin: qosobservations.RequestOrigin_REQUEST_ORIGIN_ORGANIC,
-		RequestProfile: &qosobservations.CosmosRequestProfile{
-			BackendServiceDetails: &qosobservations.BackendServiceDetails{
-				BackendServiceType: convertToProtoBackendServiceType(rpcType),
-				SelectionReason:    "WebSocket upgrade request detection (unsupported)",
+		RequestProfiles: []*qosobservations.CosmosRequestProfile{
+			{
+				BackendServiceDetails: &qosobservations.BackendServiceDetails{
+					BackendServiceType: convertToProtoBackendServiceType(rpcType),
+					SelectionReason:    "Websocket upgrade request detection (unsupported)",
+				},
 			},
 		},
 		RequestLevelError: &qosobservations.RequestError{

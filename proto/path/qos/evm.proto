@@ -19,6 +19,7 @@ option go_package = "github.com/buildwithgrove/path/observation/qos";
 import "path/qos/jsonrpc.proto";
 import "path/qos/request_origin.proto";
 import "path/qos/endpoint_selection_metadata.proto";
+import "path/qos/request_error.proto";
 import "path/metadata/metadata.proto";
 
 // EVMRequestValidationError enumerates possible causes for EVM request rejection:
@@ -64,7 +65,7 @@ enum EVMResponseValidationError {
 
 // EVMRequestObservations captures all observations made while serving a single EVM blockchain service request.
 message EVMRequestObservations {
-  // Next ID: 11
+  // Next ID: 12
 
   // JsonRpcRequest and endpoint_observations are no longer supported.
   // They are replaced by EVMRequestObservation.
@@ -109,16 +110,24 @@ message EVMRequestObservations {
 
   // endpoint_selection_metadata contains metadata about the endpoint selection process.
   EndpointSelectionMetadata endpoint_selection_metadata = 9;
+
+  // Internal error encountered processing the request, if any.
+  // Example: no endpoint responses received.
+  // On single JSONRPC request: applies to the single request.
+  // On batch JSONRPC requests: only set if the entire batch failed (e.g. no endpoint responses for any of the requests of the batch)
+  optional RequestError request_error = 11;
 }
 
+// EVMRequestObservation stores a single observation from an endpoint servicing the protocol response.
+// This is necessary to support batch requests.
 message EVMRequestObservation {
-   // The EVM blockchain service's JSON-RPC request.
+  // The EVM blockchain service's JSON-RPC request.
   // This field will be populated only if request validation succeeds.
   // If there is an error reading the HTTP request, there will be no jsonrpc_request.
   // TODO_TECHDEBT: Assumes EVM chains only support JSON-RPC. May need refactoring to support other protocols.
   JsonRpcRequest jsonrpc_request = 5;
 
-    // EVM-specific observations from endpoint(s) that responded to the service request.
+  // EVM-specific observations from endpoint(s) that responded to the service request.
   // Multiple observations may occur when:
   // * Original endpoint fails
   // * Request is sent to additional endpoints for data collection
@@ -192,6 +201,9 @@ message EVMEndpointObservation {
     // This differs from EVMEmptyResponse as no response was reported by the protocol.
     EVMNoResponse no_response = 7;
   }
+
+  // Only set if the endpoint returned a valid JSONRPC response.
+  optional JsonRpcResponse parsed_jsonrpc_response = 8;
 }
 
 // TODO_MVP(@adshmh): Implement a consolidated SanctionObservation message structure that:

@@ -1,10 +1,14 @@
 package http
 
 import (
-	"fmt"
+	"errors"
 	"net/url"
 
 	"golang.org/x/net/publicsuffix"
+)
+
+const (
+	EmptyHostDomain = "empty host"
 )
 
 // ExtractEffectiveTLDPlusOne extracts the "effective TLD+1" (eTLD+1) from a given URL.
@@ -20,7 +24,7 @@ func ExtractEffectiveTLDPlusOne(rawURL string) (string, error) {
 
 	host := parsedURL.Hostname()
 	if host == "" {
-		return "", fmt.Errorf("empty host") // no host in URL
+		return "", errors.New(EmptyHostDomain)
 	}
 
 	etld, err := publicsuffix.EffectiveTLDPlusOne(host)

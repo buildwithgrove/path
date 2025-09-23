@@ -63,9 +63,9 @@ func (ec *errorContext) GetHTTPResponse() pathhttp.HTTPResponse {
 		httpStatusCode = ec.response.GetRecommendedHTTPStatusCode()
 	}
 
-	return httpResponse{
-		responsePayload: bz,
-		httpStatusCode:  httpStatusCode,
+	return jsonrpc.HTTPResponse{
+		ResponsePayload: bz,
+		HTTPStatusCode:  httpStatusCode,
 	}
 }
 

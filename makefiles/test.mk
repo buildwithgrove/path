@@ -21,12 +21,13 @@ go_lint: ## Run all go linters
 ### E2E Tests ###
 #################
 
+# HTTP E2E Tests
 .PHONY: e2e_test_all
-e2e_test_all: shannon_e2e_config_warning ## Run an E2E Shannon relay test for all service IDs
+e2e_test_all: shannon_e2e_config_warning ## Run HTTP-only E2E tests for all service IDs
 	(cd e2e && TEST_MODE=e2e TEST_PROTOCOL=shannon go test -v -tags=e2e -count=1 -run Test_PATH_E2E)
 
 .PHONY: e2e_test
-e2e_test: shannon_e2e_config_warning ## Run an E2E Shannon relay test with specified service IDs (e.g. make shannon_test_e2e eth,xrplevm)
+e2e_test: shannon_e2e_config_warning ## Run HTTP-only E2E tests with specified service IDs (e.g. make e2e_test eth,xrplevm)
 	@if [ "$(filter-out $@,$(MAKECMDGOALS))" = "" ]; then \
 		echo "❌ Error: Service IDs are required (comma-separated list)"; \
 		echo "  👀 Example: make test_e2e_evm_shannon eth,xrplevm"; \
@@ -34,6 +35,21 @@ e2e_test: shannon_e2e_config_warning ## Run an E2E Shannon relay test with speci
 		exit 1; \
 	fi
 	(cd e2e && TEST_MODE=e2e TEST_PROTOCOL=shannon TEST_SERVICE_IDS=$(filter-out $@,$(MAKECMDGOALS)) go test -v -tags=e2e -count=1 -run Test_PATH_E2E)
+
+# Websocket E2E Tests
+.PHONY: e2e_test_websocket_all
+e2e_test_websocket_all: shannon_e2e_config_warning ## Run Websocket-only E2E tests for all Websocket-compatible services
+	(cd e2e && TEST_MODE=e2e TEST_PROTOCOL=shannon TEST_WEBSOCKETS=true go test -v -tags=e2e -count=1 -run Test_PATH_E2E)
+
+.PHONY: e2e_test_websocket
+e2e_test_websocket: shannon_e2e_config_warning ## Run Websocket-only E2E tests with specified service IDs (e.g. make e2e_test_websocket xrplevm)
+	@if [ "$(filter-out $@,$(MAKECMDGOALS))" = "" ]; then \
+		echo "❌ Error: Service IDs are required (comma-separated list)"; \
+		echo "  👀 Example: make e2e_test_websocket xrplevm,xrplevm-testnet"; \
+		echo "  💡 To run all Websocket-compatible services, use: make e2e_test_websocket_all"; \
+		exit 1; \
+	fi
+	(cd e2e && TEST_MODE=e2e TEST_PROTOCOL=shannon TEST_SERVICE_IDS=$(filter-out $@,$(MAKECMDGOALS)) TEST_WEBSOCKETS=true go test -v -tags=e2e -count=1 -run Test_PATH_E2E)
 
 .PHONY: e2e_test_eth_fallback
 e2e_test_eth_fallback: shannon_e2e_config_warning ## Run an E2E Shannon relay test with ETH fallback enabled (requires FALLBACK_URL)
@@ -50,12 +66,13 @@ e2e_test_eth_fallback: shannon_e2e_config_warning ## Run an E2E Shannon relay te
 ### Load Tests ###
 ##################
 
+# HTTP Load Tests
 .PHONY: load_test_all
-load_test_all: ## Run a Shannon load test for all service IDs
+load_test_all: ## Run HTTP-only load tests for all service IDs
 	(cd e2e && TEST_MODE=load TEST_PROTOCOL=shannon go test -v -tags=e2e -count=1 -run Test_PATH_E2E)
 
 .PHONY: load_test
-load_test: ## Run a Shannon load test with specified service IDs (e.g. make load_test eth,xrplevm)
+load_test: ## Run HTTP-only load tests with specified service IDs (e.g. make load_test eth,xrplevm)
 	@if [ "$(filter-out $@,$(MAKECMDGOALS))" = "" ]; then \
 		echo "❌ Error: Service IDs are required (comma-separated list)"; \
 		echo "  👀 Example: make load_test eth,xrplevm"; \
@@ -63,6 +80,21 @@ load_test: ## Run a Shannon load test with specified service IDs (e.g. make load
 		exit 1; \
 	fi
 	@(cd e2e && TEST_MODE=load TEST_PROTOCOL=shannon TEST_SERVICE_IDS=$(filter-out $@,$(MAKECMDGOALS)) go test -v -tags=e2e -count=1 -run Test_PATH_E2E)
+
+# Websocket Load Tests
+.PHONY: load_test_websocket_all
+load_test_websocket_all: ## Run Websocket-only load tests for all Websocket-compatible services
+	(cd e2e && TEST_MODE=load TEST_PROTOCOL=shannon TEST_WEBSOCKETS=true go test -v -tags=e2e -count=1 -run Test_PATH_E2E)
+
+.PHONY: load_test_websocket
+load_test_websocket: ## Run Websocket-only load tests with specified service IDs (e.g. make load_test_websocket xrplevm)
+	@if [ "$(filter-out $@,$(MAKECMDGOALS))" = "" ]; then \
+		echo "❌ Error: Service IDs are required (comma-separated list)"; \
+		echo "  👀 Example: make load_test_websocket xrplevm,xrplevm-testnet"; \
+		echo "  💡 To run all Websocket-compatible services, use: make load_test_websocket_all"; \
+		exit 1; \
+	fi
+	@(cd e2e && TEST_MODE=load TEST_PROTOCOL=shannon TEST_SERVICE_IDS=$(filter-out $@,$(MAKECMDGOALS)) TEST_WEBSOCKETS=true go test -v -tags=e2e -count=1 -run Test_PATH_E2E)
 
 .PHONY: config_enable_grove_fallback
 config_enable_grove_fallback: ## Enable fallback endpoints for all services in PATH config

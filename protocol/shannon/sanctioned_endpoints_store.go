@@ -65,58 +65,101 @@ func (ses *sanctionedEndpointsStore) ApplyObservations(shannonObservations []*pr
 	logger := ses.logger.With("method", "ApplyObservations")
 
 	if len(shannonObservations) == 0 {
-		logger.Warn().Msg("Skipping processing: received empty observation list")
+		logger.Warn().Msg("⚠️ Skipping processing: received empty observation list")
 		return
 	}
 
 	// For each observation set:
 	for _, observationSet := range shannonObservations {
+		// Process HTTP observations if present
 		httpObservations := observationSet.GetHttpObservations()
-		if httpObservations == nil {
-			logger.Warn().Msg("❌ SHOULD NEVER HAPPEN: skipping processing: received empty HTTP observations")
+		if httpObservations != nil {
+			ses.processHTTPConnectionObservationForSanctions(logger, httpObservations)
+		}
+
+		// Process Websocket connection observations
+		websocketConnectionObs := observationSet.GetWebsocketConnectionObservation()
+		if websocketConnectionObs != nil {
+			ses.processWebSocketConnectionObservationForSanctions(logger, websocketConnectionObs)
+		}
+	}
+}
+
+// TODO_TECHDEBT(@commoddity,@adshmh): sanctioned endpoints stores are categorized on RPC type, but contain HTTP methods.
+// The approach is in the right direction in general, but requires a few refactors to encapsulate observation processing
+// logic specific to each RPC type.
+//
+// processHTTPConnectionObservationForSanctions processes HTTP endpoint observations for sanctions
+func (ses *sanctionedEndpointsStore) processHTTPConnectionObservationForSanctions(
+	logger polylog.Logger,
+	httpObservations *protocolobservations.ShannonHTTPEndpointObservations,
+) {
+	// For each endpoint observation in the set:
+	for _, endpointObservation := range httpObservations.GetEndpointObservations() {
+		// Build endpoint from observation
+		endpoint := buildEndpointFromObservation(endpointObservation)
+
+		// Hydrate logger with endpoint context
+		logger := hydrateLoggerWithEndpoint(logger, endpoint).With("method", "processHTTPConnectionObservationForSanctions")
+		logger.Debug().Msg("processing endpoint observation.")
+
+		// Skip if no sanction is recommended
+		recommendedSanction := endpointObservation.GetRecommendedSanction()
+		if recommendedSanction == protocolobservations.ShannonSanctionType_SHANNON_SANCTION_UNSPECIFIED {
 			continue
 		}
 
-		// For each endpoint observation in the set:
-		for _, endpointObservation := range httpObservations.GetEndpointObservations() {
-			// Build endpoint from observation
-			endpoint := buildEndpointFromObservation(endpointObservation)
+		// Build sanction from observation
+		sanctionData := buildSanctionFromObservation(endpointObservation)
 
-			// Hydrate logger with endpoint context
-			logger := hydrateLoggerWithEndpoint(logger, endpoint).With("method", "ApplyObservations")
-			logger.Debug().Msg("processing endpoint observation.")
+		// Apply appropriate type of sanction:
+		switch recommendedSanction {
+		case protocolobservations.ShannonSanctionType_SHANNON_SANCTION_PERMANENT:
+			// Permanent sanction:
+			//   - Persists for process lifetime (not on disk)
+			//   - Lost on PATH restart; not shared
+			logger.Info().Msg("Adding permanent sanction for endpoint")
+			ses.addPermanentSanction(endpoint.Addr(), sanctionData)
 
-			// Skip if no sanction is recommended
-			recommendedSanction := endpointObservation.GetRecommendedSanction()
-			if recommendedSanction == protocolobservations.ShannonSanctionType_SHANNON_SANCTION_UNSPECIFIED {
-				continue
-			}
+		case protocolobservations.ShannonSanctionType_SHANNON_SANCTION_SESSION:
+			// Session-based sanction:
+			//   - Expires after set duration
+			//   - More ephemeral than permanent
+			//   - Lost on PATH restart; not shared
+			logger.Info().Msg("Adding session sanction for endpoint")
+			ses.addSessionSanction(endpoint, sanctionData)
 
-			// Build sanction from observation
-			sanctionData := buildSanctionFromObservation(endpointObservation)
-
-			// Apply appropriate type of sanction:
-			switch recommendedSanction {
-			case protocolobservations.ShannonSanctionType_SHANNON_SANCTION_PERMANENT:
-				// Permanent sanction:
-				//   - Persists for process lifetime (not on disk)
-				//   - Lost on PATH restart; not shared
-				logger.Info().Msg("Adding permanent sanction for endpoint")
-				ses.addPermanentSanction(endpoint.Addr(), sanctionData)
-
-			case protocolobservations.ShannonSanctionType_SHANNON_SANCTION_SESSION:
-				// Session-based sanction:
-				//   - Expires after set duration
-				//   - More ephemeral than permanent
-				//   - Lost on PATH restart; not shared
-				logger.Info().Msg("Adding session sanction for endpoint")
-				ses.addSessionSanction(endpoint, sanctionData)
-
-			default:
-				logger.Warn().Msg("sanction type not supported by the store. skipping.")
-			}
+		default:
+			logger.Warn().Msg("sanction type not supported by the store. skipping.")
 		}
 	}
+}
+
+// processWebSocketConnectionObservationForSanctions processes a Websocket connection observation for sanctions
+func (ses *sanctionedEndpointsStore) processWebSocketConnectionObservationForSanctions(
+	logger polylog.Logger,
+	websocketConnectionObs *protocolobservations.ShannonWebsocketConnectionObservation,
+) {
+	// Build endpoint from Websocket connection observation
+	endpoint := buildEndpointFromWebSocketConnectionObservation(websocketConnectionObs)
+
+	// Hydrate logger with endpoint context
+	logger = hydrateLoggerWithEndpoint(logger, endpoint).With("method", "processWebSocketConnectionObservationForSanctions")
+	logger.Debug().
+		Str("recommended_sanction", websocketConnectionObs.GetRecommendedSanction().String()).
+		Msg("processing Websocket connection observation for sanctions")
+
+	// Skip if no sanction is recommended
+	recommendedSanction := websocketConnectionObs.GetRecommendedSanction()
+	if recommendedSanction == protocolobservations.ShannonSanctionType_SHANNON_SANCTION_UNSPECIFIED {
+		return
+	}
+
+	// Build sanction from Websocket connection observation
+	sanctionData := buildSanctionFromWebSocketConnectionObservation(websocketConnectionObs)
+
+	// Apply the sanction
+	ses.addSessionSanction(endpoint, sanctionData)
 }
 
 // FilterSanctionedEndpoints:

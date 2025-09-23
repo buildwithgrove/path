@@ -32,10 +32,12 @@ description: Deep dive into End-to-End Tests for PATH
 
 ## E2E Test Mode
 
-| Mode                           | Make Targets                | Purpose                                                                  |
-| ------------------------------ | --------------------------- | ------------------------------------------------------------------------ |
-| **E2E Test All Services**      | `make e2e_test`             | Full end-to-end testing that starts PATH in an isolated Docker container |
-| **E2E Test Specific Services** | `make e2e_test eth,xrplevm` | Full end-to-end testing that starts PATH in an isolated Docker container |
+| Mode                                 | Make Targets                      | Purpose                                                                       |
+| ------------------------------------ | --------------------------------- | ----------------------------------------------------------------------------- |
+| **HTTP Test All Services**           | `make e2e_test_all`               | HTTP-only end-to-end testing that starts PATH in an isolated Docker container |
+| **HTTP Test Specific Services**      | `make e2e_test eth,xrplevm`       | HTTP-only end-to-end testing that starts PATH in an isolated Docker container |
+| **Websocket Test All Services**      | `make e2e_test_websocket_all`     | Websocket-only testing for all Websocket-compatible services                  |
+| **Websocket Test Specific Services** | `make e2e_test_websocket xrplevm` | Websocket-only testing for specified Websocket-compatible services            |
 
 What the above make target does:
 
@@ -46,10 +48,10 @@ What the above make target does:
 
 ## E2E Test Config Files
 
-| Configuration File                        | Custom Config Required? |               Default available?               | Description                            | Command to create or customize                                                     |
-| ----------------------------------------- | :---------------------: | :--------------------------------------------: | :------------------------------------- | :--------------------------------------------------------------------------------- |
-| `./e2e/config/.shannon.config.yaml`       |           ✅            |                       ❌                       | Gateway service configuration for PATH | `make config_copy_path_local_config_shannon_e2e` OR `make config_shannon_populate` |
-| `./e2e/config/.e2e_load_test.config.yaml` |           ❌            | `e2e/config/e2e_load_test.config.default.yaml` | Custom configuration for E2E tests     | `make config_prepare_shannon_e2e`                                                  |
+| Configuration File                        | Custom Config Required? |             Default available?              | Description                            | Command to create or customize                                                     |
+| ----------------------------------------- | :---------------------: | :-----------------------------------------: | :------------------------------------- | :--------------------------------------------------------------------------------- |
+| `./e2e/config/.shannon.config.yaml`       |            ✅            |                      ❌                      | Gateway service configuration for PATH | `make config_copy_path_local_config_shannon_e2e` OR `make config_shannon_populate` |
+| `./e2e/config/.e2e_load_test.config.yaml` |            ❌            | `e2e/config/e2e_load_test.config.tmpl.yaml` | Custom configuration for E2E tests     | `make config_prepare_shannon_e2e`                                                  |
 
 ## Schema and Validation
 
@@ -84,6 +86,7 @@ These environment variables are set by the test make targets, but if you wish to
 | TEST_MODE        | Determines the test execution mode                                                                | `e2e`                               | Yes      |
 | TEST_PROTOCOL    | Specifies which protocol to test                                                                  | `shannon`                           | Yes      |
 | TEST_SERVICE_IDS | Specifies which service IDs to test. If not set, all service IDs for the protocol will be tested. | Comma-separated list of service IDs | No       |
+| TEST_WEBSOCKETS  | Run only Websocket tests, skipping HTTP tests entirely                                            | `true` or `false`                   | No       |
 </details>
 
 ## Extending/Updating/Adding EVM E2E Tests
@@ -124,6 +127,38 @@ The E2E tests collect and validate comprehensive metrics across multiple dimensi
 | **Latency Metrics**       | - P50, P95, P99 latency percentiles <br/> - Average latency <br/> - Per-method latency analysis                                                              |
 | **JSON-RPC Validation**   | - Response unmarshaling success <br/> - JSON-RPC error field validation <br/> - Result field validation <br/> - Protocol-specific validation                 |
 | **Service-Level Metrics** | - Per-service success aggregation <br/> - Cross-method performance comparison <br/> - Service reliability scoring <br/> - Error categorization and reporting |
+
+## Websocket Testing
+
+PATH E2E tests support Websocket testing for compatible services. Currently, XRPLEVM services are configured with Websocket support.
+
+### Websocket Test Features
+
+- **Transport-Agnostic Validation**: Uses the same JSON-RPC validation logic as HTTP tests
+- **Real-time Connection**: Establishes persistent Websocket connections to test real-time communication
+- **EVM JSON-RPC Support**: Tests all standard EVM JSON-RPC methods over Websocket
+- **Separate from HTTP**: Websocket tests run independently from HTTP tests
+
+### Websocket Test Modes
+
+| Mode                       | Command                           | Description                                                |
+| -------------------------- | --------------------------------- | ---------------------------------------------------------- |
+| **HTTP Only**              | `make e2e_test xrplevm`           | Runs only HTTP tests (default behavior)                    |
+| **Websocket Only**         | `make e2e_test_websocket xrplevm` | Runs only Websocket tests, skipping HTTP tests entirely    |
+| **All Websocket Services** | `make e2e_test_websocket_all`     | Runs Websocket tests for all Websocket-compatible services |
+
+### Service Configuration
+
+To enable Websocket testing for a service, add `websockets: true` to the service configuration in `services_shannon.yaml`:
+
+```yaml
+- name: "Shannon - xrplevm (XRPL EVM MainNet) Test"
+  service_id: "xrplevm" 
+  service_type: "cosmos_sdk"
+  websockets: true  # Enable Websocket testing
+  supported_apis: ["json_rpc", "rest", "comet_bft", "websocket"]
+  # ... rest of configuration
+```
 
 ## Reviewing PATH Logs
 

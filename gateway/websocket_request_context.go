@@ -30,7 +30,7 @@ var _ websockets.WebsocketMessageProcessor = &websocketRequestContext{}
 //   - Per-message observations instead of per-request observations
 //   - Long-lived connection management vs one-shot request/response
 //
-// TODO_ARCHITECTURE: Separate WebSocket and HTTP request contexts more cleanly
+// TODO_ARCHITECTURE: Separate Websocket and HTTP request contexts more cleanly
 // Current: websocketRequestContext and httpRequestContext share similar patterns but are separate types
 // Suggestion: Create a base requestContext interface with common functionality, then extend for protocol-specific needs
 type websocketRequestContext struct {
@@ -58,14 +58,10 @@ type websocketRequestContext struct {
 	// Protocol related request context
 	protocol Protocol
 	// For websockets, we only use a single protocol context
-	protocolCtx ProtocolRequestContext
+	protocolCtx ProtocolRequestContextWebsocket
 
 	// gatewayObservations stores gateway related observations.
 	gatewayObservations *observation.GatewayObservations
-
-	// protocolConnectionObservations stores protocol-level observations specific to the initial WebSocket connection establishment.
-	// This is separate from message-level observations and tracks connection lifecycle events (success/failure).
-	protocolConnectionObservations *protocolobservations.Observations
 
 	// Channel for receiving message processing notifications from the bridge
 	messageObservationsChan chan *observation.RequestResponseObservations
@@ -73,7 +69,7 @@ type websocketRequestContext struct {
 
 // ---------- Websocket Connection Establishment ----------
 
-// initFromHTTPRequest builds the required context for serving a WebSocket request.
+// initFromHTTPRequest builds the required context for serving a Websocket request.
 func (wrc *websocketRequestContext) initFromHTTPRequest(httpReq *http.Request) error {
 	// Initialize the logger with the HTTP request attributes.
 	wrc.logger = wrc.getWebSocketConnectionLogger(httpReq)
@@ -104,11 +100,11 @@ func (wrc *websocketRequestContext) buildQoSContextFromHTTP(_ *http.Request) err
 	// TODO_TECHDEBT(@adshmh,@commoddity): Replace with ParseHTTPRequest.
 	qosCtx, isValid := wrc.serviceQoS.ParseWebsocketRequest(wrc.context)
 
-	// Reject invalid WebSocket requests.
+	// Reject invalid Websocket requests.
 	if !isValid {
 		// Update gateway observations for websocket rejection
 		wrc.updateGatewayObservations(errWebsocketRequestRejectedByQoS)
-		logger.Info().Msg("WebSocket request rejected by QoS")
+		logger.Info().Msg("Websocket request rejected by QoS")
 		return errWebsocketRequestRejectedByQoS
 	}
 
@@ -118,165 +114,99 @@ func (wrc *websocketRequestContext) buildQoSContextFromHTTP(_ *http.Request) err
 	return nil
 }
 
-// buildProtocolContextFromHTTPRequest builds the Protocol context for the websocket request.
-// Similar to requestContext but only creates a single protocol context.
-// Updates protocol connection observations based on success or failure.
-func (wrc *websocketRequestContext) buildProtocolContextFromHTTPRequest(
-	httpReq *http.Request,
-) error {
-	logger := wrc.logger.With("method", "BuildProtocolContextFromHTTPRequest")
-
-	// Retrieve the list of available endpoints for the requested service.
-	// endpointLookupObs will capture the details of the endpoint lookup, including whether it is an error or success.
-	availableEndpoints, endpointLookupObs, err := wrc.protocol.AvailableEndpoints(wrc.context, wrc.serviceID, httpReq)
-	if err != nil {
-		// error encountered: use the supplied observations as protocol observations.
-		wrc.updateProtocolObservations(&endpointLookupObs)
-		logger.Error().Err(err).Msg("no available endpoints could be found for websocket request")
-		return fmt.Errorf("no available endpoints for websocket request: %w", err)
-	}
-
-	// For websockets, select a single endpoint
-	selectedEndpoint, err := wrc.qosCtx.GetEndpointSelector().Select(availableEndpoints)
-	if err != nil {
-		// no protocol context will be built: use the endpointLookup observation.
-		wrc.updateProtocolObservations(&endpointLookupObs)
-		logger.Error().Msgf("no endpoints could be selected for websocket request from %d available endpoints", len(availableEndpoints))
-		return fmt.Errorf("no endpoints could be selected for websocket request from %d available endpoints", len(availableEndpoints))
-	}
-
-	// Build protocol context for the selected endpoint
-	protocolCtx, protocolCtxSetupErrObs, err := wrc.protocol.BuildRequestContextForEndpoint(wrc.context, wrc.serviceID, selectedEndpoint, httpReq)
-	if err != nil {
-		// error encountered: use the supplied observations as protocol observations.
-		wrc.updateProtocolObservations(&protocolCtxSetupErrObs)
-		logger.Error().Err(err).Str("endpoint_addr", string(selectedEndpoint)).Msg("Failed to build protocol context for websocket endpoint")
-		return fmt.Errorf("failed to build protocol context for websocket endpoint: %w", err)
-	}
-
-	wrc.protocolCtx = protocolCtx
-	logger.Info().Msgf("Successfully built protocol context for websocket endpoint: %s", selectedEndpoint)
-
-	// If no error occurred, update protocol connection observations
-	// This will be used to broadcast connection observations at the end of the connection lifecycle.
-	wrc.updateProtocolObservations(&endpointLookupObs)
-
-	return nil
-}
-
 // handleWebsocketRequest establishes the websocket connection and starts the bridge,
-// which handles the message processing loop and sends message observations to the gateway.
-// This method blocks until the WebSocket connection terminates.
+// then starts listeners for both message and connection observations.
 func (wrc *websocketRequestContext) handleWebsocketRequest(
 	httpRequest *http.Request,
 	httpResponseWriter http.ResponseWriter,
 ) error {
 	logger := wrc.logger.With("method", "handleWebsocketRequest")
 
-	// Create the websocket bridge and start it.
-	completionChan, err := wrc.startWebSocketBridge(httpRequest, httpResponseWriter)
+	// Start listening for message processing notifications from the bridge
+	go wrc.listenForMessageNotifications()
+
+	// Build protocol context and start the bridge
+	// The protocol layer will create and return the connection observation channel
+	connectionObservationChan, err := wrc.buildProtocolContextAndStartBridge(httpRequest, httpResponseWriter)
 	if err != nil {
-		logger.Error().Err(err).Msg("❌ Failed to create websocket bridge.")
+		// Update gateway observations with the error
+		wrc.updateGatewayObservations(fmt.Errorf("%w: %s", errWebsocketConnectionFailed, err.Error()))
+		logger.Error().Err(err).Msg("Failed to build protocol context and start bridge")
 		return err
 	}
 
-	// Wait for the bridge to complete (blocks until WebSocket connection terminates)
-	// in order to allow publishing observations for the connection duration.
-	<-completionChan
-
-	logger.Info().Msg("🔌 WebSocket connection terminated, broadcasting final connection observations")
-
-	return nil
-}
-
-// startWebSocketBridge creates a websocket bridge and starts it.
-// It also starts a goroutine to listen for message processing notifications from the bridge.
-// This method returns a completion channel that signals when the bridge shuts down.
-func (wrc *websocketRequestContext) startWebSocketBridge(
-	httpRequest *http.Request,
-	httpResponseWriter http.ResponseWriter,
-) (<-chan struct{}, error) {
-	logger := wrc.logger.With("method", "startWebSocketBridge")
-
-	// Get the websocket-specific URL from the selected endpoint.
-	websocketEndpointURL, err := wrc.protocolCtx.GetWebsocketEndpointURL()
-	if err != nil {
-		// Wrap the endpoint URL error with our specific error type
-		endpointErr := fmt.Errorf("%w: selected endpoint does not support websocket RPC type: %s", errWebsocketConnectionFailed, err.Error())
-		wrc.updateGatewayObservations(endpointErr)
-		logger.Error().Err(err).Msg("❌ Selected endpoint does not support websocket RPC type")
-		return nil, endpointErr
-	}
-	wrc.logger = wrc.logger.With("websocket_url", websocketEndpointURL)
-
-	// Get the headers for the websocket connection that will be sent to the endpoint.
-	endpointConnectionHeaders, err := wrc.protocolCtx.GetWebsocketConnectionHeaders()
-	if err != nil {
-		// Wrap the connection headers error with our specific error type
-		headersErr := fmt.Errorf("%w: failed to get websocket connection headers: %s", errWebsocketConnectionFailed, err.Error())
-		wrc.updateGatewayObservations(headersErr)
-		logger.Error().Err(err).Msg("❌ Failed to get websocket connection headers")
-		return nil, headersErr
-	}
-
-	// Start the websocket bridge and get a completion channel.
-	// The bridge uses the websocket request context as the message processor to
-	// perform both protocol-level and QoS-level message processing.
-	// Pass the shared WebSocket context so both bridge and gateway use the same lifecycle.
-	completionChan, err := websockets.StartBridge(
-		wrc.context,
-		wrc.logger,
-		httpRequest,
-		httpResponseWriter,
-		websocketEndpointURL,
-		endpointConnectionHeaders,
-		wrc,
-		wrc.messageObservationsChan,
-	)
-	if err != nil {
-		// Wrap the WebSocket bridge startup error with our specific error type
-		bridgeErr := fmt.Errorf("%w: %s", errWebsocketConnectionFailed, err.Error())
-		wrc.updateGatewayObservations(bridgeErr)
-		logger.Error().Err(err).Msg("Failed to start WebSocket bridge")
-		return nil, bridgeErr
-	}
+	// Start listening for connection observations from the protocol layer
+	// The protocol layer ensures observations are buffered until we start listening
+	go wrc.listenForConnectionObservations(connectionObservationChan)
 
 	// Set the received_time in gateway observations to mark connection establishment
 	wrc.gatewayObservations.ReceivedTime = timestamppb.New(time.Now())
 
-	// Start listening for message processing notifications from the bridge.
-	go wrc.listenForMessageNotifications()
+	logger.Info().Msg("🔌 Websocket connection established successfully")
 
-	return completionChan, nil
+	return nil
 }
 
-// listenForMessageNotifications listens for message processing notifications from
-// the bridge and publishes observations for each message processed.
-//
-// This method runs in a goroutine and handles:
-//   - Message observations: Received from the bridge and then broadcast to metrics and data reporters.
-//   - Channel closure: Clean shutdown when bridge closes the observation channel
-//   - Context cancellation: Clean shutdown when connection context is canceled
-func (wrc *websocketRequestContext) listenForMessageNotifications() {
-	for {
-		select {
-		case messageObservations, ok := <-wrc.messageObservationsChan:
-			if !ok {
-				// Channel was closed by the bridge, stop listening
-				wrc.logger.Debug().Msg("Message observation channel closed by bridge, stopping listener")
-				return
-			}
-			// Message was processed successfully
-			wrc.BroadcastMessageObservations(messageObservations)
-		case <-wrc.context.Done():
-			// Context canceled, stop listening
-			wrc.logger.Debug().Msg("Message notification listener stopped due to context cancellation")
-			return
-		}
+// buildProtocolContextAndStartBridge builds the Protocol context for the websocket request and immediately starts the bridge.
+// This combines protocol context creation with bridge initialization.
+func (wrc *websocketRequestContext) buildProtocolContextAndStartBridge(
+	httpReq *http.Request,
+	httpResponseWriter http.ResponseWriter,
+) (<-chan *protocolobservations.Observations, error) {
+	logger := wrc.logger.With("method", "buildProtocolContextAndStartBridge")
+
+	// Retrieve the list of available endpoints for the requested service.
+	// endpointLookupObs will capture the details of the endpoint lookup, including whether it is an error or success.
+	availableEndpoints, endpointLookupObs, err := wrc.protocol.AvailableWebsocketEndpoints(wrc.context, wrc.serviceID, httpReq)
+	if err != nil {
+		logger.Error().Err(err).Msg("❌ no available endpoints could be found for websocket request")
+		// Send connection failure observation manually since the connection observation channel is not available yet
+		wrc.handleConnectionObservation(&endpointLookupObs)
+		return nil, fmt.Errorf("no available endpoints for websocket request: %w", err)
 	}
+
+	// For websockets, select a single endpoint
+	selectedEndpoint, err := wrc.qosCtx.GetEndpointSelector().Select(availableEndpoints)
+	if err != nil {
+		logger.Error().Err(err).Msgf("❌ no endpoints could be selected for websocket request from %d available endpoints", len(availableEndpoints))
+		// Send connection failure observation manually since the connection observation channel is not available yet
+		wrc.handleConnectionObservation(&endpointLookupObs)
+		return nil, fmt.Errorf("no endpoints could be selected for websocket request from %d available endpoints", len(availableEndpoints))
+	}
+	wrc.logger = wrc.logger.With("endpoint_addr", selectedEndpoint)
+
+	// Build protocol context and start bridge for the selected endpoint
+	// This immediately establishes the Websocket connection and returns a connection observation channel
+	protocolCtx, connectionObservationChan, err := wrc.protocol.BuildWebsocketRequestContextForEndpoint(
+		wrc.context,
+		wrc.serviceID,
+		selectedEndpoint,
+		wrc,
+		httpReq,
+		httpResponseWriter,
+		wrc.messageObservationsChan,
+	)
+	if err != nil {
+		logger.Error().Err(err).Str(
+			"endpoint_addr", string(selectedEndpoint),
+		).Msg("Failed to build protocol context and start bridge for websocket endpoint")
+		// Send connection failure observation manually since the connection observation channel is not available in case of error
+		errorObs := buildConnectionEstablishmentFailureObservation(wrc.logger, wrc.serviceID, selectedEndpoint, err)
+		wrc.handleConnectionObservation(errorObs)
+		return nil, fmt.Errorf("failed to build protocol context and start bridge for websocket endpoint: %w", err)
+	}
+
+	wrc.protocolCtx = protocolCtx
+	logger.Info().Msgf("Successfully built protocol context and started bridge for websocket endpoint: %s", selectedEndpoint)
+	return connectionObservationChan, nil
 }
 
 // ---------- Websocket Message Processing ----------
+
+// TODO_TECHDEBT(@commoddity,@adshmh): This needs a few refactors to establish the gateway package's context as the coordinator of operations: e.g.
+//   - receive messages from the protocol context over a channel -> pass to QoS -> use QoS context to write user's response, etc.
+//   - receive observations from the protocol context over a channel -> hand over to publisher(s) like data, metrics, etc.
+// Reference: https://github.com/buildwithgrove/path/pull/419/files#r2333916517
 
 // ProcessClientWebsocketMessage processes a message from the client.
 // It performs both Protocol-level and QoS-level message processing.
@@ -313,17 +243,105 @@ func (wrc *websocketRequestContext) ProcessEndpointWebsocketMessage(msgData []by
 	messageObservations.Protocol = &protocolObservations
 
 	// TODO_TECHDEBT(@commoddity): process message using QoS context and update the message observations.
-	// For example, for JSON-RPC method send through WebSocket, the QoS context should:
+	// For example, for JSON-RPC method send through Websocket, the QoS context should:
 	//   - Check the request payload.
 	//   - Detect it is a subscription request.
 	//   - Validate the request, e.g. params field.
-	//   - Reject invalid WebSocket requests, similar to HTTP requests. (e.g. invalid params field)
+	//   - Reject invalid Websocket requests, similar to HTTP requests. (e.g. invalid params field)
 	// messageObservations.Qos = wrc.qosCtx.ProcessProtocolEndpointWebsocketMessage(msgData)
 
 	return endpointMessageBz, messageObservations, nil
 }
 
-// ---------- WebSocket Message Observations ----------
+// ---------- Listeners ----------
+
+// listenForMessageNotifications listens for message processing notifications from
+// the bridge and publishes observations for each message processed.
+//
+// This method runs in a goroutine and handles:
+//   - Message observations: Received from the bridge and then broadcast to metrics and data reporters.
+//   - Channel closure: Clean shutdown when bridge closes the observation channel
+//   - Context cancellation: Clean shutdown when connection context is canceled
+func (wrc *websocketRequestContext) listenForMessageNotifications() {
+	for {
+		select {
+		case messageObservations, ok := <-wrc.messageObservationsChan:
+			if !ok {
+				// Channel was closed by the bridge, stop listening
+				wrc.logger.Debug().Msg("Message observation channel closed by bridge, stopping listener")
+				return
+			}
+			// Message was processed successfully
+			wrc.BroadcastMessageObservations(messageObservations)
+
+		case <-wrc.context.Done():
+			// Context canceled, stop listening
+			wrc.logger.Debug().Msg("Message notification listener stopped due to context cancellation")
+			return
+		}
+	}
+}
+
+// listenForConnectionObservations listens for connection observations from the protocol layer
+// and broadcasts them based on the event type (establishment, closure, failure).
+func (wrc *websocketRequestContext) listenForConnectionObservations(observationChan <-chan *protocolobservations.Observations) {
+	for {
+		select {
+		case protocolObs, ok := <-observationChan:
+			if !ok {
+				// Channel was closed by the protocol, stop listening
+				wrc.logger.Debug().Msg("Connection observation channel closed, stopping listener")
+				return
+			}
+
+			if protocolObs == nil {
+				continue
+			}
+
+			// Handle connection observations
+			wrc.handleConnectionObservation(protocolObs)
+
+		case <-wrc.context.Done():
+			// Context canceled, stop listening
+			wrc.logger.Debug().Msg("Connection observation listener stopped due to context cancellation")
+			return
+		}
+	}
+}
+
+// handleConnectionObservation processes a single connection observation and broadcasts it appropriately
+// based on the connection event type.
+func (wrc *websocketRequestContext) handleConnectionObservation(protocolObs *protocolobservations.Observations) {
+	// Check if this is a Shannon Websocket connection observation
+	shannonObs := protocolObs.GetShannon()
+	if shannonObs == nil || len(shannonObs.GetObservations()) == 0 {
+		wrc.logger.Warn().Msg("Received connection observation without Shannon data")
+		return
+	}
+
+	// Process each Shannon observation (should only be connection observations)
+	for _, shannonReqObs := range shannonObs.GetObservations() {
+		if obsData, ok := shannonReqObs.GetObservationData().(*protocolobservations.ShannonRequestObservations_WebsocketConnectionObservation); ok {
+			// Handle connection lifecycle events
+			connObs := obsData.WebsocketConnectionObservation
+			switch connObs.GetEventType() {
+			case protocolobservations.ShannonWebsocketConnectionObservation_CONNECTION_ESTABLISHED:
+				wrc.logger.Debug().Msg("Received connection establishment observation from protocol layer")
+				wrc.broadcastWebsocketConnectionEstablished(protocolObs)
+			case protocolobservations.ShannonWebsocketConnectionObservation_CONNECTION_CLOSED:
+				wrc.logger.Debug().Msg("Received connection closure observation from protocol layer")
+				wrc.broadcastWebsocketConnectionClosed(protocolObs)
+			case protocolobservations.ShannonWebsocketConnectionObservation_CONNECTION_ESTABLISHMENT_FAILED:
+				wrc.logger.Debug().Msg("Received connection establishment failure observation from protocol layer")
+				wrc.broadcastWebsocketConnectionEstablished(protocolObs) // Treat as establishment event for metrics
+			}
+		} else {
+			wrc.logger.Warn().Msg("Received non-connection observation on connection channel")
+		}
+	}
+}
+
+// ---------- Websocket Message Observations ----------
 
 // BroadcastMessageObservations delivers the collected details regarding all aspects
 // of the websocket message to all the interested parties.
@@ -339,7 +357,7 @@ func (wrc *websocketRequestContext) BroadcastMessageObservations(
 	// observation-related tasks are called in Goroutines to avoid potentially blocking the handler.
 	go func() {
 		if protocolObservations := messageObservations.GetProtocol(); protocolObservations != nil {
-			err := wrc.protocol.ApplyObservations(protocolObservations)
+			err := wrc.protocol.ApplyWebSocketObservations(protocolObservations)
 			if err != nil {
 				wrc.logger.Warn().Err(err).Msg("error applying protocol observations for websocket.")
 			}
@@ -380,18 +398,27 @@ func (wrc *websocketRequestContext) initializeMessageObservations() *observation
 	}
 }
 
-// ---------- WebSocket Connection Observations ----------
+// ---------- Websocket Connection Observations ----------
 
-// TODO_TECHDEBT(@commoddity): This is a temporary method to log the observations.
-// The Websocket-specific connection observations are not being set in the protocol/shannon/protocol.go
-// file. We will need a refactor of the Shannon protocol code to handle websocket-specific logic
-// without overly burdening the existing single `requestContext` struct with logic that does
-// not apply to HTTP.
-//
-// BroadcastWebsocketConnectionRequestObservations broadcasts a single connection-level observation.
-// This method combines protocol observations with gateway observations and publishes them.
-// This method should be called from a defer in handleWebSocketRequest.
-func (wrc *websocketRequestContext) BroadcastWebsocketConnectionRequestObservations() {
+// broadcastWebsocketConnectionEstablished broadcasts a protocol-level observation specifically
+// for connection establishment to inform the metrics system that a Websocket connection was established.
+// This method only publishes to the metrics reporter, not the data reporter.
+func (wrc *websocketRequestContext) broadcastWebsocketConnectionEstablished(protocolObservations *protocolobservations.Observations) {
+	// Create a protocol-only observation for connection establishment
+	observations := &observation.RequestResponseObservations{
+		ServiceId: string(wrc.serviceID),
+		Protocol:  protocolObservations,
+	}
+
+	// Only publish to metrics reporter for connection tracking
+	if wrc.metricsReporter != nil {
+		wrc.metricsReporter.Publish(observations)
+	}
+}
+
+// broadcastWebsocketConnectionClosed broadcasts a connection closure observation.
+// This method publishes closure events to BOTH metrics and data pipeline.
+func (wrc *websocketRequestContext) broadcastWebsocketConnectionClosed(protocolObservations *protocolobservations.Observations) {
 	wrc.updateGatewayObservations(nil)
 
 	// Update protocol observations to get final connection state
@@ -400,12 +427,12 @@ func (wrc *websocketRequestContext) BroadcastWebsocketConnectionRequestObservati
 	// Combine all observations into the standard RequestResponseObservations format
 	observations := &observation.RequestResponseObservations{
 		Gateway:  wrc.gatewayObservations,
-		Protocol: wrc.protocolConnectionObservations,
-		// TODO_IMPROVE: add QoS observations for WebSocket connection observations.
+		Protocol: protocolObservations,
+		// TODO_IMPROVE: add QoS observations for Websocket connection observations.
 		Qos: nil,
 	}
 
-	// Broadcast the combined observations
+	// Broadcast the combined observations to BOTH metrics and data pipeline
 	if wrc.metricsReporter != nil {
 		wrc.metricsReporter.Publish(observations)
 	}
@@ -414,7 +441,7 @@ func (wrc *websocketRequestContext) BroadcastWebsocketConnectionRequestObservati
 	}
 }
 
-// updateProtocolObservations updates the stored protocol-level connection observations for WebSocket connections.
+// updateProtocolObservations updates the stored protocol-level connection observations for Websocket connections.
 // It is called at:
 //   - Protocol context setup error during connection establishment
 //   - When broadcasting connection observations
@@ -425,14 +452,10 @@ func (wrc *websocketRequestContext) updateProtocolObservations(
 ) {
 	// protocol connection observation already set: skip.
 	// This happens when a protocol context setup observation was reported earlier.
-	if wrc.protocolConnectionObservations != nil {
-		return
-	}
-
-	// protocol context setup error observation is set: use it.
 	if protocolConnectionObservations != nil {
-		wrc.logger.Info().Str("protocolConnectionObservations", protocolConnectionObservations.String()).Msg("Setting protocol connection observations")
-		wrc.protocolConnectionObservations = protocolConnectionObservations
+		wrc.logger.Debug().
+			Str("protocol_connection_observations", protocolConnectionObservations.String()).
+			Msg("Setting protocol connection observations")
 		return
 	}
 
@@ -440,7 +463,7 @@ func (wrc *websocketRequestContext) updateProtocolObservations(
 	wrc.logger.
 		With("service_id", wrc.serviceID).
 		ProbabilisticDebugInfo(polylog.ProbabilisticDebugInfoProb).
-		Msg("SHOULD NEVER HAPPEN: WebSocket protocol context is nil, but no protocol setup observation have been reported.")
+		Msg("SHOULD NEVER HAPPEN: Websocket protocol context is nil, but no protocol setup observation have been reported.")
 }
 
 // updateGatewayObservations updates the gateway-level observations in the websocket request context.
@@ -461,27 +484,27 @@ func (wrc *websocketRequestContext) updateGatewayObservations(err error) {
 		return
 	}
 
-	// Classify WebSocket-specific errors based on error type
+	// Classify Websocket-specific errors based on error type
 	switch {
 	// Service ID not specified
 	case errors.Is(err, ErrGatewayNoServiceIDProvided):
-		wrc.logger.Error().Err(err).Msg("No service ID specified in the HTTP headers. WebSocket request will fail.")
+		wrc.logger.Error().Err(err).Msg("No service ID specified in the HTTP headers. Websocket request will fail.")
 		wrc.gatewayObservations.RequestError = &observation.GatewayRequestError{
 			ErrorKind: observation.GatewayRequestErrorKind_GATEWAY_REQUEST_ERROR_KIND_MISSING_SERVICE_ID,
 			Details:   err.Error(),
 		}
 
-	// WebSocket request was rejected by QoS instance
+	// Websocket request was rejected by QoS instance
 	case errors.Is(err, errWebsocketRequestRejectedByQoS):
-		wrc.logger.Error().Err(err).Msg("QoS instance rejected the WebSocket request. Request will fail.")
+		wrc.logger.Error().Err(err).Msg("QoS instance rejected the Websocket request. Request will fail.")
 		wrc.gatewayObservations.RequestError = &observation.GatewayRequestError{
 			ErrorKind: observation.GatewayRequestErrorKind_GATEWAY_REQUEST_ERROR_KIND_WEBSOCKET_REJECTED_BY_QOS,
 			Details:   err.Error(),
 		}
 
-	// WebSocket connection establishment failed
+	// Websocket connection establishment failed
 	case errors.Is(err, errWebsocketConnectionFailed):
-		wrc.logger.Error().Err(err).Msg("WebSocket connection establishment failed. Request will fail.")
+		wrc.logger.Error().Err(err).Msg("Websocket connection establishment failed. Request will fail.")
 		wrc.gatewayObservations.RequestError = &observation.GatewayRequestError{
 			ErrorKind: observation.GatewayRequestErrorKind_GATEWAY_REQUEST_ERROR_KIND_WEBSOCKET_CONNECTION_FAILED,
 			Details:   err.Error(),
@@ -496,7 +519,7 @@ func (wrc *websocketRequestContext) updateGatewayObservations(err error) {
 		}
 
 	default:
-		wrc.logger.Warn().Err(err).Msg("SHOULD NEVER HAPPEN: unrecognized WebSocket gateway-level request error.")
+		wrc.logger.Warn().Err(err).Msg("SHOULD NEVER HAPPEN: unrecognized Websocket gateway-level request error.")
 		// Set a generic request error observation
 		wrc.gatewayObservations.RequestError = &observation.GatewayRequestError{
 			// unspecified error kind: this should not happen

@@ -29,9 +29,11 @@ services:
   # Shannon - Arbitrum One (Archival)
   - name: "Shannon - arb-one (Arbitrum One) Test"
     service_id: "arb-one"
+    evm_chain_id: "0xa4b1"
     service_type: "evm"
     alias: "arbitrum-one"
     archival: true
+    websockets: false
     service_params:
       # https://arbiscan.io/address/0xb38e8c17e38363af6ebdcb3dae12e0243582891d
       contract_address: "0xb38e8c17e38363af6ebdcb3dae12e0243582891d"
@@ -42,9 +44,11 @@ services:
   # Shannon - Arbitrum Sepolia Testnet (Archival)
   - name: "Shannon - arb-sepolia-testnet (Arbitrum Sepolia Testnet) Test"
     service_id: "arb-sepolia-testnet"
+    evm_chain_id: "0x66EEE"
     service_type: "evm"
     alias: "arbitrum-sepolia-testnet"
     archival: true
+    websockets: false
     service_params:
       # https://sepolia.arbiscan.io/address/0x22b65d0b9b59af4d3ed59f18b9ad53f5f4908b54
       contract_address: "0x22b65d0b9b59af4d3ed59f18b9ad53f5f4908b54"
@@ -55,8 +59,10 @@ services:
   # Shannon - Avalanche (Archival)
   - name: "Shannon - avax (Avalanche) Test"
     service_id: "avax"
+    evm_chain_id: "0xa86a"
     service_type: "evm"
     archival: true
+    websockets: false
     service_params:
       # https://avascan.info/blockchain/c/address/0x9f8c163cBA728e99993ABe7495F06c0A3c8Ac8b9
       contract_address: "0x9f8c163cBA728e99993ABe7495F06c0A3c8Ac8b9"
@@ -67,8 +73,10 @@ services:
   # Shannon - Avalanche-DFK (Archival)
   - name: "Shannon - avax (Avalanche-DFK) Test"
     service_id: "avax-dfk"
+    evm_chain_id: "0xd2af"
     service_type: "evm"
     archival: true
+    websockets: false
     service_params:
       # https://avascan.info/blockchain/dfk/address/0xCCb93dABD71c8Dad03Fc4CE5559dC3D89F67a260
       contract_address: "0xCCb93dABD71c8Dad03Fc4CE5559dC3D89F67a260"
@@ -79,8 +87,10 @@ services:
   # Shannon - Base (Archival)
   - name: "Shannon - base (Base) Test"
     service_id: "base"
+    evm_chain_id: "0x2105"
     service_type: "evm"
     archival: true
+    websockets: true
     service_params:
       # https://basescan.org/address/0x3304e22ddaa22bcdc5fca2269b418046ae7b566a
       contract_address: "0x3304E22DDaa22bCdC5fCa2269b418046aE7b566A"
@@ -91,9 +101,11 @@ services:
   # Shannon - Base Sepolia Testnet (Archival)
   - name: "Shannon - base (Base Sepolia Testnet) Test"
     service_id: "base-sepolia-testnet"
+    evm_chain_id: "0x14a34"
     alias: "base-sepolia-testnetnet"
     service_type: "evm"
     archival: true
+    websockets: true
     service_params:
       # https://sepolia.basescan.org/address/0xbab76e4365a2dff89ddb2d3fc9994103b48886c0
       contract_address: "0xbab76e4365a2dff89ddb2d3fc9994103b48886c0"
@@ -104,9 +116,11 @@ services:
   # Shannon - Berachain (Archival)
   - name: "Shannon - bera (Berachain) Test"
     service_id: "bera"
+    evm_chain_id: "0x138de"
     service_type: "evm"
     alias: "berachain"
     archival: true
+    websockets: false
     service_params:
       # https://berascan.com/address/0x6969696969696969696969696969696969696969
       contract_address: "0x6969696969696969696969696969696969696969"
@@ -117,8 +131,10 @@ services:
   # Shannon - Blast (Archival)
   - name: "Shannon - blast (Blast) Test"
     service_id: "blast"
+    evm_chain_id: "0x13e31"
     service_type: "evm"
     archival: true
+    websockets: false
     service_params:
       # https://blastscan.io/address/0x4300000000000000000000000000000000000004
       contract_address: "0x4300000000000000000000000000000000000004"
@@ -129,8 +145,10 @@ services:
   # Shannon - BNB Smart Chain (Archival)
   - name: "Shannon - bsc (BNB Smart Chain) Test"
     service_id: "bsc"
+    evm_chain_id: "0x38"
     service_type: "evm"
     archival: true
+    websockets: true
     service_params:
       # https://bsctrace.com/address/0xfb50526f49894b78541b776f5aaefe43e3bd8590
       contract_address: "0xfb50526f49894b78541b776f5aaefe43e3bd8590"
@@ -141,8 +159,10 @@ services:
   # Shannon - Boba (Archival)
   - name: "Shannon - boba (Boba) Test"
     service_id: "boba"
+    evm_chain_id: "0x120"
     service_type: "evm"
     archival: true
+    websockets: false
     service_params:
       # https://bobascan.com/address/0x3A92cA39476fF84Dc579C868D4D7dE125513B034
       contract_address: "0x3A92cA39476fF84Dc579C868D4D7dE125513B034"
@@ -153,8 +173,10 @@ services:
   # Shannon - Celo (Archival)
   - name: "Shannon - celo (Celo) Test"
     service_id: "celo"
+    evm_chain_id: "0xa4ec"
     service_type: "evm"
     archival: true
+    websockets: false
     service_params:
       # https://celo.blockscout.com/address/0xf89d7b9c864f589bbF53a82105107622B35EaA40
       contract_address: "0xf89d7b9c864f589bbF53a82105107622B35EaA40"
@@ -165,8 +187,10 @@ services:
   # Shannon - Ethereum Mainnet (Archival)
   - name: "Shannon - eth Test"
     service_id: "eth"
+    evm_chain_id: "0x1"
     service_type: "evm"
     archival: true
+    websockets: true
     service_params:
       contract_address: "0x28C6c06298d514Db089934071355E5743bf21d60"
       contract_start_block: 12300000
@@ -176,9 +200,11 @@ services:
   # Shannon - Ethereum Holesky Testnet (Archival)
   - name: "Shannon - eth-holesky-testnet (Ethereum Holesky Testnet) Test"
     service_id: "eth-holesky-testnet"
+    evm_chain_id: "0x4268"
     alias: "eth-holesky-testnet"
     service_type: "evm"
     archival: true
+    websockets: false
     service_params:
       # https://holesky.etherscan.io/address/0xc6392ad8a14794ea57d237d12017e7295bea2363
       contract_address: "0xc6392ad8a14794ea57d237d12017e7295bea2363"
@@ -189,9 +215,11 @@ services:
   # Shannon - Ethereum Sepolia Testnet (Archival)
   - name: "Shannon - eth-sepolia-testnet (Ethereum Sepolia Testnet) Test"
     service_id: "eth-sepolia-testnet"
+    evm_chain_id: "0xaa36a7"
     alias: "eth-sepolia-testnet"
     service_type: "evm"
     archival: true
+    websockets: false
     service_params:
       # https://sepolia.etherscan.io/address/0xc0f3833b7e7216eecd9f6bc2c7927a7aa36ab58b
       contract_address: "0xc0f3833b7e7216eecd9f6bc2c7927a7aa36ab58b"
@@ -202,8 +230,10 @@ services:
   # Shannon - Fantom (Archival)
   - name: "Shannon - fantom (Fantom) Test"
     service_id: "fantom"
+    evm_chain_id: "0xfa"
     service_type: "evm"
     archival: true
+    websockets: false
     service_params:
       # https://explorer.fantom.network/address/0xaabf86ab3646a7064aa2f61e5959e39129ca46b6
       contract_address: "0xaabf86ab3646a7064aa2f61e5959e39129ca46b6"
@@ -214,8 +244,10 @@ services:
   # Shannon - Fuse (Archival)
   - name: "Shannon - fuse (Fuse) Test"
     service_id: "fuse"
+    evm_chain_id: "0x7a"
     service_type: "evm"
     archival: true
+    websockets: false
     service_params:
       # https://explorer.fuse.io/address/0x3014ca10b91cb3D0AD85fEf7A3Cb95BCAc9c0f79
       contract_address: "0x3014ca10b91cb3D0AD85fEf7A3Cb95BCAc9c0f79"
@@ -223,11 +255,30 @@ services:
       transaction_hash: "0x2a0fcdc34a2db7b216f0d637937f8bfab6259fed397164b27896c88ab8f1cc3a"
       call_data: "0x18160ddd"
 
+  # Shannon - Giwa (Archival)
+  # TODO_NEXT(@commoddity): Add 'giwa' mainnet E2E config once it is live.
+
+  # Shannon - Giwa Sepolia Testnet (Archival)
+  - name: "Shannon - giwa-sepolia-testnet (Giwa Sepolia Testnet) Test"
+    service_id: "giwa-sepolia-testnet"
+    evm_chain_id: "0x164ce"
+    service_type: "evm"
+    archival: true
+    websockets: false
+    service_params:
+      # https://sepolia-explorer.giwa.io/address/0xA2a51Cca837B8ebc00dA2810e72F386Ee0dD08a0
+      contract_address: "0xA2a51Cca837B8ebc00dA2810e72F386Ee0dD08a0"
+      contract_start_block: 3456000
+      transaction_hash: "0x17858f9e29eb1c1779623bcf0f2ec35d583c12b0cb0f3955e25c23868c6ad35e"
+      call_data: "0x18160ddd"
+
   # Shannon - Gnosis (Archival)
   - name: "Shannon - gnosis (Gnosis) Test"
     service_id: "gnosis"
+    evm_chain_id: "0x64"
     service_type: "evm"
     archival: true
+    websockets: false
     service_params:
       # https://gnosisscan.io/address/0xe91d153e0b41518a2ce8dd3d7944fa863463a97d
       contract_address: "0xe91d153e0b41518a2ce8dd3d7944fa863463a97d"
@@ -238,8 +289,10 @@ services:
   # Shannon - Harmony-0 (Archival)
   - name: "Shannon - harmony (Harmony-0) Test"
     service_id: "harmony"
+    evm_chain_id: "0x63564c40"
     service_type: "evm"
     archival: true
+    websockets: false
     service_params:
       # https://explorer.harmony.one/address/one19senwle0ezp3he6ed9xkc7zeg5rs94r0ecpp0a?shard=0
       contract_address: "one19senwle0ezp3he6ed9xkc7zeg5rs94r0ecpp0a"
@@ -250,8 +303,10 @@ services:
   # Shannon - Ink (Archival)
   - name: "Shannon - ink (Ink) Test"
     service_id: "ink"
+    evm_chain_id: "0xdef1"
     service_type: "evm"
     archival: true
+    websockets: false
     service_params:
       # https://explorer.inkonchain.com/address/0x4200000000000000000000000000000000000006
       contract_address: "0x4200000000000000000000000000000000000006"
@@ -262,8 +317,10 @@ services:
   # Shannon - IoTeX (Archival)
   - name: "Shannon - iotex (IoTeX) Test"
     service_id: "iotex"
+    evm_chain_id: "0x1251"
     service_type: "evm"
     archival: true
+    websockets: false
     service_params:
       # https://iotexscan.io/address/0x0a7f9ea31ca689f346e1661cf73a47c69d4bd883#transactions
       contract_address: "0x0a7f9ea31ca689f346e1661cf73a47c69d4bd883"
@@ -274,8 +331,10 @@ services:
   # Shannon - Kaia (Archival)
   - name: "Shannon - kaia (Kaia) Test"
     service_id: "kaia"
+    evm_chain_id: "0x2019"
     service_type: "evm"
     archival: true
+    websockets: false
     service_params:
       # https://www.kaiascan.io/address/0x0051ef9259c7ec0644a80e866ab748a2f30841b3
       contract_address: "0x0051ef9259c7ec0644a80e866ab748a2f30841b3"
@@ -286,8 +345,10 @@ services:
   # Shannon - Linea (Archival)
   - name: "Shannon - linea (Linea) Test"
     service_id: "linea"
+    evm_chain_id: "0xe708"
     service_type: "evm"
     archival: true
+    websockets: false
     service_params:
       # https://lineascan.build/address/0xf89d7b9c864f589bbf53a82105107622b35eaa40
       contract_address: "0xf89d7b9c864f589bbf53a82105107622b35eaa40"
@@ -298,8 +359,10 @@ services:
   # Shannon - Mantle (Archival)
   - name: "Shannon - mantle (Mantle) Test"
     service_id: "mantle"
+    evm_chain_id: "0x1388"
     service_type: "evm"
     archival: true
+    websockets: false
     service_params:
       # https://explorer.mantle.xyz/address/0x588846213A30fd36244e0ae0eBB2374516dA836C
       contract_address: "0x588846213A30fd36244e0ae0eBB2374516dA836C"
@@ -312,6 +375,7 @@ services:
   #   service_id: "near"
   #   service_type: "near"
   #   archival: true
+  #   websockets: false
   #   service_params:
   #     https://nearblocks.io/txns/4PVpwA42LpaUZ5LPD6fwNd94hjB5ue1ND2WSG4UzQVM8
   #     contract_address: "usdt.tether-token.near"
@@ -322,8 +386,10 @@ services:
   # Shannon - Metis (Archival)
   - name: "Shannon - metis (Metis) Test"
     service_id: "metis"
+    evm_chain_id: "0x440"
     service_type: "evm"
     archival: true
+    websockets: false
     service_params:
       # https://explorer.metis.io/address/0xfad31cd4d45Ac7C4B5aC6A0044AA05Ca7C017e62
       contract_address: "0xfad31cd4d45Ac7C4B5aC6A0044AA05Ca7C017e62"
@@ -334,8 +400,10 @@ services:
   # Shannon - Moonbeam (Archival)
   - name: "Shannon - moonbeam (Moonbeam) Test"
     service_id: "moonbeam"
+    evm_chain_id: "0x504"
     service_type: "evm"
     archival: true
+    websockets: false
     service_params:
       # https://moonscan.io/address/0xf89d7b9c864f589bbf53a82105107622b35eaa40
       contract_address: "0xf89d7b9c864f589bbf53a82105107622b35eaa40"
@@ -346,8 +414,10 @@ services:
   # Shannon - Oasys Mainnet (Archival)
   - name: "Shannon - oasys (Oasys) Test"
     service_id: "oasys"
+    evm_chain_id: "0xf8"
     service_type: "evm"
     archival: true
+    websockets: false
     service_params:
       # https://explorer.oasys.games/address/0xf89d7b9c864f589bbF53a82105107622B35EaA40
       contract_address: "0xf89d7b9c864f589bbF53a82105107622B35EaA40"
@@ -358,8 +428,10 @@ services:
   # Shannon - Optimism (Archival)
   - name: "Shannon - optimism (Optimism) Test"
     service_id: "op"
+    evm_chain_id: "0xa"
     service_type: "evm"
     archival: true
+    websockets: false
     service_params:
       # https://optimistic.etherscan.io/address/0xacd03d601e5bb1b275bb94076ff46ed9d753435a
       contract_address: "0xacD03D601e5bB1B275Bb94076fF46ED9D753435A"
@@ -370,9 +442,11 @@ services:
   # Shannon - Optimism Sepolia Testnet (Archival)
   - name: "Shannon - optimism_sep_test (Optimism Sepolia Testnet) Test"
     service_id: "op-sepolia-testnet"
+    evm_chain_id: "0xAA37DC"
     alias: "optimism-sepolia-testnet"
     service_type: "evm"
     archival: true
+    websockets: false
     service_params:
       # https://sepolia-optimism.etherscan.io/address/0x734d539a7efee15714a2755caa4280e12ef3d7e4
       contract_address: "0x734d539a7efee15714a2755caa4280e12ef3d7e4"
@@ -383,8 +457,10 @@ services:
   # Shannon - opBNB (Archival)
   - name: "Shannon - opbnb (opBNB) Test"
     service_id: "opbnb"
+    evm_chain_id: "0xcc"
     service_type: "evm"
     archival: true
+    websockets: false
     service_params:
       # https://opbnbscan.com/address/0x001ceb373c83ae75b9f5cf78fc2aba3e185d09e2
       contract_address: "0x001ceb373c83ae75b9f5cf78fc2aba3e185d09e2"
@@ -395,8 +471,10 @@ services:
   # Shannon - Polygon Mainnet (Archival)
   - name: "Shannon - polygon (Polygon) Test"
     service_id: "poly"
+    evm_chain_id: "0x89"
     service_type: "evm"
     archival: true
+    websockets: false
     service_params:
       # https://polygonscan.com/address/0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270
       contract_address: "0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270"
@@ -407,8 +485,10 @@ services:
   # Shannon - Polygon Amoy Testnet (Archival)
   - name: "Shannon - polygon_amoy_test (Polygon Amoy Testnet) Test"
     service_id: "poly-amoy-testnet"
+    evm_chain_id: "0x13882"
     service_type: "evm"
     archival: true
+    websockets: false
     service_params:
       # https://amoy.polygonscan.com/address/0x54d03ec0c462e9a01f77579c090cde0fc2617817
       contract_address: "0x54d03ec0c462e9a01f77579c090cde0fc2617817"
@@ -419,8 +499,10 @@ services:
   # Shannon - Polygon zkEVM (Archival)
   - name: "Shannon - polygon_zkevm (Polygon zkEVM) Test"
     service_id: "poly-zkevm"
+    evm_chain_id: "0x44d"
     service_type: "evm"
     archival: true
+    websockets: false
     service_params:
       # https://zkevm.polygonscan.com/address/0xee1727f5074E747716637e1776B7F7C7133f16b1
       contract_address: "0xee1727f5074E747716637e1776B7F7C7133f16b1"
@@ -431,8 +513,10 @@ services:
   # Shannon - Scroll (Archival)
   - name: "Shannon - scroll (Scroll) Test"
     service_id: "scroll"
+    evm_chain_id: "0x82750"
     service_type: "evm"
     archival: true
+    websockets: false
     service_params:
       # https://scrollscan.com/address/0x5300000000000000000000000000000000000004
       contract_address: "0x5300000000000000000000000000000000000004"
@@ -443,8 +527,10 @@ services:
   # Shannon - Sonic (Archival)
   - name: "Shannon - sonic (Sonic) Test"
     service_id: "sonic"
+    evm_chain_id: "0x92"
     service_type: "evm"
     archival: true
+    websockets: false
     service_params:
       # https://sonicscan.org/address/0xfc00face00000000000000000000000000000000
       contract_address: "0xfc00face00000000000000000000000000000000"
@@ -455,8 +541,10 @@ services:
   # Shannon - Taiko (Archival)
   - name: "Shannon - taiko (Taiko) Test"
     service_id: "taiko"
+    evm_chain_id: "0x28c58"
     service_type: "evm"
     archival: true
+    websockets: false
     service_params:
       # https://taikoscan.io/address/0x1670000000000000000000000000000000000001
       contract_address: "0x1670000000000000000000000000000000000001"
@@ -467,8 +555,10 @@ services:
   # Shannon - Taiko Hekla Testnet (Archival)
   - name: "Shannon - taiko_hekla_test (Taiko Hekla Testnet) Test"
     service_id: "taiko-hekla-testnet"
+    evm_chain_id: "0x28c61"
     service_type: "evm"
     archival: true
+    websockets: false
     service_params:
       # https://hekla.taikoscan.io/address/0x1670090000000000000000000000000000010001
       contract_address: "0x1670090000000000000000000000000000010001"
@@ -476,35 +566,13 @@ services:
       transaction_hash: "0x26f8e0bc913775116335b2b379c19e0a044acdbf5d42f149b7ddd288e273dd6d"
       call_data: "0x18160ddd"
 
-  # Shannon - XRPLEVM
-  - name: "Shannon - xrplevm (XRPL EVM MainNet) Test"
-    service_id: "xrplevm"
-    service_type: "evm"
-    archival: true
-    service_params:
-      # https://explorer.xrplevm.org/address/0x7C21a90E3eCD3215d16c3BBe76a491f8f792d4Bf
-      contract_address: "0x7C21a90E3eCD3215d16c3BBe76a491f8f792d4Bf"
-      contract_start_block: 1002479
-      transaction_hash: "0xa59fde70cac38068dfd87adb1d7eb40200421ebf7075911f83bcdde810e94058"
-      call_data: "0x18160ddd"
-
-  # Shannon - XRPLEVM Testnet (Archival)
-  - name: "Shannon - xrplevm-testnet (XRPLEVM Testnet) Test"
-    service_id: "xrplevm-testnet"
-    service_type: "evm"
-    archival: true
-    service_params:
-      # https://explorer.testnet.xrplevm.org/address/0xc29e2583eD5C77df8792067989Baf9E4CCD4D7fc
-      contract_address: "0xc29e2583eD5C77df8792067989Baf9E4CCD4D7fc"
-      contract_start_block: 368266
-      transaction_hash: "0x2267b3846dd8c4d97e3c9c6d2687647480beaf840e333744335d4ccfea1b935a"
-      call_data: "0x18160ddd"
-
   # Shannon - zkLink (Archival)
   - name: "Shannon - zklink (zkLink) Test"
     service_id: "zklink-nova"
+    evm_chain_id: "0xc5cc4"
     service_type: "evm"
     archival: true
+    websockets: false
     service_params:
       # https://explorer.zklink.io/address/0xa3cb8648d12bD36e713af27D92968B370D7A9546
       contract_address: "0xa3cb8648d12bD36e713af27D92968B370D7A9546"
@@ -515,9 +583,11 @@ services:
   # Shannon - zkSync (Archival)
   - name: "Shannon - zksync (zkSync) Test"
     service_id: "zksync_era"
+    evm_chain_id: "0x144"
     service_type: "evm"
     alias: "zksync-era"
     archival: true
+    websockets: false
     service_params:
       # https://explorer.zksync.io/address/0x03AC0b1b952C643d66A4Dc1fBc75118109cC074C
       contract_address: "0x03AC0b1b952C643d66A4Dc1fBc75118109cC074C"
@@ -529,6 +599,7 @@ services:
   # Shannon - Anvil Local Development
   - name: "Shannon - anvil (Anvil Local Development) Test"
     service_id: "anvil"
+    evm_chain_id: "0x7a69"
     service_type: "anvil"
     # Note: Anvil services don't require service_params since all test methods use empty parameters
 
@@ -543,157 +614,240 @@ services:
       contract_address: "FxteHmLwG9nk1eL4pjNve3Eub2goGkkz6g6TbvdmW46a"
       transaction_hash: "4XqrV7zHtv8mHZqsPxueeYc1NodL9nxkdeZJYPtAuw67LszjdYxVgHwUJgBVubuE63ZCToBawe22c8DAAuRdipKs"
 
-  # ------------- CometBFT Services -------------
+  # ------------- Cosmos SDK Services -------------
 
   # Akash
   - name: "Shannon - akash (Akash) Test"
     service_id: "akash"
-    service_type: "cometbft"
+    service_type: "cosmos_sdk"
+    cosmos_sdk_chain_id: "akashnet-2"
+    supported_apis: ["rest", "comet_bft"]
 
   # Arkeo
   - name: "Shannon - arkeo (Arkeo) Test"
     service_id: "arkeo"
-    service_type: "cometbft"
+    service_type: "cosmos_sdk"
+    cosmos_sdk_chain_id: "arkeo-main-v1"
+    supported_apis: ["rest", "comet_bft"]
 
   # AtomOne
   - name: "Shannon - atomone (AtomOne) Test"
     service_id: "atomone"
-    service_type: "cometbft"
+    service_type: "cosmos_sdk"
+    cosmos_sdk_chain_id: "atomone-1"
+    supported_apis: ["rest", "comet_bft"]
 
   # Babylon
   - name: "Shannon - babylon (Babylon) Test"
     service_id: "babylon"
-    service_type: "cometbft"
+    service_type: "cosmos_sdk"
+    cosmos_sdk_chain_id: "bbn-1"
+    supported_apis: ["rest", "comet_bft"]
 
   # Celestia
   - name: "Shannon - celestia (Celestia) Test"
     service_id: "celestia"
-    service_type: "cometbft"
+    service_type: "cosmos_sdk"
+    cosmos_sdk_chain_id: "celestia"
+    supported_apis: ["rest", "comet_bft"]
 
   # Cheqd
   - name: "Shannon - cheqd (Cheqd) Test"
     service_id: "cheqd"
-    service_type: "cometbft"
+    service_type: "cosmos_sdk"
+    cosmos_sdk_chain_id: "cheqd-mainnet-1"
+    supported_apis: ["rest", "comet_bft"]
 
   # Chihuahua
   - name: "Shannon - chihuahua (Chihuahua) Test"
     service_id: "chihuahua"
-    service_type: "cometbft"
+    service_type: "cosmos_sdk"
+    cosmos_sdk_chain_id: "chihuahua-1"
+    supported_apis: ["rest", "comet_bft"]
 
   # Dungeon Chain
   - name: "Shannon - dungeon-chain (Dungeon Chain) Test"
     service_id: "dungeon-chain"
-    service_type: "cometbft"
+    service_type: "cosmos_sdk"
+    cosmos_sdk_chain_id: "dungeon-1"
+    supported_apis: ["rest", "comet_bft"]
 
   # Elys Network
   - name: "Shannon - elys-network (Elys Network) Test"
     service_id: "elys-network"
-    service_type: "cometbft"
+    service_type: "cosmos_sdk"
+    cosmos_sdk_chain_id: "elys-1"
+    supported_apis: ["rest", "comet_bft"]
 
   # Fetch
   - name: "Shannon - fetch (Fetch) Test"
     service_id: "fetch"
-    service_type: "cometbft"
+    service_type: "cosmos_sdk"
+    cosmos_sdk_chain_id: "fetchhub-4"
+    supported_apis: ["rest", "comet_bft"]
 
   # Jackal
   - name: "Shannon - jackal (Jackal) Test"
     service_id: "jackal"
-    service_type: "cometbft"
+    service_type: "cosmos_sdk"
+    cosmos_sdk_chain_id: "jackal-1"
+    supported_apis: ["rest", "comet_bft"]
 
   # Juno
   - name: "Shannon - juno (Juno) Test"
     service_id: "juno"
-    service_type: "cometbft"
+    service_type: "cosmos_sdk"
+    cosmos_sdk_chain_id: "juno-1"
+    supported_apis: ["rest", "comet_bft"]
 
   # KYVE
   - name: "Shannon - kyve (KYVE) Test"
     service_id: "kyve"
-    service_type: "cometbft"
-
-  # Namada
-  - name: "Shannon - namada (Namada) Test"
-    service_id: "namada"
-    service_type: "cometbft"
+    service_type: "cosmos_sdk"
+    cosmos_sdk_chain_id: "kyve-1"
+    supported_apis: ["rest", "comet_bft"]
 
   # Neutron
   - name: "Shannon - neutron (Neutron) Test"
     service_id: "neutron"
-    service_type: "cometbft"
+    service_type: "cosmos_sdk"
+    cosmos_sdk_chain_id: "neutron-1"
+    supported_apis: ["rest", "comet_bft"]
 
   # Nillion
   - name: "Shannon - nillion (Nillion) Test"
     service_id: "nillion"
-    service_type: "cometbft"
+    service_type: "cosmos_sdk"
+    cosmos_sdk_chain_id: "nillion-1"
+    supported_apis: ["rest", "comet_bft"]
 
   # Osmosis
   - name: "Shannon - osmosis (Osmosis) Test"
     service_id: "osmosis"
-    service_type: "cometbft"
+    service_type: "cosmos_sdk"
+    cosmos_sdk_chain_id: "osmosis"
+    supported_apis: ["rest", "comet_bft"]
 
   # Passage
   - name: "Shannon - passage (Passage) Test"
     service_id: "passage"
-    service_type: "cometbft"
+    service_type: "cosmos_sdk"
+    cosmos_sdk_chain_id: "passage-2"
+    supported_apis: ["rest", "comet_bft"]
 
   # Persistence
   - name: "Shannon - persistence (Persistence) Test"
     service_id: "persistence"
-    service_type: "cometbft"
+    service_type: "cosmos_sdk"
+    cosmos_sdk_chain_id: "core-1"
+    supported_apis: ["rest", "comet_bft"]
 
   # Provenance
   - name: "Shannon - provenance (Provenance) Test"
     service_id: "provenance"
-    service_type: "cometbft"
+    service_type: "cosmos_sdk"
+    cosmos_sdk_chain_id: "pio-mainnet-1"
+    supported_apis: ["rest", "comet_bft"]
 
   # Pocket Mainnet
   - name: "Shannon - pocket (Pocket Mainnet) Test"
     service_id: "pocket"
-    service_type: "cometbft"
+    service_type: "cosmos_sdk"
+    cosmos_sdk_chain_id: "pocket"
+    supported_apis: ["rest", "comet_bft"]
 
   # Pocket Alpha Testnet
   - name: "Shannon - pocket-alpha (Pocket Alpha Testnet) Test"
     service_id: "pocket-alpha"
-    service_type: "cometbft"
+    service_type: "cosmos_sdk"
+    cosmos_sdk_chain_id: "pocket-alpha"
+    supported_apis: ["rest", "comet_bft"]
 
   # Pocket Beta Testnet
   - name: "Shannon - pocket-beta (Pocket Beta Testnet) Test"
     service_id: "pocket-beta"
-    service_type: "cometbft"
+    service_type: "cosmos_sdk"
+    cosmos_sdk_chain_id: "pocket-beta"
+    supported_apis: ["rest", "comet_bft"]
 
   # Quicksilver
   - name: "Shannon - quicksilver (Quicksilver) Test"
     service_id: "quicksilver"
-    service_type: "cometbft"
+    service_type: "cosmos_sdk"
+    cosmos_sdk_chain_id: "quicksilver-2"
+    supported_apis: ["rest", "comet_bft"]
 
   # Router
   - name: "Shannon - router (Router) Test"
     service_id: "router"
-    service_type: "cometbft"
+    service_type: "cosmos_sdk"
+    cosmos_sdk_chain_id: "router_9600-1"
+    supported_apis: ["rest", "comet_bft", "json_rpc"]
 
   # Seda
   - name: "Shannon - seda (Seda) Test"
     service_id: "seda"
-    service_type: "cometbft"
+    service_type: "cosmos_sdk"
+    cosmos_sdk_chain_id: "seda-1"
+    supported_apis: ["rest", "comet_bft"]
 
   # Shentu
   - name: "Shannon - shentu (Shentu) Test"
     service_id: "shentu"
-    service_type: "cometbft"
+    service_type: "cosmos_sdk"
+    cosmos_sdk_chain_id: "shentu-2.2"
+    supported_apis: ["rest", "comet_bft"]
 
   # Side Protocol
   - name: "Shannon - side-protocol (Side Protocol) Test"
     service_id: "side-protocol"
-    service_type: "cometbft"
+    service_type: "cosmos_sdk"
+    cosmos_sdk_chain_id: "sidechain-1"
+    supported_apis: ["rest", "comet_bft"]
 
   # Stargaze
   - name: "Shannon - stargaze (Stargaze) Test"
     service_id: "stargaze"
-    service_type: "cometbft"
+    service_type: "cosmos_sdk"
+    cosmos_sdk_chain_id: "stargaze-1"
+    supported_apis: ["rest", "comet_bft"]
 
   # Stride
   - name: "Shannon - stride (Stride) Test"
     service_id: "stride"
-    service_type: "cometbft"
+    service_type: "cosmos_sdk"
+    cosmos_sdk_chain_id: "stride-1"
+    supported_apis: ["rest", "comet_bft"]
+
+  # XRPLEVM
+  - name: "Shannon - xrplevm (XRPL EVM MainNet) Test"
+    service_id: "xrplevm"
+    service_type: "cosmos_sdk"
+    cosmos_sdk_chain_id: "xrplevm_1440000-1"
+    evm_chain_id: "0x15f900"
+    supported_apis: ["json_rpc", "rest", "comet_bft", "websocket"]
+    websockets: true  # Enable Websocket E2E tests for this service
+    service_params:
+      # https://explorer.xrplevm.org/address/0x7C21a90E3eCD3215d16c3BBe76a491f8f792d4Bf
+      contract_address: "0x7C21a90E3eCD3215d16c3BBe76a491f8f792d4Bf"
+      contract_start_block: 1002479
+      transaction_hash: "0xa59fde70cac38068dfd87adb1d7eb40200421ebf7075911f83bcdde810e94058"
+      call_data: "0x18160ddd"
+
+  # XRPLEVM Testnet (Archival)
+  - name: "Shannon - xrplevm-testnet (XRPLEVM Testnet) Test"
+    service_id: "xrplevm-testnet"
+    service_type: "cosmos_sdk"
+    cosmos_sdk_chain_id: "xrplevm_1449000-1"
+    evm_chain_id: "0x161c28"
+    supported_apis: ["json_rpc", "rest", "comet_bft", "websocket"]
+    websockets: true  # Enable Websocket E2E tests for this service
+    service_params:
+      # https://explorer.testnet.xrplevm.org/address/0xc29e2583eD5C77df8792067989Baf9E4CCD4D7fc
+      contract_address: "0xc29e2583eD5C77df8792067989Baf9E4CCD4D7fc"
+      contract_start_block: 368266
+      transaction_hash: "0x2267b3846dd8c4d97e3c9c6d2687647480beaf840e333744335d4ccfea1b935a"
+      call_data: "0x18160ddd"
 
   # TODO_NEXT(@commoddity): Add `service_params` for the below services
 

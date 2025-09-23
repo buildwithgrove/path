@@ -1,23 +1,12 @@
 # Examples of running load tests against PATH & Portal
 
-.PHONY: check_relay_util
-# Internal helper: Checks if relay-util is installed locally
-check_relay_util:
-	@if ! command -v relay-util &> /dev/null; then \
-		echo "####################################################################################################"; \
-		echo "Relay Util is not installed." \
-		echo "To use any Relay Util make targets to send load testing requests please install Relay Util with:"; \
-		echo "go install github.com/commoddity/relay-util/v2@latest"; \
-		echo "####################################################################################################"; \
-	fi
-
 .PHONY: check_websocket_load_test
 # Internal helper: Checks if websocket-load-test is installed locally
 check_websocket_load_test:
 	@if ! command -v websocket-load-test &> /dev/null; then \
 		echo "####################################################################################################"; \
-		echo "WebSocket Load Test is not installed." \
-		echo "To use any WebSocket Load Test make targets to send load testing requests please install WebSocket Load Test with:"; \
+		echo "Websocket Load Test is not installed." \
+		echo "To use any Websocket Load Test make targets to send load testing requests please install Websocket Load Test with:"; \
 		echo "go install github.com/commoddity/websocket-load-test@latest"; \
 		echo "####################################################################################################"; \
 	fi

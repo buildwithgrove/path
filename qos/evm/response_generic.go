@@ -12,8 +12,8 @@ import (
 
 const (
 	// errCodeUnmarshaling is set as the JSONRPC response's error code if the endpoint returns a malformed response.
-	// -32000 Error code will result in returning a 500 HTTP Status Code to the client.
-	errCodeUnmarshaling = -32000
+	// `jsonrpc.ResponseCodeBackendServerErr`, i.e. code -31002, will result in returning a 500 HTTP Status Code to the client.
+	errCodeUnmarshaling = jsonrpc.ResponseCodeBackendServerErr
 
 	// errMsgUnmarshaling is the generic message returned to the user if the endpoint returns a malformed response.
 	errMsgUnmarshaling = "the response returned by the endpoint is not a valid JSONRPC response"
@@ -36,8 +36,8 @@ const (
 type responseGeneric struct {
 	logger polylog.Logger
 
-	// jsonRPCResponse stores the JSONRPC response parsed from an endpoint's response bytes.
-	jsonRPCResponse jsonrpc.Response
+	// jsonrpcResponse stores the JSONRPC response parsed from an endpoint's response bytes.
+	jsonrpcResponse jsonrpc.Response
 
 	// Why the response has failed validation.
 	// Only set if the response is invalid.
@@ -52,11 +52,18 @@ type responseGeneric struct {
 // disqualification when validation errors are present.
 // Implements the response interface.
 func (r responseGeneric) GetObservation() qosobservations.EVMEndpointObservation {
+	var parsedJSONRPCResponseObservation *qosobservations.JsonRpcResponse
+	// If validation error was nil, i.e. if the endpoint response was parsed successfully, update the observation.
+	if r.validationError == nil {
+		parsedJSONRPCResponseObservation = r.jsonrpcResponse.GetObservation()
+	}
+
 	return qosobservations.EVMEndpointObservation{
+		ParsedJsonrpcResponse: parsedJSONRPCResponseObservation,
 		ResponseObservation: &qosobservations.EVMEndpointObservation_UnrecognizedResponse{
 			UnrecognizedResponse: &qosobservations.EVMUnrecognizedResponse{
 				// Include JSONRPC response's details in the observation.
-				JsonrpcResponse:         r.jsonRPCResponse.GetObservation(),
+				JsonrpcResponse:         r.jsonrpcResponse.GetObservation(),
 				ResponseValidationError: r.validationError,
 				HttpStatusCode:          int32(r.getHTTPStatusCode()),
 			},
@@ -66,11 +73,11 @@ func (r responseGeneric) GetObservation() qosobservations.EVMEndpointObservation
 
 // GetHTTPResponse builds and returns the httpResponse matching the responseGeneric instance.
 // Implements the response interface.
-func (r responseGeneric) GetHTTPResponse() httpResponse {
-	return httpResponse{
-		responsePayload: r.getResponsePayload(),
+func (r responseGeneric) GetHTTPResponse() jsonrpc.HTTPResponse {
+	return jsonrpc.HTTPResponse{
+		ResponsePayload: r.getResponsePayload(),
 		// Use the HTTP status code recommended by for the underlying JSONRPC response by the jsonrpc package.
-		httpStatusCode: r.getHTTPStatusCode(),
+		HTTPStatusCode: r.getHTTPStatusCode(),
 	}
 }
 
@@ -78,11 +85,11 @@ func (r responseGeneric) GetHTTPResponse() httpResponse {
 // TODO_INCOMPLETE: build a method-specific payload generator.
 func (r responseGeneric) getResponsePayload() []byte {
 	// Special case for empty batch responses - return empty payload per JSON-RPC spec
-	if (r.jsonRPCResponse == jsonrpc.Response{}) {
+	if (r.jsonrpcResponse == jsonrpc.Response{}) {
 		return []byte{} // "nothing at all" per JSON-RPC batch specification
 	}
 
-	bz, err := json.Marshal(r.jsonRPCResponse)
+	bz, err := json.Marshal(r.jsonrpcResponse)
 	if err != nil {
 		// This should never happen: log an entry but return the response anyway.
 		r.logger.Warn().Err(err).Msg("responseGeneric: Marshaling JSONRPC response failed.")
@@ -94,11 +101,11 @@ func (r responseGeneric) getResponsePayload() []byte {
 // DEV_NOTE: This is an opinionated mapping following best practice but not enforced by any specifications or standards.
 func (r responseGeneric) getHTTPStatusCode() int {
 	// Special case for empty batch responses - return 200 OK per JSON-RPC over HTTP best practices
-	if (r.jsonRPCResponse == jsonrpc.Response{}) {
+	if (r.jsonrpcResponse == jsonrpc.Response{}) {
 		return http.StatusOK
 	}
 
-	return r.jsonRPCResponse.GetRecommendedHTTPStatusCode()
+	return r.jsonrpcResponse.GetRecommendedHTTPStatusCode()
 }
 
 // responseUnmarshallerGenericFromResponse processes an already unmarshaled JSON-RPC response into a responseGeneric struct.
@@ -114,7 +121,7 @@ func responseUnmarshallerGenericFromResponse(logger polylog.Logger, jsonrpcReq j
 	// Response successfully parsed into JSONRPC format.
 	return responseGeneric{
 		logger:          logger,
-		jsonRPCResponse: jsonrpcResponse,
+		jsonrpcResponse: jsonrpcResponse,
 		validationError: nil, // Intentionally set to nil to indicate a valid JSONRPC response.
 	}, nil
 }
@@ -132,7 +139,7 @@ func getGenericJSONRPCErrResponse(_ polylog.Logger, id jsonrpc.ID, malformedResp
 
 	validationError := qosobservations.EVMResponseValidationError_EVM_RESPONSE_VALIDATION_ERROR_UNMARSHAL
 	return responseGeneric{
-		jsonRPCResponse: jsonrpc.GetErrorResponse(id, errCodeUnmarshaling, errMsgUnmarshaling, errData),
+		jsonrpcResponse: jsonrpc.GetErrorResponse(id, errCodeUnmarshaling, errMsgUnmarshaling, errData),
 		validationError: &validationError, // Set validation error to trigger endpoint disqualification
 	}
 }
@@ -144,12 +151,12 @@ func getGenericJSONRPCErrResponseBatchMarshalFailure(logger polylog.Logger, err 
 	logger.Error().Err(err).Msg("Failed to marshal batch response")
 
 	// Create the batch marshal failure response using the error function
-	jsonrpcResponse := newErrResponseBatchMarshalFailure(err)
+	jsonrpcResponse := jsonrpc.NewErrResponseBatchMarshalFailure(err)
 
 	// No validation error since this is an internal processing issue, not an endpoint issue
 	return responseGeneric{
 		logger:          logger,
-		jsonRPCResponse: jsonrpcResponse,
+		jsonrpcResponse: jsonrpcResponse,
 		validationError: nil, // No validation error - this is an internal marshaling issue
 	}
 }
@@ -164,15 +171,9 @@ func getGenericResponseBatchEmpty(logger polylog.Logger) responseGeneric {
 	// Create a responseGeneric with empty payload to represent "nothing at all"
 	return responseGeneric{
 		logger:          logger,
-		jsonRPCResponse: jsonrpc.Response{}, // Empty response - will marshal to empty JSON object
+		jsonrpcResponse: jsonrpc.Response{}, // Empty response - will marshal to empty JSON object
 		validationError: nil,                // No validation error - this is valid JSON-RPC behavior
 	}
-}
-
-// GetJSONRPCID returns the JSONRPC ID of the response.
-// Implements the response interface.
-func (r responseGeneric) GetJSONRPCID() jsonrpc.ID {
-	return r.jsonRPCResponse.ID
 }
 
 // TODO_INCOMPLETE: Handle the string `null`, as it could be returned

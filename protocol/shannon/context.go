@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"maps"
 	"math/rand"
+	"net/http"
 	"strconv"
 	"sync"
 	"time"
@@ -75,6 +76,11 @@ type requestContext struct {
 	selectedEndpoint      endpoint
 	selectedEndpointMutex sync.RWMutex
 
+	// currentRPCType:
+	//   - Tracks the RPC type of the current relay being processed.
+	//   - Set during relay execution and used when building observations.
+	currentRPCType sharedtypes.RPCType
+
 	// requestErrorObservation:
 	//   - Tracks any errors encountered during request processing.
 	requestErrorObservation *protocolobservations.ShannonRequestError
@@ -115,6 +121,11 @@ func (rc *requestContext) HandleServiceRequest(payloads []protocol.Payload) ([]p
 		return []protocol.Response{response}, err
 	}
 
+	// TODO_TECHDEBT: Account for different payloads having different RPC types
+	// OR refactor the single/parallel code flow altogether
+	// Store the current RPC type for use in observations
+	rc.currentRPCType = payloads[0].RPCType
+
 	// For single payload, handle directly without additional overhead.
 	if len(payloads) == 1 {
 		response, err := rc.sendSingleRelay(payloads[0])
@@ -146,6 +157,8 @@ func (rc *requestContext) sendSingleRelay(payload protocol.Payload) (protocol.Re
 	return relayResponse, err
 }
 
+// TODO_TECHDEBT(@adshmh): Set and enforce a cap on the number of concurrent parallel requests for a single method call.
+//
 // TODO_TECHDEBT(@adshmh): Single and Multiple payloads should be handled as similarly as possible:
 // - This includes using similar execution paths.
 //
@@ -337,7 +350,9 @@ func (rc *requestContext) executeRelayRequestStrategy(payload protocol.Payload) 
 	// Session rollover periods
 	// - Protocol relay with fallback protection during session rollover periods
 	// - Sends requests in parallel to ensure reliability during network transitions
-	case rc.fullNode.IsInSessionRollover():
+	//
+	// TODO_DELETE(@adshmh): No session rollover fallback for hey service.
+	case rc.fullNode.IsInSessionRollover() && rc.serviceID != "hey":
 		rc.logger.Debug().Msg("Executing protocol relay with fallback protection during session rollover periods")
 		// TODO_TECHDEBT(@adshmh): Separate error handling for fallback and Shannon endpoints.
 		return rc.sendRelayWithFallback(payload)
@@ -509,10 +524,21 @@ func (rc *requestContext) sendProtocolRelay(payload protocol.Payload) (protocol.
 		return defaultResponse, fmt.Errorf("SHOULD NEVER HAPPEN: failed to marshal relay request: %w", err)
 	}
 
+	// TODO_TECHDEBT(@adshmh): Add a new struct to track details about the HTTP call.
+	// It should contain at-least:
+	// - endpoint payload
+	// - HTTP status code
+	// Use the new struct to pass data around for logging/metrics/etc.
+	//
 	// Send the HTTP request to the protocol endpoint.
-	httpRelayResponseBz, _, err := rc.sendHTTPRequest(payload, selectedEndpoint.PublicURL(), relayRequestBz)
+	httpRelayResponseBz, httpStatusCode, err := rc.sendHTTPRequest(payload, selectedEndpoint.PublicURL(), relayRequestBz)
 	if err != nil {
 		return defaultResponse, err
+	}
+
+	// Non-2xx HTTP status code received from the endpoint: build and return an error
+	if httpStatusCode != http.StatusOK {
+		return defaultResponse, fmt.Errorf("%w %w: %d", errSendHTTPRelay, errEndpointNon2XXHTTPStatusCode, httpStatusCode)
 	}
 
 	// Validate and process the response
@@ -698,7 +724,7 @@ func (rc *requestContext) sendFallbackRelay(
 ) (protocol.Response, error) {
 	// Get the fallback URL for the fallback endpoint.
 	// If the RPC type is unknown or not configured, it will default URL.
-	endpointFallbackURL := fallbackEndpoint.FallbackURL(payload.RPCType)
+	endpointFallbackURL := fallbackEndpoint.GetURL(payload.RPCType)
 
 	// Prepare the fallback URL with optional path
 	fallbackURL := prepareURLFromPayload(endpointFallbackURL, payload)
@@ -709,10 +735,21 @@ func (rc *requestContext) sendFallbackRelay(
 		fallbackURL,
 		[]byte(payload.Data),
 	)
+
 	if err != nil {
 		return protocol.Response{
 			EndpointAddr: fallbackEndpoint.Addr(),
 		}, err
+	}
+
+	// TODO_CONSIDERATION(@adshmh): Are there any scenarios where a fallback endpoint should return a non-2xx HTTP status code?
+	// Examples: a fallback endpoint for a RESTful service.
+	//
+	// Non-2xx HTTP status code: build and return an error.
+	if httpStatusCode != http.StatusOK {
+		return protocol.Response{
+			EndpointAddr: fallbackEndpoint.Addr(),
+		}, fmt.Errorf("%w %w: %d", errSendHTTPRelay, errEndpointNon2XXHTTPStatusCode, httpStatusCode)
 	}
 
 	// Build and return the fallback response
@@ -807,6 +844,7 @@ func (rc *requestContext) handleEndpointError(
 		fmt.Sprintf("relay error: %v", endpointErr),
 		recommendedSanctionType,
 		rc.currentRelayMinerError, // Use RelayMinerError data from request context
+		rc.currentRPCType,         // Use RPC type from request context
 	)
 
 	// Track endpoint error observation for metrics and sanctioning
@@ -841,6 +879,7 @@ func (rc *requestContext) handleEndpointSuccess(
 		time.Now(), // Timestamp: endpoint query completed.
 		endpointResponse,
 		rc.currentRelayMinerError, // Use RelayMinerError data from request context
+		rc.currentRPCType,         // Use RPC type from request context
 	)
 
 	// Track endpoint success observation for metrics
@@ -908,6 +947,7 @@ func prepareURLFromPayload(endpointURL string, payload protocol.Payload) string 
 //   - Selected endpoint URL
 func (rc *requestContext) hydrateLogger(methodName string) {
 	logger := rc.logger.With(
+		"request_type", "http",
 		"method", methodName,
 		"service_id", rc.serviceID,
 	)

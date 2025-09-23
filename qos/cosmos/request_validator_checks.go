@@ -18,6 +18,12 @@ import (
 // It generates requests for both JSONRPC and REST endpoints.
 var _ gateway.QoSEndpointCheckGenerator = &requestValidator{}
 
+// CheckWebsocketConnection returns true if the endpoint supports Websocket connections.
+func (rv *requestValidator) CheckWebsocketConnection() bool {
+	_, supportsWebsockets := rv.serviceState.serviceQoSConfig.getSupportedAPIs()[sharedtypes.RPCType_WEBSOCKET]
+	return supportsWebsockets
+}
+
 // GetRequiredQualityChecks returns the list of quality checks required for an endpoint.
 // It is called in the `gateway/hydrator.go` file on each run of the hydrator.
 func (rv *requestValidator) GetRequiredQualityChecks(endpointAddr protocol.EndpointAddr) []gateway.RequestQoSContext {
@@ -122,9 +128,14 @@ func (rv *requestValidator) getJSONRPCRequestContextFromRequest(
 	rpcType sharedtypes.RPCType,
 	jsonrpcReq jsonrpc.Request,
 ) gateway.RequestQoSContext {
+	// Create a map with single request for consistency with batch handling
+	jsonrpcReqs := map[jsonrpc.ID]jsonrpc.Request{
+		jsonrpcReq.ID: jsonrpcReq,
+	}
+
 	context, ok := rv.buildJSONRPCRequestContext(
-		rpcType,
-		jsonrpcReq,
+		jsonrpcReqs,
+		false, // isBatch = false for single request
 		qosobservations.RequestOrigin_REQUEST_ORIGIN_SYNTHETIC,
 	)
 	if !ok {

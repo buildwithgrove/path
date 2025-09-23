@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"slices"
+	"strconv"
 	"strings"
 	"time"
 
@@ -26,6 +27,10 @@ const (
 	// [OPTIONAL] Run the test only against the specified service IDs.
 	// If not set, all service IDs for the protocol will be used.
 	envTestServiceIDs = "TEST_SERVICE_IDS"
+
+	// [OPTIONAL] Run only Websocket tests (skips HTTP tests entirely).
+	// If not set, only HTTP tests will run.
+	envTestWebSockets = "TEST_WEBSOCKETS"
 )
 
 // getEnvConfig fetches and validates environment config from environment variables
@@ -42,9 +47,13 @@ func getEnvConfig() (envConfig, error) {
 		}
 	}
 
+	// Parse Websocket-only mode
+	websocketsOnly, _ := strconv.ParseBool(os.Getenv(envTestWebSockets))
+
 	return envConfig{
 		testMode:       testMode,
 		testServiceIDs: testServiceIDs,
+		websocketsOnly: websocketsOnly,
 	}, nil
 }
 
@@ -202,6 +211,7 @@ type (
 	envConfig struct {
 		testMode       testMode
 		testServiceIDs []protocol.ServiceID
+		websocketsOnly bool
 	}
 
 	// E2ELoadTestConfig for test mode configuration
@@ -283,6 +293,10 @@ func (c *Config) getTestMode() testMode {
 
 func (c *Config) getTestServiceIDs() []protocol.ServiceID {
 	return c.envConfig.testServiceIDs
+}
+
+func (c *Config) isWebSocketsOnly() bool {
+	return c.envConfig.websocketsOnly
 }
 
 func (c *Config) useServiceSubdomain() bool {

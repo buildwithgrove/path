@@ -34,18 +34,19 @@ description: Deep dive into Load Tests for PATH
 
 ## Load Test Modes
 
-PATH load tests support two distinct modes of operation:
+PATH load tests support multiple modes of operation:
 
-| Mode             | Purpose                                          | How it Works                                                                                                                                                                      | Use Cases                                                                                   |
-| ---------------- | ------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
-| **Local PATH**   | Performance testing against local PATH instances | 1. Requires completed [Getting Started](../path/1_getting_started.md) and [Shannon Cheat Sheet](../path/2_cheatsheet_pocket.md) setup <br/> 2. Tests against local PATH instance | - Local development testing <br/> - Feature validation <br/> - Development iteration        |
-| **Grove Portal** | Performance testing against Grove Portal         | 1. Sends requests to Grove Portal gateway URL <br/> 2. Requires Grove Portal credentials or pre-configured files                                                                  | - Testing production gateway <br/> - Production performance validation <br/> - Benchmarking |
+| Mode               | Purpose                                               | How it Works                                                                                                                                                                    | Use Cases                                                                                                           |
+| ------------------ | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| **Local PATH**     | HTTP performance testing against local PATH instances | 1. Requires completed [Getting Started](../path/1_getting_started.md) and [Pocket Cheat Sheet](../path/2_cheatsheet_pocket.md) setup <br/> 2. Tests against local PATH instance | - Local development testing <br/> - Feature validation <br/> - Development iteration                                |
+| **Grove Portal**   | HTTP performance testing against Grove Portal         | 1. Sends HTTP requests to Grove Portal gateway URL <br/> 2. Requires Grove Portal credentials or pre-configured files                                                           | - Testing production gateway <br/> - Production performance validation <br/> - Benchmarking                         |
+| **Websocket Only** | Websocket-specific performance testing                | 1. Tests only Websocket connections, skipping HTTP tests entirely <br/> 2. Available for Websocket-compatible services (e.g., XRPLEVM)                                          | - Websocket-specific performance validation <br/> - Real-time connection testing <br/> - Websocket scaling analysis |
 
 ### Local PATH Mode
 
 For local PATH load testing, you need:
 
-1. **Completed Setup**: Follow the [Getting Started](../path/1_getting_started.md) and [Shannon Cheat Sheet](../path/2_cheatsheet_pocket.md) guides
+1. **Completed Setup**: Follow the [Getting Started](../path/1_getting_started.md) and [Pocket Cheat Sheet](../path/2_cheatsheet_pocket.md) guides
 2. **Local PATH Instance**: Your local PATH instance should be running and configured
 3. **Default Configuration**: The system automatically targets your local PATH instance
 
@@ -63,14 +64,25 @@ You will need one of the following:
    - Get credentials from the [Grove Portal](https://www.portal.grove.city)
    - Use `make config_copy_e2e_load_test` to set up
 
+### Websocket Mode
+
+For Websocket load testing, you can run tests exclusively on Websocket-compatible services:
+
+1. **Prerequisites**: Same as Local PATH or Grove Portal mode  
+2. **Supported Services**: Currently XRPLEVM and XRPLEVM-testnet services
+3. **Test Transport**: Uses Websocket connections instead of HTTP
+4. **Commands**:
+   - `make load_test_websocket xrplevm` - Test specific Websocket services
+   - `make load_test_websocket_all` - Test all Websocket-compatible services
+
 ## Load Test Configuration
 
 **Configuration files used:**
 
-| Configuration File                              | Local PATH | Grove Portal |               Default Available?               |
-| ----------------------------------------------- | :--------: | :----------: | :--------------------------------------------: |
-| `./e2e/config/.grove.e2e_load_test.config.yaml` |     ❌     |      ✅      |                       ❌                       |
-| `./e2e/config/.e2e_load_test.config.yaml`       |     ✅     |      ✅      | `e2e/config/e2e_load_test.config.default.yaml` |
+| Configuration File                              | Local PATH | Grove Portal |             Default Available?              |
+| ----------------------------------------------- | :--------: | :----------: | :-----------------------------------------: |
+| `./e2e/config/.grove.e2e_load_test.config.yaml` |     ❌      |      ✅       |                      ❌                      |
+| `./e2e/config/.e2e_load_test.config.yaml`       |     ✅      |      ✅       | `e2e/config/e2e_load_test.config.tmpl.yaml` |
 
 :::tip Populate Configs
 

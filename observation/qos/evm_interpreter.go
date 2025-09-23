@@ -5,8 +5,12 @@ package qos
 
 import (
 	"errors"
+	"strings"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
+
+	shannonmetrics "github.com/buildwithgrove/path/metrics/protocol/shannon"
+	"github.com/buildwithgrove/path/protocol"
 )
 
 var (
@@ -119,10 +123,16 @@ func (i *EVMObservationInterpreter) GetRequestOrigin() string {
 	return i.Observations.GetRequestOrigin().String()
 }
 
-// GetRequestStatus interprets the observations to determine request status information:
-// - httpStatusCode: the suggested HTTP status code to return to the client
-// - requestError: error details (nil if successful)
-// - err: error if interpreter cannot determine status (e.g., nil observations)
+// TODO_TECHDEBT(@adshmh): Check for any request-level errors.
+//   - Example: no responses received from any endpoints.
+//   - Drop EVMRequestError struct, and use RequestError directly.
+//
+// GetRequestStatus interprets the observations to determine request status information.
+//
+// Returns:
+//   - httpStatusCode: the suggested HTTP status code to return to the client
+//   - requestError: error details (nil if successful)
+//   - err: error if interpreter cannot determine status (e.g., nil observations)
 func (i *EVMObservationInterpreter) GetRequestStatus() (httpStatusCode int, requestError *EVMRequestError, err error) {
 	// Unknown status if no observations are available
 	if i.Observations == nil {
@@ -168,6 +178,39 @@ func (i *EVMObservationInterpreter) GetEndpointObservations() ([]*EVMEndpointObs
 	}
 
 	return allEndpointObservations, true
+}
+
+// GetJSONRPCErrorCode extracts the JSON-RPC error code from the last endpoint observation.
+// Returns (errorCode, true) if a JSON-RPC error is present in the parsed response
+// Returns (0, false) if no error is present or parsed_jsonrpc_response is nil
+func (i *EVMObservationInterpreter) GetJSONRPCErrorCode() (int, bool) {
+	observations, ok := i.GetEndpointObservations()
+	if !ok {
+		return 0, false
+	}
+
+	// No endpoint observations indicates no responses were received
+	if len(observations) == 0 {
+		return 0, false
+	}
+
+	// Use only the last observation (latest response)
+	lastObs := observations[len(observations)-1]
+
+	// Get the parsed JSON-RPC response
+	parsedResponse := lastObs.GetParsedJsonrpcResponse()
+	if parsedResponse == nil {
+		return 0, false
+	}
+
+	// Check if there's an error in the JSON-RPC response
+	jsonrpcError := parsedResponse.GetError()
+	if jsonrpcError == nil {
+		return 0, false
+	}
+
+	// Return the error code
+	return int(jsonrpcError.GetCode()), true
 }
 
 // checkRequestValidationFailures examines observations for request validation failures
@@ -225,4 +268,62 @@ func (i *EVMObservationInterpreter) getEndpointResponseStatus() (int, *EVMReques
 	}
 
 	return statusCode, reqError, nil
+}
+
+// GetEndpointDomain returns the domain of the endpoint that served the request.
+//
+// If multiple endpoint observations are present, it returns the domain of the first endpoint observation.
+// If no endpoint observations are present, it returns an empty string.
+//
+// TODO_TECHDEBT: Consolidate this with the business logic of other "GetEndpointDomain" implementations.
+func (i *EVMObservationInterpreter) GetEndpointDomain() string {
+	// Ensure observations are not nil
+	if i.Observations == nil {
+		i.Logger.ProbabilisticDebugInfo(polylog.ProbabilisticDebugInfoProb).Msg("SHOULD RARELY HAPPEN: EVM observations are nil")
+		return ""
+	}
+
+	// Ensure endpoint observations are not empty
+	requestObservations := i.Observations.GetRequestObservations()
+	if len(requestObservations) == 0 {
+		i.Logger.ProbabilisticDebugInfo(polylog.ProbabilisticDebugInfoProb).Msg("SHOULD RARELY HAPPEN: EVM endpoint observations are empty")
+		return ""
+	}
+
+	// Build a set of unique endpoint addresses
+	uniqueEndpointAddrs := make(map[string]struct{})
+	endpointAddrs := make([]string, 0, len(requestObservations))
+	for _, requestObservation := range requestObservations {
+		for _, endpointObservation := range requestObservation.GetEndpointObservations() {
+			endpointAddr := endpointObservation.GetEndpointAddr()
+			if _, seen := uniqueEndpointAddrs[endpointAddr]; !seen {
+				uniqueEndpointAddrs[endpointAddr] = struct{}{}
+				endpointAddrs = append(endpointAddrs, endpointAddr)
+			}
+		}
+	}
+
+	// If multiple endpoint addresses are observed, log a warning and use the first one for domain extraction
+	// TODO_DISCUSS: Decide how we want to handle this case in the future.
+	numUniqueEndpointAddrs := len(uniqueEndpointAddrs)
+	if numUniqueEndpointAddrs > 1 {
+		i.Logger.With(
+			"num_unique_endpoint_addrs", numUniqueEndpointAddrs,
+			"unique_endpoint_addrs", strings.Join(endpointAddrs, ", "),
+		).Warn().Msg("Multiple endpoint addresses observed for a single request. Using the first one for metrics domain.")
+	}
+
+	// Use the first observed endpoint address for domain extraction
+	endpointAddr := endpointAddrs[0]
+	endpointURL, err := protocol.EndpointAddr(endpointAddr).GetURL()
+	if err != nil {
+		i.Logger.Error().Err(err).Msgf("SHOULD NEVER HAPPEN: Cannot get endpoint URL from endpoint address: %s", endpointAddr)
+	}
+
+	domain, err := shannonmetrics.ExtractDomainOrHost(endpointURL)
+	if err != nil {
+		i.Logger.Error().Err(err).Msgf("SHOULD NEVER HAPPEN: Cannot get endpoint domain from endpoint address: %s", endpointAddr)
+	}
+
+	return domain
 }
