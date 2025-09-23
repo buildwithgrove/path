@@ -96,6 +96,11 @@ type cachingFullNode struct {
 	// This is used to prefetch and cache all sessions.
 	// Necessary to avoid individual requests getting stuck waiting for a session fetch.
 	ownedApps map[protocol.ServiceID][]string
+
+	// Tracks whether the endpoint is healthy.
+	// Set to true once at least 1 iteration of fetching sessions succeeds.
+	isHealthy   bool
+	isHealthyMu sync.RWMutex
 }
 
 // NewCachingFullNode wraps a LazyFullNode with simple map-based caches
@@ -270,6 +275,11 @@ func (cfn *cachingFullNode) updateSessionCache() {
 				cfn.sessionsCache.sessions = allSessions
 				cfn.sessionsCache.mu.Unlock()
 				updatedOnce = true
+
+				// Mark the caching full node as healthy
+				cfn.isHealthyMu.Lock()
+				cfn.isHealthy = true
+				cfn.isHealthyMu.Unlock()
 			}
 
 			time.Sleep(1 * time.Second)
@@ -475,6 +485,15 @@ func (cfn *cachingFullNode) GetAccountClient() *sdk.AccountClient {
 
 // IsHealthy: passthrough to underlying node.
 func (cfn *cachingFullNode) IsHealthy() bool {
+	// Check if the caching full node has been marked healthy.
+	// i.e. if at least one iteration of fetching sessions has succeeded.
+	cfn.isHealthyMu.RLock()
+	if !cfn.isHealthy {
+		return false
+	}
+	cfn.isHealthyMu.RUnlock()
+
+	// Delegate to the lazy full node's health status.
 	return cfn.lazyFullNode.IsHealthy()
 }
 
