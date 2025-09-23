@@ -88,10 +88,10 @@ extract_metrics() {
     local description="$2"
 
     # Extract Go benchmark results (iterations and time per operation)
-    local benchmark_line=$(grep "$BENCHMARK_NAME" "$output_file" | head -1)
-    # Remove extra whitespace and parse fields
-    local iterations=$(echo "$benchmark_line" | awk '{print $2}' | tr -d ' \t' || echo "N/A")
-    local ns_per_op=$(echo "$benchmark_line" | awk '{print $3}' | tr -d ' \t' || echo "N/A")
+    # Handle case where benchmark line might be corrupted by log output
+    # Look for the pattern: numbers + "ns/op"
+    local iterations=$(grep -E "^\s*[0-9]+\s+[0-9]+\s+ns/op" "$output_file" | awk '{print $1}' | tail -1 || echo "N/A")
+    local ns_per_op=$(grep -E "^\s*[0-9]+\s+[0-9]+\s+ns/op" "$output_file" | awk '{print $2}' | tail -1 || echo "N/A")
 
     # Convert ns to more readable format
     local time_per_op="N/A"

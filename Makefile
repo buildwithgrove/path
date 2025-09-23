@@ -29,6 +29,9 @@ help: ## Prints all the targets in all the Makefiles
 	@grep -h -E '^(test_unit|test_all|go_lint):.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "$(CYAN)%-40s$(RESET) %s\n", $$1, $$2}'
 	@grep -h -E '^e2e_test.*:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "$(CYAN)%-40s$(RESET) %s\n", $$1, $$2}'
 	@echo ""
+	@echo "$(BOLD)=== ⚡ Benchmarking ===$(RESET)"
+	@grep -h -E '^bench.*:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "$(CYAN)%-40s$(RESET) %s\n", $$1, $$2}'
+	@echo ""
 	@echo "$(BOLD)=== ✋ Manual Testing ===$(RESET)"
 	@grep -h -E '^(get_disqualified_endpoints|grove_get_disqualified_endpoints|shannon_preliminary_services_test_help|shannon_preliminary_services_test|source_shannon_preliminary_services_helpers):.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "$(CYAN)%-40s$(RESET) %s\n", $$1, $$2}'
 	@echo ""
@@ -104,6 +107,7 @@ include ./makefiles/docs.mk
 include ./makefiles/localnet.mk
 include ./makefiles/portal-db.mk
 include ./makefiles/test.mk
+include ./makefiles/bench.mk
 include ./makefiles/test_requests.mk
 include ./makefiles/test_load.mk
 include ./makefiles/proto.mk

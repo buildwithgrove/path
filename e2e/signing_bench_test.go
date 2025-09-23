@@ -17,93 +17,77 @@ import (
 	sdkcrypto "github.com/pokt-network/shannon-sdk/crypto"
 )
 
-// BenchmarkShannonSigningDirect benchmarks the shannon-sdk signing operations directly
-// without the full E2E infrastructure. This provides a focused measurement of the
-// ethereum_secp256k1 build tag performance impact.
+// BenchmarkShannonSigningDirect benchmarks the shannon-sdk signing operations using
+// the same approach as Shannon SDK's own benchmarks for direct comparison.
 //
 // Usage:
 //
 //	go test -bench=BenchmarkShannonSigningDirect -benchtime=30s -tags="bench"
 //	go test -bench=BenchmarkShannonSigningDirect -benchtime=30s -tags="bench,ethereum_secp256k1"
 func BenchmarkShannonSigningDirect(b *testing.B) {
-	// Test private key (example key, not used in production)
-	testPrivateKeyHex := "1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
+	// Use Shannon SDK's EXACT approach: generate keys like their benchmark
+	appPrivKey := secp256k1.GenPrivKey()
+	supplierPrivKey1 := secp256k1.GenPrivKey()
+	supplierPrivKey2 := secp256k1.GenPrivKey()
 
-	// Create test relay request - simplified for benchmarking
+	// Use the app private key for signing (convert to hex)
+	privateKeyHex := hex.EncodeToString(appPrivKey.Bytes())
+
+	signer, err := sdk.NewSignerFromHex(privateKeyHex)
+	if err != nil {
+		b.Fatalf("Failed to create signer: %v", err)
+	}
+
+	// Create a mock public key fetcher with corresponding public keys
+	pubKeyFetcher := &mockPublicKeyFetcher{
+		publicKeys: map[string]cryptotypes.PubKey{
+			"pokt1app1":      appPrivKey.PubKey(),
+			"pokt1supplier1": supplierPrivKey1.PubKey(),
+			"pokt1supplier2": supplierPrivKey2.PubKey(),
+		},
+	}
+
+	// Create an application
+	app := apptypes.Application{
+		Address: "pokt1app1",
+	}
+
+	appRing := sdk.NewApplicationRing(app, pubKeyFetcher)
+
+	// Create a relay request exactly like Shannon SDK
 	relayRequest := &servicetypes.RelayRequest{
 		Meta: servicetypes.RelayRequestMetadata{
 			SessionHeader: &sessiontypes.SessionHeader{
-				ApplicationAddress:      "test_app_address",
-				ServiceId:               "eth",
-				SessionId:               "test_session_id",
-				SessionStartBlockHeight: 1000,
-				SessionEndBlockHeight:   2000,
+				ApplicationAddress:      "pokt1app1",
+				ServiceId:               "test-service",
+				SessionStartBlockHeight: 1,
+				SessionEndBlockHeight:   10,
 			},
+			SupplierOperatorAddress: "pokt1supplier1",
 		},
-		Payload: []byte(`{"jsonrpc":"2.0","method":"eth_blockNumber","id":1}`),
+		Payload: []byte(`{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}`),
 	}
-
-	// Create test application
-	testApp := apptypes.Application{
-		Address: "test_app_address",
-	}
-
-	// Create a mock account client (minimal implementation for benchmarking)
-	mockAccountClient := createMockAccountClient()
 
 	b.ResetTimer()
 
-	// Run the benchmark
-	for range b.N {
-		// Measure the signing operation
-		start := time.Now()
-
-		// Create application ring (part of signing setup)
-		ring := sdk.NewApplicationRing(
-			testApp,
-			mockAccountClient,
-		)
-
-		// Create signer (includes key parsing/setup)
-		sdkSigner, err := sdkcrypto.NewCryptoSigner(testPrivateKeyHex)
+	for i := 0; i < b.N; i++ {
+		_, err := signer.Sign(context.Background(), relayRequest, appRing)
 		if err != nil {
-			b.Fatalf("Failed to create signer: %v", err)
+			b.Fatalf("Sign failed: %v", err)
 		}
-
-		// Perform the signing operation
-		_, err = sdkSigner.Sign(context.Background(), relayRequest, ring)
-		if err != nil {
-			b.Fatalf("Failed to sign request: %v", err)
-		}
-
-		// Record the duration
-		duration := time.Since(start)
-
-		// Report metrics
-		b.ReportMetric(float64(duration.Nanoseconds()), "ns/op")
 	}
 }
 
-// mockAccountClient provides a minimal AccountClient implementation for benchmarking
-type mockAccountClient struct {
-	pubKey cryptotypes.PubKey
+// mockPublicKeyFetcher is a test implementation of PublicKeyFetcher that matches Shannon SDK's approach
+type mockPublicKeyFetcher struct {
+	publicKeys map[string]cryptotypes.PubKey
 }
 
-func (m *mockAccountClient) GetPubKeyFromAddress(ctx context.Context, address string) (cryptotypes.PubKey, error) {
-	// Return a real secp256k1 public key for benchmarking
-	return m.pubKey, nil
-}
-
-// createMockAccountClient creates a mock account client with a proper secp256k1 public key
-func createMockAccountClient() *mockAccountClient {
-	// Use the same private key to derive the public key
-	privateKeyBytes, _ := hex.DecodeString("1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef")
-	privKey := &secp256k1.PrivKey{Key: privateKeyBytes}
-	pubKey := privKey.PubKey()
-
-	return &mockAccountClient{
-		pubKey: pubKey,
+func (m *mockPublicKeyFetcher) GetPubKeyFromAddress(ctx context.Context, address string) (cryptotypes.PubKey, error) {
+	if pubKey, exists := m.publicKeys[address]; exists {
+		return pubKey, nil
 	}
+	return nil, nil
 }
 
 // Additional benchmark for just the signer creation (key operations)
@@ -136,21 +120,33 @@ func BenchmarkShannonCompleteSigningPipeline(b *testing.B) {
 		b.Fatalf("Failed to create signer: %v", err)
 	}
 
-	testApp := apptypes.Application{Address: "test_app_address"}
-	mockAccountClient := createMockAccountClient()
-	ring := sdk.NewApplicationRing(testApp, mockAccountClient)
+	// Pre-create test application and ring setup like the optimized benchmark
+	appPrivKey := secp256k1.GenPrivKey()
+	supplierPrivKey1 := secp256k1.GenPrivKey()
+	supplierPrivKey2 := secp256k1.GenPrivKey()
+
+	pubKeyFetcher := &mockPublicKeyFetcher{
+		publicKeys: map[string]cryptotypes.PubKey{
+			"pokt1app1":      appPrivKey.PubKey(),
+			"pokt1supplier1": supplierPrivKey1.PubKey(),
+			"pokt1supplier2": supplierPrivKey2.PubKey(),
+		},
+	}
+
+	testApp := apptypes.Application{Address: "pokt1app1"}
+	ring := sdk.NewApplicationRing(testApp, pubKeyFetcher)
 
 	relayRequest := &servicetypes.RelayRequest{
 		Meta: servicetypes.RelayRequestMetadata{
 			SessionHeader: &sessiontypes.SessionHeader{
-				ApplicationAddress:      "test_app_address",
-				ServiceId:               "eth",
-				SessionId:               "test_session_id",
-				SessionStartBlockHeight: 1000,
-				SessionEndBlockHeight:   2000,
+				ApplicationAddress:      "pokt1app1",
+				ServiceId:               "test-service",
+				SessionStartBlockHeight: 1,
+				SessionEndBlockHeight:   10,
 			},
+			SupplierOperatorAddress: "pokt1supplier1",
 		},
-		Payload: []byte(`{"jsonrpc":"2.0","method":"eth_blockNumber","id":1}`),
+		Payload: []byte(`{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}`),
 	}
 
 	b.ResetTimer()

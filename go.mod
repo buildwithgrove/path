@@ -2,10 +2,17 @@ module github.com/buildwithgrove/path
 
 go 1.24.3
 
+// replace github.com/pokt-network/poktroll => /Users/olshansky/workspace/pocket/poktroll2
+
+// replace github.com/pokt-network/poktroll => /Users/olshansky/workspace/pocket/poktroll2
 // DEVELOPER_TIP: Uncomment to use a local copy of poktroll
 replace github.com/pokt-network/shannon-sdk => /Users/olshansky/workspace/pocket/shannon-sdk
 
-// replace github.com/pokt-network/poktroll => /Users/olshansky/workspace/pocket/poktroll2
+// Required for ethereum_secp256k1 optimization - use local versions with optimizations
+replace github.com/pokt-network/ring-go => /Users/olshansky/workspace/pocket/ring-go
+
+// Required for Ethereum backend in ring-go
+replace github.com/athanorlabs/go-dleq => /Users/olshansky/workspace/pocket/go-dleq
 
 require (
 	github.com/cheggaaa/pb/v3 v3.1.7
@@ -166,6 +173,7 @@ require (
 	github.com/hashicorp/golang-lru/v2 v2.0.7 // indirect
 	github.com/hashicorp/yamux v0.1.2 // indirect
 	github.com/hdevalence/ed25519consensus v0.2.0 // indirect
+	github.com/holiman/uint256 v1.3.2 // indirect
 	github.com/huandu/skiplist v1.2.1 // indirect
 	github.com/iancoleman/strcase v0.3.0 // indirect
 	github.com/improbable-eng/grpc-web v0.15.0 // indirect
