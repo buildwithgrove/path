@@ -75,7 +75,7 @@ func (c cosmosSDKServiceQoSConfig) getCosmosSDKChainID() string {
 }
 
 // getEVMChainID returns the EVM chain ID.
-// This is necessary for Cosmos chains that have native EVM support; XRPLEVM, evmos, etc...
+// This is necessary for Cosmos chains that have native EVM support; XRPLEVM, etc...
 // Implements the CosmosSDKServiceQoSConfig interface.
 func (c cosmosSDKServiceQoSConfig) getEVMChainID() string {
 	return c.evmChainID
