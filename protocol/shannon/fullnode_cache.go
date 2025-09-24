@@ -264,44 +264,30 @@ func (cfn *cachingFullNode) updateSharedParamsCache() {
 
 // updateSessionCache periodically updates the session cache for active sessions
 func (cfn *cachingFullNode) updateSessionCache() {
-	ticker := time.NewTicker(cfn.cacheConfig.SessionTTL)
-	defer ticker.Stop()
 
-	var updatedOnce bool
 	for {
-		if !updatedOnce {
-			if allSessions, err := cfn.fetchAllSessions(); err == nil {
-				cfn.sessionsCache.mu.Lock()
-				cfn.sessionsCache.sessions = allSessions
-				cfn.sessionsCache.mu.Unlock()
-				updatedOnce = true
+		// Fetch all sessions for caching.
+		updatedSessions, err := cfn.fetchAllSessions()
+		if err != nil {
+			cfn.logger.Error().Err(err).Msg("Failed to get updated sessions. Skipping session cache update")
 
-				// Mark the caching full node as healthy
-				cfn.isHealthyMu.Lock()
-				cfn.isHealthy = true
-				cfn.isHealthyMu.Unlock()
-			}
-
+			// Add a short delay before retrying.
 			time.Sleep(1 * time.Second)
 			continue
 		}
 
-		select {
-		case <-cfn.ctx.Done():
-			return
-		case <-ticker.C:
+		// Update existing sessions in cache
+		cfn.sessionsCache.mu.Lock()
+		cfn.sessionsCache.sessions = updatedSessions
+		cfn.sessionsCache.mu.Unlock()
 
-			updatedSessions, err := cfn.fetchAllSessions()
-			if err != nil {
-				cfn.logger.Error().Err(err).Msg("Failed to get updated sessions. Skipping session cache update")
-				continue
-			}
+		// Mark the caching full node as healthy
+		cfn.isHealthyMu.Lock()
+		cfn.isHealthy = true
+		cfn.isHealthyMu.Unlock()
 
-			// Update existing sessions in cache
-			cfn.sessionsCache.mu.Lock()
-			cfn.sessionsCache.sessions = updatedSessions
-			cfn.sessionsCache.mu.Unlock()
-		}
+		// Sleep until the cache expiry.
+		time.Sleep(cfn.cacheConfig.SessionTTL)
 	}
 }
 
@@ -488,10 +474,11 @@ func (cfn *cachingFullNode) IsHealthy() bool {
 	// Check if the caching full node has been marked healthy.
 	// i.e. if at least one iteration of fetching sessions has succeeded.
 	cfn.isHealthyMu.RLock()
+	defer cfn.isHealthyMu.RUnlock()
+
 	if !cfn.isHealthy {
 		return false
 	}
-	cfn.isHealthyMu.RUnlock()
 
 	// Delegate to the lazy full node's health status.
 	return cfn.lazyFullNode.IsHealthy()
