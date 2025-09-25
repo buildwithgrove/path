@@ -37,7 +37,7 @@ var (
 	//
 	// - Labels:
 	//   - cosmos_chain_id: Target Cosmos chain identifier
-	//   - evm_chain_id: Target EVM chain identifier for Cosmos chains with native EVM support, e.g. XRPLEVM, evmos, etc...
+	//   - evm_chain_id: Target EVM chain identifier for Cosmos chains with native EVM support, e.g. XRPLEVM, etc...
 	//   - service_id: Service ID of the Cosmos SDK QoS instance
 	//   - request_origin: origin of the request: User or Hydrator.
 	//   - rpc_type: Backend service type (JSONRPC, REST, COMETBFT)

@@ -2,16 +2,16 @@
 
 // Package e2e provides End-to-End and Load testing for PATH services.
 //
-// This package supports both HTTP and WebSocket protocols with configurable load testing
-// capabilities using Vegeta and custom WebSocket clients.
+// This package supports both HTTP and Websocket protocols with configurable load testing
+// capabilities using Vegeta and custom Websocket clients.
 //
 // TESTING MODES:
-// - E2E Mode: Spins up local PATH instance, tests against localhost (HTTP or WebSocket)
-// - Load Mode: Tests against remote PATH deployment with configurable RPS (HTTP or WebSocket)
+// - E2E Mode: Spins up local PATH instance, tests against localhost (HTTP or Websocket)
+// - Load Mode: Tests against remote PATH deployment with configurable RPS (HTTP or Websocket)
 // - Fallback Mode: E2E tests with external fallback URL configuration
 //
 // SUPPORTED PROTOCOLS:
-// - EVM JSON-RPC (HTTP + WebSocket): Ethereum-compatible blockchain interactions
+// - EVM JSON-RPC (HTTP + Websocket): Ethereum-compatible blockchain interactions
 // - Cosmos SDK REST (HTTP): RESTful API endpoints for Cosmos-based chains
 // - CometBFT JSON-RPC (HTTP): Tendermint consensus and node status endpoints
 // - Solana JSON-RPC (HTTP): Solana-specific blockchain methods
@@ -19,7 +19,7 @@
 // PACKAGE ARCHITECTURE:
 // - main_test.go: Test orchestration and coordination
 // - vegeta_test.go: HTTP testing using Vegeta library
-// - websockets_test.go: WebSocket testing with persistent connections
+// - websockets_test.go: Websocket testing with persistent connections
 // - assertions_test.go: Shared validation logic (transport-agnostic)
 // - calculations_test.go: Metrics calculation functions
 // - log_test.go: Progress bars and formatted output
@@ -51,15 +51,15 @@ import (
 // Example Usage - E2E tests:
 //   - make e2e_test_all             # Run all HTTP E2E tests for all services
 //   - make e2e_test <service IDs>   # Run HTTP E2E tests for the specified services
-//   - make e2e_test_websocket_all   # Run WebSocket E2E tests for all compatible services
-//   - make e2e_test_websocket <IDs> # Run WebSocket E2E tests for specified services
+//   - make e2e_test_websocket_all   # Run Websocket E2E tests for all compatible services
+//   - make e2e_test_websocket <IDs> # Run Websocket E2E tests for specified services
 //   - make e2e_test_eth_fallback <URL> # Run E2E test with ETH fallback URL enabled
 //
 // Example Usage - Load tests:
 //   - make load_test_all            # Run all HTTP load tests for all services
 //   - make load_test <service IDs>  # Run all HTTP load tests for the specified services
-//   - make load_test_websocket_all  # Run all WebSocket load tests for all compatible services
-//   - make load_test_websocket <IDs> # Run all WebSocket load tests for specified services
+//   - make load_test_websocket_all  # Run all Websocket load tests for all compatible services
+//   - make load_test_websocket <IDs> # Run all Websocket load tests for specified services
 // -----------------------------------------------------------------------------
 
 // -------------------- Test Configuration Initialization --------------------
@@ -106,7 +106,7 @@ func Test_PATH_E2E(t *testing.T) {
 	// Assign test service configs to each test service
 	testServiceConfigs := setTestServiceConfigs(testServices)
 
-	// Filter test services for WebSocket-only mode if enabled
+	// Filter test services for Websocket-only mode if enabled
 	if cfg.isWebSocketsOnly() {
 		filteredServices := make([]*TestService, 0)
 		for _, ts := range testServices {
@@ -117,11 +117,11 @@ func Test_PATH_E2E(t *testing.T) {
 		testServices = filteredServices
 
 		if len(testServices) == 0 {
-			fmt.Printf("%s⚠️  No services support WebSocket tests in WebSocket-only mode%s\n", YELLOW, RESET)
+			fmt.Printf("%s⚠️  No services support Websocket tests in Websocket-only mode%s\n", YELLOW, RESET)
 			return
 		}
 
-		fmt.Printf("\n%s🔌 WebSocket-only mode enabled - filtered to %d WebSocket-compatible service(s)%s\n",
+		fmt.Printf("\n%s🔌 Websocket-only mode enabled - filtered to %d Websocket-compatible service(s)%s\n",
 			BOLD_CYAN, len(testServices), RESET)
 	}
 
@@ -164,15 +164,15 @@ func Test_PATH_E2E(t *testing.T) {
 		// Log service specific info
 		logTestServiceInfo(ts, serviceGatewayURL, serviceConfig)
 
-		// Run the service tests (HTTP and/or WebSocket based on configuration)
+		// Run the service tests (HTTP and/or Websocket based on configuration)
 		runAllServiceTests(t, ctx, ts)
 	}
 
 	printServiceSummaries(serviceSummaries)
 }
 
-// runAllServiceTests orchestrates either HTTP or WebSocket tests based on test mode.
-// This function runs either HTTP tests OR WebSocket tests, never both.
+// runAllServiceTests orchestrates either HTTP or Websocket tests based on test mode.
+// This function runs either HTTP tests OR Websocket tests, never both.
 func runAllServiceTests(t *testing.T, ctx context.Context, ts *TestService) {
 	results := make(map[string]*methodMetrics)
 	var resultsMutex sync.Mutex
@@ -184,18 +184,18 @@ func runAllServiceTests(t *testing.T, ctx context.Context, ts *TestService) {
 	}
 }
 
-// runWebSocketTestsForService executes WebSocket tests and handles validation
+// runWebSocketTestsForService executes Websocket tests and handles validation
 func runWebSocketTestsForService(t *testing.T, ctx context.Context, ts *TestService, results map[string]*methodMetrics, resultsMutex *sync.Mutex) {
-	// Validate WebSocket support before running tests
+	// Validate Websocket support before running tests
 	if !ts.supportsEVMWebSockets() {
-		t.Errorf("❌ Service %s does not support WebSocket tests but TEST_WEBSOCKETS=true was set", ts.ServiceID)
+		t.Errorf("❌ Service %s does not support Websocket tests but TEST_WEBSOCKETS=true was set", ts.ServiceID)
 		return
 	}
 
-	// Execute WebSocket tests
+	// Execute Websocket tests
 	websocketTestFailed := runWebSocketServiceTest(t, ctx, ts, results, resultsMutex)
 
-	// Calculate and validate the WebSocket service summary
+	// Calculate and validate the Websocket service summary
 	overallTestFailed := calculateServiceSummary(t, ts, results)
 
 	// Mark overall test as failed if any component failed
@@ -311,11 +311,11 @@ func logTestServiceIDs(testServices []*TestService) {
 func getServiceTypeDisplay(ts *TestService) (typeStr, icon string) {
 	switch {
 	case ts.Archival && ts.supportsEVMWebSockets():
-		return "(Archival + WebSocket)", "🗄️🔌"
+		return "(Archival + Websocket)", "🗄️🔌"
 	case ts.Archival:
 		return "(Archival)", "🗄️"
 	case ts.supportsEVMWebSockets():
-		return "(WebSocket)", "🔌"
+		return "(Websocket)", "🔌"
 	default:
 		return "(Non-archival)", "📝"
 	}

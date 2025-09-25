@@ -9,7 +9,7 @@ import (
 	"github.com/buildwithgrove/path/qos/solana"
 )
 
-// NOTE: Service ID list last updated 2025/04/10
+// How to add archival checks: https://path.grove.city/learn/qos/adding_new_archival
 
 // IMPORTANT: PATH requires service IDs to be registered here for Quality of Service (QoS) endpoint checks.
 // Unregistered services use NoOp QoS type with random endpoint selection and no monitoring.
@@ -225,7 +225,8 @@ var shannonServices = []ServiceQoSConfig{
 			12_300_000,
 		),
 		map[sharedtypes.RPCType]struct{}{
-			sharedtypes.RPCType_JSON_RPC: {},
+			sharedtypes.RPCType_JSON_RPC:  {},
+			sharedtypes.RPCType_WEBSOCKET: {},
 		},
 	),
 
@@ -637,11 +638,6 @@ var shannonServices = []ServiceQoSConfig{
 
 	// *** EVM Services (Non-Archival) ***
 
-	// Evmos
-	evm.NewEVMServiceQoSConfig("evmos", "0x2329", nil, map[sharedtypes.RPCType]struct{}{
-		sharedtypes.RPCType_JSON_RPC: {},
-	}),
-
 	// Fraxtal
 	evm.NewEVMServiceQoSConfig("fraxtal", "0xfc", nil, map[sharedtypes.RPCType]struct{}{
 		sharedtypes.RPCType_JSON_RPC: {},
@@ -682,6 +678,34 @@ var shannonServices = []ServiceQoSConfig{
 	evm.NewEVMServiceQoSConfig("hey", defaultEVMChainID, nil, map[sharedtypes.RPCType]struct{}{
 		sharedtypes.RPCType_JSON_RPC: {},
 	}),
+
+	// Hyperliquid
+	evm.NewEVMServiceQoSConfig("hyperliquid", "0x3e7",
+		evm.NewEVMArchivalCheckConfig(
+			// https://app.hyperliquid.xyz/explorer/address/0x162cc7c861ebd0c06b3d72319201150482518185
+			// https://hypurrscan.io/address/0x162cc7c861ebd0c06b3d72319201150482518185
+			"0x162cc7c861ebd0c06b3d72319201150482518185",
+			// First block (649106292) taken from this post: https://x.com/Crypto_Noddy/status/1943780258370428938:
+			// Adding 1_000 blocks as a buffer for the archival check baseline.
+			649_107_292,
+		),
+		map[sharedtypes.RPCType]struct{}{
+			sharedtypes.RPCType_JSON_RPC: {},
+		}),
+
+	// Unichain
+	evm.NewEVMServiceQoSConfig("unichain", "0x82",
+		evm.NewEVMArchivalCheckConfig(
+			// https://unichain.blockscout.com/address/0x1F98400000000000000000000000000000000004
+			"0x1F98400000000000000000000000000000000004",
+			// Below is not the first block, but one that is sufficiently long ago for archival check baseline.
+			// https://unichain.blockscout.com/address/0x1F98400000000000000000000000000000000004?tab=txs&page=100000
+			21_495_984,
+		),
+		map[sharedtypes.RPCType]struct{}{
+			sharedtypes.RPCType_JSON_RPC: {},
+		},
+	),
 
 	// TODO_TECHDEBT: Add support for Radix QoS
 	// Radix
@@ -925,7 +949,12 @@ var shannonServices = []ServiceQoSConfig{
 
 	// Solana
 	solana.NewSolanaServiceQoSConfig("solana", "solana"),
+
+	// *** LLM Services ***
+
 }
+
+// 3. deepseek
 
 // TODO(@olshansk): Make sure all of these are supported
 // sonieum
@@ -952,6 +981,16 @@ var shannonServices = []ServiceQoSConfig{
 // passage
 // provenance
 // quicksilver
-// side-protol
+// side-protocol
 // stargaze
 // stride
+// grok
+// qwen
+// gpt-oss
+// bittensor
+// bittensor-testnet
+// planq
+// stellar-soroban
+// stellar-soroban-testnet
+// stellar-horizon
+// stellar-horizon-testnet

@@ -103,8 +103,8 @@ func Test_Bridge_StartBridge_ErrorCases(t *testing.T) {
 	clientReq := httptest.NewRequest("GET", "/ws", nil)
 	clientReq.Header.Set("Upgrade", "websocket")
 	clientReq.Header.Set("Connection", "Upgrade")
-	clientReq.Header.Set("Sec-WebSocket-Key", "dGhlIHNhbXBsZSBub25jZQ==")
-	clientReq.Header.Set("Sec-WebSocket-Version", "13")
+	clientReq.Header.Set("Sec-Websocket-Key", "dGhlIHNhbXBsZSBub25jZQ==")
+	clientReq.Header.Set("Sec-Websocket-Version", "13")
 
 	clientRespWriter := httptest.NewRecorder()
 

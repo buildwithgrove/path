@@ -10,7 +10,7 @@ import (
 	protocolobservations "github.com/buildwithgrove/path/observation/protocol"
 )
 
-// TODO_METRICS(@commoddity): Add additional WebSocket-specific metrics
+// TODO_METRICS(@commoddity): Add additional Websocket-specific metrics
 // - Message latency distribution (time between request and response for each message)
 // - Connection duration histogram (time from connection establishment to termination)
 // - Message size percentiles (distribution of message payload sizes)
@@ -25,18 +25,18 @@ const (
 	relaysErrorsTotalMetric    = "shannon_relay_errors_total"
 	relaysActiveRequestsMetric = "shannon_relays_active"
 
-	// WebSocket connection metrics
+	// Websocket connection metrics
 	websocketConnectionsTotalMetric  = "shannon_websocket_connections_total"
 	websocketConnectionErrorsMetric  = "shannon_websocket_connection_errors_total"
 	websocketConnectionsActiveMetric = "shannon_websocket_connections_active"
 
-	// WebSocket connection duration metrics
+	// Websocket connection duration metrics
 	websocketConnectionDurationMetric = "shannon_websocket_connection_duration_seconds"
 
-	// WebSocket message metrics
+	// Websocket message metrics
 	websocketMessagesTotalMetric = "shannon_websocket_messages_total"
 	websocketMessageErrorsMetric = "shannon_websocket_message_errors_total"
-	// Sanctions metrics (shared across HTTP and WebSocket)
+	// Sanctions metrics (shared across HTTP and Websocket)
 	sanctionsByDomainMetric = "shannon_sanctions_by_domain"
 
 	// Latency metrics (currently HTTP only)
@@ -64,7 +64,7 @@ func init() {
 	prometheus.MustRegister(relaysErrorsTotal)
 	prometheus.MustRegister(activeRelays)
 
-	// WebSocket metrics
+	// Websocket metrics
 	prometheus.MustRegister(websocketConnectionsTotal)
 	prometheus.MustRegister(websocketConnectionErrors)
 	prometheus.MustRegister(websocketMessagesTotal)
@@ -72,7 +72,7 @@ func init() {
 	prometheus.MustRegister(activeWebsocketConnections)
 	prometheus.MustRegister(websocketConnectionDuration)
 
-	// Sanctions metrics (shared across HTTP and WebSocket)
+	// Sanctions metrics (shared across HTTP and Websocket)
 	prometheus.MustRegister(sanctionsByDomain)
 
 	// Latency metrics
@@ -149,7 +149,7 @@ var (
 		[]string{"request_type"},
 	)
 
-	// websocketConnectionsTotal tracks the total WebSocket connection events processed.
+	// websocketConnectionsTotal tracks the total Websocket connection events processed.
 	// Labels:
 	//   - service_id: Target service identifier (i.e. chain id in Shannon)
 	//   - success: Whether the connection was successful (true if no connection error)
@@ -158,20 +158,20 @@ var (
 	//   - endpoint_domain: Effective TLD+1 domain extracted from endpoint URL
 	//
 	// Use to analyze:
-	//   - WebSocket connection volume by service and event type
+	//   - Websocket connection volume by service and event type
 	//   - Connection success rates by service
 	//   - Active connections (established - closed)
-	//   - Distribution between protocol and fallback endpoints for WebSocket connections
+	//   - Distribution between protocol and fallback endpoints for Websocket connections
 	websocketConnectionsTotal = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Subsystem: pathProcess,
 			Name:      websocketConnectionsTotalMetric,
-			Help:      "Total number of WebSocket connection events processed by Shannon protocol instance(s)",
+			Help:      "Total number of Websocket connection events processed by Shannon protocol instance(s)",
 		},
 		[]string{"service_id", "success", "error_type", "used_fallback", "event_type", "endpoint_domain"},
 	)
 
-	// websocketConnectionErrors tracks WebSocket connection establishment errors
+	// websocketConnectionErrors tracks Websocket connection establishment errors
 	// Labels:
 	//   - service_id: Target service identifier
 	//   - error_type: Type of connection error encountered (based on trusted classification)
@@ -179,18 +179,18 @@ var (
 	//   - endpoint_domain: Effective TLD+1 domain extracted from endpoint URL
 
 	// Use to analyze:
-	//   - WebSocket connection errors by service and type
+	//   - Websocket connection errors by service and type
 	//   - Sanctions recommended for connection failures
 	websocketConnectionErrors = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Subsystem: pathProcess,
 			Name:      websocketConnectionErrorsMetric,
-			Help:      "Total WebSocket connection errors by service, endpoint domain, error type, and sanction type",
+			Help:      "Total Websocket connection errors by service, endpoint domain, error type, and sanction type",
 		},
 		[]string{"service_id", "error_type", "sanction_type", "endpoint_domain"},
 	)
 
-	// websocketMessagesTotal tracks the total WebSocket messages processed.
+	// websocketMessagesTotal tracks the total Websocket messages processed.
 	// Labels:
 	//   - service_id: Target service identifier (i.e. chain id in Shannon)
 	//   - success: Whether the message was processed successfully (true if no message error)
@@ -199,19 +199,19 @@ var (
 	//   - endpoint_domain: Effective TLD+1 domain extracted from endpoint URL
 	//
 	// Use to analyze:
-	//   - WebSocket message volume by service
+	//   - Websocket message volume by service
 	//   - Message processing success rates by service
-	//   - Distribution between protocol and fallback endpoints for WebSocket messages
+	//   - Distribution between protocol and fallback endpoints for Websocket messages
 	websocketMessagesTotal = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Subsystem: pathProcess,
 			Name:      websocketMessagesTotalMetric,
-			Help:      "Total number of WebSocket messages processed by Shannon protocol instance(s)",
+			Help:      "Total number of Websocket messages processed by Shannon protocol instance(s)",
 		},
 		[]string{"service_id", "success", "error_type", "used_fallback", "endpoint_domain"},
 	)
 
-	// websocketMessageErrors tracks WebSocket message processing errors
+	// websocketMessageErrors tracks Websocket message processing errors
 	// Labels:
 	//   - service_id: Target service identifier
 	//   - error_type: Type of message error encountered (based on trusted classification)
@@ -219,23 +219,23 @@ var (
 	//   - endpoint_domain: Effective TLD+1 domain extracted from endpoint URL
 	//
 	// Use to analyze:
-	//   - WebSocket message errors by service and type
+	//   - Websocket message errors by service and type
 	//   - Sanctions recommended for message processing failures
 	websocketMessageErrors = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Subsystem: pathProcess,
 			Name:      websocketMessageErrorsMetric,
-			Help:      "Total WebSocket message errors by service, endpoint domain, error type, and sanction type",
+			Help:      "Total Websocket message errors by service, endpoint domain, error type, and sanction type",
 		},
 		[]string{"service_id", "error_type", "sanction_type", "endpoint_domain"},
 	)
 
-	// activeWebsocketConnections tracks the current number of active WebSocket connections.
-	// This gauge metric shows the real-time WebSocket connection count for monitoring
+	// activeWebsocketConnections tracks the current number of active Websocket connections.
+	// This gauge metric shows the real-time Websocket connection count for monitoring
 	// persistent connection load and identifying potential bottlenecks.
 	//
 	// Use to analyze:
-	//   - Current WebSocket connection counts
+	//   - Current Websocket connection counts
 	//   - Connection load patterns over time
 	//   - Capacity planning for persistent connections
 	//   - Identifying connection spikes and bottlenecks
@@ -243,11 +243,11 @@ var (
 		prometheus.GaugeOpts{
 			Subsystem: pathProcess,
 			Name:      websocketConnectionsActiveMetric,
-			Help:      "Current number of active Shannon WebSocket connections",
+			Help:      "Current number of active Shannon Websocket connections",
 		},
 	)
 
-	// websocketConnectionDuration tracks the duration of WebSocket connections.
+	// websocketConnectionDuration tracks the duration of Websocket connections.
 	// Labels:
 	//   - service_id: Target service identifier
 	//   - endpoint_domain: Effective TLD+1 domain extracted from endpoint URL
@@ -262,7 +262,7 @@ var (
 		prometheus.HistogramOpts{
 			Subsystem: pathProcess,
 			Name:      websocketConnectionDurationMetric,
-			Help:      "Histogram of WebSocket connection durations in seconds",
+			Help:      "Histogram of Websocket connection durations in seconds",
 			Buckets:   []float64{1, 5, 10, 30, 60, 300, 600, 1800, 3600}, // 1s to 1h
 		},
 		[]string{"service_id", "endpoint_domain", "success", "close_reason"},
@@ -417,10 +417,10 @@ func PublishMetrics(
 			processRelayMinerErrors(logger, observationSet.GetServiceId(), httpObservations.GetEndpointObservations())
 
 		case *protocolobservations.ShannonRequestObservations_WebsocketConnectionObservation:
-			// WebSocket connection observation - new metrics processing
+			// Websocket connection observation - new metrics processing
 			wsConnectionObs := obsData.WebsocketConnectionObservation
 			if wsConnectionObs == nil {
-				logger.Warn().Msg("❌ SHOULD NEVER HAPPEN: skipping processing: received empty WebSocket connection observation")
+				logger.Warn().Msg("❌ SHOULD NEVER HAPPEN: skipping processing: received empty Websocket connection observation")
 				continue
 			}
 
@@ -428,14 +428,14 @@ func PublishMetrics(
 			handleWebSocketConnectionObservation(logger, wsConnectionObs, observationSet)
 
 		case *protocolobservations.ShannonRequestObservations_WebsocketMessageObservation:
-			// WebSocket message observation - new metrics processing
+			// Websocket message observation - new metrics processing
 			wsMessageObs := obsData.WebsocketMessageObservation
 			if wsMessageObs == nil {
-				logger.Warn().Msg("❌ SHOULD NEVER HAPPEN: skipping processing: received empty WebSocket message observation")
+				logger.Warn().Msg("❌ SHOULD NEVER HAPPEN: skipping processing: received empty Websocket message observation")
 				continue
 			}
 
-			// Record WebSocket message metrics
+			// Record Websocket message metrics
 			recordWebsocketMessageTotal(logger, observationSet)
 			processWebsocketMessageErrors(logger, observationSet.GetServiceId(), wsMessageObs)
 
@@ -445,7 +445,7 @@ func PublishMetrics(
 	}
 }
 
-// handleWebSocketConnectionObservation handles different connection events for WebSocket connection observations.
+// handleWebSocketConnectionObservation handles different connection events for Websocket connection observations.
 // For example, it handles the CONNECTION_ESTABLISHED, CONNECTION_ESTABLISHMENT_FAILED, and CONNECTION_CLOSED events separately.
 func handleWebSocketConnectionObservation(
 	logger polylog.Logger,
@@ -455,12 +455,12 @@ func handleWebSocketConnectionObservation(
 	// Handle different connection events
 	switch wsConnectionObs.GetEventType() {
 	case protocolobservations.ShannonWebsocketConnectionObservation_CONNECTION_ESTABLISHED:
-		// Record WebSocket connection establishment metrics
+		// Record Websocket connection establishment metrics
 		recordWebsocketConnectionTotal(logger, observationSet)
 		processWebsocketConnectionErrors(logger, observationSet.GetServiceId(), wsConnectionObs)
 
 	case protocolobservations.ShannonWebsocketConnectionObservation_CONNECTION_ESTABLISHMENT_FAILED:
-		// Record WebSocket connection establishment failure metrics
+		// Record Websocket connection establishment failure metrics
 		recordWebsocketConnectionTotal(logger, observationSet)
 		processWebsocketConnectionErrors(logger, observationSet.GetServiceId(), wsConnectionObs)
 
@@ -474,8 +474,8 @@ func handleWebSocketConnectionObservation(
 // recordRelayTotal tracks relay counts with exemplars for high-cardinality data.
 // Success determination varies by observation type:
 // - HTTP observations: Success if ANY endpoint observation has ErrorType = UNSPECIFIED (supports parallel requests)
-// - WebSocket connection observations: Success if ErrorType = UNSPECIFIED (single connection establishment)
-// - WebSocket message observations: Success if ErrorType = UNSPECIFIED (individual message processing)
+// - Websocket connection observations: Success if ErrorType = UNSPECIFIED (single connection establishment)
+// - Websocket message observations: Success if ErrorType = UNSPECIFIED (individual message processing)
 func recordRelayTotal(
 	logger polylog.Logger,
 	observations *protocolobservations.ShannonRequestObservations,
@@ -535,7 +535,7 @@ func recordRelayTotal(
 		usedFallbackEndpoint = isFallbackEndpointUsed(endpointObservations)
 
 	case *protocolobservations.ShannonRequestObservations_WebsocketConnectionObservation:
-		// WebSocket connection observations track the establishment/termination of a single WebSocket connection.
+		// Websocket connection observations track the establishment/termination of a single Websocket connection.
 		// Success is determined by whether the connection was established successfully (no ErrorType set).
 		// This represents the initial handshake and connection setup phase, not individual message processing.
 		wsConnectionObs := obsData.WebsocketConnectionObservation
@@ -544,7 +544,7 @@ func recordRelayTotal(
 		usedFallbackEndpoint = wsConnectionObs.GetIsFallbackEndpoint()
 
 	case *protocolobservations.ShannonRequestObservations_WebsocketMessageObservation:
-		// WebSocket message observations track individual message processing within an established connection.
+		// Websocket message observations track individual message processing within an established connection.
 		// Success is determined by whether the specific message was processed without errors.
 		// This represents the processing of a single request/response or subscription event within the connection.
 		wsMessageObs := obsData.WebsocketMessageObservation
@@ -602,17 +602,17 @@ func isAnyObservationSuccessful(observations []*protocolobservations.ShannonEndp
 	return false
 }
 
-// isWebsocketConnectionSuccessful returns true if the WebSocket connection observation indicates success.
-// For WebSocket connections, success is determined by checking if ErrorType is UNSPECIFIED.
-// Unlike HTTP observations which can have multiple endpoint attempts, WebSocket connections
+// isWebsocketConnectionSuccessful returns true if the Websocket connection observation indicates success.
+// For Websocket connections, success is determined by checking if ErrorType is UNSPECIFIED.
+// Unlike HTTP observations which can have multiple endpoint attempts, Websocket connections
 // use a single endpoint and have a single success/failure status.
 func isWebsocketConnectionSuccessful(wsConnectionObs *protocolobservations.ShannonWebsocketConnectionObservation) bool {
 	return wsConnectionObs.GetErrorType() == protocolobservations.ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_UNSPECIFIED
 }
 
-// isWebsocketMessageSuccessful returns true if the WebSocket message observation indicates success.
-// For WebSocket messages, success is determined by checking if ErrorType is UNSPECIFIED.
-// Each WebSocket message is processed individually and has its own success/failure status.
+// isWebsocketMessageSuccessful returns true if the Websocket message observation indicates success.
+// For Websocket messages, success is determined by checking if ErrorType is UNSPECIFIED.
+// Each Websocket message is processed individually and has its own success/failure status.
 func isWebsocketMessageSuccessful(wsMessageObs *protocolobservations.ShannonWebsocketMessageObservation) bool {
 	return wsMessageObs.GetErrorType() == protocolobservations.ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_UNSPECIFIED
 }
@@ -674,6 +674,8 @@ func processSanctionsByDomain(
 	serviceID string,
 	observations []*protocolobservations.ShannonEndpointObservation,
 ) {
+	logger = logger.With("method", "processSanctionsByDomain")
+
 	for _, endpointObs := range observations {
 		// Skip if there's no recommended sanction (based on trusted error classification)
 		if endpointObs.RecommendedSanction == nil {
@@ -714,6 +716,8 @@ func processEndpointLatency(
 	serviceID string,
 	observations []*protocolobservations.ShannonEndpointObservation,
 ) {
+	logger = logger.With("method", "processEndpointLatency")
+
 	// Calculate overall success status for the request
 	success := isAnyObservationSuccessful(observations)
 
@@ -731,7 +735,7 @@ func processEndpointLatency(
 		endpointUrl := endpointObs.GetEndpointUrl()
 		endpointDomain, err := ExtractDomainOrHost(endpointUrl)
 		if err != nil {
-			logger.Error().Err(err).Msgf("Could not extract domain from endpoint URL %s.", endpointUrl)
+			logger.Error().Str("endpoint_url", endpointUrl).Err(err).Msg("Could not extract domain from endpoint URL")
 			endpointDomain = ErrDomain
 		}
 
@@ -771,6 +775,8 @@ func processRelayMinerErrors(
 	serviceID string,
 	observations []*protocolobservations.ShannonEndpointObservation,
 ) {
+	logger = logger.With("method", "processRelayMinerErrors")
+
 	for _, endpointObs := range observations {
 		// Skip if there's no RelayMinerError
 		if endpointObs.RelayMinerError == nil {
@@ -817,18 +823,18 @@ func SetActiveHTTPRelays(activeCount int64) {
 	}).Set(float64(activeCount))
 }
 
-// SetActiveWebsocketConnections updates the gauge metric with the current number of active WebSocket connections.
-// This should be called whenever the WebSocket connection count changes.
+// SetActiveWebsocketConnections updates the gauge metric with the current number of active Websocket connections.
+// This should be called whenever the Websocket connection count changes.
 func SetActiveWebsocketConnections(activeCount int64) {
 	activeWebsocketConnections.Set(float64(activeCount))
 }
 
-// recordWebsocketConnectionTotal tracks WebSocket connection counts.
+// recordWebsocketConnectionTotal tracks Websocket connection counts.
 func recordWebsocketConnectionTotal(
 	logger polylog.Logger,
 	observations *protocolobservations.ShannonRequestObservations,
 ) {
-	hydratedLogger := logger.With("method", "recordWebsocketConnectionTotal")
+	logger = logger.With("method", "recordWebsocketConnectionTotal")
 
 	serviceID := observations.GetServiceId()
 
@@ -848,7 +854,7 @@ func recordWebsocketConnectionTotal(
 
 	wsConnectionObs := observations.GetWebsocketConnectionObservation()
 	if wsConnectionObs == nil {
-		hydratedLogger.Warn().Msg("WebSocket connection observation is nil")
+		logger.Warn().Msg("Websocket connection observation is nil")
 		return
 	}
 
@@ -877,7 +883,7 @@ func recordWebsocketConnectionTotal(
 		endpointDomain = ErrDomain
 	}
 
-	// Record WebSocket connection total
+	// Record Websocket connection total
 	websocketConnectionsTotal.With(
 		prometheus.Labels{
 			"service_id":      serviceID,
@@ -890,12 +896,12 @@ func recordWebsocketConnectionTotal(
 	).Add(1)
 }
 
-// recordWebsocketMessageTotal tracks WebSocket message counts.
+// recordWebsocketMessageTotal tracks Websocket message counts.
 func recordWebsocketMessageTotal(
 	logger polylog.Logger,
 	observations *protocolobservations.ShannonRequestObservations,
 ) {
-	hydratedLogger := logger.With("method", "recordWebsocketMessageTotal")
+	logger = logger.With("method", "recordWebsocketMessageTotal")
 
 	serviceID := observations.GetServiceId()
 
@@ -915,7 +921,7 @@ func recordWebsocketMessageTotal(
 
 	wsMessageObs := observations.GetWebsocketMessageObservation()
 	if wsMessageObs == nil {
-		hydratedLogger.Warn().Msg("WebSocket message observation is nil")
+		logger.Warn().Msg("Websocket message observation is nil")
 		return
 	}
 
@@ -931,7 +937,7 @@ func recordWebsocketMessageTotal(
 		endpointDomain = ErrDomain
 	}
 
-	// Record WebSocket message total
+	// Record Websocket message total
 	websocketMessagesTotal.With(
 		prometheus.Labels{
 			"service_id":      serviceID,
@@ -942,12 +948,14 @@ func recordWebsocketMessageTotal(
 		}).Inc()
 }
 
-// processWebsocketConnectionErrors records WebSocket connection error metrics.
+// processWebsocketConnectionErrors records Websocket connection error metrics.
 func processWebsocketConnectionErrors(
 	logger polylog.Logger,
 	serviceID string,
 	wsConnectionObs *protocolobservations.ShannonWebsocketConnectionObservation,
 ) {
+	logger = logger.With("method", "processWebsocketConnectionErrors")
+
 	// Skip if there's no error
 	if wsConnectionObs.ErrorType == nil {
 		return
@@ -968,7 +976,7 @@ func processWebsocketConnectionErrors(
 		sanctionType = wsConnectionObs.RecommendedSanction.String()
 	}
 
-	// Record WebSocket connection error
+	// Record Websocket connection error
 	websocketConnectionErrors.With(
 		prometheus.Labels{
 			"service_id":      serviceID,
@@ -989,12 +997,14 @@ func processWebsocketConnectionErrors(
 	}
 }
 
-// processWebsocketMessageErrors records WebSocket message error metrics.
+// processWebsocketMessageErrors records Websocket message error metrics.
 func processWebsocketMessageErrors(
 	logger polylog.Logger,
 	serviceID string,
 	wsMessageObs *protocolobservations.ShannonWebsocketMessageObservation,
 ) {
+	logger = logger.With("method", "processWebsocketMessageErrors")
+
 	// Skip if there's no error
 	if wsMessageObs.ErrorType == nil {
 		return
@@ -1015,7 +1025,7 @@ func processWebsocketMessageErrors(
 		sanctionType = wsMessageObs.RecommendedSanction.String()
 	}
 
-	// Record WebSocket message error
+	// Record Websocket message error
 	websocketMessageErrors.With(
 		prometheus.Labels{
 			"service_id":      serviceID,
@@ -1051,7 +1061,7 @@ func processWebsocketMessageErrors(
 	}
 }
 
-// recordWebsocketConnectionDuration records the duration of a WebSocket connection when it closes.
+// recordWebsocketConnectionDuration records the duration of a Websocket connection when it closes.
 // Only processes CONNECTION_CLOSED events with both establishment and closure timestamps.
 func recordWebsocketConnectionDuration(
 	logger polylog.Logger,
@@ -1067,7 +1077,7 @@ func recordWebsocketConnectionDuration(
 	closedTime := wsConnectionObs.GetConnectionClosedTimestamp()
 
 	if establishedTime == nil || closedTime == nil {
-		logger.Warn().Msg("Missing timestamps for WebSocket connection duration, skipping metric")
+		logger.Warn().Msg("Missing timestamps for Websocket connection duration, skipping metric")
 		return
 	}
 

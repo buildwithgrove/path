@@ -69,7 +69,7 @@ type EndpointHydrator struct {
 
 // Start should be called to signal this instance of the hydrator
 // to start generating and sending endpoint check requests.
-// It starts two separate goroutines: one for HTTP checks and one for WebSocket checks.
+// It starts two separate goroutines: one for HTTP checks and one for Websocket checks.
 func (eph *EndpointHydrator) Start() error {
 	if eph.Protocol == nil {
 		return errors.New("an instance of Protocol must be provided")
@@ -89,7 +89,7 @@ func (eph *EndpointHydrator) Start() error {
 		}
 	}()
 
-	// Start WebSocket checks on a separate interval
+	// Start Websocket checks on a separate interval
 	go func() {
 		ticker := time.NewTicker(websocketCheckInterval)
 		defer ticker.Stop()

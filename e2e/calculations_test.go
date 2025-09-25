@@ -3,7 +3,7 @@
 // Package e2e provides metrics calculation functions for PATH E2E and load testing.
 //
 // This file contains all mathematical and statistical calculation logic used to process
-// test results from both HTTP (Vegeta) and WebSocket test executions. It handles success
+// test results from both HTTP (Vegeta) and Websocket test executions. It handles success
 // rate calculations, latency percentile computations, and service-level metric aggregation.
 //
 // CALCULATION CATEGORIES:
@@ -20,7 +20,7 @@
 //
 // TRANSPORT AGNOSTIC:
 // All calculation functions work with the shared methodMetrics and VegetaResult structures,
-// making them usable for both HTTP (Vegeta) and WebSocket test result processing.
+// making them usable for both HTTP (Vegeta) and Websocket test result processing.
 // This ensures consistent metric calculation regardless of the underlying transport protocol.
 
 package e2e
