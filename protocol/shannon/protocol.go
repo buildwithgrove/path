@@ -480,6 +480,17 @@ func (p *Protocol) getSessionsUniqueEndpoints(
 
 	endpoints := make(map[protocol.EndpointAddr]endpoint)
 
+	// TODO_TECHDEBT(@adshmh): Refactor load testing related code to make the filtering more visible.
+	//
+	// In Load Testing using RelayMiner mode: drop any endpoints ot matching the single supplier specified in the config.
+	//
+	var allowedSupplierAddr string
+	if ltc := p.loadTestingConfig; ltc != nil {
+		if ltc.RelayMinerConfig != nil {
+			allowedSupplierAddr = ltc.RelayMinerConfig.SupplierAddr
+		}
+	}
+
 	// Iterate over all active sessions for the service ID.
 	for _, session := range activeSessions {
 		app := session.Application
@@ -492,7 +503,7 @@ func (p *Protocol) getSessionsUniqueEndpoints(
 		logger.ProbabilisticDebugInfo(polylog.ProbabilisticDebugInfoProb).Msgf("Finding unique endpoints for session %s for app %s for service %s.", session.SessionId, app.Address, serviceID)
 
 		// Retrieve all endpoints for the session.
-		sessionEndpoints, err := endpointsFromSession(session)
+		sessionEndpoints, err := endpointsFromSession(session, allowedSupplierAddr)
 		if err != nil {
 			logger.Error().Err(err).Msgf("Internal error: error getting all endpoints for service %s app %s and session: skipping the app.", serviceID, app.Address)
 			continue
