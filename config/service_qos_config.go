@@ -9,9 +9,6 @@ import (
 	"github.com/buildwithgrove/path/qos/solana"
 )
 
-// NOTE: Service ID list last updated 2025/01/24
-// TODO_DEVEX: Consider extracting WebSocket-capable services to a separate configuration
-// for better maintainability of CI test matrices and service discovery
 // How to add archival checks: https://path.grove.city/learn/qos/adding_new_archival
 
 // IMPORTANT: PATH requires service IDs to be registered here for Quality of Service (QoS) endpoint checks.

@@ -10,12 +10,12 @@ INSERT INTO public.portal_plans (
     plan_usage_limit_interval,
     plan_rate_limit_rps,
     plan_application_limit
-) 
+)
 VALUES
-    ('PLAN_FREE', 'Free tier with limited usage', 1000000, 'month', 0, 2),
-    ('PLAN_UNLIMITED', 'Unlimited Relays. Unlimited RPS.', 0, NULL, 0, 0),
-    ('PLAN_ENTERPRISE', 'Special case for Legacy Enterprise customers', 0, NULL, 0, 0),
-    ('PLAN_INTERNAL', 'Plan for internal accounts', 0, NULL, 0, 0);
+    ('PLAN_FREE', 'Free tier with limited usage ', 1e6, 'month', 0, 2),
+    ('PLAN_PAID', 'Unlimited Relays. Unlimited RPS.', 0, NULL, 0, 0),
+    ('PLAN_LEGACY', 'Legacy enterprise customers', 0, NULL, 0, 0),
+    ('PLAN_INTERNAL', 'Internal development accounts', 0, NULL, 0, 0);
 
 -- Transform the legacy accounts to the new accounts structure
 INSERT INTO public.portal_accounts (
@@ -35,21 +35,21 @@ INSERT INTO public.portal_accounts (
     created_at,
     updated_at
 )
-SELECT 
+SELECT
     a.id as portal_account_id,
     NULL as organization_id,
-    CASE 
+    CASE
         WHEN a.plan_type = 'ENTERPRISE' THEN 'PLAN_ENTERPRISE'
         WHEN a.plan_type = 'PLAN_UNLIMITED' THEN 'PLAN_UNLIMITED'
         ELSE 'PLAN_FREE'
     END as portal_plan_type,
     a.name as user_account_name,
     a.name as internal_account_name,
-    CASE 
+    CASE
         WHEN a.monthly_user_limit = 0 THEN NULL
-        ELSE a.monthly_user_limit 
+        ELSE a.monthly_user_limit
     END as portal_account_user_limit,
-    CASE 
+    CASE
         WHEN a.monthly_user_limit > 0 THEN 'month'::plan_interval
         ELSE NULL
     END as portal_account_user_limit_interval,
@@ -58,7 +58,7 @@ SELECT
     ai.stripe_subscription_id,
     a.gcp_account_id,
     a.gcp_entitlement_id,
-    CASE 
+    CASE
         WHEN a.deleted = true THEN a.deleted_at
         ELSE NULL
     END as deleted_at,
@@ -77,7 +77,7 @@ INSERT INTO public.portal_users (
     created_at,
     updated_at
 )
-SELECT 
+SELECT
     u.id as portal_user_id,
     u.email as portal_user_email,
     COALESCE(u.signed_up, FALSE) as signed_up,
@@ -93,7 +93,7 @@ INSERT INTO public.rbac (
     role_name,
     permissions
 )
-VALUES 
+VALUES
     (DEFAULT, 'LEGACY_ADMIN', ARRAY[]::VARCHAR[]),
     (DEFAULT, 'LEGACY_OWNER', ARRAY[]::VARCHAR[]),
     (DEFAULT, 'LEGACY_MEMBER', ARRAY[]::VARCHAR[]);
@@ -106,10 +106,10 @@ INSERT INTO public.portal_account_rbac (
     role_name,
     user_joined_account
 )
-SELECT 
+SELECT
     au.account_id as portal_account_id,
     pu.portal_user_id,  -- Use the new auto-generated ID
-    CASE 
+    CASE
         WHEN au.role_name = 'ADMIN' THEN 'LEGACY_ADMIN'
         WHEN au.role_name = 'OWNER' THEN 'LEGACY_OWNER'
         WHEN au.role_name = 'MEMBER' THEN 'LEGACY_MEMBER'
@@ -136,7 +136,7 @@ INSERT INTO public.portal_applications (
     created_at,
     updated_at
 )
-SELECT 
+SELECT
     pa.id as portal_application_id,
     pa.account_id as portal_account_id,
     LEFT(pa.name, 42) as portal_application_name,  -- Truncate to 42 chars
@@ -146,13 +146,13 @@ SELECT
     NULL as portal_application_user_limit_rps,
     LEFT(pa.description, 255) as portal_application_description,
     (
-        SELECT ARRAY_AGG(c.blockchain) 
-        FROM legacy_extract.chains c 
+        SELECT ARRAY_AGG(c.blockchain)
+        FROM legacy_extract.chains c
         WHERE c.id = ANY(pas.favorited_chain_ids)
     ) as favorite_service_ids,
     pas.secret_key as secret_key_hash,
     COALESCE(pas.secret_key_required, FALSE) as secret_key_required,
-    CASE 
+    CASE
         WHEN pa.deleted = true THEN pa.deleted_at
         ELSE NULL
     END as deleted_at,
@@ -170,15 +170,15 @@ INSERT INTO public.portal_application_allowlists (
     created_at,
     updated_at
 )
-SELECT 
+SELECT
     paw.application_id as portal_application_id,
-    CASE 
+    CASE
         WHEN paw.type = 'blockchains' THEN 'service_id'::allowlist_type
         WHEN paw.type = 'origins' THEN 'origin'::allowlist_type
         WHEN paw.type = 'contracts' THEN 'contract'::allowlist_type
     END as type,
     paw.value,
-    CASE 
+    CASE
         WHEN paw.type = 'blockchains' THEN c.blockchain
         ELSE NULL
     END as service_id,
@@ -198,10 +198,10 @@ INSERT INTO public.portal_user_auth (
     created_at,
     updated_at
 )
-SELECT 
+SELECT
     uap.user_id as portal_user_id,
     'auth0'::portal_auth_provider as portal_auth_provider,  -- Only auth0 provider supported
-    CASE 
+    CASE
         WHEN uap.type = 'auth0_username' THEN 'auth0_username'::portal_auth_type
         WHEN uap.type = 'auth0_github' THEN 'auth0_github'::portal_auth_type
         WHEN uap.type = 'auth0_google' THEN 'auth0_google'::portal_auth_type

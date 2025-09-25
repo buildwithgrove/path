@@ -19,10 +19,12 @@ CREATE TYPE plan_interval AS ENUM ('day', 'month', 'year');
 -- Origin - Allow specific IP addresses or URLs
 CREATE TYPE allowlist_type AS ENUM ('service_id', 'contract', 'origin');
 
--- Add support for multiple auth providers offering different types
--- Easily extendable should additional authorization providers become necessary 
--- or requested
--- For legacy support, only adding auth0 and its relevant types
+-- Add support for multiple auth providers offering different types.
+-- Must be updated to extend authorization to other providers.
+--
+-- Grove's portal uses Auth0 for authentication as of 09/2025.
+--
+-- Envoy Gateway has native support for other OIDC authentication types: https://gateway.envoyproxy.io/docs/tasks/security/oidc/
 CREATE TYPE portal_auth_provider AS ENUM ('auth0');
 CREATE TYPE portal_auth_type AS ENUM ('auth0_github', 'auth0_username', 'auth0_google');
 
@@ -78,7 +80,7 @@ COMMENT ON COLUMN portal_plans.plan_rate_limit_rps IS 'Rate limit in requests pe
 -- Portal Accounts can have many applications and many users. Only 1 user can be the OWNER.
 -- When a new user signs up in the Portal, they automatically generate a personal account.
 CREATE TABLE portal_accounts (
-    portal_account_id VARCHAR(36) PRIMARY KEY DEFAULT gen_random_uuid(),
+    portal_account_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     organization_id INT,
     portal_plan_type VARCHAR(42) NOT NULL,
     user_account_name VARCHAR(42),
@@ -126,7 +128,7 @@ COMMENT ON COLUMN portal_users.portal_admin IS 'Whether user has admin privilege
 -- TODO_CONSIDERATION: Consider session management table
 
 -- Portal User Auth Table
--- Determines which Auth Provider (portal_auth_provider) and which Auth Type 
+-- Determines which Auth Provider (portal_auth_provider) and which Auth Type
 -- (portal_auth_type) a user is authenticated into the Portal by
 CREATE TABLE portal_user_auth (
     portal_user_auth_id SERIAL PRIMARY KEY,
@@ -296,7 +298,7 @@ CREATE TABLE services (
     coming_soon BOOLEAN DEFAULT FALSE,
     quality_fallback_enabled BOOLEAN DEFAULT FALSE,
     hard_fallback_enabled BOOLEAN DEFAULT FALSE,
-    svg_icon TEXT, 
+    svg_icon TEXT,
     deleted_at TIMESTAMPTZ,
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
