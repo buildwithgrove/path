@@ -76,6 +76,11 @@ type requestContext struct {
 	selectedEndpoint      endpoint
 	selectedEndpointMutex sync.RWMutex
 
+	// currentRPCType:
+	//   - Tracks the RPC type of the current relay being processed.
+	//   - Set during relay execution and used when building observations.
+	currentRPCType sharedtypes.RPCType
+
 	// requestErrorObservation:
 	//   - Tracks any errors encountered during request processing.
 	requestErrorObservation *protocolobservations.ShannonRequestError
@@ -95,6 +100,14 @@ type requestContext struct {
 
 	// fallbackEndpoints is used to retrieve a fallback endpoint by an endpoint address.
 	fallbackEndpoints map[protocol.EndpointAddr]endpoint
+
+	// Optional.
+	// Puts the Gateway in LoadTesting mode if specified.
+	// All relays will be sent to a fixed URL.
+	// Allows measuring performance of PATH and full node(s) in isolation.
+	// Applies to Single Relay ONLY
+	// No parallel requests for a single relay in load testing mode.
+	loadTestingConfig *LoadTestingConfig
 }
 
 // HandleServiceRequest:
@@ -115,6 +128,11 @@ func (rc *requestContext) HandleServiceRequest(payloads []protocol.Payload) ([]p
 		response, err := rc.handleInternalError(fmt.Errorf("HandleServiceRequest: no payloads provided for service %s", rc.serviceID))
 		return []protocol.Response{response}, err
 	}
+
+	// TODO_TECHDEBT: Account for different payloads having different RPC types
+	// OR refactor the single/parallel code flow altogether
+	// Store the current RPC type for use in observations
+	rc.currentRPCType = payloads[0].RPCType
 
 	// For single payload, handle directly without additional overhead.
 	if len(payloads) == 1 {
@@ -328,6 +346,13 @@ func (rc *requestContext) executeRelayRequestStrategy(payload protocol.Payload) 
 	rc.hydrateLogger("executeRelayRequestStrategy")
 
 	switch {
+
+	// ** Priority 0: Load testing mode **
+	// Use the configured load testing backend server.
+	case rc.loadTestingConfig != nil:
+		rc.logger.Debug().Msg("LoadTesting Mode: Sending relay to the load test backend server")
+		return rc.sendProtocolRelay(payload)
+
 	// ** Priority 1: Check Endpoint type **
 	// Direct fallback endpoint
 	// - Bypasses protocol validation and Shannon network
@@ -514,6 +539,17 @@ func (rc *requestContext) sendProtocolRelay(payload protocol.Payload) (protocol.
 		return defaultResponse, fmt.Errorf("SHOULD NEVER HAPPEN: failed to marshal relay request: %w", err)
 	}
 
+	// TODO_UPNEXT(@adshmh): parse the LoadTesting server's URL in-advance.
+	var targetServerURL string
+	switch {
+	// LoadTesting mode: use the fixed URL.
+	case rc.loadTestingConfig != nil:
+		targetServerURL = rc.loadTestingConfig.BackendServiceURL
+	// Default: use the selected endoint's URL
+	default:
+		targetServerURL = selectedEndpoint.PublicURL()
+	}
+
 	// TODO_TECHDEBT(@adshmh): Add a new struct to track details about the HTTP call.
 	// It should contain at-least:
 	// - endpoint payload
@@ -521,7 +557,7 @@ func (rc *requestContext) sendProtocolRelay(payload protocol.Payload) (protocol.
 	// Use the new struct to pass data around for logging/metrics/etc.
 	//
 	// Send the HTTP request to the protocol endpoint.
-	httpRelayResponseBz, httpStatusCode, err := rc.sendHTTPRequest(payload, selectedEndpoint.PublicURL(), relayRequestBz)
+	httpRelayResponseBz, httpStatusCode, err := rc.sendHTTPRequest(payload, targetServerURL, relayRequestBz)
 	if err != nil {
 		return defaultResponse, err
 	}
@@ -529,6 +565,17 @@ func (rc *requestContext) sendProtocolRelay(payload protocol.Payload) (protocol.
 	// Non-2xx HTTP status code received from the endpoint: build and return an error
 	if httpStatusCode != http.StatusOK {
 		return defaultResponse, fmt.Errorf("%w %w: %d", errSendHTTPRelay, errEndpointNon2XXHTTPStatusCode, httpStatusCode)
+	}
+
+	// LoadTesting mode: return the backend server's response as-is.
+	if rc.loadTestingConfig != nil {
+		return protocol.Response{
+			Bytes:          httpRelayResponseBz,
+			HTTPStatusCode: httpStatusCode,
+			// Intentionally leaving the endpoint address empty.
+			// Ensuring to sanctions/invalidation rules apply to LoadTesting backend server
+			EndpointAddr: "",
+		}, nil
 	}
 
 	// Validate and process the response
@@ -714,7 +761,7 @@ func (rc *requestContext) sendFallbackRelay(
 ) (protocol.Response, error) {
 	// Get the fallback URL for the fallback endpoint.
 	// If the RPC type is unknown or not configured, it will default URL.
-	endpointFallbackURL := fallbackEndpoint.FallbackURL(payload.RPCType)
+	endpointFallbackURL := fallbackEndpoint.GetURL(payload.RPCType)
 
 	// Prepare the fallback URL with optional path
 	fallbackURL := prepareURLFromPayload(endpointFallbackURL, payload)
@@ -834,6 +881,7 @@ func (rc *requestContext) handleEndpointError(
 		fmt.Sprintf("relay error: %v", endpointErr),
 		recommendedSanctionType,
 		rc.currentRelayMinerError, // Use RelayMinerError data from request context
+		rc.currentRPCType,         // Use RPC type from request context
 	)
 
 	// Track endpoint error observation for metrics and sanctioning
@@ -868,6 +916,7 @@ func (rc *requestContext) handleEndpointSuccess(
 		time.Now(), // Timestamp: endpoint query completed.
 		endpointResponse,
 		rc.currentRelayMinerError, // Use RelayMinerError data from request context
+		rc.currentRPCType,         // Use RPC type from request context
 	)
 
 	// Track endpoint success observation for metrics

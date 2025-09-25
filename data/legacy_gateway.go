@@ -64,7 +64,7 @@ func setLegacyFieldsFromGatewayObservations(
 
 	// Request processing time, in seconds.
 	//   - For HTTP requests, this is the round-trip time.
-	//   - For WebSocket requests, this is the total elapsed time the WebSocket connection was open.
+	//   - For Websocket requests, this is the total elapsed time the Websocket connection was open.
 	legacyRecord.RequestRoundTripTime = float64(observations.CompletedTime.AsTime().Sub(observations.ReceivedTime.AsTime()).Milliseconds()) / 1000
 
 	return legacyRecord

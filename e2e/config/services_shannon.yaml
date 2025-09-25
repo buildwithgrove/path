@@ -7,7 +7,6 @@
 
 # TODO_TECHDEBT: Add support for the following services:
 # - bitcoin
-# - evmos
 # - near
 # - radix
 # - xrpl_evm_dev
@@ -33,6 +32,7 @@ services:
     service_type: "evm"
     alias: "arbitrum-one"
     archival: true
+    websockets: false
     service_params:
       # https://arbiscan.io/address/0xb38e8c17e38363af6ebdcb3dae12e0243582891d
       contract_address: "0xb38e8c17e38363af6ebdcb3dae12e0243582891d"
@@ -47,6 +47,7 @@ services:
     service_type: "evm"
     alias: "arbitrum-sepolia-testnet"
     archival: true
+    websockets: false
     service_params:
       # https://sepolia.arbiscan.io/address/0x22b65d0b9b59af4d3ed59f18b9ad53f5f4908b54
       contract_address: "0x22b65d0b9b59af4d3ed59f18b9ad53f5f4908b54"
@@ -60,6 +61,7 @@ services:
     evm_chain_id: "0xa86a"
     service_type: "evm"
     archival: true
+    websockets: false
     service_params:
       # https://avascan.info/blockchain/c/address/0x9f8c163cBA728e99993ABe7495F06c0A3c8Ac8b9
       contract_address: "0x9f8c163cBA728e99993ABe7495F06c0A3c8Ac8b9"
@@ -73,6 +75,7 @@ services:
     evm_chain_id: "0xd2af"
     service_type: "evm"
     archival: true
+    websockets: false
     service_params:
       # https://avascan.info/blockchain/dfk/address/0xCCb93dABD71c8Dad03Fc4CE5559dC3D89F67a260
       contract_address: "0xCCb93dABD71c8Dad03Fc4CE5559dC3D89F67a260"
@@ -86,6 +89,7 @@ services:
     evm_chain_id: "0x2105"
     service_type: "evm"
     archival: true
+    websockets: true
     service_params:
       # https://basescan.org/address/0x3304e22ddaa22bcdc5fca2269b418046ae7b566a
       contract_address: "0x3304E22DDaa22bCdC5fCa2269b418046aE7b566A"
@@ -100,6 +104,7 @@ services:
     alias: "base-sepolia-testnetnet"
     service_type: "evm"
     archival: true
+    websockets: true
     service_params:
       # https://sepolia.basescan.org/address/0xbab76e4365a2dff89ddb2d3fc9994103b48886c0
       contract_address: "0xbab76e4365a2dff89ddb2d3fc9994103b48886c0"
@@ -114,6 +119,7 @@ services:
     service_type: "evm"
     alias: "berachain"
     archival: true
+    websockets: false
     service_params:
       # https://berascan.com/address/0x6969696969696969696969696969696969696969
       contract_address: "0x6969696969696969696969696969696969696969"
@@ -127,6 +133,7 @@ services:
     evm_chain_id: "0x13e31"
     service_type: "evm"
     archival: true
+    websockets: false
     service_params:
       # https://blastscan.io/address/0x4300000000000000000000000000000000000004
       contract_address: "0x4300000000000000000000000000000000000004"
@@ -140,6 +147,7 @@ services:
     evm_chain_id: "0x38"
     service_type: "evm"
     archival: true
+    websockets: true
     service_params:
       # https://bsctrace.com/address/0xfb50526f49894b78541b776f5aaefe43e3bd8590
       contract_address: "0xfb50526f49894b78541b776f5aaefe43e3bd8590"
@@ -153,6 +161,7 @@ services:
     evm_chain_id: "0x120"
     service_type: "evm"
     archival: true
+    websockets: false
     service_params:
       # https://bobascan.com/address/0x3A92cA39476fF84Dc579C868D4D7dE125513B034
       contract_address: "0x3A92cA39476fF84Dc579C868D4D7dE125513B034"
@@ -166,6 +175,7 @@ services:
     evm_chain_id: "0xa4ec"
     service_type: "evm"
     archival: true
+    websockets: false
     service_params:
       # https://celo.blockscout.com/address/0xf89d7b9c864f589bbF53a82105107622B35EaA40
       contract_address: "0xf89d7b9c864f589bbF53a82105107622B35EaA40"
@@ -179,6 +189,7 @@ services:
     evm_chain_id: "0x1"
     service_type: "evm"
     archival: true
+    websockets: true
     service_params:
       contract_address: "0x28C6c06298d514Db089934071355E5743bf21d60"
       contract_start_block: 12300000
@@ -192,6 +203,7 @@ services:
     alias: "eth-holesky-testnet"
     service_type: "evm"
     archival: true
+    websockets: false
     service_params:
       # https://holesky.etherscan.io/address/0xc6392ad8a14794ea57d237d12017e7295bea2363
       contract_address: "0xc6392ad8a14794ea57d237d12017e7295bea2363"
@@ -206,6 +218,7 @@ services:
     alias: "eth-sepolia-testnet"
     service_type: "evm"
     archival: true
+    websockets: false
     service_params:
       # https://sepolia.etherscan.io/address/0xc0f3833b7e7216eecd9f6bc2c7927a7aa36ab58b
       contract_address: "0xc0f3833b7e7216eecd9f6bc2c7927a7aa36ab58b"
@@ -219,6 +232,7 @@ services:
     evm_chain_id: "0xfa"
     service_type: "evm"
     archival: true
+    websockets: false
     service_params:
       # https://explorer.fantom.network/address/0xaabf86ab3646a7064aa2f61e5959e39129ca46b6
       contract_address: "0xaabf86ab3646a7064aa2f61e5959e39129ca46b6"
@@ -232,6 +246,7 @@ services:
     evm_chain_id: "0x7a"
     service_type: "evm"
     archival: true
+    websockets: false
     service_params:
       # https://explorer.fuse.io/address/0x3014ca10b91cb3D0AD85fEf7A3Cb95BCAc9c0f79
       contract_address: "0x3014ca10b91cb3D0AD85fEf7A3Cb95BCAc9c0f79"
@@ -248,6 +263,7 @@ services:
     evm_chain_id: "0x164ce"
     service_type: "evm"
     archival: true
+    websockets: false
     service_params:
       # https://sepolia-explorer.giwa.io/address/0xA2a51Cca837B8ebc00dA2810e72F386Ee0dD08a0
       contract_address: "0xA2a51Cca837B8ebc00dA2810e72F386Ee0dD08a0"
@@ -261,6 +277,7 @@ services:
     evm_chain_id: "0x64"
     service_type: "evm"
     archival: true
+    websockets: false
     service_params:
       # https://gnosisscan.io/address/0xe91d153e0b41518a2ce8dd3d7944fa863463a97d
       contract_address: "0xe91d153e0b41518a2ce8dd3d7944fa863463a97d"
@@ -274,6 +291,7 @@ services:
     evm_chain_id: "0x63564c40"
     service_type: "evm"
     archival: true
+    websockets: false
     service_params:
       # https://explorer.harmony.one/address/one19senwle0ezp3he6ed9xkc7zeg5rs94r0ecpp0a?shard=0
       contract_address: "one19senwle0ezp3he6ed9xkc7zeg5rs94r0ecpp0a"
@@ -287,6 +305,7 @@ services:
     evm_chain_id: "0xdef1"
     service_type: "evm"
     archival: true
+    websockets: false
     service_params:
       # https://explorer.inkonchain.com/address/0x4200000000000000000000000000000000000006
       contract_address: "0x4200000000000000000000000000000000000006"
@@ -300,6 +319,7 @@ services:
     evm_chain_id: "0x1251"
     service_type: "evm"
     archival: true
+    websockets: false
     service_params:
       # https://iotexscan.io/address/0x0a7f9ea31ca689f346e1661cf73a47c69d4bd883#transactions
       contract_address: "0x0a7f9ea31ca689f346e1661cf73a47c69d4bd883"
@@ -313,6 +333,7 @@ services:
     evm_chain_id: "0x2019"
     service_type: "evm"
     archival: true
+    websockets: false
     service_params:
       # https://www.kaiascan.io/address/0x0051ef9259c7ec0644a80e866ab748a2f30841b3
       contract_address: "0x0051ef9259c7ec0644a80e866ab748a2f30841b3"
@@ -326,6 +347,7 @@ services:
     evm_chain_id: "0xe708"
     service_type: "evm"
     archival: true
+    websockets: false
     service_params:
       # https://lineascan.build/address/0xf89d7b9c864f589bbf53a82105107622b35eaa40
       contract_address: "0xf89d7b9c864f589bbf53a82105107622b35eaa40"
@@ -339,6 +361,7 @@ services:
     evm_chain_id: "0x1388"
     service_type: "evm"
     archival: true
+    websockets: false
     service_params:
       # https://explorer.mantle.xyz/address/0x588846213A30fd36244e0ae0eBB2374516dA836C
       contract_address: "0x588846213A30fd36244e0ae0eBB2374516dA836C"
@@ -351,6 +374,7 @@ services:
   #   service_id: "near"
   #   service_type: "near"
   #   archival: true
+  #   websockets: false
   #   service_params:
   #     https://nearblocks.io/txns/4PVpwA42LpaUZ5LPD6fwNd94hjB5ue1ND2WSG4UzQVM8
   #     contract_address: "usdt.tether-token.near"
@@ -364,6 +388,7 @@ services:
     evm_chain_id: "0x440"
     service_type: "evm"
     archival: true
+    websockets: false
     service_params:
       # https://explorer.metis.io/address/0xfad31cd4d45Ac7C4B5aC6A0044AA05Ca7C017e62
       contract_address: "0xfad31cd4d45Ac7C4B5aC6A0044AA05Ca7C017e62"
@@ -377,6 +402,7 @@ services:
     evm_chain_id: "0x504"
     service_type: "evm"
     archival: true
+    websockets: false
     service_params:
       # https://moonscan.io/address/0xf89d7b9c864f589bbf53a82105107622b35eaa40
       contract_address: "0xf89d7b9c864f589bbf53a82105107622b35eaa40"
@@ -390,6 +416,7 @@ services:
     evm_chain_id: "0xf8"
     service_type: "evm"
     archival: true
+    websockets: false
     service_params:
       # https://explorer.oasys.games/address/0xf89d7b9c864f589bbF53a82105107622B35EaA40
       contract_address: "0xf89d7b9c864f589bbF53a82105107622B35EaA40"
@@ -403,6 +430,7 @@ services:
     evm_chain_id: "0xa"
     service_type: "evm"
     archival: true
+    websockets: false
     service_params:
       # https://optimistic.etherscan.io/address/0xacd03d601e5bb1b275bb94076ff46ed9d753435a
       contract_address: "0xacD03D601e5bB1B275Bb94076fF46ED9D753435A"
@@ -417,6 +445,7 @@ services:
     alias: "optimism-sepolia-testnet"
     service_type: "evm"
     archival: true
+    websockets: false
     service_params:
       # https://sepolia-optimism.etherscan.io/address/0x734d539a7efee15714a2755caa4280e12ef3d7e4
       contract_address: "0x734d539a7efee15714a2755caa4280e12ef3d7e4"
@@ -430,6 +459,7 @@ services:
     evm_chain_id: "0xcc"
     service_type: "evm"
     archival: true
+    websockets: false
     service_params:
       # https://opbnbscan.com/address/0x001ceb373c83ae75b9f5cf78fc2aba3e185d09e2
       contract_address: "0x001ceb373c83ae75b9f5cf78fc2aba3e185d09e2"
@@ -443,6 +473,7 @@ services:
     evm_chain_id: "0x89"
     service_type: "evm"
     archival: true
+    websockets: false
     service_params:
       # https://polygonscan.com/address/0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270
       contract_address: "0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270"
@@ -456,6 +487,7 @@ services:
     evm_chain_id: "0x13882"
     service_type: "evm"
     archival: true
+    websockets: false
     service_params:
       # https://amoy.polygonscan.com/address/0x54d03ec0c462e9a01f77579c090cde0fc2617817
       contract_address: "0x54d03ec0c462e9a01f77579c090cde0fc2617817"
@@ -469,6 +501,7 @@ services:
     evm_chain_id: "0x44d"
     service_type: "evm"
     archival: true
+    websockets: false
     service_params:
       # https://zkevm.polygonscan.com/address/0xee1727f5074E747716637e1776B7F7C7133f16b1
       contract_address: "0xee1727f5074E747716637e1776B7F7C7133f16b1"
@@ -482,6 +515,7 @@ services:
     evm_chain_id: "0x82750"
     service_type: "evm"
     archival: true
+    websockets: false
     service_params:
       # https://scrollscan.com/address/0x5300000000000000000000000000000000000004
       contract_address: "0x5300000000000000000000000000000000000004"
@@ -495,6 +529,7 @@ services:
     evm_chain_id: "0x92"
     service_type: "evm"
     archival: true
+    websockets: false
     service_params:
       # https://sonicscan.org/address/0xfc00face00000000000000000000000000000000
       contract_address: "0xfc00face00000000000000000000000000000000"
@@ -508,6 +543,7 @@ services:
     evm_chain_id: "0x28c58"
     service_type: "evm"
     archival: true
+    websockets: false
     service_params:
       # https://taikoscan.io/address/0x1670000000000000000000000000000000000001
       contract_address: "0x1670000000000000000000000000000000000001"
@@ -521,6 +557,7 @@ services:
     evm_chain_id: "0x28c61"
     service_type: "evm"
     archival: true
+    websockets: false
     service_params:
       # https://hekla.taikoscan.io/address/0x1670090000000000000000000000000000010001
       contract_address: "0x1670090000000000000000000000000000010001"
@@ -534,6 +571,7 @@ services:
     evm_chain_id: "0xc5cc4"
     service_type: "evm"
     archival: true
+    websockets: false
     service_params:
       # https://explorer.zklink.io/address/0xa3cb8648d12bD36e713af27D92968B370D7A9546
       contract_address: "0xa3cb8648d12bD36e713af27D92968B370D7A9546"
@@ -548,6 +586,7 @@ services:
     service_type: "evm"
     alias: "zksync-era"
     archival: true
+    websockets: false
     service_params:
       # https://explorer.zksync.io/address/0x03AC0b1b952C643d66A4Dc1fBc75118109cC074C
       contract_address: "0x03AC0b1b952C643d66A4Dc1fBc75118109cC074C"
@@ -786,7 +825,7 @@ services:
     cosmos_sdk_chain_id: "xrplevm_1440000-1"
     evm_chain_id: "0x15f900"
     supported_apis: ["json_rpc", "rest", "comet_bft", "websocket"]
-    websockets: true  # Enable WebSocket E2E tests for this service
+    websockets: true # Enable Websocket E2E tests for this service
     service_params:
       # https://explorer.xrplevm.org/address/0x7C21a90E3eCD3215d16c3BBe76a491f8f792d4Bf
       contract_address: "0x7C21a90E3eCD3215d16c3BBe76a491f8f792d4Bf"
@@ -801,7 +840,7 @@ services:
     cosmos_sdk_chain_id: "xrplevm_1449000-1"
     evm_chain_id: "0x161c28"
     supported_apis: ["json_rpc", "rest", "comet_bft", "websocket"]
-    websockets: true  # Enable WebSocket E2E tests for this service
+    websockets: true # Enable Websocket E2E tests for this service
     service_params:
       # https://explorer.testnet.xrplevm.org/address/0xc29e2583eD5C77df8792067989Baf9E4CCD4D7fc
       contract_address: "0xc29e2583eD5C77df8792067989Baf9E4CCD4D7fc"
@@ -814,11 +853,6 @@ services:
   # # Shannon - Berachain Testnet
   # - name: "Shannon - bera_test (Berachain Testnet) Test"
   #   service_id: "bera_test"
-  #   service_type: "evm"
-
-  # # Shannon - Evmos
-  # - name: "Shannon - evmos (Evmos) Test"
-  #   service_id: "evmos"
   #   service_type: "evm"
 
   # # Shannon - Fraxtal

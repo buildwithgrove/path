@@ -15,6 +15,12 @@ import (
 	"github.com/buildwithgrove/path/protocol"
 )
 
+// defaultURLKey is the key for the default URL in the fallback endpoints map.
+//   - If a service only supports one RPC type, the default URL is used for all requests.
+//   - If a service supports multiple RPC types, the default URL is not used for requests.
+//   - In all cases, the default URL is used as an identifier in the EndpointAddr.
+const defaultURLKey = "default_url"
+
 const (
 	// Shannon uses secp256k1 key schemes (the cosmos default)
 	// secp256k1 keys are 32 bytes -> 64 hexadecimal characters
@@ -67,6 +73,11 @@ type (
 		GatewayPrivateKeyHex    string               `yaml:"gateway_private_key_hex"`
 		OwnedAppsPrivateKeysHex []string             `yaml:"owned_apps_private_keys_hex"`
 		ServiceFallback         []ServiceFallback    `yaml:"service_fallback"`
+		// Optional.
+		// Puts the Gateway in LoadTesting mode if specified.
+		// All relays will be sent to a fixed URL.
+		// Allows measuring performance of PATH and full node(s) in isolation.
+		LoadTestingConfig *LoadTestingConfig `yaml:"load_testing_config"`
 	}
 
 	// TODO_TECHDEBT(@adshmh): Make configuration and implementation explicit:
@@ -82,13 +93,19 @@ type (
 		// regardless of the health of the protocol endpoints.
 		SendAllTraffic bool `yaml:"send_all_traffic"`
 	}
-)
 
-// defaultURLKey is the key for the default URL in the fallback endpoints map.
-//   - If a service only supports one RPC type, the default URL is used for all requests.
-//   - If a service supports multiple RPC types, the default URL is not used for requests.
-//   - In all cases, the default URL is used as an identifier in the EndpointAddr.
-const defaultURLKey = "default_url"
+	// Load testing configuration.
+	// Used to track Gateway's performance when using "perfect" endpoints.
+	// If specified:
+	// - Directs all relays to the specified backend service URL
+	// - No protocol or fallback endpoint used.
+	// - Assumes high throughput backend service (e.g. nginx with a fixed response)
+	LoadTestingConfig struct {
+		// The URL to use for sending relays.
+		BackendServiceURL string `yaml:"backend_service_url"`
+		// TODO_UPNEXT(@adshmh): Support using a fixed URL for a Shannon endpoint/RelayMiner during load testing.
+	}
+)
 
 func (gc GatewayConfig) Validate() error {
 	if len(gc.GatewayPrivateKeyHex) != shannonPrivateKeyLengthHex {

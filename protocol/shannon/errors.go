@@ -70,10 +70,10 @@ var (
 	// The endpoint returned a non-2XX response.
 	errEndpointNon2XXHTTPStatusCode = errors.New("endpoint returned non-2xx HTTP status code")
 
-	// ** WebSocket errors **
+	// ** Websocket errors **
 
-	// Error creating a WebSocket connection.
-	errCreatingWebSocketConnection = errors.New("error creating WebSocket connection")
+	// Error creating a Websocket connection.
+	errCreatingWebSocketConnection = errors.New("error creating Websocket connection")
 
 	// Error signing the relay request in a websocket message.
 	errRelayRequestWebsocketMessageSigningFailed = errors.New("error signing relay request in websocket message")
