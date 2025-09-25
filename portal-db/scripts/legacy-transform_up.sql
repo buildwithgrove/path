@@ -12,10 +12,10 @@ INSERT INTO public.portal_plans (
     plan_application_limit
 )
 VALUES
-    ('PLAN_FREE', 'Free tier with limited usage ', 1e6, 'month', 0, 2),
-    ('PLAN_PAID', 'Unlimited Relays. Unlimited RPS.', 0, NULL, 0, 0),
-    ('PLAN_LEGACY', 'Legacy enterprise customers', 0, NULL, 0, 0),
-    ('PLAN_INTERNAL', 'Internal development accounts', 0, NULL, 0, 0);
+    ('PLAN_FREE', 'Free tier with limited monthly usage and rate limited.', 1e6, 'month', 100, 2),
+    ('PLAN_PAID', 'Paid tier with unlimited monthly usage (pay-as-you-go) and no rate limits.', 0, NULL, 0, 0),
+    ('PLAN_LEGACY', 'Legacy plan for enterprise customers', 0, NULL, 0, 0),
+    ('PLAN_INTERNAL', 'Internal plan for development purposes only', 0, NULL, 0, 0);
 
 -- Transform the legacy accounts to the new accounts structure
 INSERT INTO public.portal_accounts (
@@ -39,8 +39,8 @@ SELECT
     a.id as portal_account_id,
     NULL as organization_id,
     CASE
-        WHEN a.plan_type = 'ENTERPRISE' THEN 'PLAN_ENTERPRISE'
-        WHEN a.plan_type = 'PLAN_UNLIMITED' THEN 'PLAN_UNLIMITED'
+        WHEN a.plan_type = 'ENTERPRISE' THEN 'PLAN_LEGACY'
+        WHEN a.plan_type = 'PLAN_UNLIMITED' THEN 'PLAN_PAID'
         ELSE 'PLAN_FREE'
     END as portal_plan_type,
     a.name as user_account_name,
@@ -200,7 +200,7 @@ INSERT INTO public.portal_user_auth (
 )
 SELECT
     uap.user_id as portal_user_id,
-    'auth0'::portal_auth_provider as portal_auth_provider,  -- Only auth0 provider supported
+    'auth0'::portal_auth_provider as portal_auth_provider,  -- auth0 is the only provider supported during migration
     CASE
         WHEN uap.type = 'auth0_username' THEN 'auth0_username'::portal_auth_type
         WHEN uap.type = 'auth0_github' THEN 'auth0_github'::portal_auth_type
