@@ -130,7 +130,7 @@ COMMENT ON COLUMN portal_users.portal_admin IS 'Whether user has admin privilege
 -- (portal_auth_type) a user is authenticated into the Portal by
 CREATE TABLE portal_user_auth (
     portal_user_auth_id SERIAL PRIMARY KEY,
-    portal_user_id VARCHAR(42),
+    portal_user_id VARCHAR(36),
     portal_auth_provider portal_auth_provider,
     portal_auth_type portal_auth_type,
     auth_provider_user_id VARCHAR(69),

@@ -144,14 +144,9 @@ jobs:
       - build-and-test-docker-image
     strategy:
       matrix:
-<<<<<<< Updated upstream
-        # DEV_NOTE: Add new services here if they should be tested as part of the Shannon E2E CI suite
-        service_id: [xrplevm, eth]
-=======
         # TODO_DEVEX: Make this matrix dynamic by reading WebSocket-capable services from config
         # DEV_NOTE: Only xrplevm supports WebSocket testing currently
         service_id: [xrplevm]
->>>>>>> Stashed changes
     steps:
       - uses: actions/checkout@v4
 
