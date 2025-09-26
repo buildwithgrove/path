@@ -350,7 +350,7 @@ func (rc *requestContext) executeRelayRequestStrategy(payload protocol.Payload) 
 	// ** Priority 0: Load testing mode **
 	// Use the configured load testing backend server.
 	case rc.loadTestingConfig != nil:
-		rc.logger.Debug().Msg("LoadTesting Mode: Sending relay to the load test backend server")
+		rc.logger.Debug().Msg("LoadTesting Mode: Sending relay to the load test RelayMiner/backend server")
 		return rc.sendProtocolRelay(payload)
 
 	// ** Priority 1: Check Endpoint type **
@@ -544,7 +544,11 @@ func (rc *requestContext) sendProtocolRelay(payload protocol.Payload) (protocol.
 	switch {
 	// LoadTesting mode: use the fixed URL.
 	case rc.loadTestingConfig != nil:
-		targetServerURL = rc.loadTestingConfig.BackendServiceURL
+		if rc.loadTestingConfig.BackendServiceURL != nil {
+			targetServerURL = *rc.loadTestingConfig.BackendServiceURL
+		} else {
+			targetServerURL = rc.loadTestingConfig.RelayMinerConfig.URL
+		}
 	// Default: use the selected endoint's URL
 	default:
 		targetServerURL = selectedEndpoint.PublicURL()
@@ -567,13 +571,14 @@ func (rc *requestContext) sendProtocolRelay(payload protocol.Payload) (protocol.
 		return defaultResponse, fmt.Errorf("%w %w: %d", errSendHTTPRelay, errEndpointNon2XXHTTPStatusCode, httpStatusCode)
 	}
 
-	// LoadTesting mode: return the backend server's response as-is.
-	if rc.loadTestingConfig != nil {
+	// LoadTesting mode using a backend server.
+	// Return the backend server's response as-is.
+	if rc.loadTestingConfig != nil && rc.loadTestingConfig.BackendServiceURL != nil {
 		return protocol.Response{
 			Bytes:          httpRelayResponseBz,
 			HTTPStatusCode: httpStatusCode,
 			// Intentionally leaving the endpoint address empty.
-			// Ensuring to sanctions/invalidation rules apply to LoadTesting backend server
+			// Ensuring no sanctions/invalidation rules apply to LoadTesting backend server
 			EndpointAddr: "",
 		}, nil
 	}
