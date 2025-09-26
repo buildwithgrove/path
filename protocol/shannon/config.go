@@ -102,8 +102,26 @@ type (
 	// - Assumes high throughput backend service (e.g. nginx with a fixed response)
 	LoadTestingConfig struct {
 		// The URL to use for sending relays.
-		BackendServiceURL string `yaml:"backend_service_url"`
-		// TODO_UPNEXT(@adshmh): Support using a fixed URL for a Shannon endpoint/RelayMiner during load testing.
+		// If set:
+		// 1. Relays are sent to the backend server's URL, and
+		// 2. The backend server's response is returned as-is (no parsing, signature verification, etc.)
+		BackendServiceURL *string `yaml:"backend_service_url"`
+		// The RelayMiner to use for load testing.
+		// If set:
+		// 1. Relays are only send to the RelayMiner's URL, and
+		// 2. The RelayMiner's response is returned after parsing and signature verification.
+		RelayMinerConfig *LoadTestingRelayMinerConfig `yaml:"relay_miner_config"`
+	}
+
+	// Configuration of a RelayMiner used in load testing.
+	LoadTestingRelayMinerConfig struct {
+		// Public URL of the RelayMiner to use in load testing mode.
+		URL string `yaml:"url"`
+		// The Supplier address to use in relays.
+		// In load testing mode:
+		// - The supplier address is fixed.
+		// - A single RelayMiner will receive all the relays.
+		SupplierAddr string `yaml:"supplier_addr"`
 	}
 )
 
@@ -134,6 +152,12 @@ func (gc GatewayConfig) Validate() error {
 
 	if err := gc.validateServiceFallback(); err != nil {
 		return err
+	}
+
+	if ltc := gc.LoadTestingConfig; ltc != nil {
+		if err := ltc.Validate(); err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -313,4 +337,41 @@ func (fnc *FullNodeConfig) HydrateDefaults() {
 	if fnc.SessionRolloverBlocks == 0 {
 		fnc.SessionRolloverBlocks = defaultSessionRolloverBlocks
 	}
+}
+
+func (ltc *LoadTestingConfig) Validate() error {
+	// Error: neither backend server nor RelayMiner config are specified.
+	if ltc.BackendServiceURL == nil && ltc.RelayMinerConfig == nil {
+		return errors.New("load testing configuration error: At-least one of backend server URL or RelayMinerConfig must be specified")
+	}
+
+	// Backend Server Load Testing configuration specified.
+	if ltc.BackendServiceURL != nil {
+		// Error: cannot specify both backend server URL and RelayMiner config.
+		if ltc.RelayMinerConfig != nil {
+			return errors.New("load testing configuration error: Cannot specify both backend server URL and RelayMinerConfig")
+		}
+
+		if _, err := url.Parse(*ltc.BackendServiceURL); err != nil {
+			return fmt.Errorf("load testing configuration error: invalid backend server URL %s: %w", *ltc.BackendServiceURL, err)
+		}
+
+		return nil
+	}
+
+	// RelayMiner Load Testing config validation.
+	relayMinerURL := ltc.RelayMinerConfig.URL
+
+	// Parse the RelayMiner URL to ensure it is valid.
+	_, err := url.Parse(relayMinerURL)
+	if err != nil {
+		return fmt.Errorf("load testing configuration error: invalid RelayMiner URL %s: %w", relayMinerURL, err)
+	}
+
+	// TODO_IMPROVE(@adshmh): Validate the supplier address is in correct format (length, prefix, etc.).
+	if len(ltc.RelayMinerConfig.SupplierAddr) == 0 {
+		return errors.New("load testing configuration error: RelayMiner Supplier Address must be specified")
+	}
+
+	return nil
 }
