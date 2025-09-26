@@ -4,6 +4,19 @@ The Portal DB is the house for all core business logic for both PATH and the Por
 
 The Portal DB is a _highly opinionated_ implementation of a Postgres database that can be used to manage and administer both PATH and a UI on top of PATH.
 
+## 🌐 REST API Access
+
+The Portal DB includes a **PostgREST API** that automatically generates REST endpoints from your database schema. This provides instant HTTP access to all your data with authentication, filtering, and Go SDK generation.
+
+**➡️ [View PostgREST API Documentation](api/README.md)** for setup, authentication, and SDK usage.
+
+## 💻 REST API Client SDKs
+
+The Portal DB includes client SDKs for both Go and TypeScript.
+
+**➡️ [View Go SDK Documentation](sdk/go/README.md)**
+**➡️ [View TypeScript SDK Documentation](sdk/typescript/README.md)**
+
 :::info TODO: Revisit docs location
 
 Consider if this should be moved into `docusaurus/docs` so it is discoverable as part of [path.grove.city](https://path.grove.city/).
@@ -12,6 +25,8 @@ Consider if this should be moved into `docusaurus/docs` so it is discoverable as
 
 ## Table of Contents <!-- omit in toc -->
 
+- [🌐 REST API Access](#-rest-api-access)
+- [💻 REST API Client SDKs](#-rest-api-client-sdks)
 - [Quickstart (for Grove Engineering)](#quickstart-for-grove-engineering)
 - [Interacting with the database](#interacting-with-the-database)
   - [`make` Targets](#make-targets)
@@ -23,7 +38,7 @@ Consider if this should be moved into `docusaurus/docs` so it is discoverable as
 
 ## Quickstart (for Grove Engineering)
 
-We'll connection to the following gateway and applications:
+We'll connect to the following gateway and applications:
 
 - gateway - `pokt1lf0kekv9zcv9v3wy4v6jx2wh7v4665s8e0sl9s`
 - solana app - `pokt1xd8jrccxtlzs8svrmg6gukn7umln7c2ww327xx`
@@ -59,7 +74,7 @@ make | grep --line-buffered "portal"
 
 ### `make` Targets
 
-- `make portal_db_up` creates the Portal DB with the base schema (`./init/001_schema.sql`) and runs the Portal DB on port `:5435`.
+- `make portal_db_up` creates the Portal DB with the base schema (`./schema/001_schema.sql`) and runs the Portal DB on port `:5435`.
 - `make portal_db_down` stops running the local Portal DB.
 - `make portal_db_env` creates and inits the Database, and helps set up the local development environment.
 - `make portal_db_clean` stops the local Portal DB and deletes the database and drops the schema.
@@ -181,7 +196,7 @@ Using a postgres MCP server is experimental but worth a shot!
    - Favor correctness, readability, and performance best practices in all SQL you produce.
    ```
 
-5. Upload [init/001_schema.sql](init/001_schema.sql) as one of the files to the Claude Project.
+5. Upload [schema/001_schema.sql](schema/001_schema.sql) as one of the files to the Claude Project.
 
 6. Try using it by asking: `How many records are in my database?`
 
