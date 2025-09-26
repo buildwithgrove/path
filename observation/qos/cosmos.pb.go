@@ -7,11 +7,12 @@
 package qos
 
 import (
-	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
-	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
+
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
+	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 )
 
 const (
@@ -26,7 +27,7 @@ type CosmosRequestObservations struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// cosmos_chain_id is the blockchain identifier in the Cosmos ecosystem.
 	CosmosChainId string `protobuf:"bytes,8,opt,name=cosmos_chain_id,json=cosmosChainId,proto3" json:"cosmos_chain_id,omitempty"`
-	// evm_chain_id is the EVM blockchain identifier for the Cosmos chain that has native EVM support, e.g. XRPLEVM, evmos, etc...
+	// evm_chain_id is the EVM blockchain identifier for the Cosmos chain that has native EVM support, e.g. XRPLEVM, etc...
 	EvmChainId string `protobuf:"bytes,7,opt,name=evm_chain_id,json=evmChainId,proto3" json:"evm_chain_id,omitempty"`
 	// service_id is the Pocket Network service identifier.
 	ServiceId string `protobuf:"bytes,2,opt,name=service_id,json=serviceId,proto3" json:"service_id,omitempty"`

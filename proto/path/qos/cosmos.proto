@@ -20,7 +20,7 @@ message CosmosRequestObservations {
     // cosmos_chain_id is the blockchain identifier in the Cosmos ecosystem.
     string cosmos_chain_id = 8;
 
-    // evm_chain_id is the EVM blockchain identifier for the Cosmos chain that has native EVM support, e.g. XRPLEVM, evmos, etc...
+    // evm_chain_id is the EVM blockchain identifier for the Cosmos chain that has native EVM support, e.g. XRPLEVM, etc...
     string evm_chain_id = 7;
 
     // service_id is the Pocket Network service identifier.
