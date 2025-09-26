@@ -84,6 +84,10 @@ gen-jwt: ## Generate JWT token
 	fi
 	cd api/scripts && ./gen-jwt.sh
 
+reset-dev-db: ## Reset the development database
+	@echo "🔄 Resetting database..."
+	rm -rf ./tmp/portal_db_data
+
 # ============================================================================
 # DATA HYDRATION
 # ============================================================================
@@ -143,3 +147,13 @@ hydrate-gateways: ## Hydrate gateways table from blockchain data
 		exit 1; \
 	fi
 	DB_CONNECTION_STRING="$(DB_CONNECTION_STRING)" NODE="$(NODE)" NETWORK="$(NETWORK)" GATEWAY_ADDRESSES="$(GATEWAY_ADDRESSES)" ./scripts/hydrate-gateways.sh
+
+hydrate-prod: ## Hydrate local database with production data
+	@echo "🏭 Hydrating local database with production data..."
+	@echo "   Note: Requires .env file with production database credentials"
+	@if ! docker ps | grep -q portal-db; then \
+		echo "❌ Portal DB is not running. Please start it first:"; \
+		echo "   make postgrest-up"; \
+		exit 1; \
+	fi
+	./scripts/hydrate-prod.sh
