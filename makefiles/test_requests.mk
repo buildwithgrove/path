@@ -89,7 +89,7 @@ test_request__binary__eth__batch: check_path_up_binary ## Test batch request (et
 		-d '[{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber"}, {"jsonrpc": "2.0", "id": 2, "method": "eth_chainId"}, {"jsonrpc": "2.0", "id": 3, "method": "eth_gasPrice"}]'
 
 .PHONY: test_request__binary__relay_util__eth
-test_request__binary__relay_util__eth: check_path_up_binary check_relay_util  ## Test eth PATH binary with 100 eth_blockNumber requests using relay-util. Override service by running: SERVICE_ID=eth make test_request__binary__relay_util__eth
+test_request__binary__relay_util__eth: check_relay_util check_path_up_binary ## Test eth PATH binary with 100 eth_blockNumber requests using relay-util. Override service by running: SERVICE_ID=eth make test_request__binary__relay_util__eth
 	relay-util \
 		-u http://localhost:3069/v1 \
 		-H "Target-Service-Id: $${SERVICE_ID:-eth}" \
@@ -170,3 +170,8 @@ test_disqualified_endpoints__envoy: check_path_up_envoy ## Get list of currently
 	curl http://localhost:3070/disqualified_endpoints \
 		-H "Target-Service-Id: eth"
 		-d '{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }'
+
+###############################
+###    Makefile imports     ###
+###############################
+include ./deps.mk
