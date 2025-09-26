@@ -7,7 +7,6 @@ import (
 	apptypes "github.com/pokt-network/poktroll/x/application/types"
 	servicetypes "github.com/pokt-network/poktroll/x/service/types"
 	sdk "github.com/pokt-network/shannon-sdk"
-	sdkcrypto "github.com/pokt-network/shannon-sdk/crypto"
 )
 
 type signer struct {
@@ -21,7 +20,7 @@ func (s *signer) SignRelayRequest(req *servicetypes.RelayRequest, app apptypes.A
 		&s.accountClient,
 	)
 
-	sdkSigner, err := sdkcrypto.NewCryptoSigner(s.privateKeyHex)
+	sdkSigner, err := sdk.NewSignerFromHex(s.privateKeyHex)
 	if err != nil {
 		return nil, fmt.Errorf("SignRequest: error creating signer: %w", err)
 	}

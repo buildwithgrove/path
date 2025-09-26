@@ -14,7 +14,6 @@ import (
 	servicetypes "github.com/pokt-network/poktroll/x/service/types"
 	sessiontypes "github.com/pokt-network/poktroll/x/session/types"
 	sdk "github.com/pokt-network/shannon-sdk"
-	sdkcrypto "github.com/pokt-network/shannon-sdk/crypto"
 )
 
 // BenchmarkShannonSigningDirect benchmarks the shannon-sdk signing operations using
@@ -94,51 +93,51 @@ func (m *mockPublicKeyFetcher) GetPubKeyFromAddress(ctx context.Context, address
 var benchSink any
 
 func withSilencedOutput(fn func()) {
-    // Best-effort: silence stdout/stderr during noisy operations
-    oldStdout, oldStderr := os.Stdout, os.Stderr
-    devnull, err := os.Open(os.DevNull)
-    if err == nil {
-        os.Stdout = devnull
-        os.Stderr = devnull
-        defer func() {
-            os.Stdout = oldStdout
-            os.Stderr = oldStderr
-            _ = devnull.Close()
-        }()
-    }
-    fn()
+	// Best-effort: silence stdout/stderr during noisy operations
+	oldStdout, oldStderr := os.Stdout, os.Stderr
+	devnull, err := os.Open(os.DevNull)
+	if err == nil {
+		os.Stdout = devnull
+		os.Stderr = devnull
+		defer func() {
+			os.Stdout = oldStdout
+			os.Stderr = oldStderr
+			_ = devnull.Close()
+		}()
+	}
+	fn()
 }
 
 func BenchmarkShannonKeyOperations(b *testing.B) {
-    testPrivateKeyHex := "1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
+	testPrivateKeyHex := "1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
 
-    b.ResetTimer()
+	b.ResetTimer()
 
-    for i := 0; i < b.N; i++ {
-        withSilencedOutput(func() {
-            s, err := sdkcrypto.NewCryptoSigner(testPrivateKeyHex)
-            if err != nil {
-                b.Fatalf("Failed to create signer: %v", err)
-            }
-            benchSink = s
-        })
-    }
+	for i := 0; i < b.N; i++ {
+		withSilencedOutput(func() {
+			s, err := sdk.NewCryptoSigner(testPrivateKeyHex)
+			if err != nil {
+				b.Fatalf("Failed to create signer: %v", err)
+			}
+			benchSink = s
+		})
+	}
 }
 
 // Benchmark for the complete signing pipeline
 func BenchmarkShannonCompleteSigningPipeline(b *testing.B) {
-    // Use a consistent keypair between signer and ring
-    appPrivKey := secp256k1.GenPrivKey()
-    supplierPrivKey1 := secp256k1.GenPrivKey()
-    supplierPrivKey2 := secp256k1.GenPrivKey()
+	// Use a consistent keypair between signer and ring
+	appPrivKey := secp256k1.GenPrivKey()
+	supplierPrivKey1 := secp256k1.GenPrivKey()
+	supplierPrivKey2 := secp256k1.GenPrivKey()
 
-    privateKeyHex := hex.EncodeToString(appPrivKey.Bytes())
+	privateKeyHex := hex.EncodeToString(appPrivKey.Bytes())
 
-    // Pre-create signer to isolate signing performance
-    sdkSigner, err := sdkcrypto.NewCryptoSigner(privateKeyHex)
-    if err != nil {
-        b.Fatalf("Failed to create signer: %v", err)
-    }
+	// Pre-create signer to isolate signing performance
+	sdkSigner, err := sdk.NewCryptoSigner(privateKeyHex)
+	if err != nil {
+		b.Fatalf("Failed to create signer: %v", err)
+	}
 
 	pubKeyFetcher := &mockPublicKeyFetcher{
 		publicKeys: map[string]cryptotypes.PubKey{
@@ -164,12 +163,12 @@ func BenchmarkShannonCompleteSigningPipeline(b *testing.B) {
 		Payload: []byte(`{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}`),
 	}
 
-    b.ResetTimer()
+	b.ResetTimer()
 
-    for i := 0; i < b.N; i++ {
-        _, err := sdkSigner.Sign(context.Background(), relayRequest, ring)
-        if err != nil {
-            b.Fatalf("Failed to sign request: %v", err)
-        }
-    }
+	for i := 0; i < b.N; i++ {
+		_, err := sdkSigner.Sign(context.Background(), relayRequest, ring)
+		if err != nil {
+			b.Fatalf("Failed to sign request: %v", err)
+		}
+	}
 }
