@@ -11,6 +11,7 @@ import (
 	"github.com/pokt-network/poktroll/pkg/polylog"
 	apptypes "github.com/pokt-network/poktroll/x/application/types"
 	servicetypes "github.com/pokt-network/poktroll/x/service/types"
+	sessiontypes "github.com/pokt-network/poktroll/x/session/types"
 	sharedtypes "github.com/pokt-network/poktroll/x/shared/types"
 	sdk "github.com/pokt-network/shannon-sdk"
 	sdktypes "github.com/pokt-network/shannon-sdk/types"
@@ -45,10 +46,22 @@ type LazyFullNode struct {
 
 	// Session rollover monitoring state
 	rolloverState *sessionRolloverState
+
+	// TODO_TECHDEBT(@adshmh): Make the load testing supplier filtering logic more visible.
+	//
+	// If specified, will only return endpoints matching the supplier address.
+	// Used for load testing against a single RelayMiner.
+	allowedSupplierAddr string
 }
 
+// TODO_TECHDEBT(@adshmh): Refactor to find a better fit for the load testing configuration.
+//
 // NewLazyFullNode builds and returns a LazyFullNode using the provided configuration.
-func NewLazyFullNode(logger polylog.Logger, config FullNodeConfig) (*LazyFullNode, error) {
+func NewLazyFullNode(
+	logger polylog.Logger,
+	config FullNodeConfig,
+	allowedSupplierAddr string,
+) (*LazyFullNode, error) {
 	logger = logger.With("component", "fullnode_lazy")
 
 	blockClient, err := newBlockClient(config.RpcURL)
@@ -127,9 +140,13 @@ func (lfn *LazyFullNode) GetSession(
 	// Update session rollover boundaries for rollover monitoring
 	lfn.rolloverState.updateSessionRolloverBoundaries(session)
 
+	// TODO_TECHDEBT(@adshmh): Refactor load testing related code to make the filtering more visible.
+	//
 	// TODO_UPNEXT(@adshmh): Log and handle potential errors.
-	// ============================================================
-	endpoints, _ := endpointsFromSession(session)
+	//
+	// In Load Testing using RelayMiner mode: drop any endpoints ot matching the single supplier specified in the config.
+	//
+	endpoints, _ := endpointsFromSession(session, lfn.allowedSupplierAddr)
 
 	return hydratedSession{
 		session:   session,
@@ -250,7 +267,7 @@ func (lfn *LazyFullNode) GetSessionWithExtendedValidity(
 	lfn.rolloverState.updateSessionRolloverBoundaries(currentSession.session)
 
 	// Return the previous session
-	return createHydratedSession(prevSession)
+	return createHydratedSession(prevSession, lfn.allowedSupplierAddr)
 }
 
 // IsInSessionRollover returns true if we're currently in a session rollover period.
@@ -365,4 +382,20 @@ func newSharedClient(config grpc.GRPCConfig) (*sdk.SharedClient, error) {
 	}
 
 	return &sdk.SharedClient{QueryClient: sharedtypes.NewQueryClient(conn)}, nil
+}
+
+// createHydratedSession creates a hydratedSession from a session by computing its endpoints
+func createHydratedSession(
+	session *sessiontypes.Session,
+	allowedSupplierAddr string,
+) (hydratedSession, error) {
+	endpoints, err := endpointsFromSession(session, allowedSupplierAddr)
+	if err != nil {
+		return hydratedSession{}, fmt.Errorf("failed to create endpoints from session: %w", err)
+	}
+
+	return hydratedSession{
+		session:   session,
+		endpoints: endpoints,
+	}, nil
 }

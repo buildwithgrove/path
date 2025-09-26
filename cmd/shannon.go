@@ -15,9 +15,18 @@ import (
 func getShannonFullNode(logger polylog.Logger, config *shannonconfig.ShannonGatewayConfig) (shannon.FullNode, error) {
 	fullNodeConfig := config.FullNodeConfig
 
+	// TODO_TECHDEBT(@adshmh): Refactor to find a better fit for load testing config handling.
+	//
+	// Load Testing against a RelayMiner:
+	// Restrict the allowed supplier
+	var allowedSupplierAddr string
+	if config.GatewayConfig.LoadTestingConfig != nil {
+		allowedSupplierAddr = config.GatewayConfig.LoadTestingConfig.GetAllowedSupplierAddr()
+	}
+
 	// TODO_MVP(@adshmh): rename the variables here once a more accurate name is selected for `LazyFullNode`
 	// LazyFullNode skips all caching and queries the onchain data for serving each relay request.
-	lazyFullNode, err := shannon.NewLazyFullNode(logger, fullNodeConfig)
+	lazyFullNode, err := shannon.NewLazyFullNode(logger, fullNodeConfig, allowedSupplierAddr)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create Shannon lazy full node: %w", err)
 	}

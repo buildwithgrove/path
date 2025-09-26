@@ -170,19 +170,6 @@ func NewCachingFullNode(
 	return cfn, nil
 }
 
-// createHydratedSession creates a hydratedSession from a session by computing its endpoints
-func createHydratedSession(session *sessiontypes.Session) (hydratedSession, error) {
-	endpoints, err := endpointsFromSession(session)
-	if err != nil {
-		return hydratedSession{}, fmt.Errorf("failed to create endpoints from session: %w", err)
-	}
-
-	return hydratedSession{
-		session:   session,
-		endpoints: endpoints,
-	}, nil
-}
-
 // startCacheUpdateRoutines starts background goroutines to periodically update caches
 func (cfn *cachingFullNode) startCacheUpdateRoutines() {
 	// Start block height cache update routine
