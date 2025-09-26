@@ -9,6 +9,14 @@ set -e
 ENV_FILE="$(dirname "$0")/../.env"
 PG_DUMP_FILE="$(dirname "$0")/../pg_dump.sql"
 
+# Check if Docker container is running
+if ! docker ps --format "table {{.Names}}" | grep -q "^$DOCKER_CONTAINER$"; then
+    echo -e "${RED}❌ Docker container '$DOCKER_CONTAINER' is not running${NC}"
+    echo "   Please start PostgreSQL and PostgREST services first:"
+    echo "   make postgrest-up"
+    exit 1
+fi
+
 # Check if .env file exists
 if [ ! -f "$ENV_FILE" ]; then
     echo -e "${RED}❌ .env file not found at: $ENV_FILE${NC}"
@@ -191,16 +199,6 @@ echo -e "${BLUE}🚀 Starting automatic database import...${NC}"
 # Check if dump file exists and has content
 if [ ! -f "$PG_DUMP_FILE" ] || [ ! -s "$PG_DUMP_FILE" ]; then
     echo -e "${RED}❌ Dump file not found or empty, skipping import${NC}"
-    exit 1
-fi
-
-# Check if Docker container is running
-if ! docker ps --format "table {{.Names}}" | grep -q "^$DOCKER_CONTAINER$"; then
-    echo -e "${RED}❌ Docker container '$DOCKER_CONTAINER' is not running${NC}"
-    echo "   Please start PostgreSQL and PostgREST services first:"
-    echo "   make postgrest-up"
-    echo ""
-    echo "   Or manually: docker compose up -d"
     exit 1
 fi
 
