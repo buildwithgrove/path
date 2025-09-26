@@ -24,27 +24,27 @@ print_status() {
 # 🔍 Function to validate required parameters
 validate_params() {
     if [ -z "$NODE" ]; then
-        print_status $RED "❌ Error: NODE parameter is required"
+        print_status $RED "❌ Error: --node parameter is required"
         exit 1
     fi
 
     if [ -z "$NETWORK" ]; then
-        print_status $RED "❌ Error: NETWORK parameter is required"
+        print_status $RED "❌ Error: --chain-id parameter is required"
         exit 1
     fi
 
     if [ -z "$DB_CONNECTION_STRING" ]; then
-        print_status $RED "❌ Error: DB_CONNECTION_STRING environment variable is required"
+        print_status $RED "❌ Error: --db-string parameter is required"
         exit 1
     fi
 
     if [ "$FILE_MODE" != "true" ] && [ -z "$SERVICE_IDS" ]; then
-        print_status $RED "❌ Error: SERVICE_IDS parameter is required when not using file mode"
+        print_status $RED "❌ Error: --services parameter is required when not using --file mode"
         exit 1
     fi
 
     if [ "$FILE_MODE" = "true" ] && [ -z "$SERVICE_FILE" ]; then
-        print_status $RED "❌ Error: SERVICE_FILE parameter is required when using file mode"
+        print_status $RED "❌ Error: --file parameter requires a file path"
         exit 1
     fi
 }
@@ -255,41 +255,66 @@ main() {
 
 # 📚 Usage information
 usage() {
-    echo -e "${PURPLE}🔧 Usage:${NC} ${BLUE}$0 [OPTIONS] <service_ids|--file service_file> <rpc_node> <network_id>${NC}"
+    echo -e "${PURPLE}🔧 Usage:${NC} ${BLUE}$0 [OPTIONS]${NC}"
     echo ""
-    echo -e "${YELLOW}📝 Parameters:${NC}"
-    echo -e "  ${CYAN}service_ids${NC}       Comma-separated list of service IDs"
-    echo -e "  ${CYAN}rpc_node${NC}         RPC node endpoint"
-    echo -e "  ${CYAN}network_id${NC}       Network/chain ID"
+    echo -e "${YELLOW}📝 Required Parameters:${NC}"
+    echo -e "  ${CYAN}--services <ids>${NC}      Comma-separated list of service IDs"
+    echo -e "  ${CYAN}--file <path>${NC}         Read service IDs from file (one per line)"
+    echo -e "  ${CYAN}--node <endpoint>${NC}     RPC node endpoint"
+    echo -e "  ${CYAN}--chain-id <id>${NC}       Network/chain ID"
+    echo -e "  ${CYAN}--db-string <conn>${NC}    PostgreSQL connection string"
     echo ""
-    echo -e "${YELLOW}🔧 Options:${NC}"
-    echo -e "  ${CYAN}-h, --help${NC}       Show this help message"
-    echo -e "  ${CYAN}-f, --file${NC}       Use file mode - read service IDs from file (one per line)"
-    echo -e "  ${CYAN}-d, --debug${NC}      Enable debug output"
+    echo -e "${YELLOW}🔧 Optional Parameters:${NC}"
+    echo -e "  ${CYAN}-h, --help${NC}            Show this help message"
+    echo -e "  ${CYAN}-d, --debug${NC}           Enable debug output"
     echo ""
-    echo -e "${YELLOW}🌍 Environment Variables:${NC}"
-    echo -e "  ${CYAN}DB_CONNECTION_STRING${NC}  PostgreSQL connection string"
-    echo -e "  ${CYAN}DEBUG${NC}                 Set to 'true' to enable debug output"
+    echo -e "${YELLOW}📋 Notes:${NC}"
+    echo -e "  • Either ${CYAN}--services${NC} or ${CYAN}--file${NC} is required (but not both)"
+    echo -e "  • All other parameters are required"
     echo ""
     echo -e "${YELLOW}💡 Examples:${NC}"
-    echo -e "  ${YELLOW}# Using comma-separated service IDs:${NC}"
-    echo -e "  ${GREEN}export DB_CONNECTION_STRING='postgresql://user:pass@localhost:5435/portal_db'${NC}"
-    echo -e "  ${GREEN}$0 'eth,poly,solana,xrplevm' 'https://rpc.example.com:443' 'pocket'${NC}"
+    echo -e "  ${YELLOW}# Using comma-separated service IDs (space syntax):${NC}"
+    echo -e "  ${GREEN}$0 --services 'eth,poly,solana,xrplevm' \\\\${NC}"
+    echo -e "  ${GREEN}     --node 'https://rpc.example.com:443' \\\\${NC}"
+    echo -e "  ${GREEN}     --chain-id 'pocket' \\\\${NC}"
+    echo -e "  ${GREEN}     --db-string 'postgresql://user:pass@localhost:5435/portal_db'${NC}"
+    echo ""
+    echo -e "  ${YELLOW}# Using comma-separated service IDs (equals syntax):${NC}"
+    echo -e "  ${GREEN}$0 --services='eth,poly,solana,xrplevm' \\\\${NC}"
+    echo -e "  ${GREEN}     --node='https://rpc.example.com:443' \\\\${NC}"
+    echo -e "  ${GREEN}     --chain-id='pocket' \\\\${NC}"
+    echo -e "  ${GREEN}     --db-string='postgresql://user:pass@localhost:5435/portal_db'${NC}"
     echo ""
     echo -e "  ${YELLOW}# Using file mode:${NC}"
     echo -e "  ${GREEN}echo -e 'eth\\\npoly\\\nsolana\\\nxrplevm' > services.txt${NC}"
-    echo -e "  ${GREEN}$0 --file services.txt 'https://rpc.example.com:443' 'pocket'${NC}"
+    echo -e "  ${GREEN}$0 --file=services.txt \\\\${NC}"
+    echo -e "  ${GREEN}     --node='https://rpc.example.com:443' \\\\${NC}"
+    echo -e "  ${GREEN}     --chain-id='pocket' \\\\${NC}"
+    echo -e "  ${GREEN}     --db-string='postgresql://user:pass@localhost:5435/portal_db'${NC}"
+    echo ""
+    echo -e "  ${YELLOW}# Using environment variable with mixed syntax:${NC}"
+    echo -e "  ${GREEN}export PMAIN='--node=https://rpc.example.com:443 --chain-id=pocket'${NC}"
+    echo -e "  ${GREEN}$0 --services='eth' --db-string='postgresql://...' \$PMAIN${NC}"
     echo ""
     echo -e "  ${YELLOW}# With debug output:${NC}"
-    echo -e "  ${GREEN}$0 --debug 'eth' 'https://rpc.example.com:443' 'pocket'${NC}"
+    echo -e "  ${GREEN}$0 --debug --services='eth' \\\\${NC}"
+    echo -e "  ${GREEN}     --node='https://rpc.example.com:443' \\\\${NC}"
+    echo -e "  ${GREEN}     --chain-id='pocket' \\\\${NC}"
+    echo -e "  ${GREEN}     --db-string='postgresql://user:pass@localhost:5435/portal_db'${NC}"
     echo ""
 }
 
 # 🚪 Entry point
-# Parse arguments and flags
+# Initialize variables
 DEBUG_MODE=false
 FILE_MODE=false
+SERVICE_IDS=""
+SERVICE_FILE=""
+NODE=""
+NETWORK=""
+DB_CONNECTION_STRING=""
 
+# Parse arguments and flags
 while [ $# -gt 0 ]; do
     case $1 in
         -h|--help|help)
@@ -301,9 +326,103 @@ while [ $# -gt 0 ]; do
             DEBUG=true
             shift
             ;;
-        -f|--file)
+        --services=*)
+            if [ "$FILE_MODE" = "true" ]; then
+                print_status $RED "❌ Error: Cannot use both --services and --file"
+                exit 1
+            fi
+            SERVICE_IDS="${1#*=}"
+            if [ -z "$SERVICE_IDS" ]; then
+                print_status $RED "❌ Error: --services requires a value"
+                exit 1
+            fi
+            shift
+            ;;
+        --services)
+            if [ -z "$2" ]; then
+                print_status $RED "❌ Error: --services requires a value"
+                exit 1
+            fi
+            if [ "$FILE_MODE" = "true" ]; then
+                print_status $RED "❌ Error: Cannot use both --services and --file"
+                exit 1
+            fi
+            SERVICE_IDS="$2"
+            shift 2
+            ;;
+        --file=*)
+            if [ -n "$SERVICE_IDS" ]; then
+                print_status $RED "❌ Error: Cannot use both --services and --file"
+                exit 1
+            fi
+            SERVICE_FILE="${1#*=}"
+            if [ -z "$SERVICE_FILE" ]; then
+                print_status $RED "❌ Error: --file requires a file path"
+                exit 1
+            fi
             FILE_MODE=true
             shift
+            ;;
+        --file)
+            if [ -z "$2" ]; then
+                print_status $RED "❌ Error: --file requires a file path"
+                exit 1
+            fi
+            if [ -n "$SERVICE_IDS" ]; then
+                print_status $RED "❌ Error: Cannot use both --services and --file"
+                exit 1
+            fi
+            FILE_MODE=true
+            SERVICE_FILE="$2"
+            shift 2
+            ;;
+        --node=*)
+            NODE="${1#*=}"
+            if [ -z "$NODE" ]; then
+                print_status $RED "❌ Error: --node requires a value"
+                exit 1
+            fi
+            shift
+            ;;
+        --node)
+            if [ -z "$2" ]; then
+                print_status $RED "❌ Error: --node requires a value"
+                exit 1
+            fi
+            NODE="$2"
+            shift 2
+            ;;
+        --chain-id=*)
+            NETWORK="${1#*=}"
+            if [ -z "$NETWORK" ]; then
+                print_status $RED "❌ Error: --chain-id requires a value"
+                exit 1
+            fi
+            shift
+            ;;
+        --chain-id)
+            if [ -z "$2" ]; then
+                print_status $RED "❌ Error: --chain-id requires a value"
+                exit 1
+            fi
+            NETWORK="$2"
+            shift 2
+            ;;
+        --db-string=*)
+            DB_CONNECTION_STRING="${1#*=}"
+            if [ -z "$DB_CONNECTION_STRING" ]; then
+                print_status $RED "❌ Error: --db-string requires a value"
+                exit 1
+            fi
+            shift
+            ;;
+        --db-string)
+            if [ -z "$2" ]; then
+                print_status $RED "❌ Error: --db-string requires a value"
+                exit 1
+            fi
+            DB_CONNECTION_STRING="$2"
+            shift 2
             ;;
         -*)
             print_status $RED "❌ Error: Unknown option $1"
@@ -312,37 +431,25 @@ while [ $# -gt 0 ]; do
             exit 1
             ;;
         *)
-            break
+            print_status $RED "❌ Error: Unexpected argument $1. All parameters must be specified with flags."
+            echo ""
+            usage
+            exit 1
             ;;
     esac
 done
 
-# Check if we have the right number of remaining arguments
-if [ "$FILE_MODE" = "true" ]; then
-    if [ $# -ne 3 ]; then
-        print_status $RED "❌ Error: Invalid number of arguments for file mode"
-        echo ""
-        usage
-        exit 1
-    fi
-    SERVICE_FILE="$1"
-    NODE="$2"
-    NETWORK="$3"
-else
-    if [ $# -ne 3 ]; then
-        print_status $RED "❌ Error: Invalid number of arguments"
-        echo ""
-        usage
-        exit 1
-    fi
-    SERVICE_IDS="$1"
-    NODE="$2"
-    NETWORK="$3"
-fi
-
 # Enable debug mode if DEBUG environment variable is set
 if [ "$DEBUG" = "true" ]; then
     DEBUG_MODE=true
+fi
+
+# Check that we have either services or file mode
+if [ "$FILE_MODE" != "true" ] && [ -z "$SERVICE_IDS" ]; then
+    print_status $RED "❌ Error: Either --services or --file must be specified"
+    echo ""
+    usage
+    exit 1
 fi
 
 main
