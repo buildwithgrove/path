@@ -1,7 +1,5 @@
 .gitignore
 .npmignore
-.openapi-generator-ignore
-README.md
 package.json
 src/apis/ApplicationsApi.ts
 src/apis/GatewaysApi.ts
