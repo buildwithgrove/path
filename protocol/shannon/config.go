@@ -342,18 +342,18 @@ func (fnc *FullNodeConfig) HydrateDefaults() {
 func (ltc *LoadTestingConfig) Validate() error {
 	// Error: neither backend server nor RelayMiner config are specified.
 	if ltc.BackendServiceURL == nil && ltc.RelayMinerConfig == nil {
-		return errors.New("Load Testing Configuration error: At-least one of backend server URL or RelayMinerConfig must be specified")
+		return errors.New("load testing configuration error: At-least one of backend server URL or RelayMinerConfig must be specified")
 	}
 
 	// Backend Server Load Testing configuration specified.
 	if ltc.BackendServiceURL != nil {
 		// Error: cannot specify both backend server URL and RelayMiner config.
 		if ltc.RelayMinerConfig != nil {
-			return errors.New("Load Testing Configuration error: Cannot specify both backend server URL and RelayMinerConfig")
+			return errors.New("load testing configuration error: Cannot specify both backend server URL and RelayMinerConfig")
 		}
 
 		if _, err := url.Parse(*ltc.BackendServiceURL); err != nil {
-			return fmt.Errorf("Load Testing Configuration error: invalid backend server URL %s: %w", *ltc.BackendServiceURL, err)
+			return fmt.Errorf("load testing configuration error: invalid backend server URL %s: %w", *ltc.BackendServiceURL, err)
 		}
 
 		return nil
@@ -365,12 +365,12 @@ func (ltc *LoadTestingConfig) Validate() error {
 	// Parse the RelayMiner URL to ensure it is valid.
 	_, err := url.Parse(relayMinerURL)
 	if err != nil {
-		return fmt.Errorf("Load Testing Configuration error: invalid RelayMiner URL %s: %w", relayMinerURL, err)
+		return fmt.Errorf("load testing configuration error: invalid RelayMiner URL %s: %w", relayMinerURL, err)
 	}
 
 	// TODO_IMPROVE(@adshmh): Validate the supplier address is in correct format (length, prefix, etc.).
 	if len(ltc.RelayMinerConfig.SupplierAddr) == 0 {
-		return errors.New("Load Testing Configuration error: RelayMiner Supplier Address must be specified")
+		return errors.New("load testing configuration error: RelayMiner Supplier Address must be specified")
 	}
 
 	return nil
