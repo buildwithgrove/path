@@ -154,26 +154,19 @@ release_build_nocgo: ## Build CGO-disabled (static-friendly) binaries for multip
 
 .PHONY: release_build_cgo
 release_build_cgo: ## Build CGO-enabled binaries for multiple platforms
-	@echo "Building (CGO=1) binaries for multiple platforms..."
+	@echo "Building (CGO=1) binaries for native architecture only..."
+	@echo "Note: Cross-compilation with CGO requires proper toolchain setup"
 	@mkdir -p $(RELEASE_DIR)
 	@set -e; \
-	for platform in $(RELEASE_PLATFORMS); do \
-		GOOS=$$(echo $$platform | cut -d/ -f1); \
-		GOARCH=$$(echo $$platform | cut -d/ -f2); \
-		out_cgo="$(RELEASE_DIR)/path-$$GOOS-$$GOARCH"_cgo; \
-		\
-		CC_ENV=""; \
-		if [ "$$GOOS" = "linux" ] && [ "$$GOARCH" = "amd64" ]; then CC_ENV="CC=$(CC_LINUX_AMD64)"; fi; \
-		if [ "$$GOOS" = "linux" ] && [ "$$GOARCH" = "arm64" ]; then CC_ENV="CC=$(CC_LINUX_ARM64)"; fi; \
-		\
-		echo "→ CGO=1: $$GOOS/$$GOARCH"; \
-		env $$CC_ENV \
-		CGO_ENABLED=1 \
-		CGO_CFLAGS="-Wno-implicit-function-declaration -Wno-error=implicit-function-declaration" \
-		GOOS=$$GOOS GOARCH=$$GOARCH \
-		go build -tags "$(BUILD_TAGS)" -ldflags="$(LDFLAGS)" -o "$$out_cgo" ./cmd; \
-		echo "  ✓ Built $$out_cgo"; \
-	done
+	NATIVE_GOOS=$$(go env GOOS); \
+	NATIVE_GOARCH=$$(go env GOARCH); \
+	out_cgo="$(RELEASE_DIR)/path-$$NATIVE_GOOS-$$NATIVE_GOARCH"_cgo; \
+	\
+	echo "→ CGO=1: $$NATIVE_GOOS/$$NATIVE_GOARCH (native)"; \
+	CGO_ENABLED=1 \
+	CGO_CFLAGS="-Wno-implicit-function-declaration -Wno-error=implicit-function-declaration" \
+	go build -tags "$(BUILD_TAGS)" -ldflags="$(LDFLAGS)" -o "$$out_cgo" ./cmd; \
+	echo "  ✓ Built $$out_cgo"
 
 .PHONY: release_clean
 release_clean: ## Clean up release artifacts

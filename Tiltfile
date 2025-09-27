@@ -133,21 +133,14 @@ local_resource(
 # 3. WATCH (Workload Analytics and Telemetry for Comprehensive Health): Observability #
 # ----------------------------------------------------------------------------------- #
 
-# Tiltfile
+# Build the PATH image using Dockerfile.local (which handles CGO_ENABLED=1)
+# Include go.mod and go.sum in the build context along with hot_reload_dirs
+build_context_files = hot_reload_dirs + ["./go.mod", "./go.sum", "./Dockerfile.local"]
 docker_build(
     "path-image",
     context=".",
     dockerfile="Dockerfile.local",
-)
-
-# Ensure the binary is built before the image
-local_resource(
-    "path-trigger",
-    "touch bin/path",
-    resource_deps=["path-binary"],
-    auto_init=False,
-    trigger_mode=TRIGGER_MODE_AUTO,
-    labels=["hot-reloading"],
+    only=build_context_files,  # Only rebuild the image when these files/directories change
 )
 
 # Tilt will run the Helm Chart with the following flags by default.
