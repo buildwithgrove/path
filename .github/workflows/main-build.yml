@@ -59,7 +59,7 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           build-args: IMAGE_TAG=${{ steps.meta.outputs.version }}
           # Multi-arch support with pre-built binaries
-          platforms: linux/amd64 # linux/arm64
+          platforms: linux/amd64,linux/arm64
           file: Dockerfile.release
           cache-from: type=gha
           cache-to: type=gha,mode=max
