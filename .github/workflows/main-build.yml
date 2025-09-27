@@ -45,6 +45,21 @@ jobs:
             type=sha,format=short,suffix=-rc
             type=ref,event=branch,pattern=latest
 
+      - name: Docker Metadata action (cgo)
+        id: meta_cgo
+        uses: docker/metadata-action@v5
+        env:
+          DOCKER_METADATA_PR_HEAD_SHA: "true"
+        with:
+          images: |
+            ghcr.io/buildwithgrove/path
+          tags: |
+            type=semver,pattern={{version}},suffix=-cgo
+            type=semver,pattern={{major}}.{{minor}},suffix=-cgo
+            type=ref,event=tag,suffix=-rc-cgo
+            type=sha,format=short,suffix=-rc-cgo
+            type=ref,event=branch,pattern=latest,suffix=-cgo
+
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v3
         with:
@@ -60,6 +75,21 @@ jobs:
           build-args: IMAGE_TAG=${{ steps.meta.outputs.version }}
           # Multi-arch support with pre-built binaries
           platforms: linux/amd64,linux/arm64
+          file: Dockerfile.release
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          context: .
+
+      - name: Build and push Docker image (cgo)
+        uses: docker/build-push-action@v5
+        with:
+          push: true
+          tags: ${{ steps.meta_cgo.outputs.tags }}
+          build-args: |
+            IMAGE_TAG=${{ steps.meta.outputs.version }}
+            BINARY_SUFFIX=_cgo
+          # CGO image only built for native amd64 due to toolchain constraints
+          platforms: linux/amd64
           file: Dockerfile.release
           cache-from: type=gha
           cache-to: type=gha,mode=max
