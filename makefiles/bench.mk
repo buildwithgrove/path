@@ -1,4 +1,4 @@
-.PHONY: bench_signing bench_signing_compare bench_signing_raw
+.PHONY: bench_signing bench_signing_compare bench_signing_raw bench_signing_verbose
 
 bench_signing: ## Benchmark Shannon SDK signing performance with ethereum_secp256k1 optimization
 	@echo "🔐 Running Shannon SDK signing benchmark..."
@@ -12,7 +12,10 @@ bench_signing_raw: ## Show raw benchmark output for debugging
 	@echo "=== Ethereum Backend ==="
 	@CGO_ENABLED=1 go test ./e2e -bench=BenchmarkShannonSigningDirect -run=^$$ -benchtime=2s -tags="bench,ethereum_secp256k1" -benchmem || echo "Ethereum benchmark failed"
 
-bench_signing_compare: ## Compare Shannon SDK signing performance (emits report)
+bench_signing_compare: ## Compare Shannon SDK signing performance (table only)
+	@bash ./e2e/scripts/compare_signing_quiet.sh 10s
+
+bench_signing_verbose: ## Compare Shannon SDK signing performance (verbose output)
 	@echo "🔬 Benchmarking secp256k1 implementations with detailed report..."
 	@echo "=================================================================="
 	@echo ""

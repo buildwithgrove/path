@@ -115,7 +115,7 @@ func BenchmarkShannonKeyOperations(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		withSilencedOutput(func() {
-			s, err := sdk.NewCryptoSigner(testPrivateKeyHex)
+			s, err := sdk.NewSignerFromHex(testPrivateKeyHex)
 			if err != nil {
 				b.Fatalf("Failed to create signer: %v", err)
 			}
@@ -134,7 +134,7 @@ func BenchmarkShannonCompleteSigningPipeline(b *testing.B) {
 	privateKeyHex := hex.EncodeToString(appPrivKey.Bytes())
 
 	// Pre-create signer to isolate signing performance
-	sdkSigner, err := sdk.NewCryptoSigner(privateKeyHex)
+	sdkSigner, err := sdk.NewSignerFromHex(privateKeyHex)
 	if err != nil {
 		b.Fatalf("Failed to create signer: %v", err)
 	}
