@@ -176,7 +176,14 @@ func (e protocolEndpoint) Supplier() string {
 // endpointsFromSession returns the list of all endpoints from a Shannon session.
 // It returns a map for efficient lookup, as the main/only consumer of this function uses
 // the return value for selecting an endpoint for sending a relay.
-func endpointsFromSession(session sessiontypes.Session) (map[protocol.EndpointAddr]endpoint, error) {
+func endpointsFromSession(
+	session sessiontypes.Session,
+	// TODO_TECHDEBT(@adshmh): Refactor load testing logic to make it more visible.
+	//
+	// The only supplier allowed from the session.
+	// Used in Load Testing against a single RelayMiner.
+	allowedSupplierAddr string,
+) (map[protocol.EndpointAddr]endpoint, error) {
 	sf := sdk.SessionFilter{
 		Session: &session,
 	}
@@ -198,6 +205,14 @@ func endpointsFromSession(session sessiontypes.Session) (map[protocol.EndpointAd
 			supplier: string(supplierEndpoints[0].Supplier()),
 			// Set the session field on the endpoint for efficient lookup when sending relays.
 			session: session,
+		}
+
+		// Endpoint does not match the only allowed supplier.
+		// Skip.
+		// Used in Load Testing against a RelayMiner.
+		// Makes sure the relays can be processed by the target RelayMiner by matching the supplier address.
+		if allowedSupplierAddr != "" && endpoint.Supplier() != allowedSupplierAddr {
+			continue
 		}
 
 		// Set the URL of the endpoint based on the RPC type.
