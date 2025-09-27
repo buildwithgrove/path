@@ -130,24 +130,43 @@ LDFLAGS := -s -w \
 	-X main.Commit=$(COMMIT) \
 	-X main.BuildDate=$(BUILD_DATE)
 
+# Application specific build tags
+BUILD_TAGS ?= ethereum_secp256k1
+
 .PHONY: release_build_cross
-release_build_cross: ## Build binaries for multiple platforms
-	@echo "Building binaries for multiple platforms..."
+release_build_cross: release_build_nocgo release_build_cgo ## Build both CGO-disabled and CGO-enabled binaries for all platforms
+	@echo "All binaries built successfully!"
+
+.PHONY: release_build_nocgo
+release_build_nocgo: ## Build CGO-disabled (static-friendly) binaries for multiple platforms
+	@echo "Building (CGO=0) binaries for multiple platforms..."
 	@mkdir -p $(RELEASE_DIR)
-	@for platform in $(RELEASE_PLATFORMS); do \
+	@set -e; \
+	for platform in $(RELEASE_PLATFORMS); do \
 		GOOS=$$(echo $$platform | cut -d/ -f1); \
 		GOARCH=$$(echo $$platform | cut -d/ -f2); \
-		output=$(RELEASE_DIR)/path-$$GOOS-$$GOARCH; \
-		echo "Building for $$GOOS/$$GOARCH..."; \
-		CGO_ENABLED=0 GOOS=$$GOOS GOARCH=$$GOARCH go build -ldflags="$(LDFLAGS)" -o $$output ./cmd; \
-		if [ $$? -eq 0 ]; then \
-			echo "✓ Built $$output"; \
-		else \
-			echo "✗ Failed to build for $$GOOS/$$GOARCH"; \
-			exit 1; \
-		fi; \
+		out_nocgo="$(RELEASE_DIR)/path-$$GOOS-$$GOARCH"; \
+		echo "→ CGO=0: $$GOOS/$$GOARCH"; \
+		CGO_ENABLED=0 GOOS=$$GOOS GOARCH=$$GOARCH \
+		go build -ldflags="$(LDFLAGS)" -o "$$out_nocgo" ./cmd; \
+		echo "  ✓ Built $$out_nocgo"; \
 	done
-	@echo "All binaries built successfully!"
+
+.PHONY: release_build_cgo
+release_build_cgo: ## Build CGO-enabled binaries for multiple platforms
+	@echo "Building (CGO=1) binaries for native architecture only..."
+	@echo "Note: Cross-compilation with CGO requires proper toolchain setup"
+	@mkdir -p $(RELEASE_DIR)
+	@set -e; \
+	NATIVE_GOOS=$$(go env GOOS); \
+	NATIVE_GOARCH=$$(go env GOARCH); \
+	out_cgo="$(RELEASE_DIR)/path-$$NATIVE_GOOS-$$NATIVE_GOARCH"_cgo; \
+	\
+	echo "→ CGO=1: $$NATIVE_GOOS/$$NATIVE_GOARCH (native)"; \
+	CGO_ENABLED=1 \
+	CGO_CFLAGS="-Wno-implicit-function-declaration -Wno-error=implicit-function-declaration" \
+	go build -tags "$(BUILD_TAGS)" -ldflags="$(LDFLAGS)" -o "$$out_cgo" ./cmd; \
+	echo "  ✓ Built $$out_cgo"
 
 .PHONY: release_clean
 release_clean: ## Clean up release artifacts
@@ -158,13 +177,18 @@ release_clean: ## Clean up release artifacts
 release_build_local: ## Build binary for current platform only
 	@echo "Building binary for current platform..."
 	@mkdir -p $(RELEASE_DIR)
+# CGO disabled (keeps original name)
 	@CGO_ENABLED=0 go build -ldflags="$(LDFLAGS)" -o $(RELEASE_DIR)/path-local ./cmd
 	@echo "✓ Built $(RELEASE_DIR)/path-local"
+# CGO enabled (adds _cgo suffix, build tag + CGO flag)
+	@CGO_ENABLED=1 CGO_CFLAGS="-Wno-implicit-function-declaration" go build -tags "$(CGO_BUILD_TAGS)" -ldflags="$(LDFLAGS)" -o $(RELEASE_DIR)/path-local_cgo ./cmd
+	@echo "✓ Built $(RELEASE_DIR)/path-local_cgo"
 
-.PHONY: build_ghcr_image_current_branch
-build_ghcr_image_current_branch: ## Trigger the main-build workflow using the current branch to push an image to ghcr.io/buildwithgrove/path
+.PHONY: release_ghcr_image_current_branch
+release_ghcr_image_current_branch: ## Trigger the main-build workflow using the current branch to push an image to ghcr.io/buildwithgrove/path
 	@echo "Triggering main-build workflow for current branch..."
 	@BRANCH=$$(git rev-parse --abbrev-ref HEAD) && \
 	gh workflow run main-build.yml --ref $$BRANCH
 	@echo "Workflow triggered for branch: ${CYAN} $$(git rev-parse --abbrev-ref HEAD)${RESET}"
 	@echo "Check the workflow status at: ${BLUE}https://github.com/$(shell git config --get remote.origin.url | sed 's/.*github.com[:/]\([^/]*\/[^.]*\).*/\1/')/actions/workflows/main-build.yml${RESET}"
+	@echo "Visit ${CYAN}ghcr.io/buildwithgrove/path${RESET} to see the image being built."

@@ -12,7 +12,7 @@ check_websocket_load_test:
 	fi
 
 .PHONY: test_load__relay_util__local
-test_load__relay_util__local: check_path_up check_relay_util debug_view_results_links  ## Load test an anvil endpoint with PATH behind GUARD with 10 eth_blockNumber requests. Override service by running: SERVICE_ID=eth make test_load__relay_util__local
+test_load__relay_util__local: check_path_up check_relay_util debug_view_results_links  ## Load test an anvil endpoint with PATH behind GUARD with 10 eth_blockNumber requests; override service by running: SERVICE_ID=eth make ...
 	relay-util \
 		-u http://localhost:3070/v1 \
 		-H "target-service-id: $${SERVICE_ID:-eth}" \

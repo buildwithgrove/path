@@ -1,6 +1,7 @@
-# Multi-architecture Dockerfile that uses pre-built binaries
+# Multi-architecture Dockerfile that uses pre-built binaries.
+
 # This Dockerfile expects binaries to be built beforehand using:
-# make release_build_cross
+# $ make release_build_cross
 
 FROM alpine:3.19 AS final
 

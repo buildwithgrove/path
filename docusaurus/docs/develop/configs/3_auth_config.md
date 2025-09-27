@@ -40,6 +40,7 @@ guard:
     - serviceId: pocket
       aliases:
         - pokt
+    - serviceId: oasys
 ```
 
 </details>

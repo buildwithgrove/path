@@ -118,7 +118,7 @@ func setupPathDocker(
 		if _, err := pool.Client.InspectImage(imageName); err == nil {
 			imageExists = true
 			fmt.Println("\n🐳 Using existing Docker image, skipping build...")
-			fmt.Println("  💡 TIP: Set `e2e_load_test_config.e2e_config.docker_config.force_rebuild_image: true` to rebuild the image if needed 💡")
+			fmt.Printf("  💡 TIP: Set %se2e_load_test_config.e2e_config.docker_config.force_rebuild_image: true%s to rebuild the image if needed 💡\n", CYAN, RESET)
 		}
 	} else {
 		fmt.Println("\n🔄 Force rebuild requested, will build Docker image...")
@@ -261,7 +261,7 @@ func setupPathDocker(
 	// performs a health check on the PATH container to ensure it is ready for requests
 	healthCheckURL := fmt.Sprintf("http://%s/healthz", resource.GetHostPort(containerPortAndProtocol))
 
-	fmt.Printf("🏥  Performing health check on PATH test container at %s ...\n", healthCheckURL)
+	fmt.Printf("🏥  Performing health check on PATH test container at %s%s%s ...\n", CYAN, healthCheckURL, RESET)
 
 	poolRetryChan := make(chan struct{}, 1)
 	retryConnectFn := func() error {

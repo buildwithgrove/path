@@ -280,6 +280,7 @@ guard:
     - serviceId: eth
     - serviceId: svc1
     - serviceId: sv2
+    - serviceId: oasys
 ```
 
 Make sure this reflects both of the following:
