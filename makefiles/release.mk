@@ -130,17 +130,15 @@ LDFLAGS := -s -w \
 	-X main.Commit=$(COMMIT) \
 	-X main.BuildDate=$(BUILD_DATE)
 
-# Build tags
+# Application specific build tags
 BUILD_TAGS ?= ethereum_secp256k1
 
-.PHONY: release_build_cross release_build_nocgo release_build_cgo
-
-## Build both CGO-disabled and CGO-enabled binaries for all platforms
-release_build_cross: release_build_nocgo release_build_cgo
+.PHONY: release_build_cross
+release_build_cross: release_build_nocgo release_build_cgo ## Build both CGO-disabled and CGO-enabled binaries for all platforms
 	@echo "All binaries built successfully!"
 
-## Build CGO-disabled (static-friendly) binaries for multiple platforms
-release_build_nocgo:
+.PHONY: release_build_nocgo
+release_build_nocgo: ## Build CGO-disabled (static-friendly) binaries for multiple platforms
 	@echo "Building (CGO=0) binaries for multiple platforms..."
 	@mkdir -p $(RELEASE_DIR)
 	@set -e; \
@@ -154,8 +152,8 @@ release_build_nocgo:
 		echo "  ✓ Built $$out_nocgo"; \
 	done
 
-## Build CGO-enabled binaries for multiple platforms
-release_build_cgo:
+.PHONY: release_build_cgo
+release_build_cgo: ## Build CGO-enabled binaries for multiple platforms
 	@echo "Building (CGO=1) binaries for multiple platforms..."
 	@mkdir -p $(RELEASE_DIR)
 	@set -e; \
@@ -164,7 +162,6 @@ release_build_cgo:
 		GOARCH=$$(echo $$platform | cut -d/ -f2); \
 		out_cgo="$(RELEASE_DIR)/path-$$GOOS-$$GOARCH"_cgo; \
 		\
-		# Pick CC for linux targets (optional; if missing, Go will try system default)
 		CC_ENV=""; \
 		if [ "$$GOOS" = "linux" ] && [ "$$GOARCH" = "amd64" ]; then CC_ENV="CC=$(CC_LINUX_AMD64)"; fi; \
 		if [ "$$GOOS" = "linux" ] && [ "$$GOARCH" = "arm64" ]; then CC_ENV="CC=$(CC_LINUX_ARM64)"; fi; \
