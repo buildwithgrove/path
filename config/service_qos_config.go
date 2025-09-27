@@ -611,7 +611,7 @@ var shannonServices = []ServiceQoSConfig{
 
 	// zkSync
 	evm.NewEVMServiceQoSConfig(
-		"zksync_era",
+		"zksync-era",
 		"0x144",
 		evm.NewEVMArchivalCheckConfig(
 			// https://explorer.zksync.io/address/0x03AC0b1b952C643d66A4Dc1fBc75118109cC074C
@@ -911,9 +911,8 @@ var shannonServices = []ServiceQoSConfig{
 		sharedtypes.RPCType_COMET_BFT: {},
 	}),
 
-	// Bitway - https://github.com/cosmos/chain-registry/blob/master/bitway/chain.json
-	// FORMERLY KNOWN AS: Side Protocol - https://github.com/cosmos/chain-registry/blob/master/sidechain/chain.json#L9
-	cosmos.NewCosmosSDKServiceQoSConfig("bitway", "bitway-1", "", map[sharedtypes.RPCType]struct{}{
+	// Side Protocol - https://github.com/cosmos/chain-registry/blob/master/sidechain/chain.json#L9
+	cosmos.NewCosmosSDKServiceQoSConfig("side-protocol", "sidechain-1", "", map[sharedtypes.RPCType]struct{}{
 		sharedtypes.RPCType_REST:      {}, // CosmosSDK
 		sharedtypes.RPCType_COMET_BFT: {},
 	}),
