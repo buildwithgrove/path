@@ -145,7 +145,8 @@ local_resource(
     'path-binary',
     '''
     echo "Building Go binary..."
-    CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -buildvcs=false -o bin/path ./cmd
+    # CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -buildvcs=false -o bin/path ./cmd
+    CGO_ENABLED=1 CGO_CFLAGS="-Wno-implicit-function-declaration" go build -tags "ethereum_secp256k1" -buildvcs=false -o bin/path ./cmd
     ''',
     deps=hot_reload_dirs,
     ignore=['**/node_modules', '.git'],
