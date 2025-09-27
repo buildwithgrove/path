@@ -1,6 +1,5 @@
 .git
 **/node_modules
-release
 bin
 *.log
 *.tmp
