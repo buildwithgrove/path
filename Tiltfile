@@ -133,41 +133,11 @@ local_resource(
 # 3. WATCH (Workload Analytics and Telemetry for Comprehensive Health): Observability #
 # ----------------------------------------------------------------------------------- #
 
-# TODO_TECHDEBT(@adshmh): use secrets for sensitive data with the following steps:
-# 1. Add place-holder files for sensitive data
-# 2. Add a secret per sensitive data item (e.g. gateway's private key)
-# 3. Load the secrets into environment variables of an init container
-# 4. Use an init container to run the scripts for updating config from environment variables.
-# This can leverage the scripts under `e2e` package to be consistent with the CI workflow.
-
-# Compile the binary inside the container
-local_resource(
-    'path-binary',
-    '''
-    echo "Building Go binary..."
-    # CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -buildvcs=false -o bin/path ./cmd
-    CGO_ENABLED=1 CGO_CFLAGS="-Wno-implicit-function-declaration" go build -tags "ethereum_secp256k1" -buildvcs=false -o bin/path ./cmd
-    ''',
-    deps=hot_reload_dirs,
-    ignore=['**/node_modules', '.git'],
-    labels=["hot-reloading"],
-)
-
-# Build a minimal Docker image with just the binary
-docker_build_with_restart(
+# Tiltfile
+docker_build(
     "path-image",
     context=".",
-    dockerfile_contents="""FROM alpine:3.19
-RUN apk add --no-cache ca-certificates tzdata
-WORKDIR /app
-COPY bin/path /app/path
-RUN chmod +x /app/path
-""",
-    only=["bin/path"],
-    entrypoint=["/app/path"],
-    live_update=[
-        sync("bin/path", "/app/path"),
-    ],
+    dockerfile="Dockerfile.local",
 )
 
 # Ensure the binary is built before the image

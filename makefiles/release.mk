@@ -119,10 +119,6 @@ RELEASE_DIR ?= ./release
 # Define the architectures we want to build for
 RELEASE_PLATFORMS := linux/amd64 linux/arm64
 
-# Optional C cross-compilers used ONLY for CGO-enabled builds (linux targets)
-CC_LINUX_AMD64 ?= x86_64-linux-gnu-gcc
-CC_LINUX_ARM64 ?= aarch64-linux-gnu-gcc
-
 # Version information (can be overridden)
 VERSION ?= $(shell git describe --tags --always --dirty)
 COMMIT ?= $(shell git rev-parse HEAD)
@@ -134,34 +130,53 @@ LDFLAGS := -s -w \
 	-X main.Commit=$(COMMIT) \
 	-X main.BuildDate=$(BUILD_DATE)
 
-# Build tag for CGO-enabled variants
-CGO_BUILD_TAGS := ethereum_secp256k1
+# Build tags
+BUILD_TAGS ?= ethereum_secp256k1
 
-.PHONY: release_build_cross
-release_build_cross: ## Build binaries for multiple platforms
-	@echo "Building binaries for multiple platforms..."
+.PHONY: release_build_cross release_build_nocgo release_build_cgo
+
+## Build both CGO-disabled and CGO-enabled binaries for all platforms
+release_build_cross: release_build_nocgo release_build_cgo
+	@echo "All binaries built successfully!"
+
+## Build CGO-disabled (static-friendly) binaries for multiple platforms
+release_build_nocgo:
+	@echo "Building (CGO=0) binaries for multiple platforms..."
 	@mkdir -p $(RELEASE_DIR)
 	@set -e; \
 	for platform in $(RELEASE_PLATFORMS); do \
 		GOOS=$$(echo $$platform | cut -d/ -f1); \
 		GOARCH=$$(echo $$platform | cut -d/ -f2); \
 		out_nocgo="$(RELEASE_DIR)/path-$$GOOS-$$GOARCH"; \
-		out_cgo="$(RELEASE_DIR)/path-$$GOOS-$$GOARCH"_cgo; \
-		echo "Building (CGO=0) for $$GOOS/$$GOARCH..."; \
+		echo "→ CGO=0: $$GOOS/$$GOARCH"; \
 		CGO_ENABLED=0 GOOS=$$GOOS GOARCH=$$GOARCH \
-			go build -ldflags="$(LDFLAGS)" -o "$$out_nocgo" ./cmd; \
-		echo "✓ Built $$out_nocgo"; \
+		go build -ldflags="$(LDFLAGS)" -o "$$out_nocgo" ./cmd; \
+		echo "  ✓ Built $$out_nocgo"; \
+	done
+
+## Build CGO-enabled binaries for multiple platforms
+release_build_cgo:
+	@echo "Building (CGO=1) binaries for multiple platforms..."
+	@mkdir -p $(RELEASE_DIR)
+	@set -e; \
+	for platform in $(RELEASE_PLATFORMS); do \
+		GOOS=$$(echo $$platform | cut -d/ -f1); \
+		GOARCH=$$(echo $$platform | cut -d/ -f2); \
+		out_cgo="$(RELEASE_DIR)/path-$$GOOS-$$GOARCH"_cgo; \
 		\
 		# Pick CC for linux targets (optional; if missing, Go will try system default)
 		CC_ENV=""; \
 		if [ "$$GOOS" = "linux" ] && [ "$$GOARCH" = "amd64" ]; then CC_ENV="CC=$(CC_LINUX_AMD64)"; fi; \
 		if [ "$$GOOS" = "linux" ] && [ "$$GOARCH" = "arm64" ]; then CC_ENV="CC=$(CC_LINUX_ARM64)"; fi; \
-		echo "Building (CGO=1) for $$GOOS/$$GOARCH..."; \
-		env $$CC_ENV CGO_ENABLED=1 CGO_CFLAGS="-Wno-implicit-function-declaration" GOOS=$$GOOS GOARCH=$$GOARCH \
-			go build -tags "$(CGO_BUILD_TAGS)" -ldflags="$(LDFLAGS)" -o "$$out_cgo" ./cmd; \
-		echo "✓ Built $$out_cgo"; \
+		\
+		echo "→ CGO=1: $$GOOS/$$GOARCH"; \
+		env $$CC_ENV \
+		CGO_ENABLED=1 \
+		CGO_CFLAGS="-Wno-implicit-function-declaration -Wno-error=implicit-function-declaration" \
+		GOOS=$$GOOS GOARCH=$$GOARCH \
+		go build -tags "$(BUILD_TAGS)" -ldflags="$(LDFLAGS)" -o "$$out_cgo" ./cmd; \
+		echo "  ✓ Built $$out_cgo"; \
 	done
-	@echo "All binaries built successfully!"
 
 .PHONY: release_clean
 release_clean: ## Clean up release artifacts
