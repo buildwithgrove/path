@@ -74,6 +74,12 @@ type Protocol struct {
 	// Each service can have a SendAllTraffic flag to send all traffic to
 	// fallback endpoints, regardless of the health of the protocol endpoints.
 	serviceFallbackMap map[protocol.ServiceID]serviceFallback
+
+	// Optional.
+	// Puts the Gateway in LoadTesting mode if specified.
+	// All relays will be sent to a fixed URL.
+	// Allows measuring performance of PATH and full node(s) in isolation.
+	loadTestingConfig *LoadTestingConfig
 }
 
 // serviceFallback holds the fallback information for a service,
@@ -123,6 +129,9 @@ func NewProtocol(
 
 		// serviceFallbacks contains the fallback information for each service.
 		serviceFallbackMap: config.getServiceFallbackMap(),
+
+		// load testing config, if specified.
+		loadTestingConfig: config.LoadTestingConfig,
 	}
 
 	return protocolInstance, nil
@@ -334,6 +343,7 @@ func (p *Protocol) BuildHTTPRequestContextForEndpoint(
 		relayRequestSigner: permittedSigner,
 		httpClient:         p.httpClient,
 		fallbackEndpoints:  fallbackEndpoints,
+		loadTestingConfig:  p.loadTestingConfig,
 	}, protocolobservations.Observations{}, nil
 }
 
@@ -470,6 +480,17 @@ func (p *Protocol) getSessionsUniqueEndpoints(
 
 	endpoints := make(map[protocol.EndpointAddr]endpoint)
 
+	// TODO_TECHDEBT(@adshmh): Refactor load testing related code to make the filtering more visible.
+	//
+	// In Load Testing using RelayMiner mode: drop any endpoints ot matching the single supplier specified in the config.
+	//
+	var allowedSupplierAddr string
+	if ltc := p.loadTestingConfig; ltc != nil {
+		if ltc.RelayMinerConfig != nil {
+			allowedSupplierAddr = ltc.RelayMinerConfig.SupplierAddr
+		}
+	}
+
 	// Iterate over all active sessions for the service ID.
 	for _, session := range activeSessions {
 		app := session.Application
@@ -482,7 +503,7 @@ func (p *Protocol) getSessionsUniqueEndpoints(
 		logger.ProbabilisticDebugInfo(polylog.ProbabilisticDebugInfoProb).Msgf("Finding unique endpoints for session %s for app %s for service %s.", session.SessionId, app.Address, serviceID)
 
 		// Retrieve all endpoints for the session.
-		sessionEndpoints, err := endpointsFromSession(session)
+		sessionEndpoints, err := endpointsFromSession(session, allowedSupplierAddr)
 		if err != nil {
 			logger.Error().Err(err).Msgf("Internal error: error getting all endpoints for service %s app %s and session: skipping the app.", serviceID, app.Address)
 			continue
