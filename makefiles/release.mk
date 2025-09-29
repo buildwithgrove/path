@@ -126,12 +126,18 @@ BUILD_DATE ?= $(shell date -u +"%Y-%m-%dT%H:%M:%SZ")
 
 # Go build flags
 LDFLAGS := -s -w \
-	-X main.Version=$(VERSION) \
-	-X main.Commit=$(COMMIT) \
-	-X main.BuildDate=$(BUILD_DATE)
+    -X main.Version=$(VERSION) \
+    -X main.Commit=$(COMMIT) \
+    -X main.BuildDate=$(BUILD_DATE)
 
-# Application specific build tags
-BUILD_TAGS ?= ethereum_secp256k1
+# Build tags configuration. Set tags shared across builds via BUILD_TAGS.
+# CGO-only tags (such as the libsecp acceleration) belong in CGO_BUILD_TAGS.
+BUILD_TAGS ?=
+CGO_BUILD_TAGS ?= ethereum_secp256k1
+
+# Effective tag lists passed to go build.
+NOCGO_EFFECTIVE_TAGS := $(strip $(BUILD_TAGS))
+CGO_EFFECTIVE_TAGS := $(strip $(BUILD_TAGS) $(CGO_BUILD_TAGS))
 
 # Helper to pick CC for a given GOARCH (glibc toolchains)
 #   - amd64 uses system gcc
@@ -154,8 +160,12 @@ release_build_nocgo: ## Build CGO-disabled (static-friendly) binaries for multip
 		GOARCH=$${platform##*/}; \
 		out_nocgo="$(RELEASE_DIR)/path-$$GOOS-$$GOARCH"; \
 		echo "→ CGO=0: $$GOOS/$$GOARCH"; \
-		CGO_ENABLED=0 GOOS=$$GOOS GOARCH=$$GOARCH \
-		go build -tags "$(BUILD_TAGS)" -ldflags '$(LDFLAGS)' -o "$$out_nocgo" ./cmd; \
+		TAGS="$(NOCGO_EFFECTIVE_TAGS)"; \
+		if [ -n "$$TAGS" ]; then \
+			CGO_ENABLED=0 GOOS=$$GOOS GOARCH=$$GOARCH go build -tags "$$TAGS" -ldflags '$(LDFLAGS)' -o "$$out_nocgo" ./cmd; \
+		else \
+			CGO_ENABLED=0 GOOS=$$GOOS GOARCH=$$GOARCH go build -ldflags '$(LDFLAGS)' -o "$$out_nocgo" ./cmd; \
+		fi; \
 		echo "  ✓ Built $$out_nocgo"; \
 	done
 
@@ -175,9 +185,16 @@ release_build_cgo: ## Build CGO-enabled (glibc) binaries for multiple platforms
 		fi; \
 		out_cgo="$(RELEASE_DIR)/path-$$GOOS-$$GOARCH"_cgo; \
 		echo "→ CGO=1(glibc): $$GOOS/$$GOARCH (CC=$$CC_BIN)"; \
-		GOOS=$$GOOS GOARCH=$$GOARCH CGO_ENABLED=1 CC=$$CC_BIN \
-		CGO_CFLAGS="-Wno-implicit-function-declaration -Wno-error=implicit-function-declaration" \
-		go build -tags "$(BUILD_TAGS)" -ldflags '$(LDFLAGS)' -o "$$out_cgo" ./cmd; \
+		TAGS="$(CGO_EFFECTIVE_TAGS)"; \
+		if [ -n "$$TAGS" ]; then \
+			GOOS=$$GOOS GOARCH=$$GOARCH CGO_ENABLED=1 CC=$$CC_BIN \
+			CGO_CFLAGS="-Wno-implicit-function-declaration -Wno-error=implicit-function-declaration" \
+			go build -tags "$$TAGS" -ldflags '$(LDFLAGS)' -o "$$out_cgo" ./cmd; \
+		else \
+			GOOS=$$GOOS GOARCH=$$GOARCH CGO_ENABLED=1 CC=$$CC_BIN \
+			CGO_CFLAGS="-Wno-implicit-function-declaration -Wno-error=implicit-function-declaration" \
+			go build -ldflags '$(LDFLAGS)' -o "$$out_cgo" ./cmd; \
+		fi; \
 		echo "  ✓ Built $$out_cgo"; \
 	done
 
@@ -190,9 +207,19 @@ release_clean: ## Clean up release artifacts
 release_build_local: ## Build cgo and nocgo binaries for current platform only
 	@echo "Building cgo and nocgo binaries for current platform..."
 	@mkdir -p $(RELEASE_DIR)
-	@CGO_ENABLED=0 go build -ldflags="$(LDFLAGS)" -o $(RELEASE_DIR)/path-local ./cmd
+	@TAGS="$(NOCGO_EFFECTIVE_TAGS)"; \
+	if [ -n "$$TAGS" ]; then \
+		CGO_ENABLED=0 go build -tags "$$TAGS" -ldflags="$(LDFLAGS)" -o $(RELEASE_DIR)/path-local ./cmd; \
+	else \
+		CGO_ENABLED=0 go build -ldflags="$(LDFLAGS)" -o $(RELEASE_DIR)/path-local ./cmd; \
+	fi
 	@echo "✓ Built non-cgo binary: $(RELEASE_DIR)/path-local"
-	@CGO_ENABLED=1 CGO_CFLAGS="-Wno-implicit-function-declaration" go build -tags "$(CGO_BUILD_TAGS)" -ldflags="$(LDFLAGS)" -o $(RELEASE_DIR)/path-local_cgo ./cmd
+	@TAGS="$(CGO_EFFECTIVE_TAGS)"; \
+	if [ -n "$$TAGS" ]; then \
+		CGO_ENABLED=1 CGO_CFLAGS="-Wno-implicit-function-declaration" go build -tags "$$TAGS" -ldflags="$(LDFLAGS)" -o $(RELEASE_DIR)/path-local_cgo ./cmd; \
+	else \
+		CGO_ENABLED=1 CGO_CFLAGS="-Wno-implicit-function-declaration" go build -ldflags="$(LDFLAGS)" -o $(RELEASE_DIR)/path-local_cgo ./cmd; \
+	fi
 	@echo "✓ Built cgo binary: $(RELEASE_DIR)/path-local_cgo"
 
 .PHONY: release_ghcr_image_current_branch
