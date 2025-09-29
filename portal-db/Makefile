@@ -1,14 +1,10 @@
 # Portal DB API Makefile
-# Provides convenient commands for managing the PostgREST API
-
-.PHONY: postgrest-up postgrest-down postgrest-logs
-.PHONY: generate-openapi generate-sdks generate-all test-auth test-portal-app
-.PHONY: hydrate-testdata hydrate-services hydrate-applications hydrate-gateways
 
 # ============================================================================
 # SERVICE MANAGEMENT
 # ============================================================================
 
+.PHONY: postgrest-up
 postgrest-up: ## Start PostgREST API service and PostgreSQL DB
 	@echo "🚀 Starting Portal DB API services..."
 	docker compose up -d
@@ -16,14 +12,17 @@ postgrest-up: ## Start PostgREST API service and PostgreSQL DB
 	@echo "   PostgreSQL DB: localhost:5435"
 	@echo "   PostgREST API: http://localhost:3000"
 
+.PHONY: postgrest-down
 postgrest-down: ## Stop PostgREST API service and PostgreSQL DB
 	@echo "🛑 Stopping Portal DB API services..."
 	docker compose down
 	@echo "✅ Services stopped!"
 
+.PHONY: postgrest-logs
 postgrest-logs: ## Show logs from PostgREST API service and PostgreSQL DB
 	docker compose logs -f
 
+.PHONY: portal-db-up
 portal-db-up: ## Start Portal DB PostgreSQL container only
 	@echo "🚀 Starting Portal DB PostgreSQL container..."
 	docker compose up -d portal-db
@@ -32,6 +31,7 @@ portal-db-up: ## Start Portal DB PostgreSQL container only
 	@echo "   User: postgres"
 	@echo "   Password: portal_password"
 
+.PHONY: portal-db-down
 portal-db-down: ## Stop Portal DB PostgreSQL container only
 	@echo "🛑 Stopping Portal DB PostgreSQL container..."
 	docker compose down portal-db
@@ -41,15 +41,18 @@ portal-db-down: ## Stop Portal DB PostgreSQL container only
 # API GENERATION
 # ============================================================================
 
+.PHONY: generate-openapi
 generate-openapi: ## Generate OpenAPI specification from PostgREST
 	@echo "📝 Generating OpenAPI specification..."
 	cd api/codegen && ./generate-openapi.sh
 
+.PHONY: generate-sdks
 generate-sdks: ## Generate Go SDK from OpenAPI spec
 	@echo "🔧 Generating Go SDK..."
 	@echo "   Note: Requires Node.js and oapi-codegen"
 	cd api/codegen && ./generate-sdks.sh
 
+.PHONY: generate-all
 generate-all: generate-openapi generate-sdks ## Generate OpenAPI spec and Go SDK
 	@echo "✨ All generation tasks completed!"
 
@@ -57,6 +60,7 @@ generate-all: generate-openapi generate-sdks ## Generate OpenAPI spec and Go SDK
 # AUTHENTICATION & TESTING
 # ============================================================================
 
+.PHONY: test-auth
 test-auth: ## Test JWT authentication flow
 	@echo "🔐 Testing JWT authentication..."
 	@if ! docker ps | grep -q portal-db-api; then \
@@ -66,6 +70,7 @@ test-auth: ## Test JWT authentication flow
 	fi
 	cd api/scripts && ./test-auth.sh
 
+.PHONY: test-portal-app
 test-portal-app: ## Test portal application creation and retrieval
 	@echo "🧪 Testing portal application creation..."
 	@if ! docker ps | grep -q portal-db-api; then \
@@ -75,6 +80,7 @@ test-portal-app: ## Test portal application creation and retrieval
 	fi
 	cd api/scripts && ./test-portal-app-creation.sh
 
+.PHONY: gen-jwt
 gen-jwt: ## Generate JWT token
 	@echo "🔑 Generating JWT token..."
 	@if ! docker ps | grep -q portal-db-api; then \
@@ -84,6 +90,7 @@ gen-jwt: ## Generate JWT token
 	fi
 	cd api/scripts && ./gen-jwt.sh
 
+.PHONY: reset-dev-db
 reset-dev-db: ## Reset the development database
 	@echo "🔄 Resetting database..."
 	rm -rf ./tmp/portal_db_data
@@ -94,6 +101,7 @@ reset-dev-db: ## Reset the development database
 # Database connection for all hydrate scripts (matches docker-compose.yml)
 DB_CONNECTION_STRING := postgresql://postgres:portal_password@localhost:5435/portal_db
 
+.PHONY: hydrate-testdata
 hydrate-testdata: ## Populate database with test data for development
 	@echo "🧪 Hydrating Portal DB with test data..."
 	@if ! docker ps | grep -q portal-db; then \
@@ -103,6 +111,7 @@ hydrate-testdata: ## Populate database with test data for development
 	fi
 	DB_CONNECTION_STRING="$(DB_CONNECTION_STRING)" ./scripts/hydrate-testdata.sh
 
+.PHONY: hydrate-services
 hydrate-services: ## Hydrate services table from blockchain data
 	@echo "🌐 Hydrating services table..."
 	@if [ -z "$(NODE)" ] || [ -z "$(NETWORK)" ] || [ -z "$(SERVICE_IDS)" ]; then \
@@ -118,6 +127,7 @@ hydrate-services: ## Hydrate services table from blockchain data
 	fi
 	DB_CONNECTION_STRING="$(DB_CONNECTION_STRING)" NODE="$(NODE)" NETWORK="$(NETWORK)" SERVICE_IDS="$(SERVICE_IDS)" ./scripts/hydrate-services.sh
 
+.PHONY: hydrate-applications
 hydrate-applications: ## Hydrate applications table from blockchain data
 	@echo "📱 Hydrating applications table..."
 	@if [ -z "$(NODE)" ] || [ -z "$(NETWORK)" ] || [ -z "$(APPLICATION_ADDRESSES)" ]; then \
@@ -133,6 +143,7 @@ hydrate-applications: ## Hydrate applications table from blockchain data
 	fi
 	DB_CONNECTION_STRING="$(DB_CONNECTION_STRING)" NODE="$(NODE)" NETWORK="$(NETWORK)" APPLICATION_ADDRESSES="$(APPLICATION_ADDRESSES)" ./scripts/hydrate-applications.sh
 
+.PHONY: hydrate-gateways
 hydrate-gateways: ## Hydrate gateways table from blockchain data
 	@echo "🔗 Hydrating gateways table..."
 	@if [ -z "$(NODE)" ] || [ -z "$(NETWORK)" ] || [ -z "$(GATEWAY_ADDRESSES)" ]; then \
@@ -148,6 +159,7 @@ hydrate-gateways: ## Hydrate gateways table from blockchain data
 	fi
 	DB_CONNECTION_STRING="$(DB_CONNECTION_STRING)" NODE="$(NODE)" NETWORK="$(NETWORK)" GATEWAY_ADDRESSES="$(GATEWAY_ADDRESSES)" ./scripts/hydrate-gateways.sh
 
+.PHONY: hydrate-prod
 hydrate-prod: ## Hydrate local database with production data
 	@echo "🏭 Hydrating local database with production data..."
 	@echo "   Note: Requires .env file with production database credentials"

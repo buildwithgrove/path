@@ -2,13 +2,13 @@
 
 <!-- TODO_DOCUMENTATION(@commoddity): Add section describing potential deployment to production using Pulumi, similar to how Porta database itself is deploted in the infra repo. -->
 
-This folder contains **PostgREST configuration** and **SDK generation tools** for the Portal Database. 
+This folder contains **PostgREST configuration** and **SDK generation tools** for the Portal Database.
 
 PostgREST automatically creates a REST API from the Portal DB PostgreSQL database schema.
 
-## 🚀 Quick Start  <!-- omit in toc -->
+## 🚀 Quick Start <!-- omit in toc -->
 
-### 1. Start PostgREST  <!-- omit in toc -->
+### 1. Start PostgREST <!-- omit in toc -->
 
 ```bash
 # From portal-db directory
@@ -16,12 +16,14 @@ make postgrest-up
 ```
 
 This starts:
+
 - **PostgreSQL**: Database with Portal schema
 - **PostgREST**: API server on http://localhost:3000
 
 ### 2. Hydrate the database with test data <!-- omit in toc -->
 
 Hydrate the database with test data:
+
 ```bash
 make hydrate-testdata
 ```
@@ -82,14 +84,14 @@ networks, _ := client.GetNetworksWithResponse(context.Background(), nil)
     - [For Beginners](#for-beginners)
   - [📚 Resources](#-resources)
 
-
 ## 🤔 What is This?
 
 **PostgREST** is a tool that reads your PostgreSQL database and automatically generates a complete REST API. No code required - it introspects your tables, views, and functions to create endpoints.
 
 **This folder provides:**
+
 - ✅ **PostgREST Configuration**: Database connection, JWT auth, and API settings
-- ✅ **JWT Authentication**: Role-based access control using database roles 
+- ✅ **JWT Authentication**: Role-based access control using database roles
 - ✅ **Go SDK Generation**: Type-safe Go client from the OpenAPI specification
 - ✅ **Testing Scripts**: JWT token generation and authentication testing
 
@@ -137,7 +139,7 @@ db-uri = "postgresql://authenticator:password@postgres:5432/portal_db"
 db-schemas = "public,api"        # Schemas to expose via API
 db-anon-role = "anon"            # Default role for unauthenticated requests
 
-# JWT Authentication  
+# JWT Authentication
 jwt-secret = "your-secret-key"   # Secret for verifying JWT tokens
 jwt-role-claim-key = ".role"     # JWT claim containing database role
 
@@ -171,7 +173,7 @@ server-port = 3000
 
 3. PostgREST Processing (happens automatically)
    ├── Verify JWT signature
-   ├── Extract 'role' claim  
+   ├── Extract 'role' claim
    ├── Execute: SET ROLE <extracted_role>;
    └── Run query with role permissions
 
@@ -186,6 +188,7 @@ make gen-jwt
 ```
 
 **Example Output:**
+
 ```
 🔑 JWT Token Generated ✨
 👤 Role: authenticated
@@ -211,12 +214,14 @@ curl -X POST -H "Authorization: Bearer $TOKEN" \
 ### Permission Levels
 
 **Anonymous (`anon` role)**
+
 - ✅ `networks` - Blockchain networks
-- ✅ `services` - Available services  
+- ✅ `services` - Available services
 - ✅ `portal_plans` - Subscription plans
 - ❌ User accounts or private data
 
 **Authenticated (`authenticated` role)**
+
 - ✅ All anonymous permissions
 - ✅ `organizations` - Organization data
 - ✅ `portal_accounts` - User accounts
@@ -230,6 +235,7 @@ make test-auth
 ```
 
 This tests:
+
 - Anonymous access to public data
 - JWT token generation
 - Authenticated access to protected data
@@ -254,6 +260,7 @@ $$ LANGUAGE plpgsql VOLATILE SECURITY DEFINER;
 ```
 
 **Usage:**
+
 ```bash
 curl -X POST http://localhost:3000/rpc/create_portal_application \
   -H "Authorization: Bearer $TOKEN" \
@@ -261,6 +268,7 @@ curl -X POST http://localhost:3000/rpc/create_portal_application \
 ```
 
 **Test transactions:**
+
 ```bash
 make test-portal-app
 ```
@@ -285,7 +293,7 @@ make generate-sdks     # Go SDK only
 ```
 sdk/go/
 ├── models.go      # Data types and structures (generated)
-├── client.go      # API client and methods (generated)  
+├── client.go      # API client and methods (generated)
 ├── go.mod         # Go module definition (permanent)
 └── README.md      # SDK documentation (permanent)
 ```
@@ -293,6 +301,7 @@ sdk/go/
 ### Use the Go SDK
 
 **Basic Usage:**
+
 ```go
 package main
 
@@ -307,13 +316,13 @@ func main() {
     if err != nil {
         panic(err)
     }
-    
+
     // Get all networks
     networks, err := client.GetNetworksWithResponse(context.Background(), nil)
     if err != nil {
         panic(err)
     }
-    
+
     // Print results
     for _, network := range *networks.JSON200 {
         fmt.Printf("Network: %s\n", network.NetworkId)
@@ -322,6 +331,7 @@ func main() {
 ```
 
 **With Authentication:**
+
 ```go
 // JWT token from gen-jwt.sh
 token := "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
@@ -334,8 +344,8 @@ requestEditor := func(ctx context.Context, req *http.Request) error {
 
 // Make authenticated request
 accounts, err := client.GetPortalAccountsWithResponse(
-    context.Background(), 
-    &portaldb.GetPortalAccountsParams{}, 
+    context.Background(),
+    &portaldb.GetPortalAccountsParams{},
     requestEditor,
 )
 ```
@@ -377,22 +387,26 @@ When you modify tables or add new functions:
 ### Query Features Examples
 
 **Filtering:**
+
 ```bash
 curl "http://localhost:3000/services?active=eq.true"
 curl "http://localhost:3000/services?service_name=ilike.*Ethereum*"
 ```
 
 **Field Selection:**
+
 ```bash
 curl "http://localhost:3000/services?select=service_id,service_name"
 ```
 
 **Sorting & Pagination:**
+
 ```bash
 curl "http://localhost:3000/services?order=service_name.asc&limit=10&offset=20"
 ```
 
 **Joins (Resource Embedding):**
+
 ```bash
 curl "http://localhost:3000/services?select=*,service_endpoints(*)"
 ```
@@ -402,8 +416,9 @@ For complete query syntax, see [PostgREST API Documentation](https://postgrest.o
 ## 🚀 Next Steps
 
 ### For Beginners
+
 1. **Explore the API**: Try the curl examples above
-2. **Generate SDK**: Run `make generate-all`  
+2. **Generate SDK**: Run `make generate-all`
 3. **Read Go SDK docs**: Check `../sdk/go/README.md`
 4. **Test authentication**: Run `make test-auth`
 5. **Add test data**: Run `make hydrate-testdata`
