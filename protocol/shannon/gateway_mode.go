@@ -65,23 +65,31 @@ func (p *Protocol) getActiveGatewaySessions(
 func (p *Protocol) getGatewayModePermittedRelaySigner(
 	gatewayMode protocol.GatewayMode,
 ) (RelayRequestSigner, error) {
+	// TODO: Make cache size configurable via config
+	const defaultCacheSize = 10000
+	cacheEnabled := true // TODO: Make this configurable
+	
 	switch gatewayMode {
 
 	// Centralized gateway mode uses the gateway's private key to sign the relay requests.
 	case protocol.GatewayModeCentralized:
-		return &signer{
-			accountClient: *p.GetAccountClient(),
-			//  Centralized gateway mode uses the gateway's private key to sign the relay requests.
-			privateKeyHex: p.gatewayPrivateKeyHex,
-		}, nil
+		return newSigner(
+			*p.GetAccountClient(),
+			p.gatewayPrivateKeyHex,
+			p.logger,
+			cacheEnabled,
+			defaultCacheSize,
+		), nil
 
 	// Delegated gateway mode uses the gateway's private key to sign the relay requests (i.e. the same as the Centralized gateway mode)
 	case protocol.GatewayModeDelegated:
-		return &signer{
-			accountClient: *p.GetAccountClient(),
-			//  Delegated gateway mode uses the gateway's private key to sign the relay requests (i.e. the same as the Centralized gateway mode)
-			privateKeyHex: p.gatewayPrivateKeyHex,
-		}, nil
+		return newSigner(
+			*p.GetAccountClient(),
+			p.gatewayPrivateKeyHex,
+			p.logger,
+			cacheEnabled,
+			defaultCacheSize,
+		), nil
 
 	default:
 		return nil, fmt.Errorf("unsupported gateway mode: %s", gatewayMode)
