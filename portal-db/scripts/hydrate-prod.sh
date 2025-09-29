@@ -5,13 +5,26 @@
 
 set -e
 
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
+
 # Configuration file path
 ENV_FILE="$(dirname "$0")/../.env"
 PG_DUMP_FILE="$(dirname "$0")/../pg_dump.sql"
 
-# Check if Docker container is running
-if ! docker ps --format "table {{.Names}}" | grep -q "^$DOCKER_CONTAINER$"; then
-    echo -e "${RED}❌ Docker container '$DOCKER_CONTAINER' is not running${NC}"
+# Set default values for local Docker environment
+DEFAULT_DOCKER_CONTAINER="portal-db"
+DEFAULT_LOCAL_DATABASE="portal_db"
+DEFAULT_LOCAL_DB_USER="postgres"
+
+# Check if Docker container is running (check default first, then .env override)
+CONTAINER_TO_CHECK="${DOCKER_CONTAINER:-$DEFAULT_DOCKER_CONTAINER}"
+if ! docker ps --format "table {{.Names}}" | grep -q "^$CONTAINER_TO_CHECK$"; then
+    echo -e "${RED}❌ Docker container '$CONTAINER_TO_CHECK' is not running${NC}"
     echo "   Please start PostgreSQL and PostgREST services first:"
     echo "   make postgrest-up"
     exit 1
@@ -31,8 +44,13 @@ set -a  # Automatically export all variables
 source "$ENV_FILE"
 set +a  # Turn off automatic export
 
+# Apply defaults for local Docker environment variables if not set in .env
+DOCKER_CONTAINER="${DOCKER_CONTAINER:-$DEFAULT_DOCKER_CONTAINER}"
+LOCAL_DATABASE="${LOCAL_DATABASE:-$DEFAULT_LOCAL_DATABASE}"
+LOCAL_DB_USER="${LOCAL_DB_USER:-$DEFAULT_LOCAL_DB_USER}"
+
 # Validate required environment variables
-REQUIRED_VARS=("REMOTE_HOST" "DATABASE" "USERNAME" "PASSWORD" "SSL_ROOT_CERT" "SSL_CERT" "SSL_KEY" "DOCKER_CONTAINER" "LOCAL_DATABASE" "LOCAL_DB_USER")
+REQUIRED_VARS=("REMOTE_HOST" "DATABASE" "USERNAME" "PASSWORD" "SSL_ROOT_CERT" "SSL_CERT" "SSL_KEY")
 
 for var in "${REQUIRED_VARS[@]}"; do
     if [ -z "${!var}" ]; then
@@ -42,13 +60,9 @@ for var in "${REQUIRED_VARS[@]}"; do
 done
 
 echo -e "${GREEN}✅ All required environment variables loaded${NC}"
-
-# Colors for output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m' # No Color
+echo -e "${GREEN}✅ Using Docker container: $DOCKER_CONTAINER${NC}"
+echo -e "${GREEN}✅ Using local database: $LOCAL_DATABASE${NC}"
+echo -e "${GREEN}✅ Using local DB user: $LOCAL_DB_USER${NC}"
 
 echo -e "${BLUE}🗄️  PostgreSQL Remote Database Dump${NC}"
 echo "========================================"
