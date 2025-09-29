@@ -24,6 +24,15 @@ jobs:
         with:
           go-version: "1.24"
 
+      # Needed so release_build_cgo can produce arm64 artifacts on amd64 runner
+      - name: Install cross toolchains for CGO
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-aarch64-linux-gnu libc6-dev-arm64-cross
+
+      - name: Build binaries for multiple architectures
+        run: make release_build_cross
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -77,7 +86,7 @@ jobs:
           cache-to: type=gha,mode=max
           context: .
 
-      # CGO image (multi-arch, glibc runtime, built via Dockerfile.local)
+      # CGO image (multi-arch, glibc runtime)
       - name: Build and push Docker image (cgo)
         uses: docker/build-push-action@v5
         with:
@@ -85,9 +94,9 @@ jobs:
           tags: ${{ steps.meta_cgo.outputs.tags }}
           build-args: |
             IMAGE_TAG=${{ steps.meta.outputs.version }}
+            BINARY_SUFFIX=_cgo
           platforms: linux/amd64,linux/arm64
-          file: Dockerfile.local
-          target: artifact-glibc # builds release/path-linux-${arch}_cgo
+          file: Dockerfile.release.glibc
           cache-from: type=gha
           cache-to: type=gha,mode=max
           context: .

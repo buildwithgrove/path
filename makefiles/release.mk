@@ -133,6 +133,13 @@ LDFLAGS := -s -w \
 # Application specific build tags
 BUILD_TAGS ?= ethereum_secp256k1
 
+# Helper to pick CC for a given GOARCH (glibc toolchains)
+#   - amd64 uses system gcc
+#   - arm64 uses aarch64-linux-gnu-gcc (install in CI)
+define cc_for_goarch
+$(if $(filter $(1),amd64),gcc,$(if $(filter $(1),arm64),aarch64-linux-gnu-gcc, ))
+endef
+
 .PHONY: release_build_cross
 release_build_cross: release_build_nocgo release_build_cgo ## Build both CGO-disabled and CGO-enabled binaries for all platforms
 	@echo "All binaries built successfully!"
@@ -143,30 +150,36 @@ release_build_nocgo: ## Build CGO-disabled (static-friendly) binaries for multip
 	@mkdir -p $(RELEASE_DIR)
 	@set -e; \
 	for platform in $(RELEASE_PLATFORMS); do \
-		GOOS=$$(echo $$platform | cut -d/ -f1); \
-		GOARCH=$$(echo $$platform | cut -d/ -f2); \
+		GOOS=$${platform%%/*}; \
+		GOARCH=$${platform##*/}; \
 		out_nocgo="$(RELEASE_DIR)/path-$$GOOS-$$GOARCH"; \
 		echo "→ CGO=0: $$GOOS/$$GOARCH"; \
 		CGO_ENABLED=0 GOOS=$$GOOS GOARCH=$$GOARCH \
-		go build -ldflags="$(LDFLAGS)" -o "$$out_nocgo" ./cmd; \
+		go build -tags "$(BUILD_TAGS)" -ldflags '$(LDFLAGS)' -o "$$out_nocgo" ./cmd; \
 		echo "  ✓ Built $$out_nocgo"; \
 	done
 
 .PHONY: release_build_cgo
-release_build_cgo: ## Build CGO-enabled binaries for multiple platforms
-	@echo "Building (CGO=1) binaries for native architecture only..."
-	@echo "Note: Cross-compilation with CGO requires proper toolchain setup"
+release_build_cgo: ## Build CGO-enabled (glibc) binaries for multiple platforms
+	@echo "Building (CGO=1, glibc) binaries for multiple platforms..."
+	@echo "Note: Cross-compiling CGO for arm64 requires aarch64-linux-gnu-* toolchain"
 	@mkdir -p $(RELEASE_DIR)
 	@set -e; \
-	NATIVE_GOOS=$$(go env GOOS); \
-	NATIVE_GOARCH=$$(go env GOARCH); \
-	out_cgo="$(RELEASE_DIR)/path-$$NATIVE_GOOS-$$NATIVE_GOARCH"_cgo; \
-	\
-	echo "→ CGO=1: $$NATIVE_GOOS/$$NATIVE_GOARCH (native)"; \
-	CGO_ENABLED=1 \
-	CGO_CFLAGS="-Wno-implicit-function-declaration -Wno-error=implicit-function-declaration" \
-	go build -tags "$(BUILD_TAGS)" -ldflags="$(LDFLAGS)" -o "$$out_cgo" ./cmd; \
-	echo "  ✓ Built $$out_cgo"
+	for platform in $(RELEASE_PLATFORMS); do \
+		GOOS=$${platform%%/*}; \
+		GOARCH=$${platform##*/}; \
+		CC_BIN="$(call cc_for_goarch,$$GOARCH)"; \
+		if [ -z "$$CC_BIN" ]; then echo "Unsupported arch: $$GOARCH"; exit 1; fi; \
+		if ! command -v $$CC_BIN >/dev/null 2>&1; then \
+			echo "❌ Missing cross-compiler '$$CC_BIN'. Install it (see CI step below)."; exit 1; \
+		fi; \
+		out_cgo="$(RELEASE_DIR)/path-$$GOOS-$$GOARCH"_cgo; \
+		echo "→ CGO=1(glibc): $$GOOS/$$GOARCH (CC=$$CC_BIN)"; \
+		GOOS=$$GOOS GOARCH=$$GOARCH CGO_ENABLED=1 CC=$$CC_BIN \
+		CGO_CFLAGS="-Wno-implicit-function-declaration -Wno-error=implicit-function-declaration" \
+		go build -tags "$(BUILD_TAGS)" -ldflags '$(LDFLAGS)' -o "$$out_cgo" ./cmd; \
+		echo "  ✓ Built $$out_cgo"; \
+	done
 
 .PHONY: release_clean
 release_clean: ## Clean up release artifacts
