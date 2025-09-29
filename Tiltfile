@@ -17,17 +17,20 @@ hot_reload_dirs = [
     "./local/observability",
     "./cmd",
     "./config",
+    "./data",
     "./gateway",
     "./health",
+    "./log",
     "./message",
+    "./metrics",
+    "./network",
+    "./observation",
+    "./protocol",
+    "./proto",
     "./qos",
     "./relayer",
     "./request",
     "./router",
-    "./protocol",
-    "./metrics",
-    "./observation",
-    "./proto",
     "./websockets",
 ]
 
@@ -133,50 +136,15 @@ local_resource(
 # 3. WATCH (Workload Analytics and Telemetry for Comprehensive Health): Observability #
 # ----------------------------------------------------------------------------------- #
 
-# TODO_TECHDEBT(@adshmh): use secrets for sensitive data with the following steps:
-# 1. Add place-holder files for sensitive data
-# 2. Add a secret per sensitive data item (e.g. gateway's private key)
-# 3. Load the secrets into environment variables of an init container
-# 4. Use an init container to run the scripts for updating config from environment variables.
-# This can leverage the scripts under `e2e` package to be consistent with the CI workflow.
-
-# Compile the binary inside the container
-local_resource(
-    'path-binary',
-    '''
-    echo "Building Go binary..."
-    CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -buildvcs=false -o bin/path ./cmd
-    ''',
-    deps=hot_reload_dirs,
-    ignore=['**/node_modules', '.git'],
-    labels=["hot-reloading"],
-)
-
-# Build a minimal Docker image with just the binary
-docker_build_with_restart(
+# TODO_TECHDEBT: Consolidate Dockerfile.local and Dockerfile
+# Build the PATH image using Dockerfile.local (which handles CGO_ENABLED=1)
+# Include go.mod and go.sum in the build context along with hot_reload_dirs
+build_context_files = hot_reload_dirs + ["./go.mod", "./go.sum", "./Dockerfile.local"]
+docker_build(
     "path-image",
     context=".",
-    dockerfile_contents="""FROM alpine:3.19
-RUN apk add --no-cache ca-certificates tzdata
-WORKDIR /app
-COPY bin/path /app/path
-RUN chmod +x /app/path
-""",
-    only=["bin/path"],
-    entrypoint=["/app/path"],
-    live_update=[
-        sync("bin/path", "/app/path"),
-    ],
-)
-
-# Ensure the binary is built before the image
-local_resource(
-    "path-trigger",
-    "touch bin/path",
-    resource_deps=["path-binary"],
-    auto_init=False,
-    trigger_mode=TRIGGER_MODE_AUTO,
-    labels=["hot-reloading"],
+    dockerfile="Dockerfile.local",
+    only=build_context_files,  # Only rebuild the image when these files/directories change
 )
 
 # Tilt will run the Helm Chart with the following flags by default.

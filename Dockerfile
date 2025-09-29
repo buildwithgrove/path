@@ -1,3 +1,4 @@
+# TODO_TECHDEBT: Consolidate Dockerfile.local and Dockerfile
 # Builder stage
 FROM golang:1.24-alpine3.20 AS builder
 

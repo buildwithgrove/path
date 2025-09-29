@@ -22,7 +22,7 @@ grove_get_disqualified_endpoints: check_jq ## Fetch disqualified endpoints for G
 	curl https://$(SERVICE_ID).rpc.grove.city/disqualified_endpoints | jq
 
 .PHONY: check_jq
-check_jq: ## Checks if jq is installed
+check_jq: # Checks if jq is installed
 	@if ! command -v jq &> /dev/null; then \
 		echo "🚨 jq could not be found. Please install it using your package manager."; \
 		exit 1; \

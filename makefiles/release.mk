@@ -126,28 +126,76 @@ BUILD_DATE ?= $(shell date -u +"%Y-%m-%dT%H:%M:%SZ")
 
 # Go build flags
 LDFLAGS := -s -w \
-	-X main.Version=$(VERSION) \
-	-X main.Commit=$(COMMIT) \
-	-X main.BuildDate=$(BUILD_DATE)
+    -X main.Version=$(VERSION) \
+    -X main.Commit=$(COMMIT) \
+    -X main.BuildDate=$(BUILD_DATE)
+
+# Build tags configuration. Set tags shared across builds via BUILD_TAGS.
+# CGO-only tags (such as the libsecp acceleration) belong in CGO_BUILD_TAGS.
+BUILD_TAGS ?=
+CGO_BUILD_TAGS ?= ethereum_secp256k1
+
+# Effective tag lists passed to go build.
+NOCGO_EFFECTIVE_TAGS := $(strip $(BUILD_TAGS))
+CGO_EFFECTIVE_TAGS := $(strip $(BUILD_TAGS) $(CGO_BUILD_TAGS))
 
 .PHONY: release_build_cross
-release_build_cross: ## Build binaries for multiple platforms
-	@echo "Building binaries for multiple platforms..."
-	@mkdir -p $(RELEASE_DIR)
-	@for platform in $(RELEASE_PLATFORMS); do \
-		GOOS=$$(echo $$platform | cut -d/ -f1); \
-		GOARCH=$$(echo $$platform | cut -d/ -f2); \
-		output=$(RELEASE_DIR)/path-$$GOOS-$$GOARCH; \
-		echo "Building for $$GOOS/$$GOARCH..."; \
-		CGO_ENABLED=0 GOOS=$$GOOS GOARCH=$$GOARCH go build -ldflags="$(LDFLAGS)" -o $$output ./cmd; \
-		if [ $$? -eq 0 ]; then \
-			echo "✓ Built $$output"; \
-		else \
-			echo "✗ Failed to build for $$GOOS/$$GOARCH"; \
-			exit 1; \
-		fi; \
-	done
+release_build_cross: release_build_nocgo release_build_cgo ## Build both CGO-disabled and CGO-enabled binaries for all platforms
 	@echo "All binaries built successfully!"
+
+.PHONY: release_build_nocgo
+release_build_nocgo: ## Build CGO-disabled (static-friendly) binaries for multiple platforms
+	@echo "Building (CGO=0) binaries for multiple platforms..."
+	@mkdir -p $(RELEASE_DIR)
+	@set -e; \
+	for platform in $(RELEASE_PLATFORMS); do \
+		GOOS=$${platform%%/*}; \
+		GOARCH=$${platform##*/}; \
+		out_nocgo="$(RELEASE_DIR)/path-$$GOOS-$$GOARCH"; \
+		echo "→ CGO=0: $$GOOS/$$GOARCH"; \
+		TAGS="$(NOCGO_EFFECTIVE_TAGS)"; \
+		if [ -n "$$TAGS" ]; then \
+			CGO_ENABLED=0 GOOS=$$GOOS GOARCH=$$GOARCH go build -tags "$$TAGS" -ldflags '$(LDFLAGS)' -o "$$out_nocgo" ./cmd; \
+		else \
+			CGO_ENABLED=0 GOOS=$$GOOS GOARCH=$$GOARCH go build -ldflags '$(LDFLAGS)' -o "$$out_nocgo" ./cmd; \
+		fi; \
+		echo "  ✓ Built $$out_nocgo"; \
+	done
+
+.PHONY: release_build_cgo
+release_build_cgo: ## Build CGO-enabled (glibc) binaries for multiple platforms
+	@echo "Building (CGO=1, glibc) binaries for multiple platforms..."
+	@echo "Note: Cross-compiling CGO for arm64 requires aarch64-linux-gnu-* toolchain"
+	@mkdir -p $(RELEASE_DIR)
+	@set -e; \
+	for platform in $(RELEASE_PLATFORMS); do \
+		GOOS=$${platform%%/*}; \
+		GOARCH=$${platform##*/}; \
+		if [ "$$GOARCH" = "amd64" ]; then \
+			CC_BIN=gcc; \
+		elif [ "$$GOARCH" = "arm64" ]; then \
+			CC_BIN=aarch64-linux-gnu-gcc; \
+		else \
+			CC_BIN=""; \
+		fi; \
+		if [ -z "$$CC_BIN" ]; then echo "Unsupported arch: $$GOARCH"; exit 1; fi; \
+		if ! command -v $$CC_BIN >/dev/null 2>&1; then \
+			echo "❌ Missing cross-compiler '$$CC_BIN'. Install it (see CI step below)."; exit 1; \
+		fi; \
+		out_cgo="$(RELEASE_DIR)/path-$$GOOS-$$GOARCH"_cgo; \
+		echo "→ CGO=1(glibc): $$GOOS/$$GOARCH (CC=$$CC_BIN)"; \
+		TAGS="$(CGO_EFFECTIVE_TAGS)"; \
+		if [ -n "$$TAGS" ]; then \
+			GOOS=$$GOOS GOARCH=$$GOARCH CGO_ENABLED=1 CC=$$CC_BIN \
+			CGO_CFLAGS="-Wno-implicit-function-declaration -Wno-error=implicit-function-declaration" \
+			go build -tags "$$TAGS" -ldflags '$(LDFLAGS)' -o "$$out_cgo" ./cmd; \
+		else \
+			GOOS=$$GOOS GOARCH=$$GOARCH CGO_ENABLED=1 CC=$$CC_BIN \
+			CGO_CFLAGS="-Wno-implicit-function-declaration -Wno-error=implicit-function-declaration" \
+			go build -ldflags '$(LDFLAGS)' -o "$$out_cgo" ./cmd; \
+		fi; \
+		echo "  ✓ Built $$out_cgo"; \
+	done
 
 .PHONY: release_clean
 release_clean: ## Clean up release artifacts
@@ -155,16 +203,29 @@ release_clean: ## Clean up release artifacts
 	@rm -rf $(RELEASE_DIR)
 
 .PHONY: release_build_local
-release_build_local: ## Build binary for current platform only
-	@echo "Building binary for current platform..."
+release_build_local: ## Build cgo and nocgo binaries for current platform only
+	@echo "Building cgo and nocgo binaries for current platform..."
 	@mkdir -p $(RELEASE_DIR)
-	@CGO_ENABLED=0 go build -ldflags="$(LDFLAGS)" -o $(RELEASE_DIR)/path-local ./cmd
-	@echo "✓ Built $(RELEASE_DIR)/path-local"
+	@TAGS="$(NOCGO_EFFECTIVE_TAGS)"; \
+	if [ -n "$$TAGS" ]; then \
+		CGO_ENABLED=0 go build -tags "$$TAGS" -ldflags="$(LDFLAGS)" -o $(RELEASE_DIR)/path-local ./cmd; \
+	else \
+		CGO_ENABLED=0 go build -ldflags="$(LDFLAGS)" -o $(RELEASE_DIR)/path-local ./cmd; \
+	fi
+	@echo "✓ Built non-cgo binary: $(RELEASE_DIR)/path-local"
+	@TAGS="$(CGO_EFFECTIVE_TAGS)"; \
+	if [ -n "$$TAGS" ]; then \
+		CGO_ENABLED=1 CGO_CFLAGS="-Wno-implicit-function-declaration" go build -tags "$$TAGS" -ldflags="$(LDFLAGS)" -o $(RELEASE_DIR)/path-local_cgo ./cmd; \
+	else \
+		CGO_ENABLED=1 CGO_CFLAGS="-Wno-implicit-function-declaration" go build -ldflags="$(LDFLAGS)" -o $(RELEASE_DIR)/path-local_cgo ./cmd; \
+	fi
+	@echo "✓ Built cgo binary: $(RELEASE_DIR)/path-local_cgo"
 
-.PHONY: build_ghcr_image_current_branch
-build_ghcr_image_current_branch: ## Trigger the main-build workflow using the current branch to push an image to ghcr.io/buildwithgrove/path
+.PHONY: release_ghcr_image_current_branch
+release_ghcr_image_current_branch: ## Trigger the main-build workflow using the current branch to push an image to ghcr.io/buildwithgrove/path
 	@echo "Triggering main-build workflow for current branch..."
 	@BRANCH=$$(git rev-parse --abbrev-ref HEAD) && \
 	gh workflow run main-build.yml --ref $$BRANCH
 	@echo "Workflow triggered for branch: ${CYAN} $$(git rev-parse --abbrev-ref HEAD)${RESET}"
 	@echo "Check the workflow status at: ${BLUE}https://github.com/$(shell git config --get remote.origin.url | sed 's/.*github.com[:/]\([^/]*\/[^.]*\).*/\1/')/actions/workflows/main-build.yml${RESET}"
+	@echo "Visit ${CYAN}ghcr.io/buildwithgrove/path${RESET} to see the image being built."
