@@ -1,4 +1,4 @@
-# syntax=docker/dockerfile:1
+# TODO_TECHDEBT: Consolidate Dockerfile.local and Dockerfile
 ARG GO_VERSION=1.24-alpine
 
 FROM golang:${GO_VERSION} AS builder

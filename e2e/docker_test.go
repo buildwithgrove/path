@@ -30,7 +30,7 @@ const (
 	containerName        = "path"
 	internalPathPort     = "3069"
 	buildContextDir      = ".."
-	dockerfileName       = "Dockerfile"
+	dockerfileName       = "Dockerfile" // TODO_TECHDEBT: Consolidate Dockerfile.local and Dockerfile
 	configMountPoint     = ":/app/config/.config.yaml"
 	containerEnvImageTag = "IMAGE_TAG=test"
 	containerExtraHost   = "host.docker.internal:host-gateway" // allows the container to access the host machine's Docker daemon

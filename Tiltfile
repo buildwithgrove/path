@@ -136,6 +136,7 @@ local_resource(
 # 3. WATCH (Workload Analytics and Telemetry for Comprehensive Health): Observability #
 # ----------------------------------------------------------------------------------- #
 
+# TODO_TECHDEBT: Consolidate Dockerfile.local and Dockerfile
 # Build the PATH image using Dockerfile.local (which handles CGO_ENABLED=1)
 # Include go.mod and go.sum in the build context along with hot_reload_dirs
 build_context_files = hot_reload_dirs + ["./go.mod", "./go.sum", "./Dockerfile.local"]

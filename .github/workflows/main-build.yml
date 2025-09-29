@@ -10,25 +10,22 @@ on:
       - completed
     branches:
       - main
-  workflow_dispatch: # Added to enable manual trigger via GitHub UI
+  workflow_dispatch: # Manual trigger
 
 jobs:
   build-and-push:
-    runs-on: "ubuntu-22.04"
+    runs-on: ubuntu-22.04
     steps:
       - name: Checkout project
         uses: actions/checkout@v4
 
       - name: Set up Go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v5
         with:
           go-version: "1.24"
 
-      - name: Build binaries for multiple architectures
-        run: make release_build_cross
-
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v1
+        uses: docker/setup-buildx-action@v3
 
       - name: Docker Metadata action
         id: meta
@@ -67,19 +64,20 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ github.token }}
 
+      # Non-CGO image (multi-arch, Alpine runtime)
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           build-args: IMAGE_TAG=${{ steps.meta.outputs.version }}
-          # Multi-arch support with pre-built binaries
           platforms: linux/amd64,linux/arm64
           file: Dockerfile.release
           cache-from: type=gha
           cache-to: type=gha,mode=max
           context: .
 
+      # CGO image (multi-arch, glibc runtime, built via Dockerfile.local)
       - name: Build and push Docker image (cgo)
         uses: docker/build-push-action@v5
         with:
@@ -87,10 +85,9 @@ jobs:
           tags: ${{ steps.meta_cgo.outputs.tags }}
           build-args: |
             IMAGE_TAG=${{ steps.meta.outputs.version }}
-            BINARY_SUFFIX=_cgo
-          # CGO image only built for native amd64 due to toolchain constraints
-          platforms: linux/amd64
-          file: Dockerfile.release
+          platforms: linux/amd64,linux/arm64
+          file: Dockerfile.local
+          target: artifact-glibc # builds release/path-linux-${arch}_cgo
           cache-from: type=gha
           cache-to: type=gha,mode=max
           context: .
