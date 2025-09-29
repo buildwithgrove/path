@@ -17,7 +17,7 @@ RUN apk add --no-cache \
     libgcc \
     nodejs \
     npm \
-    yq 
+    yq
 
 # Install ajv-cli (for validating config.yaml against config.schema.yaml)
 RUN npm install -g ajv-cli

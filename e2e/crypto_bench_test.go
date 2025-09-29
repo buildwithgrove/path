@@ -16,7 +16,7 @@ import (
 	sdk "github.com/pokt-network/shannon-sdk"
 )
 
-// BenchmarkShannonSigningDirect benchmarks the shannon-sdk signing operations using
+// BenchmarkShannonSigningDirect benchmarks the shannon-sdk crypto operations using
 // the same approach as Shannon SDK's own benchmarks for direct comparison.
 //
 // Usage:
@@ -29,7 +29,7 @@ func BenchmarkShannonSigningDirect(b *testing.B) {
 	supplierPrivKey1 := secp256k1.GenPrivKey()
 	supplierPrivKey2 := secp256k1.GenPrivKey()
 
-	// Use the app private key for signing (convert to hex)
+	// Use the app private key for crypto (convert to hex)
 	privateKeyHex := hex.EncodeToString(appPrivKey.Bytes())
 
 	signer, err := sdk.NewSignerFromHex(privateKeyHex)
@@ -124,7 +124,7 @@ func BenchmarkShannonKeyOperations(b *testing.B) {
 	}
 }
 
-// Benchmark for the complete signing pipeline
+// Benchmark for the complete crypto pipeline
 func BenchmarkShannonCompleteSigningPipeline(b *testing.B) {
 	// Use a consistent keypair between signer and ring
 	appPrivKey := secp256k1.GenPrivKey()
@@ -133,7 +133,7 @@ func BenchmarkShannonCompleteSigningPipeline(b *testing.B) {
 
 	privateKeyHex := hex.EncodeToString(appPrivKey.Bytes())
 
-	// Pre-create signer to isolate signing performance
+	// Pre-create signer to isolate crypto performance
 	sdkSigner, err := sdk.NewSignerFromHex(privateKeyHex)
 	if err != nil {
 		b.Fatalf("Failed to create signer: %v", err)

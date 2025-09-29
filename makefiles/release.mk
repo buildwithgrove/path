@@ -174,15 +174,13 @@ release_clean: ## Clean up release artifacts
 	@rm -rf $(RELEASE_DIR)
 
 .PHONY: release_build_local
-release_build_local: ## Build binary for current platform only
-	@echo "Building binary for current platform..."
+release_build_local: ## Build cgo and nocgo binaries for current platform only
+	@echo "Building cgo and nocgo binaries for current platform..."
 	@mkdir -p $(RELEASE_DIR)
-# CGO disabled (keeps original name)
 	@CGO_ENABLED=0 go build -ldflags="$(LDFLAGS)" -o $(RELEASE_DIR)/path-local ./cmd
-	@echo "✓ Built $(RELEASE_DIR)/path-local"
-# CGO enabled (adds _cgo suffix, build tag + CGO flag)
+	@echo "✓ Built non-cgo binary: $(RELEASE_DIR)/path-local"
 	@CGO_ENABLED=1 CGO_CFLAGS="-Wno-implicit-function-declaration" go build -tags "$(CGO_BUILD_TAGS)" -ldflags="$(LDFLAGS)" -o $(RELEASE_DIR)/path-local_cgo ./cmd
-	@echo "✓ Built $(RELEASE_DIR)/path-local_cgo"
+	@echo "✓ Built cgo binary: $(RELEASE_DIR)/path-local_cgo"
 
 .PHONY: release_ghcr_image_current_branch
 release_ghcr_image_current_branch: ## Trigger the main-build workflow using the current branch to push an image to ghcr.io/buildwithgrove/path

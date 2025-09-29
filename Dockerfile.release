@@ -21,6 +21,7 @@ ENV IMAGE_TAG=${IMAGE_TAG}
 
 # Optional suffix for selecting the CGO-enabled binary variant
 # Empty by default (uses CGO-disabled binary). For CGO builds, pass: _cgo
+# Fore more details, see .github/workflows/main-build.yml
 ARG BINARY_SUFFIX=""
 
 # Determine the architecture and copy the appropriate binary

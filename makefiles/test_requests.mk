@@ -170,8 +170,3 @@ test_disqualified_endpoints__envoy: check_path_up_envoy ## Get list of currently
 	curl http://localhost:3070/disqualified_endpoints \
 		-H "Target-Service-Id: eth"
 		-d '{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }'
-
-###############################
-###    Makefile imports     ###
-###############################
-include ./deps.mk

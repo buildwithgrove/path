@@ -31,8 +31,3 @@ test_load__websocket_load_test__local: check_path_up check_websocket_load_test d
 	   --subs "newHeads,newPendingTransactions" \
 	   --count 10 \
 	   --log
-
-###############################
-###    Makefile imports     ###
-###############################
-include ./deps.mk

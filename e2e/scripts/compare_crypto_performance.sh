@@ -1,21 +1,21 @@
 #!/bin/bash
 
-# compare_signing_performance.sh
+# compare_crypto_performance.sh
 #
-# This script runs the Shannon signing performance benchmark with and without
+# This script runs the Shannon crypto performance benchmark with and without
 # the ethereum_secp256k1 build tag to compare the performance impact.
 #
 # Usage:
-#   ./e2e/scripts/compare_signing_performance.sh [mode] [benchtime]
+#   ./e2e/scripts/compare_crypto_performance.sh [mode] [benchtime]
 #
 # Modes:
 #   quiet    - Table output only (default)
 #   verbose  - Full detailed output with progress
 #
 # Examples:
-#   ./e2e/scripts/compare_signing_performance.sh              # Quiet mode, 10s
-#   ./e2e/scripts/compare_signing_performance.sh quiet 30s    # Quiet mode, 30s
-#   ./e2e/scripts/compare_signing_performance.sh verbose      # Verbose mode, 10s
+#   ./e2e/scripts/compare_crypto_performance.sh              # Quiet mode, 10s
+#   ./e2e/scripts/compare_crypto_performance.sh quiet 30s    # Quiet mode, 30s
+#   ./e2e/scripts/compare_crypto_performance.sh verbose      # Verbose mode, 10s
 
 set -euo pipefail
 
@@ -87,7 +87,7 @@ fi
 # Output files
 TIMESTAMP="$(date +%Y%m%d_%H%M%S)"
 OUTPUT_DIR="${PROJECT_ROOT}/bench_results"
-COMPARISON_OUTPUT="${OUTPUT_DIR}/signing_comparison_${TIMESTAMP}.txt"
+COMPARISON_OUTPUT="${OUTPUT_DIR}/crypto_comparison_${TIMESTAMP}.txt"
 
 # Create output directory
 mkdir -p "$OUTPUT_DIR" 2>/dev/null
@@ -205,14 +205,14 @@ create_verbose_report() {
 ══════════════════════════════════════════════════════════════════
 
 Test Duration: $BENCHTIME per benchmark
-Environment: Shannon SDK E2E signing pipeline
+Environment: Shannon SDK E2E crypto pipeline
 
 EOF
 
     for bench_name in "${BENCHMARKS[@]}"; do
         local name_sanitized=$(sanitize_name "$bench_name")
-        local without_output="${OUTPUT_DIR}/signing_${name_sanitized}_without_tag_${TIMESTAMP}.txt"
-        local with_output="${OUTPUT_DIR}/signing_${name_sanitized}_with_tag_${TIMESTAMP}.txt"
+        local without_output="${OUTPUT_DIR}/crypto_${name_sanitized}_without_tag_${TIMESTAMP}.txt"
+        local with_output="${OUTPUT_DIR}/crypto_${name_sanitized}_with_tag_${TIMESTAMP}.txt"
 
         # Extract metrics
         local without_metrics=$(extract_metrics "$without_output" "$bench_name")
@@ -266,7 +266,7 @@ Legend:
 Build Tag Configuration:
 ├─ ethereum_secp256k1: Enables libsecp256k1 C library (fastest, requires CGO)
 ├─ default (no tag): Uses Decred pure Go implementation (portable)
-└─ Impact: Core ECDSA operations (key generation, signing, verification)
+└─ Impact: Core ECDSA operations (key generation, crypto, verification)
 EOF
 
     echo -e "${GREEN}✅ Comparison report created: $(basename "$COMPARISON_OUTPUT")${NC}"
@@ -312,8 +312,8 @@ main() {
     # Run all benchmarks
     for bench_name in "${BENCHMARKS[@]}"; do
         name_sanitized=$(sanitize_name "$bench_name")
-        WITHOUT_TAG_OUTPUT="${OUTPUT_DIR}/signing_${name_sanitized}_without_tag_${TIMESTAMP}.txt"
-        WITH_TAG_OUTPUT="${OUTPUT_DIR}/signing_${name_sanitized}_with_tag_${TIMESTAMP}.txt"
+        WITHOUT_TAG_OUTPUT="${OUTPUT_DIR}/crypto_${name_sanitized}_without_tag_${TIMESTAMP}.txt"
+        WITH_TAG_OUTPUT="${OUTPUT_DIR}/crypto_${name_sanitized}_with_tag_${TIMESTAMP}.txt"
 
         run_benchmark "Without ethereum_secp256k1 optimization" "" "$bench_name" "$WITHOUT_TAG_OUTPUT"
         run_benchmark "With ethereum_secp256k1 optimization" "ethereum_secp256k1" "$bench_name" "$WITH_TAG_OUTPUT"
@@ -343,8 +343,8 @@ main() {
 
         for bench_name in "${BENCHMARKS[@]}"; do
             name_sanitized=$(sanitize_name "$bench_name")
-            without_output="${OUTPUT_DIR}/signing_${name_sanitized}_without_tag_${TIMESTAMP}.txt"
-            with_output="${OUTPUT_DIR}/signing_${name_sanitized}_with_tag_${TIMESTAMP}.txt"
+            without_output="${OUTPUT_DIR}/crypto_${name_sanitized}_without_tag_${TIMESTAMP}.txt"
+            with_output="${OUTPUT_DIR}/crypto_${name_sanitized}_with_tag_${TIMESTAMP}.txt"
 
             metrics_without=$(extract_metrics "$without_output" "$bench_name")
             metrics_with=$(extract_metrics "$with_output" "$bench_name")

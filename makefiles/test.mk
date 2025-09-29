@@ -21,20 +21,9 @@ go_lint: ## Run all go linters
 ### E2E Tests ###
 #################
 
-# HTTP E2E Tests
 .PHONY: e2e_test_all
 e2e_test_all: shannon_e2e_config_warning check_docker ## Run HTTP-only E2E tests for all service IDs
 	(cd e2e && TEST_MODE=e2e TEST_PROTOCOL=shannon go test -v -tags=e2e -count=1 -run Test_PATH_E2E)
-
-.PHONY: test_e2e
-test_e2e: ## Alias for e2e_test (deprecated - use e2e_test instead)
-	@if [ "$(filter-out $@,$(MAKECMDGOALS))" = "" ]; then \
-		echo "$(RED)$(BOLD)❌ Error: Service IDs are required (comma-separated list)$(RESET)"; \
-		echo "  👀 Example: $(CYAN)make test_e2e eth,xrplevm$(RESET)"; \
-		echo "  💡 To run with default service IDs, use: $(CYAN)make e2e_test_all$(RESET)"; \
-		exit 1; \
-	fi
-	@$(MAKE) e2e_test $(filter-out $@,$(MAKECMDGOALS))
 
 .PHONY: e2e_test
 e2e_test: shannon_e2e_config_warning check_docker ## Run HTTP-only E2E tests with specified service IDs (e.g. make e2e_test eth,xrplevm)

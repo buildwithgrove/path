@@ -83,6 +83,3 @@ build_and_push_localnet_image: ## Builds and pushes the localnet Docker image fo
 	  -t ghcr.io/buildwithgrove/path-localnet-env:latest \
 	  -f ./local/Dockerfile.dev \
 	  --push .
-
-.PHONY: release_build_and_push_localnet_image
-release_build_and_push_localnet_image: build_and_push_localnet_image ## Builds and pushes the localnet Docker image for multi-architecture builds
