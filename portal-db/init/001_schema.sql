@@ -19,6 +19,16 @@ CREATE TYPE plan_interval AS ENUM ('day', 'month', 'year');
 -- Origin - Allow specific IP addresses or URLs
 CREATE TYPE allowlist_type AS ENUM ('service_id', 'contract', 'origin');
 
+-- Add support for multiple auth providers offering different types
+-- Must be updated to extend authorization to other providers.
+--
+-- Grove's portal uses Auth0 for authentication as of 09/2025.
+--
+-- Envoy Gateway has native support for other OIDC authentication types: https://gateway.envoyproxy.io/docs/tasks/security/oidc/
+-- For legacy support, only adding auth0 and its relevant types
+CREATE TYPE portal_auth_provider AS ENUM ('auth0');
+CREATE TYPE portal_auth_type AS ENUM ('auth0_github', 'auth0_username', 'auth0_google');
+
 -- ============================================================================
 -- CORE ORGANIZATIONAL TABLES
 -- ============================================================================
@@ -71,7 +81,7 @@ COMMENT ON COLUMN portal_plans.plan_rate_limit_rps IS 'Rate limit in requests pe
 -- Portal Accounts can have many applications and many users. Only 1 user can be the OWNER.
 -- When a new user signs up in the Portal, they automatically generate a personal account.
 CREATE TABLE portal_accounts (
-    portal_account_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    portal_account_id VARCHAR(36) PRIMARY KEY DEFAULT gen_random_uuid(),
     organization_id INT,
     portal_plan_type VARCHAR(42) NOT NULL,
     user_account_name VARCHAR(42),
@@ -101,7 +111,7 @@ COMMENT ON COLUMN portal_accounts.stripe_subscription_id IS 'Stripe subscription
 -- Portal users table
 -- Users can belong to multiple Accounts
 CREATE TABLE portal_users (
-    portal_user_id SERIAL PRIMARY KEY,
+    portal_user_id VARCHAR(36) PRIMARY KEY,
     portal_user_email VARCHAR(255) NOT NULL UNIQUE,
     signed_up BOOLEAN DEFAULT FALSE,
     portal_admin BOOLEAN DEFAULT FALSE,
@@ -118,12 +128,29 @@ COMMENT ON COLUMN portal_users.portal_admin IS 'Whether user has admin privilege
 -- TODO_CONSIDERATION: Add support for MFA/2FA
 -- TODO_CONSIDERATION: Consider session management table
 
+-- Portal User Auth Table
+-- Determines which Auth Provider (portal_auth_provider) and which Auth Type 
+-- (portal_auth_type) a user is authenticated into the Portal by
+CREATE TABLE portal_user_auth (
+    portal_user_auth_id SERIAL PRIMARY KEY,
+    portal_user_id VARCHAR(42),
+    portal_auth_provider portal_auth_provider,
+    portal_auth_type portal_auth_type,
+    auth_provider_user_id VARCHAR(69),
+    federated BOOL DEFAULT FALSE,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (portal_user_id) REFERENCES portal_users(portal_user_id) ON DELETE CASCADE
+);
+
+COMMENT ON TABLE portal_user_auth IS 'Authorization provider and type for each user. Determines how to authenticate a user into the Portal.';
+
 -- Contacts table
 -- Contacts are individuals that are members of an Organization. Can be attached to Portal Users
 CREATE TABLE contacts (
     contact_id SERIAL PRIMARY KEY,
     organization_id INT,
-    portal_user_id INT,
+    portal_user_id VARCHAR(36),
     contact_telegram_handle VARCHAR(32),
     contact_twitter_handle VARCHAR(15),
     contact_linkedin_handle VARCHAR(30),
@@ -156,8 +183,8 @@ COMMENT ON TABLE rbac IS 'Role definitions and their associated permissions';
 -- Sets the role and access controls for a user on a particular account.
 CREATE TABLE portal_account_rbac (
     id SERIAL PRIMARY KEY,
-    portal_account_id UUID NOT NULL,
-    portal_user_id INT NOT NULL,
+    portal_account_id VARCHAR(36) NOT NULL,
+    portal_user_id VARCHAR(36) NOT NULL,
     role_name VARCHAR(20) NOT NULL,
     user_joined_account BOOLEAN DEFAULT FALSE,
     FOREIGN KEY (portal_account_id) REFERENCES portal_accounts(portal_account_id) ON DELETE CASCADE,
@@ -174,8 +201,8 @@ COMMENT ON TABLE portal_account_rbac IS 'User roles and permissions for specific
 -- Portal applications table
 -- Portal Accounts can have many Portal Applications that have associated settings.
 CREATE TABLE portal_applications (
-    portal_application_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    portal_account_id UUID NOT NULL,
+    portal_application_id VARCHAR(36) PRIMARY KEY DEFAULT gen_random_uuid(),
+    portal_account_id VARCHAR(36) NOT NULL,
     portal_application_name VARCHAR(42),
     emoji VARCHAR(16),
     portal_application_user_limit INT CHECK (portal_application_user_limit >= 0),
@@ -202,8 +229,8 @@ COMMENT ON COLUMN portal_applications.secret_key_hash IS 'Hashed secret key for 
 -- Users must be members of the parent Account in order to have access to a particular application
 CREATE TABLE portal_application_rbac (
     id SERIAL PRIMARY KEY,
-    portal_application_id UUID NOT NULL,
-    portal_user_id INT NOT NULL,
+    portal_application_id VARCHAR(36) NOT NULL,
+    portal_user_id VARCHAR(36) NOT NULL,
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (portal_application_id) REFERENCES portal_applications(portal_application_id) ON DELETE CASCADE,
@@ -268,14 +295,18 @@ CREATE TABLE services (
     service_owner_address VARCHAR(50),
     network_id VARCHAR(42),
     active BOOLEAN DEFAULT FALSE,
+    beta BOOLEAN DEFAULT FALSE,
+    coming_soon BOOLEAN DEFAULT FALSE,
     quality_fallback_enabled BOOLEAN DEFAULT FALSE,
     hard_fallback_enabled BOOLEAN DEFAULT FALSE,
     svg_icon TEXT, 
+    public_endpoint_url VARCHAR(169),
+    status_endpoint_url VARCHAR(169),
+    status_query TEXT,
     deleted_at TIMESTAMPTZ,
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (network_id) REFERENCES networks(network_id),
-    FOREIGN KEY (service_owner_address) REFERENCES gateways(gateway_address)
+    FOREIGN KEY (network_id) REFERENCES networks(network_id)
 );
 
 COMMENT ON TABLE services IS 'Supported blockchain services from the Pocket Network';
@@ -342,7 +373,7 @@ COMMENT ON COLUMN applications.application_address IS 'Blockchain address of the
 -- Sets access controls to Portal Applications based on allowlist_type
 CREATE TABLE portal_application_allowlists (
     id SERIAL PRIMARY KEY,
-    portal_application_id UUID NOT NULL,
+    portal_application_id VARCHAR(36) NOT NULL,
     type allowlist_type,
     value VARCHAR(255),
     service_id VARCHAR(42),
