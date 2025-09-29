@@ -911,8 +911,9 @@ var shannonServices = []ServiceQoSConfig{
 		sharedtypes.RPCType_COMET_BFT: {},
 	}),
 
-	// Side Protocol - https://github.com/cosmos/chain-registry/blob/master/sidechain/chain.json#L9
-	cosmos.NewCosmosSDKServiceQoSConfig("side-protocol", "sidechain-1", "", map[sharedtypes.RPCType]struct{}{
+	// Bitway - https://github.com/cosmos/chain-registry/blob/master/bitway/chain.json
+	// FORMERLY KNOWN AS: Side Protocol - https://github.com/cosmos/chain-registry/blob/master/sidechain/chain.json#L9
+	cosmos.NewCosmosSDKServiceQoSConfig("bitway", "bitway-1", "", map[sharedtypes.RPCType]struct{}{
 		sharedtypes.RPCType_REST:      {}, // CosmosSDK
 		sharedtypes.RPCType_COMET_BFT: {},
 	}),

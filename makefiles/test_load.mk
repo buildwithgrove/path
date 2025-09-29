@@ -5,14 +5,14 @@
 check_websocket_load_test:
 	@if ! command -v websocket-load-test &> /dev/null; then \
 		echo "####################################################################################################"; \
-		echo "Websocket Load Test is not installed." \
-		echo "To use any Websocket Load Test make targets to send load testing requests please install Websocket Load Test with:"; \
+		echo "WebSocket Load Test is not installed."; \
+		echo "To use any WebSocket Load Test make targets to send load testing requests please install WebSocket Load Test with:"; \
 		echo "go install github.com/commoddity/websocket-load-test@latest"; \
 		echo "####################################################################################################"; \
 	fi
 
 .PHONY: test_load__relay_util__local
-test_load__relay_util__local: check_path_up check_relay_util debug_view_results_links  ## Load test an anvil endpoint with PATH behind GUARD with 10 eth_blockNumber requests. Override service by running: SERVICE_ID=eth make test_load__relay_util__local
+test_load__relay_util__local: check_relay_util check_path_up debug_view_results_links  ## Load test an anvil endpoint with PATH behind GUARD with 10 eth_blockNumber requests. Override service by running: SERVICE_ID=eth make test_load__relay_util__local
 	relay-util \
 		-u http://localhost:3070/v1 \
 		-H "target-service-id: $${SERVICE_ID:-eth}" \
@@ -31,3 +31,8 @@ test_load__websocket_load_test__local: check_path_up check_websocket_load_test d
 	   --subs "newHeads,newPendingTransactions" \
 	   --count 10 \
 	   --log
+
+###############################
+###    Makefile imports     ###
+###############################
+include ./deps.mk

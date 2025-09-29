@@ -20,8 +20,11 @@ CREATE TYPE plan_interval AS ENUM ('day', 'month', 'year');
 CREATE TYPE allowlist_type AS ENUM ('service_id', 'contract', 'origin');
 
 -- Add support for multiple auth providers offering different types
--- Easily extendable should additional authorization providers become necessary 
--- or requested
+-- Must be updated to extend authorization to other providers.
+--
+-- Grove's portal uses Auth0 for authentication as of 09/2025.
+--
+-- Envoy Gateway has native support for other OIDC authentication types: https://gateway.envoyproxy.io/docs/tasks/security/oidc/
 -- For legacy support, only adding auth0 and its relevant types
 CREATE TYPE portal_auth_provider AS ENUM ('auth0');
 CREATE TYPE portal_auth_type AS ENUM ('auth0_github', 'auth0_username', 'auth0_google');
@@ -297,6 +300,9 @@ CREATE TABLE services (
     quality_fallback_enabled BOOLEAN DEFAULT FALSE,
     hard_fallback_enabled BOOLEAN DEFAULT FALSE,
     svg_icon TEXT, 
+    public_endpoint_url VARCHAR(169),
+    status_endpoint_url VARCHAR(169),
+    status_query TEXT,
     deleted_at TIMESTAMPTZ,
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
