@@ -1,0 +1,17 @@
+# Dockerfile.release.glibc — CGO runtime (glibc)
+# Expects prebuilt CGO binaries at: release/path-linux-${TARGETARCH}_cgo
+
+FROM gcr.io/distroless/cc-debian12 AS final
+WORKDIR /app
+
+ARG IMAGE_TAG
+ENV IMAGE_TAG=${IMAGE_TAG}
+
+# CGO build uses the _cgo suffix
+ARG TARGETARCH
+COPY release/path-linux-${TARGETARCH}_cgo /app/path
+
+# Non-root user (distroless uses 65532 by convention)
+USER 65532:65532
+
+CMD ["/app/path"]
