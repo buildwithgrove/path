@@ -5,8 +5,8 @@
 check_websocket_load_test:
 	@if ! command -v websocket-load-test &> /dev/null; then \
 		echo "####################################################################################################"; \
-		echo "Websocket Load Test is not installed." \
-		echo "To use any Websocket Load Test make targets to send load testing requests please install Websocket Load Test with:"; \
+		echo "WebSocket Load Test is not installed."; \
+		echo "To use any WebSocket Load Test make targets to send load testing requests please install WebSocket Load Test with:"; \
 		echo "go install github.com/commoddity/websocket-load-test@latest"; \
 		echo "####################################################################################################"; \
 	fi
@@ -31,3 +31,8 @@ test_load__websocket_load_test__local: check_path_up check_websocket_load_test d
 	   --subs "newHeads,newPendingTransactions" \
 	   --count 10 \
 	   --log
+
+###############################
+###    Makefile imports     ###
+###############################
+include ./deps.mk
