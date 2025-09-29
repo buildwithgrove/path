@@ -139,13 +139,6 @@ CGO_BUILD_TAGS ?= ethereum_secp256k1
 NOCGO_EFFECTIVE_TAGS := $(strip $(BUILD_TAGS))
 CGO_EFFECTIVE_TAGS := $(strip $(BUILD_TAGS) $(CGO_BUILD_TAGS))
 
-# Helper to pick CC for a given GOARCH (glibc toolchains)
-#   - amd64 uses system gcc
-#   - arm64 uses aarch64-linux-gnu-gcc (install in CI)
-define cc_for_goarch
-$(if $(filter $(1),amd64),gcc,$(if $(filter $(1),arm64),aarch64-linux-gnu-gcc, ))
-endef
-
 .PHONY: release_build_cross
 release_build_cross: release_build_nocgo release_build_cgo ## Build both CGO-disabled and CGO-enabled binaries for all platforms
 	@echo "All binaries built successfully!"
@@ -178,7 +171,13 @@ release_build_cgo: ## Build CGO-enabled (glibc) binaries for multiple platforms
 	for platform in $(RELEASE_PLATFORMS); do \
 		GOOS=$${platform%%/*}; \
 		GOARCH=$${platform##*/}; \
-		CC_BIN="$(call cc_for_goarch,$$GOARCH)"; \
+		if [ "$$GOARCH" = "amd64" ]; then \
+			CC_BIN=gcc; \
+		elif [ "$$GOARCH" = "arm64" ]; then \
+			CC_BIN=aarch64-linux-gnu-gcc; \
+		else \
+			CC_BIN=""; \
+		fi; \
 		if [ -z "$$CC_BIN" ]; then echo "Unsupported arch: $$GOARCH"; exit 1; fi; \
 		if ! command -v $$CC_BIN >/dev/null 2>&1; then \
 			echo "❌ Missing cross-compiler '$$CC_BIN'. Install it (see CI step below)."; exit 1; \
