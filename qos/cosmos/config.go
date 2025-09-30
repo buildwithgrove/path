@@ -21,7 +21,7 @@ type Config struct {
 	SyncAllowance uint64 `yaml:"sync_allowance"`
 
 	// Supported RPC types for this service
-	SupportedAPIs map[string]struct{} `yaml:"supported_apis"`
+	SupportedAPIs []string `yaml:"supported_apis"`
 }
 
 // Validate validates the Cosmos service configuration
@@ -45,13 +45,22 @@ func (c *Config) Validate(logger polylog.Logger, serviceID protocol.ServiceID) e
 	}
 
 	if c.SupportedAPIs == nil || len(c.SupportedAPIs) == 0 {
-		err := fmt.Errorf("service %q: supported_apis map cannot be empty", serviceID)
+		err := fmt.Errorf("service %q: supported_apis cannot be empty", serviceID)
 		logger.Error().Err(err).Msg("Validation failed")
 		return err
 	}
 
-	// Validate each API type against the RPCType enum
-	for apiType := range c.SupportedAPIs {
+	// Check for duplicate API types
+	seen := make(map[string]bool)
+	for _, apiType := range c.SupportedAPIs {
+		if seen[apiType] {
+			err := fmt.Errorf("service %q: duplicate RPC type %q in supported_apis", serviceID, apiType)
+			logger.Error().Err(err).Msg("Validation failed")
+			return err
+		}
+		seen[apiType] = true
+
+		// Validate each API type against the RPCType enum
 		rpcTypeValue, exists := sharedtypes.RPCType_value[apiType]
 		if !exists || rpcTypeValue <= 0 {
 			err := fmt.Errorf("service %q: invalid RPC type %q in supported_apis", serviceID, apiType)
@@ -67,7 +76,7 @@ func (c *Config) Validate(logger polylog.Logger, serviceID protocol.ServiceID) e
 func (c *Config) GetSupportedAPIs() map[sharedtypes.RPCType]struct{} {
 	result := make(map[sharedtypes.RPCType]struct{}, len(c.SupportedAPIs))
 
-	for apiType := range c.SupportedAPIs {
+	for _, apiType := range c.SupportedAPIs {
 		if rpcTypeValue, exists := sharedtypes.RPCType_value[apiType]; exists {
 			result[sharedtypes.RPCType(rpcTypeValue)] = struct{}{}
 		}

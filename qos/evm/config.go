@@ -20,7 +20,7 @@ type Config struct {
 	ArchivalCheck *ArchivalCheckConfig `yaml:"archival_check,omitempty"`
 
 	// Supported RPC types for this service
-	SupportedAPIs map[string]struct{} `yaml:"supported_apis"`
+	SupportedAPIs []string `yaml:"supported_apis"`
 }
 
 // Validate validates the Config struct
@@ -35,6 +35,15 @@ func (c *Config) Validate(logger polylog.Logger, serviceID protocol.ServiceID) e
 
 	if len(c.SupportedAPIs) == 0 {
 		return fmt.Errorf("service %s: supported_apis must contain at least one API", serviceID)
+	}
+
+	// Check for duplicate API types
+	seen := make(map[string]bool)
+	for _, apiType := range c.SupportedAPIs {
+		if seen[apiType] {
+			return fmt.Errorf("service %s: duplicate API type %q in supported_apis", serviceID, apiType)
+		}
+		seen[apiType] = true
 	}
 
 	// Validate ArchivalCheck if present
