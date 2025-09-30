@@ -32,7 +32,7 @@ type QoS struct {
 }
 
 // NewQoSInstance builds and returns an instance of the EVM QoS service.
-func NewQoSInstance(logger polylog.Logger, serviceID protocol.ServiceID, serviceConfig Config) *QoS {
+func NewQoSInstance(logger polylog.Logger, serviceID protocol.ServiceID, serviceConfig *Config) *QoS {
 	logger = logger.With(
 		"qos_instance", "evm",
 		"service_id", serviceID,

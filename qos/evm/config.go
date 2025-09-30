@@ -75,3 +75,27 @@ func (a *ArchivalCheckConfig) Validate(logger polylog.Logger, serviceID protocol
 
 	return nil
 }
+
+// LogConfig logs the EVM service configuration
+func (c *Config) LogConfig(logger polylog.Logger) {
+	logger.Info().
+		Str("type", "EVM").
+		Str("chain_id", c.ChainID).
+		Uint64("sync_allowance", c.SyncAllowance).
+		Int("supported_apis_count", len(c.SupportedAPIs)).
+		Bool("has_archival_check", c.ArchivalCheck != nil).
+		Msg("EVM service configuration")
+
+	if c.ArchivalCheck != nil {
+		c.ArchivalCheck.LogConfig(logger)
+	}
+}
+
+// LogConfig logs the archival check configuration
+func (a *ArchivalCheckConfig) LogConfig(logger polylog.Logger) {
+	logger.Debug().
+		Str("contract_address", a.ContractAddress).
+		Uint64("contract_start_block", a.ContractStartBlock).
+		Uint64("threshold", a.Threshold).
+		Msg("EVM archival check configuration")
+}

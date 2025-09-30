@@ -32,7 +32,7 @@ type QoS struct {
 }
 
 // NewQoSInstance builds and returns an instance of the CosmosSDK QoS service.
-func NewQoSInstance(logger polylog.Logger, serviceID protocol.ServiceID, config Config) *QoS {
+func NewQoSInstance(logger polylog.Logger, serviceID protocol.ServiceID, config *Config) *QoS {
 	cosmosChainID := config.CosmosChainID
 
 	// Some CosmosSDK services may have an EVM chain ID. For example, XRPLEVM.

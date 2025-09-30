@@ -75,3 +75,14 @@ func (c *Config) GetSupportedAPIs() map[sharedtypes.RPCType]struct{} {
 
 	return result
 }
+
+// LogConfig logs the Cosmos service configuration
+func (c *Config) LogConfig(logger polylog.Logger) {
+	logger.Info().
+		Str("type", "Cosmos").
+		Str("cosmos_chain_id", c.CosmosChainID).
+		Str("evm_chain_id", c.EVMChainID).
+		Uint64("sync_allowance", c.SyncAllowance).
+		Int("supported_apis_count", len(c.SupportedAPIs)).
+		Msg("Cosmos service configuration")
+}

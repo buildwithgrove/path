@@ -7,7 +7,7 @@ import (
 )
 
 // NewQoSInstance builds and returns an instance of the Solana QoS service.
-func NewQoSInstance(logger polylog.Logger, serviceID protocol.ServiceID, serviceConfig Config) *QoS {
+func NewQoSInstance(logger polylog.Logger, serviceID protocol.ServiceID, serviceConfig *Config) *QoS {
 	chainID := serviceConfig.ChainID
 
 	logger = logger.With(
