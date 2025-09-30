@@ -42,16 +42,6 @@ func getServiceQoSInstances(
 	gatewayServiceIDs := protocolInstance.ConfiguredServiceIDs()
 	logGatewayServiceIDs(hydratedLogger, gatewayServiceIDs)
 
-	// Remove any service IDs that are manually disabled by the user.
-	for _, disabledQoSServiceIDForGateway := range gatewayConfig.HydratorConfig.QoSDisabledServiceIDs {
-		// Throw error if any manually disabled service IDs are not found in the protocol's configured service IDs.
-		if _, found := gatewayServiceIDs[disabledQoSServiceIDForGateway]; !found {
-			return nil, fmt.Errorf("[INVALID CONFIGURATION] QoS manually disabled for service ID: %s BUT NOT not found in protocol's configured service IDs", disabledQoSServiceIDForGateway)
-		}
-		hydratedLogger.Info().Msgf("Gateway manually disabled QoS for service ID: %s", disabledQoSServiceIDForGateway)
-		delete(gatewayServiceIDs, disabledQoSServiceIDForGateway)
-	}
-
 	// Get the service configs for the current protocol
 	qosServiceConfigs := config.QoSServiceConfigs.GetServiceConfigs(gatewayConfig)
 	logQoSServiceConfigs(hydratedLogger, qosServiceConfigs)
