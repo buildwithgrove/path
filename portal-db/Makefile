@@ -1,5 +1,33 @@
 # Portal DB API Makefile
 
+# Color definitions
+CYAN := \033[0;36m
+BOLD := \033[1m
+RESET := \033[0m
+
+# ============================================================================
+# HELP
+# ============================================================================
+
+.PHONY: help
+.DEFAULT_GOAL := help
+help: ## Show all available targets
+	@echo ""
+	@echo "$(BOLD)$(CYAN)🗄️ Portal DB Makefile Targets$(RESET)"
+	@echo ""
+	@echo "$(BOLD)=== 🚀 Service Management ===$(RESET)"
+	@grep -h -E '^(postgrest-up|postgrest-down|postgrest-logs|portal-db-up|portal-db-down):.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "$(CYAN)%-30s$(RESET) %s\n", $$1, $$2}'
+	@echo ""
+	@echo "$(BOLD)=== 📝 API Generation ===$(RESET)"
+	@grep -h -E '^(generate-openapi|generate-sdks|generate-all):.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "$(CYAN)%-30s$(RESET) %s\n", $$1, $$2}'
+	@echo ""
+	@echo "$(BOLD)=== 🔐 Authentication & Testing ===$(RESET)"
+	@grep -h -E '^(test-auth|test-portal-app|gen-jwt|reset-dev-db):.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "$(CYAN)%-30s$(RESET) %s\n", $$1, $$2}'
+	@echo ""
+	@echo "$(BOLD)=== 💧 Data Hydration ===$(RESET)"
+	@grep -h -E '^(hydrate-testdata|hydrate-services|hydrate-applications|hydrate-gateways|hydrate-prod):.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "$(CYAN)%-30s$(RESET) %s\n", $$1, $$2}'
+	@echo ""
+
 # ============================================================================
 # SERVICE MANAGEMENT
 # ============================================================================

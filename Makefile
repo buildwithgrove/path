@@ -11,7 +11,7 @@ help: ## Prints all the targets in all the Makefiles
 	@echo "$(BOLD)$(CYAN)🌐 PATH (Path API & Toolkit Harness) Makefile Targets$(RESET)"
 	@echo ""
 	@echo "$(BOLD)=== 📋 Information & Discovery ===$(RESET)"
-	@grep -h -E '^help:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "$(CYAN)%-40s$(RESET) %s\n", $$1, $$2}'
+	@grep -h -E '^(help|help-unclassified):.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "$(CYAN)%-40s$(RESET) %s\n", $$1, $$2}'
 	@echo ""
 	@echo "$(BOLD)=== 🔨 Build & Run ===$(RESET)"
 	@grep -h -E '^path_(build|run):.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "$(CYAN)%-40s$(RESET) %s\n", $$1, $$2}'
@@ -57,6 +57,49 @@ help: ## Prints all the targets in all the Makefiles
 	@echo ""
 	@echo "$(BOLD)=== 🤖 AI ===$(RESET)"
 	@grep -h -E '^claudesync.*:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "$(CYAN)%-40s$(RESET) %s\n", $$1, $$2}'
+	@echo ""
+
+.PHONY: help-unclassified
+help-unclassified: ## Show all unclassified targets
+	@echo ""
+	@echo "$(BOLD)$(CYAN)📦 Unclassified Targets$(RESET)"
+	@echo ""
+	@grep -h -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
+		grep -v -E '^(help|help-unclassified|portaldb-quickstart|path_build|path_run|path_up|path_down|config.*|install_tools.*|localnet_.*|load_test.*|test_unit|test_all|go_lint|e2e_test.*|bench.*|get_disqualified_endpoints|grove_get_disqualified_endpoints|shannon_preliminary_services_test_help|shannon_preliminary_services_test|source_shannon_preliminary_services_helpers|portal_db.*|proto.*|release_.*|go_docs|docusaurus.*|gen_.*_docs|test_request.*|test_healthz.*|test_disqualified.*|test_load.*|claudesync.*):.*?## .*$$' | \
+		awk 'BEGIN {FS = ":.*?## "}; {printf "$(CYAN)%-40s$(RESET) %s\n", $$1, $$2}'
+	@echo ""
+
+.PHONY: portaldb-quickstart
+portaldb-quickstart: ## Quick start guide for Portal DB (starts services, hydrates data, tests endpoints)
+	@echo ""
+	@echo "$(BOLD)$(CYAN)🗄️ Portal DB Quick Start$(RESET)"
+	@echo ""
+	@echo "$(BOLD)Step 1: Starting Portal DB services...$(RESET)"
+	@cd ./portal-db && make postgrest-up
+	@echo ""
+	@echo "$(BOLD)Step 2: Hydrating test data...$(RESET)"
+	@cd ./portal-db && make hydrate-testdata
+	@echo ""
+	@echo "$(BOLD)Step 3: Testing public endpoint (networks)...$(RESET)"
+	@curl -s http://localhost:3000/networks | jq
+	@echo ""
+	@echo "$(BOLD)Step 4: Generating JWT token...$(RESET)"
+	@cd ./portal-db && make gen-jwt
+	@echo ""
+	@echo "$(BOLD)Step 5: Set your JWT token:$(RESET)"
+	@echo "$(YELLOW)export TOKEN=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYXV0aGVudGljYXRlZCIsImVtYWlsIjoiam9obkBkb2UuY29tIiwiZXhwIjoxNzU4MjEzNjM5fQ.i1_Mrj86xsdgsxDqLmJz8FDd9dd-sJhlS0vBQXGIHuU$(RESET)"
+	@echo ""
+	@echo "$(BOLD)Step 6: Testing authenticated endpoints...$(RESET)"
+	@echo "$(CYAN)Testing portal_accounts:$(RESET)"
+	@curl -s http://localhost:3000/portal_accounts -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYXV0aGVudGljYXRlZCIsImVtYWlsIjoiam9obkBkb2UuY29tIiwiZXhwIjoxNzU4MjEzNjM5fQ.i1_Mrj86xsdgsxDqLmJz8FDd9dd-sJhlS0vBQXGIHuU" | jq
+	@echo ""
+	@echo "$(CYAN)Testing rpc/me:$(RESET)"
+	@curl -s http://localhost:3000/rpc/me -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYXV0aGVudGljYXRlZCIsImVtYWlsIjoiam9obkBkb2UuY29tIiwiZXhwIjoxNzU4MjEzNjM5fQ.i1_Mrj86xsdgsxDqLmJz8FDd9dd-sJhlS0vBQXGIHuU" -H "Content-Type: application/json" | jq
+	@echo ""
+	@echo "$(BOLD)Step 7: Testing portal app creation...$(RESET)"
+	@cd ./portal-db && make test-portal-app
+	@echo ""
+	@echo "$(GREEN)$(BOLD)✅ Quick start complete!$(RESET)"
 	@echo ""
 
 #############################

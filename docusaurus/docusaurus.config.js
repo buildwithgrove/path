@@ -14,6 +14,9 @@ const config = {
 
   markdown: {
     mermaid: true,
+    hooks: {
+      onBrokenMarkdownLinks: "warn",
+    },
   },
   themes: [
     "@docusaurus/theme-mermaid",
@@ -36,7 +39,6 @@ const config = {
   baseUrl: "/",
 
   onBrokenLinks: "throw",
-  onBrokenMarkdownLinks: "warn",
 
   i18n: {
     defaultLocale: "en",
