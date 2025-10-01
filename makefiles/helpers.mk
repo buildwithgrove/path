@@ -3,10 +3,6 @@
 ###   Release Helpers   ###
 ###########################
 
-.PHONY: git_fetch_prune_tags
-git_fetch_prune_tags: ## Sync local tags to remote
-	git fetch --prune --prune-tags origin
-
 .PHONY: shannon_preliminary_services_test_help
 shannon_preliminary_services_test_help: ## Run shannon preliminary services test to verify service availability
 	./e2e/scripts/shannon_preliminary_services_test.sh --help

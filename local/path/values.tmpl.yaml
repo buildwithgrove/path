@@ -29,6 +29,7 @@ guard:
       aliases:
         - polygon
     - serviceId: xrplevm
+    - serviceId: oasys
 
   # The auth section allows configuring the API key authentication for the PATH service.
   auth:

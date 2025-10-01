@@ -82,3 +82,6 @@ supplier_report_*.json
 
 # Portal DB
 pg_dump.sql
+
+# Benchmark Results
+bench_results

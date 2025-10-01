@@ -1,6 +1,7 @@
-# Multi-architecture Dockerfile that uses pre-built binaries
+# Multi-architecture Dockerfile that uses pre-built binaries.
+
 # This Dockerfile expects binaries to be built beforehand using:
-# make release_build_cross
+# $ make release_build_cross
 
 FROM alpine:3.19 AS final
 
@@ -18,9 +19,14 @@ RUN apk add --no-cache ca-certificates tzdata && \
 ARG IMAGE_TAG
 ENV IMAGE_TAG=${IMAGE_TAG}
 
+# Optional suffix for selecting the CGO-enabled binary variant
+# Empty by default (uses CGO-disabled binary). For CGO builds, pass: _cgo
+# Fore more details, see .github/workflows/main-build.yml
+ARG BINARY_SUFFIX=""
+
 # Determine the architecture and copy the appropriate binary
 ARG TARGETARCH
-COPY release/path-linux-${TARGETARCH} /app/path
+COPY release/path-linux-${TARGETARCH}${BINARY_SUFFIX} /app/path
 
 # Set the binary as executable
 RUN chmod +x /app/path

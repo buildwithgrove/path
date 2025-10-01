@@ -15,13 +15,16 @@ type signer struct {
 }
 
 func (s *signer) SignRelayRequest(req *servicetypes.RelayRequest, app apptypes.Application) (*servicetypes.RelayRequest, error) {
-	ring := sdk.ApplicationRing{
-		Application:      app,
-		PublicKeyFetcher: &s.accountClient,
-	}
+	ring := sdk.NewApplicationRing(
+		app,
+		&s.accountClient,
+	)
 
-	sdkSigner := sdk.Signer{PrivateKeyHex: s.privateKeyHex}
-	req, err := sdkSigner.Sign(context.Background(), req, ring)
+	sdkSigner, err := sdk.NewSignerFromHex(s.privateKeyHex)
+	if err != nil {
+		return nil, fmt.Errorf("SignRequest: error creating signer: %w", err)
+	}
+	req, err = sdkSigner.Sign(context.Background(), req, ring)
 	if err != nil {
 		return nil, fmt.Errorf("SignRequest: error signing relay request: %w", err)
 	}

@@ -10,25 +10,31 @@ on:
       - completed
     branches:
       - main
-  workflow_dispatch: # Added to enable manual trigger via GitHub UI
+  workflow_dispatch: # Manual trigger
 
 jobs:
   build-and-push:
-    runs-on: "ubuntu-22.04"
+    runs-on: ubuntu-22.04
     steps:
       - name: Checkout project
         uses: actions/checkout@v4
 
       - name: Set up Go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v5
         with:
           go-version: "1.24"
+
+      # Needed so release_build_cgo can produce arm64 artifacts on amd64 runner
+      - name: Install cross toolchains for CGO
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-aarch64-linux-gnu libc6-dev-arm64-cross
 
       - name: Build binaries for multiple architectures
         run: make release_build_cross
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v1
+        uses: docker/setup-buildx-action@v3
 
       - name: Docker Metadata action
         id: meta
@@ -45,6 +51,21 @@ jobs:
             type=sha,format=short,suffix=-rc
             type=ref,event=branch,pattern=latest
 
+      - name: Docker Metadata action (cgo)
+        id: meta_cgo
+        uses: docker/metadata-action@v5
+        env:
+          DOCKER_METADATA_PR_HEAD_SHA: "true"
+        with:
+          images: |
+            ghcr.io/buildwithgrove/path
+          tags: |
+            type=semver,pattern={{version}},suffix=-cgo
+            type=semver,pattern={{major}}.{{minor}},suffix=-cgo
+            type=ref,event=tag,suffix=-rc-cgo
+            type=sha,format=short,suffix=-rc-cgo
+            type=ref,event=branch,pattern=latest,suffix=-cgo
+
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v3
         with:
@@ -52,15 +73,30 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ github.token }}
 
+      # Non-CGO image (multi-arch, Alpine runtime)
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           build-args: IMAGE_TAG=${{ steps.meta.outputs.version }}
-          # Multi-arch support with pre-built binaries
           platforms: linux/amd64,linux/arm64
           file: Dockerfile.release
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          context: .
+
+      # CGO image (multi-arch, glibc runtime)
+      - name: Build and push Docker image (cgo)
+        uses: docker/build-push-action@v5
+        with:
+          push: true
+          tags: ${{ steps.meta_cgo.outputs.tags }}
+          build-args: |
+            IMAGE_TAG=${{ steps.meta.outputs.version }}
+            BINARY_SUFFIX=_cgo
+          platforms: linux/amd64,linux/arm64
+          file: Dockerfile.release.glibc
           cache-from: type=gha
           cache-to: type=gha,mode=max
           context: .
