@@ -12,7 +12,7 @@ PostgREST automatically creates a REST API from the Portal DB PostgreSQL databas
 
 ```bash
 # From portal-db directory
-make postgrest-up
+make portal-db-up
 ```
 
 This starts:
@@ -262,10 +262,10 @@ When the PostgREST API is running on port `3000`, you can generate the Go SDK us
 
 ```bash
 # Generate both OpenAPI spec and Go SDK
-make generate-all
+make postgrest-generate-all
 
 # Or generate individually
-make generate-openapi  # OpenAPI specification only
+make postgrest-generate-openapi  # OpenAPI specification only
 ```
 
 ### Generated Files
@@ -276,16 +276,16 @@ make generate-openapi  # OpenAPI specification only
 
 ```bash
 # Start PostgREST and PostgreSQL
-make postgrest-up
+make portal-db-up
 
 # Stop services
-make postgrest-down
+make portal-db-down
 
 # View logs
-make postgrest-logs
+make portal-db-logs
 
 # Generate SDK after schema changes
-make generate-all
+make postgrest-generate-all
 
 # Test authentication
 make test-auth
@@ -299,8 +299,8 @@ make hydrate-testdata
 When you modify tables or add new functions:
 
 1. **Update schema**: Edit `../schema/001_portal_init.sql`
-2. **Restart database**: `make postgrest-down && make postgrest-up`
-3. **Regenerate SDK**: `make generate-all`
+2. **Restart database**: `make portal-db-down && make portal-db-up`
+3. **Regenerate SDK**: `make postgrest-generate-all`
 
 ### Query Features Examples
 
@@ -336,7 +336,7 @@ For complete query syntax, see [PostgREST API Documentation](https://postgrest.o
 ### For Beginners
 
 1. **Explore the API**: Try the curl examples above
-2. **Generate SDK**: Run `make generate-all`
+2. **Generate SDK**: Run `make postgrest-generate-all`
 3. **Read Go SDK docs**: Check `../sdk/go/README.md`
 4. **Test authentication**: Run `make test-auth`
 5. **Add test data**: Run `make hydrate-testdata`

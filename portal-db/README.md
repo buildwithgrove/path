@@ -42,11 +42,12 @@ We'll connect to the following gateway and applications:
 
 ```bash
 export DB_CONNECTION_STRING='postgresql://portal_user:portal_password@localhost:5435/portal_db'
-make portal_db_up
+cd portal-db
+make portal-db-up
 
-make portal_db_hydrate_gateways pokt1lf0kekv9zcv9v3wy4v6jx2wh7v4665s8e0sl9s https://shannon-grove-rpc.mainnet.poktroll.com pocket
-make portal_db_hydrate_services 'eth,poly,solana,xrplevm' https://shannon-grove-rpc.mainnet.poktroll.com pocket
-make portal_db_hydrate_applications 'pokt1xd8jrccxtlzs8svrmg6gukn7umln7c2ww327xx,pokt185tgfw9lxyuznh9rz89556l4p8dshdkjd5283d,pokt1gwxwgvlxlzk3ex59cx7lsswyvplf0rfhunxjhy,pokt1hufj6cdgu83dluput6klhmh54vtrgtl3drttva' https://shannon-grove-rpc.mainnet.poktroll.com pocket
+make hydrate-gateways GATEWAY_ADDRESSES=pokt1lf0kekv9zcv9v3wy4v6jx2wh7v4665s8e0sl9s RPC_URL=https://shannon-grove-rpc.mainnet.poktroll.com CHAIN_ID=pocket
+make hydrate-services SERVICE_IDS='eth,poly,solana,xrplevm' RPC_URL=https://shannon-grove-rpc.mainnet.poktroll.com CHAIN_ID=pocket
+make hydrate-applications APP_ADDRESSES='pokt1xd8jrccxtlzs8svrmg6gukn7umln7c2ww327xx,pokt185tgfw9lxyuznh9rz89556l4p8dshdkjd5283d,pokt1gwxwgvlxlzk3ex59cx7lsswyvplf0rfhunxjhy,pokt1hufj6cdgu83dluput6klhmh54vtrgtl3drttva' RPC_URL=https://shannon-grove-rpc.mainnet.poktroll.com CHAIN_ID=pocket
 
 psql $DB_CONNECTION_STRING
 SELECT * FROM gateways;
@@ -68,13 +69,18 @@ make | grep --line-buffered "portal"
 
 ### `make` Targets
 
-- `make portal_db_up` creates the Portal DB with the base schema (`./schema/001_portal_init.sql`) and runs the Portal DB on port `:5435`.
-- `make portal_db_down` stops running the local Portal DB.
-- `make portal_db_env` creates and inits the Database, and helps set up the local development environment.
-- `make portal_db_clean` stops the local Portal DB and deletes the database and drops the schema.
-- `make portal_db_status` Check status of portal-db PostgreSQL container
-- `make portal_db_logs` Show logs from portal-db PostgreSQL container
-- `make portal_db_connect` Connect to the portal database using psql
+Run these commands from the `portal-db/` directory:
+
+- `make portal-db-up` creates the Portal DB with the base schema (`./schema/001_portal_init.sql`) and runs the Portal DB on port `:5435`.
+- `make portal-db-down` stops running the local Portal DB.
+- `make portal-db-logs` Show logs from portal-db PostgreSQL container
+- `make hydrate-gateways` Hydrate gateway data from onchain source
+- `make hydrate-services` Hydrate service data from onchain source
+- `make hydrate-applications` Hydrate application data from onchain source
+- `make hydrate-testdata` Hydrate database with test data
+- `make quickstart` Run complete quickstart workflow
+
+Run `make help` from the `portal-db/` directory to see all available targets.
 
 ### `scripts`
 

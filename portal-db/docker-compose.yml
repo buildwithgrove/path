@@ -45,10 +45,10 @@ services:
       # Documentation: https://hub.docker.com/_/postgres#initialization-scripts
       # 001_portal_init.sql: Initial PostgreSQL schema
       - ./schema/001_portal_init.sql:/docker-entrypoint-initdb.d/001_portal_init.sql:ro
-      # 002_postgrest_init.sql: PostgREST API setup
+      # 002_postgrest_init.sql: PostgREST API setup (roles, permissions, JWT)
       - ./schema/002_postgrest_init.sql:/docker-entrypoint-initdb.d/002_postgrest_init.sql:ro
-      # 003_postgrest_transactions.sql: Custom transaction functions
-      - ./schema/003_postgrest_transactions.sql:/docker-entrypoint-initdb.d/003_postgrest_transactions.sql:ro
+      # 003_postgrest_create_portal_application.sql: Portal application creation function
+      - ./schema/003_postgrest_create_portal_application.sql:/docker-entrypoint-initdb.d/003_postgrest_create_portal_application.sql:ro
     healthcheck:
       # Health check to ensure database is ready before starting PostgREST
       test: ["CMD", "pg_isready", "-U", "postgres", "-d", "portal_db"]
