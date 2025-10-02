@@ -10,12 +10,20 @@ PostgREST automatically generates a REST API from the PostgreSQL database schema
 cd portal-db
 make portal-db-up                    # Start PostgreSQL + PostgREST (port 3000)
 make postgrest-hydrate-testdata      # Add test data
-curl http://localhost:3000/networks | jq  # Test API
+make postgrest-gen-jwt               # Generate a JWT (copy the export command)
+export JWT_TOKEN="..."               # Paste the export command here
+curl http://localhost:3000/networks \
+  -H "Authorization: Bearer $JWT_TOKEN" | jq
+curl http://localhost:3000/organizations \
+  -H "Authorization: Bearer $JWT_TOKEN" | jq
+curl http://localhost:3000/portal_accounts \
+  -H "Authorization: Bearer $JWT_TOKEN" | jq
+make postgrest-generate-openapi      # Refresh OpenAPI spec before launching Swagger UI
 ```
 
 You can run `make` to see a list of available commands.
 
-You can also run `make quickstart` for a loner
+You can also run `make quickstart` for a guided walkthrough.
 
 ## Table of Contents <!-- omit in toc -->
 

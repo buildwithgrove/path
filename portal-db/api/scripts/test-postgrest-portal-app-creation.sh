@@ -53,7 +53,7 @@ create_portal_app() {
 
     # Generate secret key and hash (hex encoded)
     SECRET_KEY=$(openssl rand -hex 32)
-    SECRET_KEY_HASH=$(printf "%s" "$SECRET_KEY" | openssl dgst -sha256 | awk '{print $2}')
+    SECRET_KEY_HASH=$(printf "%s" "$SECRET_KEY" | openssl dgst -sha256 | awk '{print $NF}' | tr -d '\n')
 
     CREATE_RESPONSE=$(curl -s -X POST http://localhost:3000/portal_applications \
         -H "Content-Type: application/json" \

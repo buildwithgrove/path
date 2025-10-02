@@ -24,14 +24,30 @@ echo -e "${BLUE}🔍 Generating OpenAPI specification from PostgREST...${RESET}"
 # Create output directory if it doesn't exist
 mkdir -p "$OUTPUT_DIR"
 
+# Generate JWT token for authenticated access to get all endpoints
+echo -e "${BLUE}🔑 Generating JWT token for authenticated OpenAPI spec...${RESET}"
+JWT_TOKEN=$(cd ../scripts && ./postgrest-gen-jwt.sh --token-only portal_db_admin 2>/dev/null)
+
+if [ -z "$JWT_TOKEN" ]; then
+    echo -e "${YELLOW}⚠️  Could not generate JWT token, fetching public endpoints only...${RESET}"
+    AUTH_HEADER=""
+else
+    echo -e "${GREEN}✅ JWT token generated, will fetch all endpoints (public + protected)${RESET}"
+    AUTH_HEADER="Authorization: Bearer $JWT_TOKEN"
+fi
+
 # Wait for PostgREST to be ready
 echo -e "${CYAN}⏳ Waiting for PostgREST to be ready at ${BOLD}$POSTGREST_URL${RESET}${CYAN}...${RESET}"
 max_attempts=30
 attempt=1
 
 while [ $attempt -le $max_attempts ]; do
-    if curl -s -f "$POSTGREST_URL/" > /dev/null 2>&1; then
-        echo -e "${GREEN}✅ PostgREST is ready!${RESET}"
+    STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+        ${AUTH_HEADER:+-H "$AUTH_HEADER"} \
+        "$POSTGREST_URL/" || echo "000")
+
+    if [ "$STATUS" != "000" ]; then
+        echo -e "${GREEN}✅ PostgREST is ready! (HTTP $STATUS)${RESET}"
         break
     fi
 
@@ -46,21 +62,9 @@ while [ $attempt -le $max_attempts ]; do
     ((attempt++))
 done
 
-# Generate JWT token for authenticated access to get all endpoints
-echo -e "${BLUE}🔑 Generating JWT token for authenticated OpenAPI spec...${RESET}"
-JWT_TOKEN=$(cd ../scripts && ./postgrest-gen-jwt.sh --token-only authenticated 2>/dev/null)
-
-if [ -z "$JWT_TOKEN" ]; then
-    echo -e "${YELLOW}⚠️  Could not generate JWT token, fetching public endpoints only...${RESET}"
-    AUTH_HEADER=""
-else
-    echo -e "${GREEN}✅ JWT token generated, will fetch all endpoints (public + protected)${RESET}"
-    AUTH_HEADER="Authorization: Bearer $JWT_TOKEN"
-fi
-
 # Fetch OpenAPI specification
 echo -e "${BLUE}📥 Fetching OpenAPI specification...${RESET}"
-if curl -s -f -H "Accept: application/openapi+json" ${AUTH_HEADER:+-H "$AUTH_HEADER"} "$POSTGREST_URL/" > "$OUTPUT_FILE"; then
+if curl -s -f -H "Accept: application/openapi+json" ${AUTH_HEADER:+-H "$AUTH_HEADER"} "$POSTGREST_URL/" -o "$OUTPUT_FILE"; then
     echo -e "${GREEN}✅ OpenAPI specification saved to: ${CYAN}$OUTPUT_FILE${RESET}"
 
     # Pretty print the JSON

@@ -12,6 +12,7 @@
 #   ./postgrest-gen-jwt.sh                              # portal_db_admin role, sample email
 #   ./postgrest-gen-jwt.sh portal_db_reader user@email  # custom role + email
 #   ./postgrest-gen-jwt.sh --token-only portal_db_admin user@email
+#   ./postgrest-gen-jwt.sh --help                       # display usage information
 
 set -e
 
@@ -24,8 +25,7 @@ BOLD='\033[1m'
 RESET='\033[0m'
 
 # JWT secret from postgrest.conf (must match exactly)
-# TODO_IMPROVE(@olshansky): Extract JWT_SECRET from postgrest.conf automatically
-# to maintain single source of truth and avoid drift between files
+# TODO_PRODUCTION: Extract JWT_SECRET from postgrest.conf automatically to maintain single source of truth and avoid drift between files
 JWT_SECRET="${JWT_SECRET:-supersecretjwtsecretforlocaldevelopment123456789}"
 
 # Parse arguments
@@ -41,8 +41,33 @@ if [[ "$1" == "--token-only" ]]; then
 fi
 
 # Show help
+print_help() {
+    cat <<'EOF'
+Usage: postgrest-gen-jwt.sh [ROLE] [EMAIL]
+
+Options:
+  --help, -h              Show this help message and exit
+  --token-only ROLE [EMAIL]
+                          Print only the JWT for scripting
+
+Positional arguments:
+  ROLE                    Database role to embed in the JWT (default: portal_db_admin)
+  EMAIL                   Email claim to embed in the JWT (default: john@doe.com)
+
+Examples:
+  ./postgrest-gen-jwt.sh
+  ./postgrest-gen-jwt.sh portal_db_reader user@example.com
+  ./postgrest-gen-jwt.sh --token-only portal_db_admin user@example.com
+EOF
+}
+
 if [[ "$ROLE" == "--help" || "$ROLE" == "-h" ]]; then
-    sed -n '3,15p' "$0" | sed 's/^# //'
+    print_help
+    exit 0
+fi
+
+if [[ "$ROLE" == "postgrest-gen-jwt" ]]; then
+    print_help
     exit 0
 fi
 

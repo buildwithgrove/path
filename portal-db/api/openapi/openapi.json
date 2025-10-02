@@ -7,7 +7,9 @@
   },
   "host": "localhost:3000",
   "basePath": "/",
-  "schemes": ["http"],
+  "schemes": [
+    "http"
+  ],
   "consumes": [
     "application/json",
     "application/vnd.pgrst.object+json;nulls=stripped",
@@ -23,14 +25,19 @@
   "paths": {
     "/": {
       "get": {
-        "produces": ["application/openapi+json", "application/json"],
+        "produces": [
+          "application/openapi+json",
+          "application/json"
+        ],
         "responses": {
           "200": {
             "description": "OK"
           }
         },
         "summary": "OpenAPI description (this document)",
-        "tags": ["Introspection"]
+        "tags": [
+          "Introspection"
+        ]
       }
     },
     "/service_fallbacks": {
@@ -88,7 +95,9 @@
           }
         },
         "summary": "Fallback URLs for services when primary endpoints fail",
-        "tags": ["service_fallbacks"]
+        "tags": [
+          "service_fallbacks"
+        ]
       },
       "post": {
         "parameters": [
@@ -108,7 +117,9 @@
           }
         },
         "summary": "Fallback URLs for services when primary endpoints fail",
-        "tags": ["service_fallbacks"]
+        "tags": [
+          "service_fallbacks"
+        ]
       },
       "delete": {
         "parameters": [
@@ -137,7 +148,9 @@
           }
         },
         "summary": "Fallback URLs for services when primary endpoints fail",
-        "tags": ["service_fallbacks"]
+        "tags": [
+          "service_fallbacks"
+        ]
       },
       "patch": {
         "parameters": [
@@ -169,7 +182,156 @@
           }
         },
         "summary": "Fallback URLs for services when primary endpoints fail",
-        "tags": ["service_fallbacks"]
+        "tags": [
+          "service_fallbacks"
+        ]
+      }
+    },
+    "/portal_application_rbac": {
+      "get": {
+        "parameters": [
+          {
+            "$ref": "#/parameters/rowFilter.portal_application_rbac.id"
+          },
+          {
+            "$ref": "#/parameters/rowFilter.portal_application_rbac.portal_application_id"
+          },
+          {
+            "$ref": "#/parameters/rowFilter.portal_application_rbac.portal_user_id"
+          },
+          {
+            "$ref": "#/parameters/rowFilter.portal_application_rbac.created_at"
+          },
+          {
+            "$ref": "#/parameters/rowFilter.portal_application_rbac.updated_at"
+          },
+          {
+            "$ref": "#/parameters/select"
+          },
+          {
+            "$ref": "#/parameters/order"
+          },
+          {
+            "$ref": "#/parameters/range"
+          },
+          {
+            "$ref": "#/parameters/rangeUnit"
+          },
+          {
+            "$ref": "#/parameters/offset"
+          },
+          {
+            "$ref": "#/parameters/limit"
+          },
+          {
+            "$ref": "#/parameters/preferCount"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "items": {
+                "$ref": "#/definitions/portal_application_rbac"
+              },
+              "type": "array"
+            }
+          },
+          "206": {
+            "description": "Partial Content"
+          }
+        },
+        "summary": "User access controls for specific applications",
+        "tags": [
+          "portal_application_rbac"
+        ]
+      },
+      "post": {
+        "parameters": [
+          {
+            "$ref": "#/parameters/body.portal_application_rbac"
+          },
+          {
+            "$ref": "#/parameters/select"
+          },
+          {
+            "$ref": "#/parameters/preferPost"
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Created"
+          }
+        },
+        "summary": "User access controls for specific applications",
+        "tags": [
+          "portal_application_rbac"
+        ]
+      },
+      "delete": {
+        "parameters": [
+          {
+            "$ref": "#/parameters/rowFilter.portal_application_rbac.id"
+          },
+          {
+            "$ref": "#/parameters/rowFilter.portal_application_rbac.portal_application_id"
+          },
+          {
+            "$ref": "#/parameters/rowFilter.portal_application_rbac.portal_user_id"
+          },
+          {
+            "$ref": "#/parameters/rowFilter.portal_application_rbac.created_at"
+          },
+          {
+            "$ref": "#/parameters/rowFilter.portal_application_rbac.updated_at"
+          },
+          {
+            "$ref": "#/parameters/preferReturn"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        },
+        "summary": "User access controls for specific applications",
+        "tags": [
+          "portal_application_rbac"
+        ]
+      },
+      "patch": {
+        "parameters": [
+          {
+            "$ref": "#/parameters/rowFilter.portal_application_rbac.id"
+          },
+          {
+            "$ref": "#/parameters/rowFilter.portal_application_rbac.portal_application_id"
+          },
+          {
+            "$ref": "#/parameters/rowFilter.portal_application_rbac.portal_user_id"
+          },
+          {
+            "$ref": "#/parameters/rowFilter.portal_application_rbac.created_at"
+          },
+          {
+            "$ref": "#/parameters/rowFilter.portal_application_rbac.updated_at"
+          },
+          {
+            "$ref": "#/parameters/body.portal_application_rbac"
+          },
+          {
+            "$ref": "#/parameters/preferReturn"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        },
+        "summary": "User access controls for specific applications",
+        "tags": [
+          "portal_application_rbac"
+        ]
       }
     },
     "/portal_plans": {
@@ -230,7 +392,9 @@
           }
         },
         "summary": "Available subscription plans for Portal Accounts",
-        "tags": ["portal_plans"]
+        "tags": [
+          "portal_plans"
+        ]
       },
       "post": {
         "parameters": [
@@ -250,7 +414,9 @@
           }
         },
         "summary": "Available subscription plans for Portal Accounts",
-        "tags": ["portal_plans"]
+        "tags": [
+          "portal_plans"
+        ]
       },
       "delete": {
         "parameters": [
@@ -282,7 +448,9 @@
           }
         },
         "summary": "Available subscription plans for Portal Accounts",
-        "tags": ["portal_plans"]
+        "tags": [
+          "portal_plans"
+        ]
       },
       "patch": {
         "parameters": [
@@ -317,182 +485,9 @@
           }
         },
         "summary": "Available subscription plans for Portal Accounts",
-        "tags": ["portal_plans"]
-      }
-    },
-    "/applications": {
-      "get": {
-        "parameters": [
-          {
-            "$ref": "#/parameters/rowFilter.applications.application_address"
-          },
-          {
-            "$ref": "#/parameters/rowFilter.applications.gateway_address"
-          },
-          {
-            "$ref": "#/parameters/rowFilter.applications.service_id"
-          },
-          {
-            "$ref": "#/parameters/rowFilter.applications.stake_amount"
-          },
-          {
-            "$ref": "#/parameters/rowFilter.applications.stake_denom"
-          },
-          {
-            "$ref": "#/parameters/rowFilter.applications.application_private_key_hex"
-          },
-          {
-            "$ref": "#/parameters/rowFilter.applications.network_id"
-          },
-          {
-            "$ref": "#/parameters/rowFilter.applications.created_at"
-          },
-          {
-            "$ref": "#/parameters/rowFilter.applications.updated_at"
-          },
-          {
-            "$ref": "#/parameters/select"
-          },
-          {
-            "$ref": "#/parameters/order"
-          },
-          {
-            "$ref": "#/parameters/range"
-          },
-          {
-            "$ref": "#/parameters/rangeUnit"
-          },
-          {
-            "$ref": "#/parameters/offset"
-          },
-          {
-            "$ref": "#/parameters/limit"
-          },
-          {
-            "$ref": "#/parameters/preferCount"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "schema": {
-              "items": {
-                "$ref": "#/definitions/applications"
-              },
-              "type": "array"
-            }
-          },
-          "206": {
-            "description": "Partial Content"
-          }
-        },
-        "summary": "Onchain applications for processing relays through the network",
-        "tags": ["applications"]
-      },
-      "post": {
-        "parameters": [
-          {
-            "$ref": "#/parameters/body.applications"
-          },
-          {
-            "$ref": "#/parameters/select"
-          },
-          {
-            "$ref": "#/parameters/preferPost"
-          }
-        ],
-        "responses": {
-          "201": {
-            "description": "Created"
-          }
-        },
-        "summary": "Onchain applications for processing relays through the network",
-        "tags": ["applications"]
-      },
-      "delete": {
-        "parameters": [
-          {
-            "$ref": "#/parameters/rowFilter.applications.application_address"
-          },
-          {
-            "$ref": "#/parameters/rowFilter.applications.gateway_address"
-          },
-          {
-            "$ref": "#/parameters/rowFilter.applications.service_id"
-          },
-          {
-            "$ref": "#/parameters/rowFilter.applications.stake_amount"
-          },
-          {
-            "$ref": "#/parameters/rowFilter.applications.stake_denom"
-          },
-          {
-            "$ref": "#/parameters/rowFilter.applications.application_private_key_hex"
-          },
-          {
-            "$ref": "#/parameters/rowFilter.applications.network_id"
-          },
-          {
-            "$ref": "#/parameters/rowFilter.applications.created_at"
-          },
-          {
-            "$ref": "#/parameters/rowFilter.applications.updated_at"
-          },
-          {
-            "$ref": "#/parameters/preferReturn"
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "No Content"
-          }
-        },
-        "summary": "Onchain applications for processing relays through the network",
-        "tags": ["applications"]
-      },
-      "patch": {
-        "parameters": [
-          {
-            "$ref": "#/parameters/rowFilter.applications.application_address"
-          },
-          {
-            "$ref": "#/parameters/rowFilter.applications.gateway_address"
-          },
-          {
-            "$ref": "#/parameters/rowFilter.applications.service_id"
-          },
-          {
-            "$ref": "#/parameters/rowFilter.applications.stake_amount"
-          },
-          {
-            "$ref": "#/parameters/rowFilter.applications.stake_denom"
-          },
-          {
-            "$ref": "#/parameters/rowFilter.applications.application_private_key_hex"
-          },
-          {
-            "$ref": "#/parameters/rowFilter.applications.network_id"
-          },
-          {
-            "$ref": "#/parameters/rowFilter.applications.created_at"
-          },
-          {
-            "$ref": "#/parameters/rowFilter.applications.updated_at"
-          },
-          {
-            "$ref": "#/parameters/body.applications"
-          },
-          {
-            "$ref": "#/parameters/preferReturn"
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "No Content"
-          }
-        },
-        "summary": "Onchain applications for processing relays through the network",
-        "tags": ["applications"]
+        "tags": [
+          "portal_plans"
+        ]
       }
     },
     "/portal_applications": {
@@ -577,7 +572,9 @@
           }
         },
         "summary": "Applications created within portal accounts with their own rate limits and settings",
-        "tags": ["portal_applications"]
+        "tags": [
+          "portal_applications"
+        ]
       },
       "post": {
         "parameters": [
@@ -597,7 +594,9 @@
           }
         },
         "summary": "Applications created within portal accounts with their own rate limits and settings",
-        "tags": ["portal_applications"]
+        "tags": [
+          "portal_applications"
+        ]
       },
       "delete": {
         "parameters": [
@@ -653,7 +652,9 @@
           }
         },
         "summary": "Applications created within portal accounts with their own rate limits and settings",
-        "tags": ["portal_applications"]
+        "tags": [
+          "portal_applications"
+        ]
       },
       "patch": {
         "parameters": [
@@ -712,7 +713,9 @@
           }
         },
         "summary": "Applications created within portal accounts with their own rate limits and settings",
-        "tags": ["portal_applications"]
+        "tags": [
+          "portal_applications"
+        ]
       }
     },
     "/services": {
@@ -740,6 +743,12 @@
             "$ref": "#/parameters/rowFilter.services.active"
           },
           {
+            "$ref": "#/parameters/rowFilter.services.beta"
+          },
+          {
+            "$ref": "#/parameters/rowFilter.services.coming_soon"
+          },
+          {
             "$ref": "#/parameters/rowFilter.services.quality_fallback_enabled"
           },
           {
@@ -747,6 +756,15 @@
           },
           {
             "$ref": "#/parameters/rowFilter.services.svg_icon"
+          },
+          {
+            "$ref": "#/parameters/rowFilter.services.public_endpoint_url"
+          },
+          {
+            "$ref": "#/parameters/rowFilter.services.status_endpoint_url"
+          },
+          {
+            "$ref": "#/parameters/rowFilter.services.status_query"
           },
           {
             "$ref": "#/parameters/rowFilter.services.deleted_at"
@@ -794,7 +812,9 @@
           }
         },
         "summary": "Supported blockchain services from the Pocket Network",
-        "tags": ["services"]
+        "tags": [
+          "services"
+        ]
       },
       "post": {
         "parameters": [
@@ -814,7 +834,9 @@
           }
         },
         "summary": "Supported blockchain services from the Pocket Network",
-        "tags": ["services"]
+        "tags": [
+          "services"
+        ]
       },
       "delete": {
         "parameters": [
@@ -840,6 +862,12 @@
             "$ref": "#/parameters/rowFilter.services.active"
           },
           {
+            "$ref": "#/parameters/rowFilter.services.beta"
+          },
+          {
+            "$ref": "#/parameters/rowFilter.services.coming_soon"
+          },
+          {
             "$ref": "#/parameters/rowFilter.services.quality_fallback_enabled"
           },
           {
@@ -847,6 +875,15 @@
           },
           {
             "$ref": "#/parameters/rowFilter.services.svg_icon"
+          },
+          {
+            "$ref": "#/parameters/rowFilter.services.public_endpoint_url"
+          },
+          {
+            "$ref": "#/parameters/rowFilter.services.status_endpoint_url"
+          },
+          {
+            "$ref": "#/parameters/rowFilter.services.status_query"
           },
           {
             "$ref": "#/parameters/rowFilter.services.deleted_at"
@@ -867,7 +904,9 @@
           }
         },
         "summary": "Supported blockchain services from the Pocket Network",
-        "tags": ["services"]
+        "tags": [
+          "services"
+        ]
       },
       "patch": {
         "parameters": [
@@ -893,6 +932,12 @@
             "$ref": "#/parameters/rowFilter.services.active"
           },
           {
+            "$ref": "#/parameters/rowFilter.services.beta"
+          },
+          {
+            "$ref": "#/parameters/rowFilter.services.coming_soon"
+          },
+          {
             "$ref": "#/parameters/rowFilter.services.quality_fallback_enabled"
           },
           {
@@ -900,6 +945,15 @@
           },
           {
             "$ref": "#/parameters/rowFilter.services.svg_icon"
+          },
+          {
+            "$ref": "#/parameters/rowFilter.services.public_endpoint_url"
+          },
+          {
+            "$ref": "#/parameters/rowFilter.services.status_endpoint_url"
+          },
+          {
+            "$ref": "#/parameters/rowFilter.services.status_query"
           },
           {
             "$ref": "#/parameters/rowFilter.services.deleted_at"
@@ -923,7 +977,9 @@
           }
         },
         "summary": "Supported blockchain services from the Pocket Network",
-        "tags": ["services"]
+        "tags": [
+          "services"
+        ]
       }
     },
     "/portal_accounts": {
@@ -1011,7 +1067,9 @@
           }
         },
         "summary": "Multi-tenant accounts with plans and billing integration",
-        "tags": ["portal_accounts"]
+        "tags": [
+          "portal_accounts"
+        ]
       },
       "post": {
         "parameters": [
@@ -1031,7 +1089,9 @@
           }
         },
         "summary": "Multi-tenant accounts with plans and billing integration",
-        "tags": ["portal_accounts"]
+        "tags": [
+          "portal_accounts"
+        ]
       },
       "delete": {
         "parameters": [
@@ -1090,7 +1150,9 @@
           }
         },
         "summary": "Multi-tenant accounts with plans and billing integration",
-        "tags": ["portal_accounts"]
+        "tags": [
+          "portal_accounts"
+        ]
       },
       "patch": {
         "parameters": [
@@ -1152,7 +1214,9 @@
           }
         },
         "summary": "Multi-tenant accounts with plans and billing integration",
-        "tags": ["portal_accounts"]
+        "tags": [
+          "portal_accounts"
+        ]
       }
     },
     "/organizations": {
@@ -1210,7 +1274,9 @@
           }
         },
         "summary": "Companies or customer groups that can be attached to Portal Accounts",
-        "tags": ["organizations"]
+        "tags": [
+          "organizations"
+        ]
       },
       "post": {
         "parameters": [
@@ -1230,7 +1296,9 @@
           }
         },
         "summary": "Companies or customer groups that can be attached to Portal Accounts",
-        "tags": ["organizations"]
+        "tags": [
+          "organizations"
+        ]
       },
       "delete": {
         "parameters": [
@@ -1259,7 +1327,9 @@
           }
         },
         "summary": "Companies or customer groups that can be attached to Portal Accounts",
-        "tags": ["organizations"]
+        "tags": [
+          "organizations"
+        ]
       },
       "patch": {
         "parameters": [
@@ -1291,7 +1361,9 @@
           }
         },
         "summary": "Companies or customer groups that can be attached to Portal Accounts",
-        "tags": ["organizations"]
+        "tags": [
+          "organizations"
+        ]
       }
     },
     "/networks": {
@@ -1337,7 +1409,9 @@
           }
         },
         "summary": "Supported blockchain networks (Pocket mainnet, testnet, etc.)",
-        "tags": ["networks"]
+        "tags": [
+          "networks"
+        ]
       },
       "post": {
         "parameters": [
@@ -1357,7 +1431,9 @@
           }
         },
         "summary": "Supported blockchain networks (Pocket mainnet, testnet, etc.)",
-        "tags": ["networks"]
+        "tags": [
+          "networks"
+        ]
       },
       "delete": {
         "parameters": [
@@ -1374,7 +1450,9 @@
           }
         },
         "summary": "Supported blockchain networks (Pocket mainnet, testnet, etc.)",
-        "tags": ["networks"]
+        "tags": [
+          "networks"
+        ]
       },
       "patch": {
         "parameters": [
@@ -1394,32 +1472,28 @@
           }
         },
         "summary": "Supported blockchain networks (Pocket mainnet, testnet, etc.)",
-        "tags": ["networks"]
+        "tags": [
+          "networks"
+        ]
       }
     },
-    "/gateways": {
+    "/portal_account_rbac": {
       "get": {
         "parameters": [
           {
-            "$ref": "#/parameters/rowFilter.gateways.gateway_address"
+            "$ref": "#/parameters/rowFilter.portal_account_rbac.id"
           },
           {
-            "$ref": "#/parameters/rowFilter.gateways.stake_amount"
+            "$ref": "#/parameters/rowFilter.portal_account_rbac.portal_account_id"
           },
           {
-            "$ref": "#/parameters/rowFilter.gateways.stake_denom"
+            "$ref": "#/parameters/rowFilter.portal_account_rbac.portal_user_id"
           },
           {
-            "$ref": "#/parameters/rowFilter.gateways.network_id"
+            "$ref": "#/parameters/rowFilter.portal_account_rbac.role_name"
           },
           {
-            "$ref": "#/parameters/rowFilter.gateways.gateway_private_key_hex"
-          },
-          {
-            "$ref": "#/parameters/rowFilter.gateways.created_at"
-          },
-          {
-            "$ref": "#/parameters/rowFilter.gateways.updated_at"
+            "$ref": "#/parameters/rowFilter.portal_account_rbac.user_joined_account"
           },
           {
             "$ref": "#/parameters/select"
@@ -1448,7 +1522,7 @@
             "description": "OK",
             "schema": {
               "items": {
-                "$ref": "#/definitions/gateways"
+                "$ref": "#/definitions/portal_account_rbac"
               },
               "type": "array"
             }
@@ -1457,13 +1531,15 @@
             "description": "Partial Content"
           }
         },
-        "summary": "Onchain gateway information including stake and network details",
-        "tags": ["gateways"]
+        "summary": "User roles and permissions for specific portal accounts",
+        "tags": [
+          "portal_account_rbac"
+        ]
       },
       "post": {
         "parameters": [
           {
-            "$ref": "#/parameters/body.gateways"
+            "$ref": "#/parameters/body.portal_account_rbac"
           },
           {
             "$ref": "#/parameters/select"
@@ -1477,31 +1553,27 @@
             "description": "Created"
           }
         },
-        "summary": "Onchain gateway information including stake and network details",
-        "tags": ["gateways"]
+        "summary": "User roles and permissions for specific portal accounts",
+        "tags": [
+          "portal_account_rbac"
+        ]
       },
       "delete": {
         "parameters": [
           {
-            "$ref": "#/parameters/rowFilter.gateways.gateway_address"
+            "$ref": "#/parameters/rowFilter.portal_account_rbac.id"
           },
           {
-            "$ref": "#/parameters/rowFilter.gateways.stake_amount"
+            "$ref": "#/parameters/rowFilter.portal_account_rbac.portal_account_id"
           },
           {
-            "$ref": "#/parameters/rowFilter.gateways.stake_denom"
+            "$ref": "#/parameters/rowFilter.portal_account_rbac.portal_user_id"
           },
           {
-            "$ref": "#/parameters/rowFilter.gateways.network_id"
+            "$ref": "#/parameters/rowFilter.portal_account_rbac.role_name"
           },
           {
-            "$ref": "#/parameters/rowFilter.gateways.gateway_private_key_hex"
-          },
-          {
-            "$ref": "#/parameters/rowFilter.gateways.created_at"
-          },
-          {
-            "$ref": "#/parameters/rowFilter.gateways.updated_at"
+            "$ref": "#/parameters/rowFilter.portal_account_rbac.user_joined_account"
           },
           {
             "$ref": "#/parameters/preferReturn"
@@ -1512,34 +1584,30 @@
             "description": "No Content"
           }
         },
-        "summary": "Onchain gateway information including stake and network details",
-        "tags": ["gateways"]
+        "summary": "User roles and permissions for specific portal accounts",
+        "tags": [
+          "portal_account_rbac"
+        ]
       },
       "patch": {
         "parameters": [
           {
-            "$ref": "#/parameters/rowFilter.gateways.gateway_address"
+            "$ref": "#/parameters/rowFilter.portal_account_rbac.id"
           },
           {
-            "$ref": "#/parameters/rowFilter.gateways.stake_amount"
+            "$ref": "#/parameters/rowFilter.portal_account_rbac.portal_account_id"
           },
           {
-            "$ref": "#/parameters/rowFilter.gateways.stake_denom"
+            "$ref": "#/parameters/rowFilter.portal_account_rbac.portal_user_id"
           },
           {
-            "$ref": "#/parameters/rowFilter.gateways.network_id"
+            "$ref": "#/parameters/rowFilter.portal_account_rbac.role_name"
           },
           {
-            "$ref": "#/parameters/rowFilter.gateways.gateway_private_key_hex"
+            "$ref": "#/parameters/rowFilter.portal_account_rbac.user_joined_account"
           },
           {
-            "$ref": "#/parameters/rowFilter.gateways.created_at"
-          },
-          {
-            "$ref": "#/parameters/rowFilter.gateways.updated_at"
-          },
-          {
-            "$ref": "#/parameters/body.gateways"
+            "$ref": "#/parameters/body.portal_account_rbac"
           },
           {
             "$ref": "#/parameters/preferReturn"
@@ -1550,8 +1618,10 @@
             "description": "No Content"
           }
         },
-        "summary": "Onchain gateway information including stake and network details",
-        "tags": ["gateways"]
+        "summary": "User roles and permissions for specific portal accounts",
+        "tags": [
+          "portal_account_rbac"
+        ]
       }
     },
     "/service_endpoints": {
@@ -1609,7 +1679,9 @@
           }
         },
         "summary": "Available endpoint types for each service",
-        "tags": ["service_endpoints"]
+        "tags": [
+          "service_endpoints"
+        ]
       },
       "post": {
         "parameters": [
@@ -1629,7 +1701,9 @@
           }
         },
         "summary": "Available endpoint types for each service",
-        "tags": ["service_endpoints"]
+        "tags": [
+          "service_endpoints"
+        ]
       },
       "delete": {
         "parameters": [
@@ -1658,7 +1732,9 @@
           }
         },
         "summary": "Available endpoint types for each service",
-        "tags": ["service_endpoints"]
+        "tags": [
+          "service_endpoints"
+        ]
       },
       "patch": {
         "parameters": [
@@ -1690,121 +1766,19 @@
           }
         },
         "summary": "Available endpoint types for each service",
-        "tags": ["service_endpoints"]
+        "tags": [
+          "service_endpoints"
+        ]
       }
     },
-    "/rpc/me": {
-      "get": {
-        "produces": [
-          "application/json",
-          "application/vnd.pgrst.object+json;nulls=stripped",
-          "application/vnd.pgrst.object+json"
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        },
-        "tags": ["(rpc) me"]
-      },
-      "post": {
-        "parameters": [
-          {
-            "in": "body",
-            "name": "args",
-            "required": true,
-            "schema": {
-              "type": "object"
-            }
-          },
-          {
-            "$ref": "#/parameters/preferParams"
-          }
-        ],
-        "produces": [
-          "application/json",
-          "application/vnd.pgrst.object+json;nulls=stripped",
-          "application/vnd.pgrst.object+json"
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        },
-        "tags": ["(rpc) me"]
-      }
-    },
-    "/rpc/create_portal_application": {
+    "/rpc/gen_salt": {
       "get": {
         "parameters": [
-          {
-            "format": "uuid",
-            "in": "query",
-            "name": "p_portal_account_id",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "format": "integer",
-            "in": "query",
-            "name": "p_portal_user_id",
-            "required": true,
-            "type": "integer"
-          },
-          {
-            "format": "character varying",
-            "in": "query",
-            "name": "p_portal_application_name",
-            "required": false,
-            "type": "string"
-          },
-          {
-            "format": "character varying",
-            "in": "query",
-            "name": "p_emoji",
-            "required": false,
-            "type": "string"
-          },
-          {
-            "format": "integer",
-            "in": "query",
-            "name": "p_portal_application_user_limit",
-            "required": false,
-            "type": "integer"
-          },
-          {
-            "format": "plan_interval",
-            "in": "query",
-            "name": "p_portal_application_user_limit_interval",
-            "required": false,
-            "type": "string"
-          },
-          {
-            "format": "integer",
-            "in": "query",
-            "name": "p_portal_application_user_limit_rps",
-            "required": false,
-            "type": "integer"
-          },
-          {
-            "format": "character varying",
-            "in": "query",
-            "name": "p_portal_application_description",
-            "required": false,
-            "type": "string"
-          },
-          {
-            "format": "character varying[]",
-            "in": "query",
-            "name": "p_favorite_service_ids",
-            "required": false,
-            "type": "string"
-          },
           {
             "format": "text",
             "in": "query",
-            "name": "p_secret_key_required",
-            "required": false,
+            "name": "",
+            "required": true,
             "type": "string"
           }
         ],
@@ -1818,7 +1792,9 @@
             "description": "OK"
           }
         },
-        "tags": ["(rpc) create_portal_application"]
+        "tags": [
+          "(rpc) gen_salt"
+        ]
       },
       "post": {
         "parameters": [
@@ -1828,51 +1804,14 @@
             "required": true,
             "schema": {
               "properties": {
-                "p_emoji": {
-                  "format": "character varying",
-                  "type": "string"
-                },
-                "p_favorite_service_ids": {
-                  "format": "character varying[]",
-                  "items": {
-                    "type": "string"
-                  },
-                  "type": "array"
-                },
-                "p_portal_account_id": {
-                  "format": "uuid",
-                  "type": "string"
-                },
-                "p_portal_application_description": {
-                  "format": "character varying",
-                  "type": "string"
-                },
-                "p_portal_application_name": {
-                  "format": "character varying",
-                  "type": "string"
-                },
-                "p_portal_application_user_limit": {
-                  "format": "integer",
-                  "type": "integer"
-                },
-                "p_portal_application_user_limit_interval": {
-                  "format": "plan_interval",
-                  "type": "string"
-                },
-                "p_portal_application_user_limit_rps": {
-                  "format": "integer",
-                  "type": "integer"
-                },
-                "p_portal_user_id": {
-                  "format": "integer",
-                  "type": "integer"
-                },
-                "p_secret_key_required": {
+                "": {
                   "format": "text",
                   "type": "string"
                 }
               },
-              "required": ["p_portal_account_id", "p_portal_user_id"],
+              "required": [
+                ""
+              ],
               "type": "object"
             }
           },
@@ -1890,14 +1829,317 @@
             "description": "OK"
           }
         },
-        "tags": ["(rpc) create_portal_application"]
+        "tags": [
+          "(rpc) gen_salt"
+        ]
+      }
+    },
+    "/rpc/pgp_armor_headers": {
+      "get": {
+        "parameters": [
+          {
+            "format": "text",
+            "in": "query",
+            "name": "",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "produces": [
+          "application/json",
+          "application/vnd.pgrst.object+json;nulls=stripped",
+          "application/vnd.pgrst.object+json"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "(rpc) pgp_armor_headers"
+        ]
+      },
+      "post": {
+        "parameters": [
+          {
+            "in": "body",
+            "name": "args",
+            "required": true,
+            "schema": {
+              "properties": {
+                "": {
+                  "format": "text",
+                  "type": "string"
+                }
+              },
+              "required": [
+                ""
+              ],
+              "type": "object"
+            }
+          },
+          {
+            "$ref": "#/parameters/preferParams"
+          }
+        ],
+        "produces": [
+          "application/json",
+          "application/vnd.pgrst.object+json;nulls=stripped",
+          "application/vnd.pgrst.object+json"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "(rpc) pgp_armor_headers"
+        ]
+      }
+    },
+    "/rpc/armor": {
+      "get": {
+        "parameters": [
+          {
+            "format": "bytea",
+            "in": "query",
+            "name": "",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "produces": [
+          "application/json",
+          "application/vnd.pgrst.object+json;nulls=stripped",
+          "application/vnd.pgrst.object+json"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "(rpc) armor"
+        ]
+      },
+      "post": {
+        "parameters": [
+          {
+            "in": "body",
+            "name": "args",
+            "required": true,
+            "schema": {
+              "properties": {
+                "": {
+                  "format": "bytea",
+                  "type": "string"
+                }
+              },
+              "required": [
+                ""
+              ],
+              "type": "object"
+            }
+          },
+          {
+            "$ref": "#/parameters/preferParams"
+          }
+        ],
+        "produces": [
+          "application/json",
+          "application/vnd.pgrst.object+json;nulls=stripped",
+          "application/vnd.pgrst.object+json"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "(rpc) armor"
+        ]
+      }
+    },
+    "/rpc/pgp_key_id": {
+      "get": {
+        "parameters": [
+          {
+            "format": "bytea",
+            "in": "query",
+            "name": "",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "produces": [
+          "application/json",
+          "application/vnd.pgrst.object+json;nulls=stripped",
+          "application/vnd.pgrst.object+json"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "(rpc) pgp_key_id"
+        ]
+      },
+      "post": {
+        "parameters": [
+          {
+            "in": "body",
+            "name": "args",
+            "required": true,
+            "schema": {
+              "properties": {
+                "": {
+                  "format": "bytea",
+                  "type": "string"
+                }
+              },
+              "required": [
+                ""
+              ],
+              "type": "object"
+            }
+          },
+          {
+            "$ref": "#/parameters/preferParams"
+          }
+        ],
+        "produces": [
+          "application/json",
+          "application/vnd.pgrst.object+json;nulls=stripped",
+          "application/vnd.pgrst.object+json"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "(rpc) pgp_key_id"
+        ]
+      }
+    },
+    "/rpc/dearmor": {
+      "get": {
+        "parameters": [
+          {
+            "format": "text",
+            "in": "query",
+            "name": "",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "produces": [
+          "application/json",
+          "application/vnd.pgrst.object+json;nulls=stripped",
+          "application/vnd.pgrst.object+json"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "(rpc) dearmor"
+        ]
+      },
+      "post": {
+        "parameters": [
+          {
+            "in": "body",
+            "name": "args",
+            "required": true,
+            "schema": {
+              "properties": {
+                "": {
+                  "format": "text",
+                  "type": "string"
+                }
+              },
+              "required": [
+                ""
+              ],
+              "type": "object"
+            }
+          },
+          {
+            "$ref": "#/parameters/preferParams"
+          }
+        ],
+        "produces": [
+          "application/json",
+          "application/vnd.pgrst.object+json;nulls=stripped",
+          "application/vnd.pgrst.object+json"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "(rpc) dearmor"
+        ]
+      }
+    },
+    "/rpc/gen_random_uuid": {
+      "get": {
+        "produces": [
+          "application/json",
+          "application/vnd.pgrst.object+json;nulls=stripped",
+          "application/vnd.pgrst.object+json"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "(rpc) gen_random_uuid"
+        ]
+      },
+      "post": {
+        "parameters": [
+          {
+            "in": "body",
+            "name": "args",
+            "required": true,
+            "schema": {
+              "type": "object"
+            }
+          },
+          {
+            "$ref": "#/parameters/preferParams"
+          }
+        ],
+        "produces": [
+          "application/json",
+          "application/vnd.pgrst.object+json;nulls=stripped",
+          "application/vnd.pgrst.object+json"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "(rpc) gen_random_uuid"
+        ]
       }
     }
   },
   "definitions": {
     "service_fallbacks": {
       "description": "Fallback URLs for services when primary endpoints fail",
-      "required": ["service_fallback_id", "service_id", "fallback_url"],
+      "required": [
+        "service_fallback_id",
+        "service_id",
+        "fallback_url"
+      ],
       "properties": {
         "service_fallback_id": {
           "description": "Note:\nThis is a Primary Key.<pk/>",
@@ -1928,9 +2170,49 @@
       },
       "type": "object"
     },
+    "portal_application_rbac": {
+      "description": "User access controls for specific applications",
+      "required": [
+        "id",
+        "portal_application_id",
+        "portal_user_id"
+      ],
+      "properties": {
+        "id": {
+          "description": "Note:\nThis is a Primary Key.<pk/>",
+          "format": "integer",
+          "type": "integer"
+        },
+        "portal_application_id": {
+          "description": "Note:\nThis is a Foreign Key to `portal_applications.portal_application_id`.<fk table='portal_applications' column='portal_application_id'/>",
+          "format": "character varying",
+          "maxLength": 36,
+          "type": "string"
+        },
+        "portal_user_id": {
+          "description": "Note:\nThis is a Foreign Key to `portal_users.portal_user_id`.<fk table='portal_users' column='portal_user_id'/>",
+          "format": "character varying",
+          "maxLength": 36,
+          "type": "string"
+        },
+        "created_at": {
+          "default": "CURRENT_TIMESTAMP",
+          "format": "timestamp with time zone",
+          "type": "string"
+        },
+        "updated_at": {
+          "default": "CURRENT_TIMESTAMP",
+          "format": "timestamp with time zone",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
     "portal_plans": {
       "description": "Available subscription plans for Portal Accounts",
-      "required": ["portal_plan_type"],
+      "required": [
+        "portal_plan_type"
+      ],
       "properties": {
         "portal_plan_type": {
           "description": "Note:\nThis is a Primary Key.<pk/>",
@@ -1949,7 +2231,11 @@
           "type": "integer"
         },
         "plan_usage_limit_interval": {
-          "enum": ["day", "month", "year"],
+          "enum": [
+            "day",
+            "month",
+            "year"
+          ],
           "format": "public.plan_interval",
           "type": "string"
         },
@@ -1965,79 +2251,24 @@
       },
       "type": "object"
     },
-    "applications": {
-      "description": "Onchain applications for processing relays through the network",
-      "required": [
-        "application_address",
-        "gateway_address",
-        "service_id",
-        "network_id"
-      ],
-      "properties": {
-        "application_address": {
-          "description": "Blockchain address of the application\n\nNote:\nThis is a Primary Key.<pk/>",
-          "format": "character varying",
-          "maxLength": 50,
-          "type": "string"
-        },
-        "gateway_address": {
-          "description": "Note:\nThis is a Foreign Key to `gateways.gateway_address`.<fk table='gateways' column='gateway_address'/>",
-          "format": "character varying",
-          "maxLength": 50,
-          "type": "string"
-        },
-        "service_id": {
-          "description": "Note:\nThis is a Foreign Key to `services.service_id`.<fk table='services' column='service_id'/>",
-          "format": "character varying",
-          "maxLength": 42,
-          "type": "string"
-        },
-        "stake_amount": {
-          "format": "bigint",
-          "type": "integer"
-        },
-        "stake_denom": {
-          "format": "character varying",
-          "maxLength": 15,
-          "type": "string"
-        },
-        "application_private_key_hex": {
-          "format": "character varying",
-          "maxLength": 64,
-          "type": "string"
-        },
-        "network_id": {
-          "description": "Note:\nThis is a Foreign Key to `networks.network_id`.<fk table='networks' column='network_id'/>",
-          "format": "character varying",
-          "maxLength": 42,
-          "type": "string"
-        },
-        "created_at": {
-          "default": "CURRENT_TIMESTAMP",
-          "format": "timestamp with time zone",
-          "type": "string"
-        },
-        "updated_at": {
-          "default": "CURRENT_TIMESTAMP",
-          "format": "timestamp with time zone",
-          "type": "string"
-        }
-      },
-      "type": "object"
-    },
     "portal_applications": {
       "description": "Applications created within portal accounts with their own rate limits and settings",
-      "required": ["portal_application_id", "portal_account_id"],
+      "required": [
+        "portal_application_id",
+        "portal_account_id"
+      ],
       "properties": {
         "portal_application_id": {
           "default": "gen_random_uuid()",
           "description": "Note:\nThis is a Primary Key.<pk/>",
-          "format": "uuid",
+          "format": "character varying",
+          "maxLength": 36,
           "type": "string"
         },
         "portal_account_id": {
           "description": "Note:\nThis is a Foreign Key to `portal_accounts.portal_account_id`.<fk table='portal_accounts' column='portal_account_id'/>",
-          "format": "uuid",
+          "format": "character varying",
+          "maxLength": 36,
           "type": "string"
         },
         "portal_application_name": {
@@ -2055,7 +2286,11 @@
           "type": "integer"
         },
         "portal_application_user_limit_interval": {
-          "enum": ["day", "month", "year"],
+          "enum": [
+            "day",
+            "month",
+            "year"
+          ],
           "format": "public.plan_interval",
           "type": "string"
         },
@@ -2105,7 +2340,11 @@
     },
     "services": {
       "description": "Supported blockchain services from the Pocket Network",
-      "required": ["service_id", "service_name", "service_domains"],
+      "required": [
+        "service_id",
+        "service_name",
+        "service_domains"
+      ],
       "properties": {
         "service_id": {
           "description": "Note:\nThis is a Primary Key.<pk/>",
@@ -2132,7 +2371,6 @@
           "type": "array"
         },
         "service_owner_address": {
-          "description": "Note:\nThis is a Foreign Key to `gateways.gateway_address`.<fk table='gateways' column='gateway_address'/>",
           "format": "character varying",
           "maxLength": 50,
           "type": "string"
@@ -2148,6 +2386,16 @@
           "format": "boolean",
           "type": "boolean"
         },
+        "beta": {
+          "default": false,
+          "format": "boolean",
+          "type": "boolean"
+        },
+        "coming_soon": {
+          "default": false,
+          "format": "boolean",
+          "type": "boolean"
+        },
         "quality_fallback_enabled": {
           "default": false,
           "format": "boolean",
@@ -2159,6 +2407,20 @@
           "type": "boolean"
         },
         "svg_icon": {
+          "format": "text",
+          "type": "string"
+        },
+        "public_endpoint_url": {
+          "format": "character varying",
+          "maxLength": 169,
+          "type": "string"
+        },
+        "status_endpoint_url": {
+          "format": "character varying",
+          "maxLength": 169,
+          "type": "string"
+        },
+        "status_query": {
           "format": "text",
           "type": "string"
         },
@@ -2181,12 +2443,16 @@
     },
     "portal_accounts": {
       "description": "Multi-tenant accounts with plans and billing integration",
-      "required": ["portal_account_id", "portal_plan_type"],
+      "required": [
+        "portal_account_id",
+        "portal_plan_type"
+      ],
       "properties": {
         "portal_account_id": {
           "default": "gen_random_uuid()",
           "description": "Unique identifier for the portal account\n\nNote:\nThis is a Primary Key.<pk/>",
-          "format": "uuid",
+          "format": "character varying",
+          "maxLength": 36,
           "type": "string"
         },
         "organization_id": {
@@ -2215,7 +2481,11 @@
           "type": "integer"
         },
         "portal_account_user_limit_interval": {
-          "enum": ["day", "month", "year"],
+          "enum": [
+            "day",
+            "month",
+            "year"
+          ],
           "format": "public.plan_interval",
           "type": "string"
         },
@@ -2263,7 +2533,10 @@
     },
     "organizations": {
       "description": "Companies or customer groups that can be attached to Portal Accounts",
-      "required": ["organization_id", "organization_name"],
+      "required": [
+        "organization_id",
+        "organization_name"
+      ],
       "properties": {
         "organization_id": {
           "description": "Note:\nThis is a Primary Key.<pk/>",
@@ -2296,7 +2569,9 @@
     },
     "networks": {
       "description": "Supported blockchain networks (Pocket mainnet, testnet, etc.)",
-      "required": ["network_id"],
+      "required": [
+        "network_id"
+      ],
       "properties": {
         "network_id": {
           "description": "Note:\nThis is a Primary Key.<pk/>",
@@ -2307,58 +2582,51 @@
       },
       "type": "object"
     },
-    "gateways": {
-      "description": "Onchain gateway information including stake and network details",
+    "portal_account_rbac": {
+      "description": "User roles and permissions for specific portal accounts",
       "required": [
-        "gateway_address",
-        "stake_amount",
-        "stake_denom",
-        "network_id"
+        "id",
+        "portal_account_id",
+        "portal_user_id",
+        "role_name"
       ],
       "properties": {
-        "gateway_address": {
-          "description": "Blockchain address of the gateway\n\nNote:\nThis is a Primary Key.<pk/>",
-          "format": "character varying",
-          "maxLength": 50,
-          "type": "string"
-        },
-        "stake_amount": {
-          "description": "Amount of tokens staked by the gateway",
-          "format": "bigint",
+        "id": {
+          "description": "Note:\nThis is a Primary Key.<pk/>",
+          "format": "integer",
           "type": "integer"
         },
-        "stake_denom": {
+        "portal_account_id": {
+          "description": "Note:\nThis is a Foreign Key to `portal_accounts.portal_account_id`.<fk table='portal_accounts' column='portal_account_id'/>",
           "format": "character varying",
-          "maxLength": 15,
+          "maxLength": 36,
           "type": "string"
         },
-        "network_id": {
-          "description": "Note:\nThis is a Foreign Key to `networks.network_id`.<fk table='networks' column='network_id'/>",
+        "portal_user_id": {
+          "description": "Note:\nThis is a Foreign Key to `portal_users.portal_user_id`.<fk table='portal_users' column='portal_user_id'/>",
           "format": "character varying",
-          "maxLength": 42,
+          "maxLength": 36,
           "type": "string"
         },
-        "gateway_private_key_hex": {
+        "role_name": {
           "format": "character varying",
-          "maxLength": 64,
+          "maxLength": 20,
           "type": "string"
         },
-        "created_at": {
-          "default": "CURRENT_TIMESTAMP",
-          "format": "timestamp with time zone",
-          "type": "string"
-        },
-        "updated_at": {
-          "default": "CURRENT_TIMESTAMP",
-          "format": "timestamp with time zone",
-          "type": "string"
+        "user_joined_account": {
+          "default": false,
+          "format": "boolean",
+          "type": "boolean"
         }
       },
       "type": "object"
     },
     "service_endpoints": {
       "description": "Available endpoint types for each service",
-      "required": ["endpoint_id", "service_id"],
+      "required": [
+        "endpoint_id",
+        "service_id"
+      ],
       "properties": {
         "endpoint_id": {
           "description": "Note:\nThis is a Primary Key.<pk/>",
@@ -2372,7 +2640,14 @@
           "type": "string"
         },
         "endpoint_type": {
-          "enum": ["cometBFT", "cosmos", "REST", "JSON-RPC", "WSS", "gRPC"],
+          "enum": [
+            "cometBFT",
+            "cosmos",
+            "REST",
+            "JSON-RPC",
+            "WSS",
+            "gRPC"
+          ],
           "format": "public.endpoint_type",
           "type": "string"
         },
@@ -2395,7 +2670,9 @@
       "name": "Prefer",
       "description": "Preference",
       "required": false,
-      "enum": ["params=single-object"],
+      "enum": [
+        "params=single-object"
+      ],
       "in": "header",
       "type": "string"
     },
@@ -2403,7 +2680,11 @@
       "name": "Prefer",
       "description": "Preference",
       "required": false,
-      "enum": ["return=representation", "return=minimal", "return=none"],
+      "enum": [
+        "return=representation",
+        "return=minimal",
+        "return=none"
+      ],
       "in": "header",
       "type": "string"
     },
@@ -2411,7 +2692,9 @@
       "name": "Prefer",
       "description": "Preference",
       "required": false,
-      "enum": ["count=none"],
+      "enum": [
+        "count=none"
+      ],
       "in": "header",
       "type": "string"
     },
@@ -2523,6 +2806,50 @@
       "in": "query",
       "type": "string"
     },
+    "body.portal_application_rbac": {
+      "name": "portal_application_rbac",
+      "description": "portal_application_rbac",
+      "required": false,
+      "in": "body",
+      "schema": {
+        "$ref": "#/definitions/portal_application_rbac"
+      }
+    },
+    "rowFilter.portal_application_rbac.id": {
+      "name": "id",
+      "required": false,
+      "format": "integer",
+      "in": "query",
+      "type": "string"
+    },
+    "rowFilter.portal_application_rbac.portal_application_id": {
+      "name": "portal_application_id",
+      "required": false,
+      "format": "character varying",
+      "in": "query",
+      "type": "string"
+    },
+    "rowFilter.portal_application_rbac.portal_user_id": {
+      "name": "portal_user_id",
+      "required": false,
+      "format": "character varying",
+      "in": "query",
+      "type": "string"
+    },
+    "rowFilter.portal_application_rbac.created_at": {
+      "name": "created_at",
+      "required": false,
+      "format": "timestamp with time zone",
+      "in": "query",
+      "type": "string"
+    },
+    "rowFilter.portal_application_rbac.updated_at": {
+      "name": "updated_at",
+      "required": false,
+      "format": "timestamp with time zone",
+      "in": "query",
+      "type": "string"
+    },
     "body.portal_plans": {
       "name": "portal_plans",
       "description": "portal_plans",
@@ -2576,79 +2903,6 @@
       "in": "query",
       "type": "string"
     },
-    "body.applications": {
-      "name": "applications",
-      "description": "applications",
-      "required": false,
-      "in": "body",
-      "schema": {
-        "$ref": "#/definitions/applications"
-      }
-    },
-    "rowFilter.applications.application_address": {
-      "name": "application_address",
-      "description": "Blockchain address of the application",
-      "required": false,
-      "format": "character varying",
-      "in": "query",
-      "type": "string"
-    },
-    "rowFilter.applications.gateway_address": {
-      "name": "gateway_address",
-      "required": false,
-      "format": "character varying",
-      "in": "query",
-      "type": "string"
-    },
-    "rowFilter.applications.service_id": {
-      "name": "service_id",
-      "required": false,
-      "format": "character varying",
-      "in": "query",
-      "type": "string"
-    },
-    "rowFilter.applications.stake_amount": {
-      "name": "stake_amount",
-      "required": false,
-      "format": "bigint",
-      "in": "query",
-      "type": "string"
-    },
-    "rowFilter.applications.stake_denom": {
-      "name": "stake_denom",
-      "required": false,
-      "format": "character varying",
-      "in": "query",
-      "type": "string"
-    },
-    "rowFilter.applications.application_private_key_hex": {
-      "name": "application_private_key_hex",
-      "required": false,
-      "format": "character varying",
-      "in": "query",
-      "type": "string"
-    },
-    "rowFilter.applications.network_id": {
-      "name": "network_id",
-      "required": false,
-      "format": "character varying",
-      "in": "query",
-      "type": "string"
-    },
-    "rowFilter.applications.created_at": {
-      "name": "created_at",
-      "required": false,
-      "format": "timestamp with time zone",
-      "in": "query",
-      "type": "string"
-    },
-    "rowFilter.applications.updated_at": {
-      "name": "updated_at",
-      "required": false,
-      "format": "timestamp with time zone",
-      "in": "query",
-      "type": "string"
-    },
     "body.portal_applications": {
       "name": "portal_applications",
       "description": "portal_applications",
@@ -2661,14 +2915,14 @@
     "rowFilter.portal_applications.portal_application_id": {
       "name": "portal_application_id",
       "required": false,
-      "format": "uuid",
+      "format": "character varying",
       "in": "query",
       "type": "string"
     },
     "rowFilter.portal_applications.portal_account_id": {
       "name": "portal_account_id",
       "required": false,
-      "format": "uuid",
+      "format": "character varying",
       "in": "query",
       "type": "string"
     },
@@ -2817,6 +3071,20 @@
       "in": "query",
       "type": "string"
     },
+    "rowFilter.services.beta": {
+      "name": "beta",
+      "required": false,
+      "format": "boolean",
+      "in": "query",
+      "type": "string"
+    },
+    "rowFilter.services.coming_soon": {
+      "name": "coming_soon",
+      "required": false,
+      "format": "boolean",
+      "in": "query",
+      "type": "string"
+    },
     "rowFilter.services.quality_fallback_enabled": {
       "name": "quality_fallback_enabled",
       "required": false,
@@ -2833,6 +3101,27 @@
     },
     "rowFilter.services.svg_icon": {
       "name": "svg_icon",
+      "required": false,
+      "format": "text",
+      "in": "query",
+      "type": "string"
+    },
+    "rowFilter.services.public_endpoint_url": {
+      "name": "public_endpoint_url",
+      "required": false,
+      "format": "character varying",
+      "in": "query",
+      "type": "string"
+    },
+    "rowFilter.services.status_endpoint_url": {
+      "name": "status_endpoint_url",
+      "required": false,
+      "format": "character varying",
+      "in": "query",
+      "type": "string"
+    },
+    "rowFilter.services.status_query": {
+      "name": "status_query",
       "required": false,
       "format": "text",
       "in": "query",
@@ -2872,7 +3161,7 @@
       "name": "portal_account_id",
       "description": "Unique identifier for the portal account",
       "required": false,
-      "format": "uuid",
+      "format": "character varying",
       "in": "query",
       "type": "string"
     },
@@ -3037,63 +3326,47 @@
       "in": "query",
       "type": "string"
     },
-    "body.gateways": {
-      "name": "gateways",
-      "description": "gateways",
+    "body.portal_account_rbac": {
+      "name": "portal_account_rbac",
+      "description": "portal_account_rbac",
       "required": false,
       "in": "body",
       "schema": {
-        "$ref": "#/definitions/gateways"
+        "$ref": "#/definitions/portal_account_rbac"
       }
     },
-    "rowFilter.gateways.gateway_address": {
-      "name": "gateway_address",
-      "description": "Blockchain address of the gateway",
+    "rowFilter.portal_account_rbac.id": {
+      "name": "id",
+      "required": false,
+      "format": "integer",
+      "in": "query",
+      "type": "string"
+    },
+    "rowFilter.portal_account_rbac.portal_account_id": {
+      "name": "portal_account_id",
       "required": false,
       "format": "character varying",
       "in": "query",
       "type": "string"
     },
-    "rowFilter.gateways.stake_amount": {
-      "name": "stake_amount",
-      "description": "Amount of tokens staked by the gateway",
-      "required": false,
-      "format": "bigint",
-      "in": "query",
-      "type": "string"
-    },
-    "rowFilter.gateways.stake_denom": {
-      "name": "stake_denom",
+    "rowFilter.portal_account_rbac.portal_user_id": {
+      "name": "portal_user_id",
       "required": false,
       "format": "character varying",
       "in": "query",
       "type": "string"
     },
-    "rowFilter.gateways.network_id": {
-      "name": "network_id",
+    "rowFilter.portal_account_rbac.role_name": {
+      "name": "role_name",
       "required": false,
       "format": "character varying",
       "in": "query",
       "type": "string"
     },
-    "rowFilter.gateways.gateway_private_key_hex": {
-      "name": "gateway_private_key_hex",
+    "rowFilter.portal_account_rbac.user_joined_account": {
+      "name": "user_joined_account",
       "required": false,
-      "format": "character varying",
-      "in": "query",
-      "type": "string"
-    },
-    "rowFilter.gateways.created_at": {
-      "name": "created_at",
-      "required": false,
-      "format": "timestamp with time zone",
-      "in": "query",
-      "type": "string"
-    },
-    "rowFilter.gateways.updated_at": {
-      "name": "updated_at",
-      "required": false,
-      "format": "timestamp with time zone",
+      "format": "boolean",
       "in": "query",
       "type": "string"
     },
