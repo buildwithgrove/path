@@ -1,6 +1,4 @@
-# Portal Database API
-
-<!-- TODO_DOCUMENTATION(@commoddity): Add section describing potential deployment to production using Pulumi, similar to how Portal database itself is deployed in the infra repo. -->
+# Portal Database API <!-- omit in toc -->
 
 **PostgREST configuration** and **SDK generation tools** for the Portal Database.
 
@@ -15,32 +13,23 @@ make postgrest-hydrate-testdata      # Add test data
 curl http://localhost:3000/networks | jq  # Test API
 ```
 
-# Table of Contents <!-- omit in toc -->
+## Table of Contents <!-- omit in toc -->
 
-- [Portal Database API](#portal-database-api)
-  - [📁 Folder Structure](#-folder-structure)
-  - [⚙️ Configuration](#️-configuration)
-  - [💾 Database Transactions](#-database-transactions)
-  - [🛠️ SDK Generation](#️-sdk-generation)
-  - [🔧 Development Commands](#-development-commands)
-  - [📚 Resources](#-resources)
+- [How it Works](#how-it-works)
+- [⚙️ Configuration](#️-configuration)
+- [Authentication (Optional)](#authentication-optional)
+- [💾 Database Transactions](#-database-transactions)
+- [🛠️ SDK Generation](#️-sdk-generation)
+- [🔧 Development Commands](#-development-commands)
+- [Query Examples](#query-examples)
+- [📚 Resources](#-resources)
 
 ## How it Works
 
 **PostgREST** introspects PostgreSQL schema and auto-generates REST endpoints:
 
-```
+```bash
 Database Schema → PostgREST → OpenAPI Spec → Go/TypeScript SDKs
-```
-
-## 📁 Folder Structure
-
-```
-api/
-├── codegen/                # SDK generation scripts
-├── openapi/                # Generated OpenAPI spec
-├── scripts/                # Helper scripts (JWT, auth testing)
-└── postgrest.conf          # PostgREST configuration
 ```
 
 ## ⚙️ Configuration
@@ -54,6 +43,7 @@ server-port = 3000
 ```
 
 Database roles defined in `../schema/002_postgrest_init.sql`:
+
 - `anon` - Public data (networks, services)
 - `authenticated` - User data (accounts, applications)
 
@@ -85,28 +75,12 @@ Test: `make test-postgrest-portal-app-creation`
 ## 🛠️ SDK Generation
 
 ```bash
-make postgrest-generate-all       # Generate OpenAPI spec + Go/TS SDKs
 make postgrest-generate-openapi   # OpenAPI spec only
 ```
 
-Generated SDKs: `../sdk/go/` and `../sdk/typescript/`
-
 ## 🔧 Development Commands
 
-```bash
-make portal-db-up                    # Start services
-make portal-db-down                  # Stop services
-make portal-db-logs                  # View logs
-make postgrest-hydrate-testdata      # Add test data
-make postgrest-generate-all          # Regenerate SDKs after schema changes
-make test-postgrest-auth             # Test JWT authentication
-make postgrest-gen-jwt               # Generate JWT token
-```
-
-**After schema changes:**
-1. Edit `../schema/001_portal_init.sql`
-2. `make portal-db-down && make portal-db-up`
-3. `make postgrest-generate-all`
+Run `make help` for a list of available commands.
 
 ## Query Examples
 

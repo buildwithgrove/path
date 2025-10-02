@@ -20,7 +20,7 @@
 
 CREATE OR REPLACE FUNCTION public.create_portal_application(
     p_portal_account_id UUID,
-    p_portal_user_id INTEGER,
+    p_portal_user_id VARCHAR(36),
     p_portal_application_name VARCHAR(42) DEFAULT NULL,
     p_emoji VARCHAR(16) DEFAULT NULL,
     p_portal_application_user_limit INT DEFAULT NULL,
@@ -49,7 +49,7 @@ BEGIN
     -- Verify user is a member of the account
     IF NOT EXISTS (
         SELECT 1 FROM portal_account_rbac
-        WHERE portal_account_id = p_portal_account_id
+        WHERE portal_account_id = p_portal_account_id::VARCHAR
         AND portal_user_id = p_portal_user_id
         AND user_joined_account = TRUE
     ) THEN
@@ -87,8 +87,8 @@ BEGIN
         created_at,
         updated_at
     ) VALUES (
-        v_new_app_id,
-        p_portal_account_id,
+        v_new_app_id::VARCHAR,
+        p_portal_account_id::VARCHAR,
         p_portal_application_name,
         p_emoji,
         p_portal_application_user_limit,
@@ -112,7 +112,7 @@ BEGIN
         created_at,
         updated_at
     ) VALUES (
-        v_new_app_id,
+        v_new_app_id::VARCHAR,
         p_portal_user_id,
         CURRENT_TIMESTAMP,
         CURRENT_TIMESTAMP

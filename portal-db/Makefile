@@ -59,31 +59,34 @@ quickstart: ## Quick start guide for Portal DB (shows commands to run)
 	@echo "$(BOLD)Step 2: Hydrate test data$(RESET)"
 	@echo "$(CYAN)  make postgrest-hydrate-testdata$(RESET)"
 	@echo ""
-	@echo "$(BOLD)Step 3: Generate JWT token$(RESET)"
+	@echo "$(BOLD)Step 3: Test unauthenticated endpoint$(RESET)"
+	@echo "$(CYAN)  curl http://localhost:3000/networks | jq$(RESET)"
+	@echo ""
+	@echo "$(BOLD)Step 4: Generate JWT token$(RESET)"
 	@echo "$(CYAN)  make postgrest-gen-jwt$(RESET)"
 	@echo "$(YELLOW)  # Copy the export command from output$(RESET)"
 	@echo ""
-	@echo "$(BOLD)Step 4: Test authenticated endpoint with JWT$(RESET)"
+	@echo "$(BOLD)Step 5: Test authenticated endpoint with JWT$(RESET)"
 	@echo "$(CYAN)  curl http://localhost:3000/portal_accounts -H \"Authorization: Bearer \$$JWT_TOKEN\" | jq$(RESET)"
 	@echo ""
-	@echo "$(BOLD)Step 5: Connect to database with psql$(RESET)"
+	@echo "$(BOLD)Step 6: Connect to database with psql$(RESET)"
 	@echo "$(CYAN)  psql 'postgresql://postgres:portal_password@localhost:5435/portal_db'$(RESET)"
 	@echo ""
-	@echo "$(BOLD)Step 6: Query portal_applications (inside psql)$(RESET)"
+	@echo "$(BOLD)Step 7: Query portal_applications (inside psql)$(RESET)"
 	@echo "$(CYAN)  SELECT * FROM portal_applications;$(RESET)"
 	@echo "$(YELLOW)  # Exit psql with \\q$(RESET)"
 	@echo ""
-	@echo "$(BOLD)Step 7: Test portal application creation$(RESET)"
+	@echo "$(BOLD)Step 8: Test portal application creation$(RESET)"
 	@echo "$(CYAN)  make test-postgrest-portal-app-creation$(RESET)"
 	@echo ""
-	@echo "$(BOLD)Step 8: Query portal_applications again$(RESET)"
+	@echo "$(BOLD)Step 9: Query portal_applications again$(RESET)"
 	@echo "$(CYAN)  psql 'postgresql://postgres:portal_password@localhost:5435/portal_db' -c \"SELECT * FROM portal_applications;\"$(RESET)"
 	@echo ""
-	@echo "$(BOLD)Step 9: Start Swagger UI$(RESET)"
+	@echo "$(BOLD)Step 10: Start Swagger UI$(RESET)"
 	@echo "$(CYAN)  make postgrest-swagger-ui$(RESET)"
 	@echo "$(YELLOW)  # Open http://localhost:8080 in your browser$(RESET)"
 	@echo ""
-	@echo "$(BOLD)Step 10: Explore the Swagger UI$(RESET)"
+	@echo "$(BOLD)Step 11: Explore the Swagger UI$(RESET)"
 	@echo "  - Browse available endpoints"
 	@echo "  - Test authenticated endpoints using JWT token"
 	@echo "  - View request/response schemas"
@@ -133,7 +136,7 @@ postgrest-swagger-ui: ## Start Swagger UI to view OpenAPI specification (http://
 		echo "   $(CYAN)make postgrest-generate-openapi$(RESET)"; \
 		exit 1; \
 	fi
-	@echo "🌐 Starting Swagger UI on $(CYAN)http://localhost:8080$(RESET)..."
+	@echo "🌐 Starting Swagger UI on $(CYAN)http://localhost:8080$(RESET) ..."
 	@echo "   Press Ctrl+C to stop"
 	@docker run --rm -p 8080:8080 \
 		-e SWAGGER_JSON=/openapi.json \
@@ -227,9 +230,13 @@ hydrate-prod: _require-portal-db ## Hydrate local database with production data
 	./scripts/hydrate-prod.sh
 
 .PHONY: dehydrate-reset-db
-dehydrate-reset-db: ## Reset the development database (deletes all data)
-	@echo "⚠️  WARNING: This will delete ALL database data!"
+dehydrate-reset-db: ## Reset the development database (deletes all data and reinitializes)
+	@echo "⚠️  WARNING: This will delete ALL database data and reinitialize!"
 	@echo "🔄 Resetting database..."
+	@echo "   Stopping services..."
+	docker compose down
 	@echo "   Removing ./tmp/portal_db_data..."
 	rm -rf ./tmp/portal_db_data
-	@echo "✅ Database reset complete. Run 'make portal-db-up' to reinitialize."
+	@echo "   Starting services (will reinitialize schema)..."
+	docker compose up -d || docker compose up -d
+	@echo "✅ Database reset complete and reinitialized with fresh schema."

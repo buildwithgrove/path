@@ -55,8 +55,8 @@ create_portal_app() {
         -H "Content-Type: application/json" \
         -H "Authorization: Bearer $JWT_TOKEN" \
         -d "{
-            \"p_portal_account_id\": \"aab10e18-fd6d-4a15-8b14-b2997088ad6d\",
-            \"p_portal_user_id\": 1,
+            \"p_portal_account_id\": \"10000000-0000-0000-0000-000000000004\",
+            \"p_portal_user_id\": \"30000000-0000-0000-0000-000000000001\",
             \"p_portal_application_name\": \"$APP_NAME\",
             \"p_portal_application_description\": \"Test application created via automated test\",
             \"p_emoji\": \"🧪\",

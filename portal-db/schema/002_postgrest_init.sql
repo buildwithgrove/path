@@ -36,11 +36,11 @@ CREATE ROLE authenticated NOLOGIN;
 -- SCHEMA PERMISSIONS
 -- ============================================================================
 
--- Grant schema access to both roles
-GRANT USAGE ON SCHEMA public, api TO anon, authenticated;
-
 -- Create API schema if it doesn't exist
 CREATE SCHEMA IF NOT EXISTS api;
+
+-- Grant schema access to both roles
+GRANT USAGE ON SCHEMA public, api TO anon, authenticated;
 
 -- ============================================================================
 -- TABLE PERMISSIONS
