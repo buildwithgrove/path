@@ -38,24 +38,6 @@ curl http://localhost:3000/networks
 curl http://localhost:3000/ | jq
 ```
 
-### 4. Generate Go SDK <!-- omit in toc -->
-
-**💡 TODO_NEXT(@commoddity): Add Typescript SDK Generation to the Portal DB / PostgREST folder**
-
-```bash
-# Generate OpenAPI spec and Go client
-make generate-all
-```
-
-### 5. Use the Go SDK <!-- omit in toc -->
-
-```go
-import "github.com/grove/path/portal-db/sdk/go"
-
-client, _ := portaldb.NewClientWithResponses("http://localhost:3000")
-networks, _ := client.GetNetworksWithResponse(context.Background(), nil)
-```
-
 # Table of Contents <!-- omit in toc -->
 
 - [Portal Database API](#portal-database-api)
@@ -75,7 +57,6 @@ networks, _ := client.GetNetworksWithResponse(context.Background(), nil)
   - [🛠️ Go SDK Generation](#️-go-sdk-generation)
     - [Generate SDK](#generate-sdk)
     - [Generated Files](#generated-files)
-    - [Use the Go SDK](#use-the-go-sdk)
   - [🔧 Development](#-development)
     - [Available Commands](#available-commands)
     - [After Database Schema Changes](#after-database-schema-changes)
@@ -285,72 +266,9 @@ make generate-all
 
 # Or generate individually
 make generate-openapi  # OpenAPI specification only
-make generate-sdks     # Go SDK only
 ```
 
 ### Generated Files
-
-```
-sdk/go/
-├── models.go      # Data types and structures (generated)
-├── client.go      # API client and methods (generated)
-├── go.mod         # Go module definition (permanent)
-└── README.md      # SDK documentation (permanent)
-```
-
-### Use the Go SDK
-
-**Basic Usage:**
-
-```go
-package main
-
-import (
-    "context"
-    portaldb "github.com/grove/path/portal-db/sdk/go"
-)
-
-func main() {
-    // Create client
-    client, err := portaldb.NewClientWithResponses("http://localhost:3000")
-    if err != nil {
-        panic(err)
-    }
-
-    // Get all networks
-    networks, err := client.GetNetworksWithResponse(context.Background(), nil)
-    if err != nil {
-        panic(err)
-    }
-
-    // Print results
-    for _, network := range *networks.JSON200 {
-        fmt.Printf("Network: %s\n", network.NetworkId)
-    }
-}
-```
-
-**With Authentication:**
-
-```go
-// JWT token from gen-jwt.sh
-token := "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-
-// Request editor to add auth header
-requestEditor := func(ctx context.Context, req *http.Request) error {
-    req.Header.Set("Authorization", "Bearer "+token)
-    return nil
-}
-
-// Make authenticated request
-accounts, err := client.GetPortalAccountsWithResponse(
-    context.Background(),
-    &portaldb.GetPortalAccountsParams{},
-    requestEditor,
-)
-```
-
-For complete Go SDK documentation, see [`sdk/go/README.md`](../sdk/go/README.md).
 
 ## 🔧 Development
 
