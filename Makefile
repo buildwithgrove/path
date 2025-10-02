@@ -15,7 +15,7 @@ HELP_PATTERNS := \
 	'^e2e_test.*:' \
 	'^bench.*:' \
 	'^(get_disqualified_endpoints|grove_get_disqualified_endpoints|shannon_preliminary_services_test_help|shannon_preliminary_services_test|source_shannon_preliminary_services_helpers):' \
-	'^(portal_db.*|build_):' \
+	'^(portal_db_help):' \
 	'^proto.*:' \
 	'^release_.*:' \
 	'^(go_docs|docusaurus.*|gen_.*_docs):' \
@@ -55,7 +55,7 @@ help: ## Prints all the targets in all the Makefiles
 	@grep -h -E '^(get_disqualified_endpoints|grove_get_disqualified_endpoints|shannon_preliminary_services_test_help|shannon_preliminary_services_test|source_shannon_preliminary_services_helpers):.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "$(CYAN)%-40s$(RESET) %s\n", $$1, $$2}'
 	@echo ""
 	@echo "$(BOLD)=== 🗄️ Portal Database ===$(RESET)"
-	@grep -h -E '^(portal_db.*|build_):.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "$(CYAN)%-40s$(RESET) %s\n", $$1, $$2}'
+	@grep -h -E '^(portal_db_help):.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "$(CYAN)%-40s$(RESET) %s\n", $$1, $$2}'
 	@echo ""
 	@echo "$(BOLD)=== 📦 Protocol Buffers ===$(RESET)"
 	@grep -h -E '^proto.*:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "$(CYAN)%-40s$(RESET) %s\n", $$1, $$2}'
@@ -128,6 +128,14 @@ path_run: path_build check_path_config ## Run the path binary as a standalone bi
 	(cd bin; ./path -config ../${CONFIG_PATH})
 
 ###############################
+###  Portal Database Help   ###
+###############################
+
+.PHONY: portal_db_help
+portal_db_help: ## Show Portal DB makefile targets
+	@cd ./portal-db && make help
+
+###############################
 ###    Makefile imports     ###
 ###############################
 
@@ -138,7 +146,6 @@ include ./makefiles/deps.mk
 include ./makefiles/devtools.mk
 include ./makefiles/docs.mk
 include ./makefiles/localnet.mk
-include ./makefiles/portal-db.mk
 include ./makefiles/test.mk
 include ./makefiles/bench.mk
 include ./makefiles/test_requests.mk

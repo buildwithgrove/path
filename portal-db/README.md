@@ -30,12 +30,6 @@ The Portal DB includes client SDKs for both Go and TypeScript.
 **➡️ [View Go SDK Documentation](sdk/go/README.md)**
 **➡️ [View TypeScript SDK Documentation](sdk/typescript/README.md)**
 
-:::warning TODO(@olshansk): Revisit docs location
-
-Consider if this should be moved into `docusaurus/docs` so it is discoverable as part of [path.grove.city](https://path.grove.city/).
-
-:::
-
 ## Quickstart (for Grove Engineering)
 
 We'll connect to the following gateway and applications:

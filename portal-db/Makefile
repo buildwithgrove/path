@@ -4,6 +4,8 @@
 CYAN := \033[0;36m
 BOLD := \033[1m
 RESET := \033[0m
+YELLOW := \033[0;33m
+GREEN := \033[0;32m
 
 # ============================================================================
 # HELP
@@ -15,17 +17,57 @@ help: ## Show all available targets
 	@echo ""
 	@echo "$(BOLD)$(CYAN)🗄️ Portal DB Makefile Targets$(RESET)"
 	@echo ""
-	@echo "$(BOLD)=== 🚀 Service Management ===$(RESET)"
-	@grep -h -E '^(postgrest-up|postgrest-down|postgrest-logs|portal-db-up|portal-db-down):.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "$(CYAN)%-30s$(RESET) %s\n", $$1, $$2}'
+	@echo "$(BOLD)=== 🚀 Quick Start ===$(RESET)"
+	@grep -h -E '^(quickstart):.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "$(CYAN)%-30s$(RESET) %s\n", $$1, $$2}'
+	@echo ""
+	@echo "$(BOLD)=== 🛠️ Service Management ===$(RESET)"
+	@grep -h -E '^(portal-db-up|portal-db-down|portal-db-logs):.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "$(CYAN)%-30s$(RESET) %s\n", $$1, $$2}'
 	@echo ""
 	@echo "$(BOLD)=== 📝 API Generation ===$(RESET)"
-	@grep -h -E '^(generate-openapi|generate-sdks|generate-all):.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "$(CYAN)%-30s$(RESET) %s\n", $$1, $$2}'
+	@grep -h -E '^(postgrest-generate-openapi|postgrest-generate-sdks|postgrest-generate-all):.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "$(CYAN)%-30s$(RESET) %s\n", $$1, $$2}'
 	@echo ""
 	@echo "$(BOLD)=== 🔐 Authentication & Testing ===$(RESET)"
 	@grep -h -E '^(test-auth|test-portal-app|gen-jwt|reset-dev-db):.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "$(CYAN)%-30s$(RESET) %s\n", $$1, $$2}'
 	@echo ""
 	@echo "$(BOLD)=== 💧 Data Hydration ===$(RESET)"
 	@grep -h -E '^(hydrate-testdata|hydrate-services|hydrate-applications|hydrate-gateways|hydrate-prod):.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "$(CYAN)%-30s$(RESET) %s\n", $$1, $$2}'
+	@echo ""
+
+# ============================================================================
+# QUICK START
+# ============================================================================
+
+.PHONY: quickstart
+quickstart: ## Quick start guide for Portal DB (starts services, hydrates data, tests endpoints)
+	@echo ""
+	@echo "$(BOLD)$(CYAN)🗄️ Portal DB Quick Start$(RESET)"
+	@echo ""
+	@echo "$(BOLD)Step 1: Starting Portal DB services...$(RESET)"
+	@make portal-db-up
+	@echo ""
+	@echo "$(BOLD)Step 2: Hydrating test data...$(RESET)"
+	@make hydrate-testdata
+	@echo ""
+	@echo "$(BOLD)Step 3: Testing public endpoint (networks)...$(RESET)"
+	@curl -s http://localhost:3000/networks | jq
+	@echo ""
+	@echo "$(BOLD)Step 4: Generating JWT token...$(RESET)"
+	@make gen-jwt
+	@echo ""
+	@echo "$(BOLD)Step 5: Set your JWT token:$(RESET)"
+	@echo "$(YELLOW)export TOKEN=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYXV0aGVudGljYXRlZCIsImVtYWlsIjoiam9obkBkb2UuY29tIiwiZXhwIjoxNzU4MjEzNjM5fQ.i1_Mrj86xsdgsxDqLmJz8FDd9dd-sJhlS0vBQXGIHuU$(RESET)"
+	@echo ""
+	@echo "$(BOLD)Step 6: Testing authenticated endpoints...$(RESET)"
+	@echo "$(CYAN)Testing portal_accounts:$(RESET)"
+	@curl -s http://localhost:3000/portal_accounts -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYXV0aGVudGljYXRlZCIsImVtYWlsIjoiam9obkBkb2UuY29tIiwiZXhwIjoxNzU4MjEzNjM5fQ.i1_Mrj86xsdgsxDqLmJz8FDd9dd-sJhlS0vBQXGIHuU" | jq
+	@echo ""
+	@echo "$(CYAN)Testing rpc/me:$(RESET)"
+	@curl -s http://localhost:3000/rpc/me -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYXV0aGVudGljYXRlZCIsImVtYWlsIjoiam9obkBkb2UuY29tIiwiZXhwIjoxNzU4MjEzNjM5fQ.i1_Mrj86xsdgsxDqLmJz8FDd9dd-sJhlS0vBQXGIHuU" -H "Content-Type: application/json" | jq
+	@echo ""
+	@echo "$(BOLD)Step 7: Testing portal app creation...$(RESET)"
+	@make test-portal-app
+	@echo ""
+	@echo "$(GREEN)$(BOLD)✅ Quick start complete!$(RESET)"
 	@echo ""
 
 # ============================================================================
