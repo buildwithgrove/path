@@ -40,15 +40,15 @@ echo "🔧 Generating fresh JWT token using shell script..."
 cd "$(dirname "$0")"  # Ensure we're in the scripts directory
 
 # Generate token and capture output using --token-only flag for clean parsing
-TOKEN=$(./gen-jwt.sh --token-only authenticated 2>/dev/null)
+JWT_TOKEN=$(./postgrest-gen-jwt.sh --token-only authenticated 2>/dev/null)
 
-if [[ -z "$TOKEN" ]]; then
+if [[ -z "$JWT_TOKEN" ]]; then
     echo "❌ Failed to generate JWT token"
-    echo "💡 Make sure gen-jwt.sh is executable and openssl is installed"
+    echo "💡 Make sure postgrest-gen-jwt.sh is executable and openssl is installed"
     exit 1
 fi
 
-echo "✅ Generated fresh JWT token: ${TOKEN:0:50}... 🎯"
+echo "✅ Generated fresh JWT token: ${JWT_TOKEN:0:50}... 🎯"
 echo "🌟 This demonstrates external JWT generation (PostgREST best practice)"
 echo
 
@@ -59,7 +59,7 @@ echo "🔒 Test 3: Access protected data with JWT token"
 echo "GET $API_URL/portal_accounts (with Authorization header)"
 
 AUTH_RESPONSE=$(curl -s "$API_URL/portal_accounts" \
-    -H "Authorization: Bearer $TOKEN" || echo "ERROR")
+    -H "Authorization: Bearer $JWT_TOKEN" || echo "ERROR")
 
 if [[ "$AUTH_RESPONSE" == *"ERROR"* ]] || [[ "$AUTH_RESPONSE" == *"error"* ]]; then
     echo "❌ Authenticated access failed"
@@ -78,7 +78,7 @@ echo "👤 Test 4: Get current user info"
 echo "POST $API_URL/rpc/me"
 
 ME_RESPONSE=$(curl -s -X POST "$API_URL/rpc/me" \
-    -H "Authorization: Bearer $TOKEN" \
+    -H "Authorization: Bearer $JWT_TOKEN" \
     -H "Content-Type: application/json" || echo "ERROR")
 
 if [[ "$ME_RESPONSE" == *"ERROR"* ]] || [[ "$ME_RESPONSE" == *"error"* ]]; then
@@ -122,7 +122,7 @@ echo "- ✅ No hardcoded user data in database functions 🎯"
 echo
 echo "🚀 Next steps:"
 echo "- 📖 Try the examples in api/auth-examples.md"
-echo "- 🔑 Generate your own JWT tokens: ./api/scripts/gen-jwt.sh"
+echo "- 🔑 Generate your own JWT tokens: ./api/scripts/postgrest-gen-jwt.sh"
 echo "- 📄 View the API documentation at $API_URL"
 echo "- 🔍 Explore the database roles and permissions"
 echo

@@ -25,13 +25,13 @@ while [ $attempt -le $max_attempts ]; do
         echo "✅ PostgREST is ready!"
         break
     fi
-    
+
     if [ $attempt -eq $max_attempts ]; then
         echo "❌ PostgREST is not responding after $max_attempts attempts"
         echo "   Make sure PostgREST is running: docker compose up postgrest"
         exit 1
     fi
-    
+
     echo "   Attempt $attempt/$max_attempts - waiting 2 seconds..."
     sleep 2
     ((attempt++))
@@ -39,7 +39,7 @@ done
 
 # Generate JWT token for authenticated access to get all endpoints
 echo "🔑 Generating JWT token for authenticated OpenAPI spec..."
-JWT_TOKEN=$(cd ../scripts && ./gen-jwt.sh authenticated 2>/dev/null | grep -A1 "🎟️  Token:" | tail -1)
+JWT_TOKEN=$(cd ../scripts && ./postgrest-gen-jwt.sh authenticated 2>/dev/null | grep -A1 "🎟️  Token:" | tail -1)
 
 if [ -z "$JWT_TOKEN" ]; then
     echo "⚠️  Could not generate JWT token, fetching public endpoints only..."
@@ -53,36 +53,36 @@ fi
 echo "📥 Fetching OpenAPI specification..."
 if curl -s -f -H "Accept: application/openapi+json" ${AUTH_HEADER:+-H "$AUTH_HEADER"} "$POSTGREST_URL/" > "$OUTPUT_FILE"; then
     echo "✅ OpenAPI specification saved to: $OUTPUT_FILE"
-    
+
     # Pretty print the JSON
     if command -v jq >/dev/null 2>&1; then
         echo "🎨 Pretty-printing JSON..."
         jq '.' "$OUTPUT_FILE" > "${OUTPUT_FILE}.tmp" && mv "${OUTPUT_FILE}.tmp" "$OUTPUT_FILE"
     fi
-    
+
     # Display some info about the generated spec
     echo ""
     echo "📊 OpenAPI Specification Summary:"
     echo "   File size: $(wc -c < "$OUTPUT_FILE" | tr -d ' ') bytes"
-    
+
     if command -v jq >/dev/null 2>&1; then
         echo "   OpenAPI version: $(jq -r '.openapi // "unknown"' "$OUTPUT_FILE")"
         echo "   API title: $(jq -r '.info.title // "unknown"' "$OUTPUT_FILE")"
         echo "   API version: $(jq -r '.info.version // "unknown"' "$OUTPUT_FILE")"
         echo "   Number of paths: $(jq -r '.paths | length' "$OUTPUT_FILE")"
         echo "   Number of schemas: $(jq -r '.components.schemas | length' "$OUTPUT_FILE")"
-        
+
         # Log the actual paths that were retrieved
         echo ""
         echo "🔍 Retrieved API Paths:"
         jq -r '.paths | keys[]' "$OUTPUT_FILE" | sed 's/^/   • /'
     fi
-    
+
     echo ""
     echo "🌐 You can view the API documentation at:"
     echo "   Swagger UI: http://localhost:8080"
     echo "   Raw OpenAPI: $POSTGREST_URL/"
-    
+
 else
     echo "❌ Failed to fetch OpenAPI specification from $POSTGREST_URL"
     echo "   Make sure PostgREST is running and accessible"

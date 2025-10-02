@@ -45,9 +45,9 @@ export DB_CONNECTION_STRING='postgresql://portal_user:portal_password@localhost:
 cd portal-db
 make portal-db-up
 
-GATEWAY_ADDRESSES=pokt1lf0kekv9zcv9v3wy4v6jx2wh7v4665s8e0sl9s NODE=https://shannon-grove-rpc.mainnet.poktroll.com NETWORK=pocket make hydrate-gateways
+make hydrate-gateways GATEWAY_ADDRESSES=pokt1lf0kekv9zcv9v3wy4v6jx2wh7v4665s8e0sl9s NODE=https://shannon-grove-rpc.mainnet.poktroll.com NETWORK=pocket
 make hydrate-services SERVICE_IDS='eth,poly,solana,xrplevm' NODE=https://shannon-grove-rpc.mainnet.poktroll.com NETWORK=pocket
-make hydrate-applications APP_ADDRESSES='pokt1xd8jrccxtlzs8svrmg6gukn7umln7c2ww327xx,pokt185tgfw9lxyuznh9rz89556l4p8dshdkjd5283d,pokt1gwxwgvlxlzk3ex59cx7lsswyvplf0rfhunxjhy,pokt1hufj6cdgu83dluput6klhmh54vtrgtl3drttva' NODE=https://shannon-grove-rpc.mainnet.poktroll.com NETWORK=pocket
+make hydrate-applications APPLICATION_ADDRESSES='pokt1xd8jrccxtlzs8svrmg6gukn7umln7c2ww327xx,pokt185tgfw9lxyuznh9rz89556l4p8dshdkjd5283d,pokt1gwxwgvlxlzk3ex59cx7lsswyvplf0rfhunxjhy,pokt1hufj6cdgu83dluput6klhmh54vtrgtl3drttva' NODE=https://shannon-grove-rpc.mainnet.poktroll.com NETWORK=pocket
 
 psql $DB_CONNECTION_STRING
 SELECT * FROM gateways;

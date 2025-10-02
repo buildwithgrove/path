@@ -100,16 +100,6 @@ postgrest-generate-openapi: ## Generate OpenAPI specification from PostgREST
 	@echo "📝 Generating OpenAPI specification..."
 	cd api/codegen && ./generate-openapi.sh
 
-.PHONY: postgrest-generate-sdks
-postgrest-generate-sdks: ## Generate Go SDK from OpenAPI spec
-	@echo "🔧 Generating Go SDK..."
-	@echo "   Note: Requires Node.js and oapi-codegen"
-	cd api/codegen && ./generate-sdks.sh
-
-.PHONY: postgrest-generate-all
-postgrest-generate-all: postgrest-generate-openapi postgrest-generate-sdks ## Generate OpenAPI spec and Go SDK
-	@echo "✨ All generation tasks completed!"
-
 # ============================================================================
 # AUTHENTICATION & TESTING
 # ============================================================================
@@ -133,17 +123,17 @@ _require-portal-db:
 .PHONY: test-postgrest-auth
 test-postgrest-auth: _require-postgrest-api ## Test JWT authentication flow
 	@echo "🔐 Testing JWT authentication..."
-	cd api/scripts && ./test-auth.sh
+	cd api/scripts && ./test-postgrest-auth.sh
 
 .PHONY: test-postgrest-portal-app-creation
 test-postgrest-portal-app-creation: _require-postgrest-api ## Test portal application creation and retrieval via authenticated Postgres flow
 	@echo "🧪 Testing portal application creation..."
-	cd api/scripts && ./test-portal-app-creation.sh
+	cd api/scripts && ./test-postgrest-portal-app-creation.sh
 
 .PHONY: postgrest-gen-jwt
 postgrest-gen-jwt: _require-postgrest-api ## Generate JWT token
 	@echo "🔑 Generating JWT token..."
-	cd api/scripts && ./gen-jwt.sh
+	cd api/scripts && ./postgrest-gen-jwt.sh
 
 # ============================================================================
 # DATA HYDRATION

@@ -9,9 +9,9 @@
 # Reference: https://docs.postgrest.org/en/v13/tutorials/tut1.html
 #
 # Usage:
-#   ./gen-jwt.sh                           # authenticated role, default email
-#   ./gen-jwt.sh anon                      # anon role
-#   ./gen-jwt.sh authenticated user@email  # custom email
+#   ./postgrest-gen-jwt.sh                           # authenticated role, default email
+#   ./postgrest-gen-jwt.sh anon                      # anon role
+#   ./postgrest-gen-jwt.sh authenticated user@email  # custom email
 
 set -e
 
