@@ -44,6 +44,8 @@ See the following docs for more information:
 
 - [portal-db](./portal-db/README.md)
 - [portal-db/api](./portal-db/api/README.md)
+- [portal-db/sdk/go](./portal-db/sdk/go/README.md)
+- [portal-db/sdk/typescript](./portal-db/sdk/typescript/README.md)
 
 ---
 
