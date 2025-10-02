@@ -16,8 +16,8 @@
 -- Reference: https://docs.postgrest.org/en/v13/references/transactions.html
 
 CREATE OR REPLACE FUNCTION public.create_portal_application(
-    p_portal_account_id VARCHAR(36),
-    p_portal_user_id VARCHAR(36),
+    p_portal_account_id UUID,
+    p_portal_user_id INTEGER,
     p_portal_application_name VARCHAR(42) DEFAULT NULL,
     p_emoji VARCHAR(16) DEFAULT NULL,
     p_portal_application_user_limit INT DEFAULT NULL,
@@ -28,7 +28,7 @@ CREATE OR REPLACE FUNCTION public.create_portal_application(
     p_secret_key_required TEXT DEFAULT 'false'
 ) RETURNS JSON AS $$
 DECLARE
-    v_new_app_id VARCHAR(36);
+    v_new_app_id UUID;
     v_secret_key TEXT;
     v_secret_key_hash VARCHAR(255);
     v_secret_key_required_bool BOOLEAN;
@@ -67,7 +67,7 @@ BEGIN
     -- CREATE APPLICATION
     -- ========================================================================
 
-    v_new_app_id := gen_random_uuid()::text;
+    v_new_app_id := gen_random_uuid();
 
     INSERT INTO portal_applications (
         portal_application_id,

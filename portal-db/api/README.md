@@ -62,8 +62,8 @@ Database roles defined in `../schema/002_postgrest_init.sql`:
 JWT authentication available for protected endpoints:
 
 ```bash
-make gen-jwt    # Generate test token
-make test-auth  # Test authentication flow
+make postgrest-gen-jwt      # Generate test token
+make test-postgrest-auth    # Test authentication flow
 ```
 
 See `scripts/gen-jwt.sh` for details.
@@ -80,7 +80,7 @@ $$ LANGUAGE plpgsql;
 
 Usage: `curl -X POST http://localhost:3000/rpc/create_portal_application -d '{...}'`
 
-Test: `make test-portal-app`
+Test: `make test-postgrest-portal-app-creation`
 
 ## 🛠️ SDK Generation
 

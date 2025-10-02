@@ -61,7 +61,7 @@ quickstart: ## Quick start guide for Portal DB (shows commands to run)
 	@echo "$(CYAN)  curl http://localhost:3000/rpc/me -H \"Authorization: Bearer \$$JWT_TOKEN\" | jq$(RESET)"
 	@echo ""
 	@echo "$(BOLD)Step 6: Test portal app creation$(RESET)"
-	@echo "$(CYAN)  make test-portal-app$(RESET)"
+	@echo "$(CYAN)  make test-postgrest-portal-app-creation$(RESET)"
 	@echo ""
 	@echo "$(GREEN)$(BOLD)💡 Tip: Run 'make help' to see all available commands$(RESET)"
 	@echo ""
@@ -122,6 +122,14 @@ _require-postgrest-api:
 		exit 1; \
 	fi
 
+.PHONY: _require-portal-db
+_require-portal-db:
+	@if ! docker ps | grep -q portal-db; then \
+		echo "❌ Portal DB is not running. Please start it first:"; \
+		echo "   make portal-db-up"; \
+		exit 1; \
+	fi
+
 .PHONY: test-postgrest-auth
 test-postgrest-auth: _require-postgrest-api ## Test JWT authentication flow
 	@echo "🔐 Testing JWT authentication..."
@@ -144,17 +152,12 @@ postgrest-gen-jwt: _require-postgrest-api ## Generate JWT token
 DB_CONNECTION_STRING := postgresql://postgres:portal_password@localhost:5435/portal_db
 
 .PHONY: postgrest-hydrate-testdata
-postgrest-hydrate-testdata: ## Populate database with test data for development
+postgrest-hydrate-testdata: _require-portal-db ## Populate database with test data for development
 	@echo "🧪 Hydrating Portal DB with test data..."
-	@if ! docker ps | grep -q portal-db; then \
-		echo "❌ Portal DB is not running. Please start it first:"; \
-		echo "   make postgrest-up"; \
-		exit 1; \
-	fi
 	DB_CONNECTION_STRING="$(DB_CONNECTION_STRING)" ./scripts/hydrate-testdata.sh
 
 .PHONY: hydrate-services
-hydrate-services: ## Hydrate services table from blockchain data
+hydrate-services: _require-portal-db ## Hydrate services table from blockchain data
 	@echo "🌐 Hydrating services table..."
 	@if [ -z "$(NODE)" ] || [ -z "$(NETWORK)" ] || [ -z "$(SERVICE_IDS)" ]; then \
 		echo "❌ Required parameters missing. Usage:"; \
@@ -162,15 +165,10 @@ hydrate-services: ## Hydrate services table from blockchain data
 		echo "   Example: make hydrate-services NODE=https://node.example.com NETWORK=pocket SERVICE_IDS=ethereum-mainnet,polygon-mainnet"; \
 		exit 1; \
 	fi
-	@if ! docker ps | grep -q portal-db; then \
-		echo "❌ Portal DB is not running. Please start it first:"; \
-		echo "   make postgrest-up"; \
-		exit 1; \
-	fi
-	DB_CONNECTION_STRING="$(DB_CONNECTION_STRING)" NODE="$(NODE)" NETWORK="$(NETWORK)" SERVICE_IDS="$(SERVICE_IDS)" ./scripts/hydrate-services.sh
+	./scripts/hydrate-services.sh --services="$(SERVICE_IDS)" --node="$(NODE)" --chain-id="$(NETWORK)" --db-string="$(DB_CONNECTION_STRING)"
 
 .PHONY: hydrate-applications
-hydrate-applications: ## Hydrate applications table from blockchain data
+hydrate-applications: _require-portal-db ## Hydrate applications table from blockchain data
 	@echo "📱 Hydrating applications table..."
 	@if [ -z "$(NODE)" ] || [ -z "$(NETWORK)" ] || [ -z "$(APPLICATION_ADDRESSES)" ]; then \
 		echo "❌ Required parameters missing. Usage:"; \
@@ -178,15 +176,10 @@ hydrate-applications: ## Hydrate applications table from blockchain data
 		echo "   Example: make hydrate-applications NODE=https://node.example.com NETWORK=pocket APPLICATION_ADDRESSES=addr1,addr2"; \
 		exit 1; \
 	fi
-	@if ! docker ps | grep -q portal-db; then \
-		echo "❌ Portal DB is not running. Please start it first:"; \
-		echo "   make postgrest-up"; \
-		exit 1; \
-	fi
-	DB_CONNECTION_STRING="$(DB_CONNECTION_STRING)" NODE="$(NODE)" NETWORK="$(NETWORK)" APPLICATION_ADDRESSES="$(APPLICATION_ADDRESSES)" ./scripts/hydrate-applications.sh
+	./scripts/hydrate-applications.sh --apps="$(APPLICATION_ADDRESSES)" --node="$(NODE)" --chain-id="$(NETWORK)" --db-string="$(DB_CONNECTION_STRING)"
 
 .PHONY: hydrate-gateways
-hydrate-gateways: ## Hydrate gateways table from blockchain data
+hydrate-gateways: _require-portal-db ## Hydrate gateways table from blockchain data
 	@echo "🔗 Hydrating gateways table..."
 	@if [ -z "$(NODE)" ] || [ -z "$(NETWORK)" ] || [ -z "$(GATEWAY_ADDRESSES)" ]; then \
 		echo "❌ Required parameters missing. Usage:"; \
@@ -194,22 +187,12 @@ hydrate-gateways: ## Hydrate gateways table from blockchain data
 		echo "   Example: make hydrate-gateways NODE=https://node.example.com NETWORK=pocket GATEWAY_ADDRESSES=addr1,addr2"; \
 		exit 1; \
 	fi
-	@if ! docker ps | grep -q portal-db; then \
-		echo "❌ Portal DB is not running. Please start it first:"; \
-		echo "   make postgrest-up"; \
-		exit 1; \
-	fi
-	DB_CONNECTION_STRING="$(DB_CONNECTION_STRING)" NODE="$(NODE)" NETWORK="$(NETWORK)" GATEWAY_ADDRESSES="$(GATEWAY_ADDRESSES)" ./scripts/hydrate-gateways.sh
+	./scripts/hydrate-gateways.sh --gateways="$(GATEWAY_ADDRESSES)" --node="$(NODE)" --chain-id="$(NETWORK)" --db-string="$(DB_CONNECTION_STRING)"
 
 .PHONY: hydrate-prod
-hydrate-prod: ## Hydrate local database with production data
+hydrate-prod: _require-portal-db ## Hydrate local database with production data
 	@echo "🏭 Hydrating local database with production data..."
 	@echo "   Note: Requires .env file with production database credentials"
-	@if ! docker ps | grep -q portal-db; then \
-		echo "❌ Portal DB is not running. Please start it first:"; \
-		echo "   make postgrest-up"; \
-		exit 1; \
-	fi
 	./scripts/hydrate-prod.sh
 
 .PHONY: dehydrate-reset-db

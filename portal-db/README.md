@@ -6,31 +6,28 @@ The Portal DB is a _highly opinionated_ implementation of a Postgres database th
 
 ## Table of Contents <!-- omit in toc -->
 
+- [Quickstart](#quickstart)
+  - [Fastest Route](#fastest-route)
+  - [Manual Scripts](#manual-scripts)
 - [🌐 REST API Access](#-rest-api-access)
-- [💻 REST API Client SDKs](#-rest-api-client-sdks)
-- [Quickstart (for Grove Engineering)](#quickstart-for-grove-engineering)
 - [Interacting with the database](#interacting-with-the-database)
-  - [`make` Targets](#make-targets)
-  - [`scripts`](#scripts)
 - [Tools](#tools)
   - [`psql` (REQUIRED)](#psql-required)
   - [`dbeaver` (RECOMMENDED)](#dbeaver-recommended)
   - [Claude Postgres MCP Server (EXPERIMENTAL)](#claude-postgres-mcp-server-experimental)
 
-## 🌐 REST API Access
+## Quickstart
 
-The Portal DB includes a **PostgREST API** that automatically generates REST endpoints from your database schema. This provides instant HTTP access to all your data with authentication, filtering, and Go SDK generation.
+### Fastest Route
 
-**➡️ [View PostgREST API Documentation](api/README.md)** for setup, authentication, and SDK usage.
+Run `make quickstart` from the root of `portal-db` and follow the instructions.
 
-## 💻 REST API Client SDKs
+### Manual Scripts
 
-The Portal DB includes client SDKs for both Go and TypeScript.
+Alternatively, you can manually populate the database like so:
 
-**➡️ [View Go SDK Documentation](sdk/go/README.md)**
-**➡️ [View TypeScript SDK Documentation](sdk/typescript/README.md)**
-
-## Quickstart (for Grove Engineering)
+<details>
+<summary>Manual Scripts</summary>
 
 We'll connect to the following gateway and applications:
 
@@ -40,14 +37,17 @@ We'll connect to the following gateway and applications:
 - xrplevm app - `pokt1gwxwgvlxlzk3ex59cx7lsswyvplf0rfhunxjhy`
 - poly app - `pokt1hufj6cdgu83dluput6klhmh54vtrgtl3drttva`
 
+By simplifying the following commands, we can get started with the Portal DB in minutes.
+
 ```bash
 export DB_CONNECTION_STRING='postgresql://portal_user:portal_password@localhost:5435/portal_db'
+
 cd portal-db
 make portal-db-up
 
-make hydrate-gateways GATEWAY_ADDRESSES=pokt1lf0kekv9zcv9v3wy4v6jx2wh7v4665s8e0sl9s RPC_URL=https://shannon-grove-rpc.mainnet.poktroll.com CHAIN_ID=pocket
-make hydrate-services SERVICE_IDS='eth,poly,solana,xrplevm' RPC_URL=https://shannon-grove-rpc.mainnet.poktroll.com CHAIN_ID=pocket
-make hydrate-applications APP_ADDRESSES='pokt1xd8jrccxtlzs8svrmg6gukn7umln7c2ww327xx,pokt185tgfw9lxyuznh9rz89556l4p8dshdkjd5283d,pokt1gwxwgvlxlzk3ex59cx7lsswyvplf0rfhunxjhy,pokt1hufj6cdgu83dluput6klhmh54vtrgtl3drttva' RPC_URL=https://shannon-grove-rpc.mainnet.poktroll.com CHAIN_ID=pocket
+GATEWAY_ADDRESSES=pokt1lf0kekv9zcv9v3wy4v6jx2wh7v4665s8e0sl9s NODE=https://shannon-grove-rpc.mainnet.poktroll.com NETWORK=pocket make hydrate-gateways
+make hydrate-services SERVICE_IDS='eth,poly,solana,xrplevm' NODE=https://shannon-grove-rpc.mainnet.poktroll.com NETWORK=pocket
+make hydrate-applications APP_ADDRESSES='pokt1xd8jrccxtlzs8svrmg6gukn7umln7c2ww327xx,pokt185tgfw9lxyuznh9rz89556l4p8dshdkjd5283d,pokt1gwxwgvlxlzk3ex59cx7lsswyvplf0rfhunxjhy,pokt1hufj6cdgu83dluput6klhmh54vtrgtl3drttva' NODE=https://shannon-grove-rpc.mainnet.poktroll.com NETWORK=pocket
 
 psql $DB_CONNECTION_STRING
 SELECT * FROM gateways;
@@ -55,41 +55,33 @@ SELECT * FROM services;
 SELECT * FROM applications;
 ```
 
+</details>
+
+## 🌐 REST API Access
+
+The Portal DB includes a **PostgREST API** that automatically generates REST endpoints from your database schema. This provides instant HTTP access to all your data with authentication, filtering, and Go SDK generation.
+
+**➡️ [View PostgREST API Documentation](api/README.md)** for setup, authentication, and SDK usage.
+
 ## Interacting with the database
 
-:::tip make helpers
-
-You can run the following command to see all available `make` targets:
+From the `portal-db/` directory, run the following command to see all available targets:
 
 ```bash
-make | grep --line-buffered "portal"
+make
 ```
 
-:::
+Or, run the following command for a walk-through of the quickstart workflow:
 
-### `make` Targets
+```bash
+make quickstart
+```
 
-Run these commands from the `portal-db/` directory:
+To view all of the available scripts, run the following command:
 
-- `make portal-db-up` creates the Portal DB with the base schema (`./schema/001_portal_init.sql`) and runs the Portal DB on port `:5435`.
-- `make portal-db-down` stops running the local Portal DB.
-- `make portal-db-logs` Show logs from portal-db PostgreSQL container
-- `make hydrate-gateways` Hydrate gateway data from onchain source
-- `make hydrate-services` Hydrate service data from onchain source
-- `make hydrate-applications` Hydrate application data from onchain source
-- `make postgrest-hydrate-testdata` Hydrate database with test data
-- `make dehydrate-reset-db` Reset the development database
-- `make quickstart` Run complete quickstart workflow
-
-Run `make help` from the `portal-db/` directory to see all available targets.
-
-### `scripts`
-
-Helper scripts exist to quickly populate the database with real data.
-
-- `./scripts/hydrate-gateways.sh` - Retrieves all onchain data about a given `gateway` and populates the Portal DB
-- `./scripts/hydrate-services.sh` - Retrieves all onchain data about a set of `services` and populates the Portal DB
-- `./scripts/hydrate-applications.sh` - Retrieves all onchain data about a set of `applications` and populates the Portal DB
+```bash
+ls scripts
+```
 
 ## Tools
 
@@ -149,6 +141,9 @@ sudo apt-get install dbeaver-ce
 
 ### Claude Postgres MCP Server (EXPERIMENTAL)
 
+<details>
+<summary>Experimental</summary>
+
 ::: warning EXPERIMENTAL
 
 Using a postgres MCP server is experimental but worth a shot!
@@ -202,3 +197,5 @@ Using a postgres MCP server is experimental but worth a shot!
 6. Try using it by asking: `How many records are in my database?`
 
 ![claude_desktop_postgres_mcp](../docusaurus/static/img/claude_desktop_postgres_mcp.png)
+
+</details>

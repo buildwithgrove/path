@@ -35,7 +35,7 @@ validate_postgrest() {
 # 🔑 Function to generate JWT token
 generate_jwt() {
     print_status $BLUE "🔑 Generating JWT token..."
-    JWT_TOKEN=$(./gen-jwt.sh authenticated 2>/dev/null | grep -A1 "🎟️  Token:" | tail -1)
+    JWT_TOKEN=$(./gen-jwt.sh --token-only authenticated 2>/dev/null)
     if [ -z "$JWT_TOKEN" ]; then
         print_status $RED "❌ Error: Failed to generate JWT token"
         exit 1
@@ -55,8 +55,8 @@ create_portal_app() {
         -H "Content-Type: application/json" \
         -H "Authorization: Bearer $JWT_TOKEN" \
         -d "{
-            \"p_portal_account_id\": \"10000000-0000-0000-0000-000000000001\",
-            \"p_portal_user_id\": \"00000000-0000-0000-0000-000000000002\",
+            \"p_portal_account_id\": \"aab10e18-fd6d-4a15-8b14-b2997088ad6d\",
+            \"p_portal_user_id\": 1,
             \"p_portal_application_name\": \"$APP_NAME\",
             \"p_portal_application_description\": \"Test application created via automated test\",
             \"p_emoji\": \"🧪\",
