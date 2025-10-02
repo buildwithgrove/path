@@ -61,7 +61,7 @@ func (rv *requestValidator) validateHTTPRequest(req *http.Request) (gateway.Requ
 	// Ref: https://www.jsonrpc.org/specification#batch
 	//
 	var jsonrpcBatchRequest jsonrpc.BatchRequest
-	if err := json.Unmarshal(body, &jsonrpcBatchRequest); err == nil {
+	if err = json.Unmarshal(body, &jsonrpcBatchRequest); err == nil {
 		return &batchJSONRPCRequestContext{
 			logger:               rv.logger,
 			chainID:              rv.chainID,
@@ -77,7 +77,7 @@ func (rv *requestValidator) validateHTTPRequest(req *http.Request) (gateway.Requ
 
 	// 2. Attempt to parse as a single JSONRPC request
 	var jsonrpcRequest jsonrpc.Request
-	if err := json.Unmarshal(body, &jsonrpcRequest); err == nil {
+	if err = json.Unmarshal(body, &jsonrpcRequest); err == nil {
 		// single JSONRPC request is valid, return a fully initialized requestContext
 		return &requestContext{
 			logger:               rv.logger,
