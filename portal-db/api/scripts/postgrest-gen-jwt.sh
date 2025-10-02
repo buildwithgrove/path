@@ -50,14 +50,18 @@ Options:
   --token-only ROLE [EMAIL]
                           Print only the JWT for scripting
 
+Role aliases:
+  admin                   Shortcut for portal_db_admin
+  reader                  Shortcut for portal_db_reader
+
 Positional arguments:
   ROLE                    Database role to embed in the JWT (default: portal_db_admin)
   EMAIL                   Email claim to embed in the JWT (default: john@doe.com)
 
 Examples:
   ./postgrest-gen-jwt.sh
-  ./postgrest-gen-jwt.sh portal_db_reader user@example.com
-  ./postgrest-gen-jwt.sh --token-only portal_db_admin user@example.com
+  ./postgrest-gen-jwt.sh reader user@example.com
+  ./postgrest-gen-jwt.sh --token-only admin
 EOF
 }
 
@@ -66,10 +70,23 @@ if [[ "$ROLE" == "--help" || "$ROLE" == "-h" ]]; then
     exit 0
 fi
 
-if [[ "$ROLE" == "postgrest-gen-jwt" ]]; then
-    print_help
-    exit 0
-fi
+# Allow short aliases for role names
+translate_role() {
+    case "$1" in
+        admin)
+            echo "portal_db_admin"
+            ;;
+        reader)
+            echo "portal_db_reader"
+            ;;
+        *)
+            echo "$1"
+            ;;
+    esac
+}
+
+# Map alias after parsing the arguments
+ROLE=$(translate_role "$ROLE")
 
 # Calculate expiration (1 hour from now)
 EXP=$(date -v+1H +%s 2>/dev/null || date -d '+1 hour' +%s 2>/dev/null)

@@ -17,6 +17,27 @@ RESET := \033[0m
 YELLOW := \033[0;33m
 GREEN := \033[0;32m
 
+JWT_ROLE ?= portal_db_admin
+JWT_EMAIL ?= john@doe.com
+
+SECOND_GOAL := $(word 2,$(MAKECMDGOALS))
+
+ifeq ($(SECOND_GOAL),admin)
+  JWT_ROLE := portal_db_admin
+endif
+
+ifeq ($(SECOND_GOAL),reader)
+  JWT_ROLE := portal_db_reader
+endif
+
+ifdef ROLE
+  JWT_ROLE := $(ROLE)
+endif
+
+ifdef EMAIL
+  JWT_EMAIL := $(EMAIL)
+endif
+
 # ============================================================================
 # HELP
 # ============================================================================
@@ -59,17 +80,21 @@ quickstart: ## Quick start guide for Portal DB (shows commands to run)
 	@echo "$(BOLD)Step 2: Hydrate test data$(RESET)"
 	@echo "$(CYAN)  make postgrest-hydrate-testdata$(RESET)"
 	@echo ""
-	@echo "$(BOLD)Step 3: Generate JWT token$(RESET)"
-	@echo "$(CYAN)  make postgrest-gen-jwt$(RESET)"
+	@echo "$(BOLD)Step 3: Generate JWT tokens$(RESET)"
+	@echo "$(CYAN)  make postgrest-gen-jwt admin$(RESET)"
+	@echo "  # Optionally, generate reader token: $(CYAN)make postgrest-gen-jwt reader$(RESET)"
 	@echo ""
 	@echo "$(BOLD)Step 4: Export JWT token$(RESET)"
-	@echo "$(YELLOW)  # Copy the export command from the previous output$(RESET)"
+	@echo "$(YELLOW)  # Copy the export commands from the previous output$(RESET)"
 	@echo "$(CYAN)  export JWT_TOKEN=\"...\"$(RESET)"
 	@echo ""
 	@echo "$(BOLD)Step 5: Test authenticated endpoints with JWT$(RESET)"
 	@echo "$(CYAN)  curl http://localhost:3000/networks -H \"Authorization: Bearer \$$JWT_TOKEN\" | jq$(RESET)"
 	@echo "$(CYAN)  curl http://localhost:3000/portal_accounts -H \"Authorization: Bearer \$$JWT_TOKEN\" | jq$(RESET)"
 	@echo "$(CYAN)  curl http://localhost:3000/organizations -H \"Authorization: Bearer \$$JWT_TOKEN\" | jq$(RESET)"
+	@echo "$(CYAN)  curl -X POST http://localhost:3000/portal_applications -H \"Authorization: Bearer \$$JWT_TOKEN\" \\\
+	  -H 'Content-Type: application/json' -H 'Prefer: return=representation' \\\
+	  -d '{\"portal_account_id\":\"10000000-0000-0000-0000-000000000004\",\"portal_application_name\":\"CLI Quickstart App\",\"secret_key_hash\":\"demo\",\"secret_key_required\":false}' | jq$(RESET)"
 	@echo ""
 	@echo "$(BOLD)Step 6: Connect to database with psql$(RESET)"
 	@echo "$(CYAN)  psql 'postgresql://postgres:portal_password@localhost:5435/portal_db'$(RESET)"
@@ -133,17 +158,12 @@ postgrest-generate-openapi: ## Generate OpenAPI specification from PostgREST
 	cd api/codegen && ./generate-openapi.sh
 
 .PHONY: postgrest-swagger-ui
-postgrest-swagger-ui: ## Start Swagger UI to view OpenAPI specification (http://localhost:8080)
-	@if [ ! -f api/openapi/openapi.json ]; then \
-		echo "❌ OpenAPI spec not found. Generate it first:"; \
-		echo "   $(CYAN)make postgrest-generate-openapi$(RESET)"; \
-		exit 1; \
-	fi
-	@echo "🌐 Starting Swagger UI on $(CYAN)http://localhost:8080$(RESET) ..."
+postgrest-swagger-ui: postgrest-generate-openapi ## Start Swagger UI to view OpenAPI specification (http://localhost:8081)
+	@echo "🌐 Starting Swagger UI on $(CYAN)http://localhost:8081$(RESET) ..."
 	@echo "   Press Ctrl+C to stop"
-	@docker run --rm -p 8080:8080 \
+	@docker run --rm -p 8081:8080 \
 		-e SWAGGER_JSON=/openapi.json \
-		-v $(PWD)/api/openapi/openapi.json:/openapi.json \
+		-v $(PWD)/api/openapi/openapi.json:/openapi.json:ro \
 		swaggerapi/swagger-ui
 
 # ============================================================================
@@ -180,7 +200,14 @@ test-postgrest-portal-app-creation: _require-postgrest-api ## Test portal applic
 .PHONY: postgrest-gen-jwt
 postgrest-gen-jwt: _require-postgrest-api ## Generate JWT token
 	@echo "🔑 Generating JWT token..."
-	cd api/scripts && ./postgrest-gen-jwt.sh
+	cd api/scripts && ./postgrest-gen-jwt.sh $(JWT_ROLE) $(JWT_EMAIL)
+
+.PHONY: admin reader
+admin:
+	@:
+
+reader:
+	@:
 
 # ============================================================================
 # DATA HYDRATION
