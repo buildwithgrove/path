@@ -142,13 +142,7 @@ sudo apt-get install dbeaver-ce
 ### Claude Postgres MCP Server (EXPERIMENTAL)
 
 <details>
-<summary>Experimental</summary>
-
-::: warning EXPERIMENTAL
-
-Using a postgres MCP server is experimental but worth a shot!
-
-:::
+<summary>Experimental Postgres MCP Server</summary>
 
 1. Install [postgres-mcp](https://github.com/crystaldba/postgres-mcp) using `pipx`.
 

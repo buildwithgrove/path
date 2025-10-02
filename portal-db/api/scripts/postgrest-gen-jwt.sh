@@ -9,9 +9,9 @@
 # Reference: https://docs.postgrest.org/en/v13/tutorials/tut1.html
 #
 # Usage:
-#   ./postgrest-gen-jwt.sh                           # authenticated role, default email
-#   ./postgrest-gen-jwt.sh anon                      # anon role
-#   ./postgrest-gen-jwt.sh authenticated user@email  # custom email
+#   ./postgrest-gen-jwt.sh                              # portal_db_admin role, sample email
+#   ./postgrest-gen-jwt.sh portal_db_reader user@email  # custom role + email
+#   ./postgrest-gen-jwt.sh --token-only portal_db_admin user@email
 
 set -e
 
@@ -29,14 +29,14 @@ RESET='\033[0m'
 JWT_SECRET="${JWT_SECRET:-supersecretjwtsecretforlocaldevelopment123456789}"
 
 # Parse arguments
-ROLE="${1:-authenticated}"
+ROLE="${1:-portal_db_admin}"
 EMAIL="${2:-john@doe.com}"
 TOKEN_ONLY=false
 
 # Check for --token-only flag
 if [[ "$1" == "--token-only" ]]; then
     TOKEN_ONLY=true
-    ROLE="${2:-authenticated}"
+    ROLE="${2:-portal_db_admin}"
     EMAIL="${3:-john@doe.com}"
 fi
 
@@ -88,6 +88,6 @@ else
     echo -e "${CYAN}export JWT_TOKEN=\"$JWT_TOKEN\"${RESET}"
     echo ""
     echo -e "${BOLD}Usage:${RESET}"
-    echo -e "${CYAN}curl http://localhost:3000/rpc/me -H \"Authorization: Bearer \$JWT_TOKEN\"${RESET}"
+    echo -e "${CYAN}curl http://localhost:3000/organizations -H \"Authorization: Bearer \$JWT_TOKEN\"${RESET}"
     echo ""
 fi

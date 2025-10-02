@@ -1,23 +1,27 @@
 # Portal Database API <!-- omit in toc -->
 
-**PostgREST configuration** and **SDK generation tools** for the Portal Database.
+**PostgREST configuration** for the Portal Database.
 
 PostgREST automatically generates a REST API from the PostgreSQL database schema.
 
 ## 🚀 Quick Start <!-- omit in toc -->
 
 ```bash
-# From portal-db directory
+cd portal-db
 make portal-db-up                    # Start PostgreSQL + PostgREST (port 3000)
 make postgrest-hydrate-testdata      # Add test data
 curl http://localhost:3000/networks | jq  # Test API
 ```
 
+You can run `make` to see a list of available commands.
+
+You can also run `make quickstart` for a loner
+
 ## Table of Contents <!-- omit in toc -->
 
 - [How it Works](#how-it-works)
 - [⚙️ Configuration](#️-configuration)
-- [Authentication (Optional)](#authentication-optional)
+- [Authentication](#authentication)
 - [💾 Database Transactions](#-database-transactions)
 - [🛠️ SDK Generation](#️-sdk-generation)
 - [🔧 Development Commands](#-development-commands)
@@ -44,19 +48,27 @@ server-port = 3000
 
 Database roles defined in `../schema/002_postgrest_init.sql`:
 
-- `anon` - Public data (networks, services)
-- `authenticated` - User data (accounts, applications)
+- `authenticator` - Connection role used exclusively by PostgREST (no direct API access)
+- `portal_db_admin` - JWT-backed role with read/write access (subject to RLS)
+- `portal_db_reader` - JWT-backed role with read-only access (subject to RLS)
+- `anon` - Default unauthenticated role with no privileges
 
-## Authentication (Optional)
+## Authentication
 
-JWT authentication available for protected endpoints:
+All API access flows through manually issued JWTs. The token must contain a
+`role` claim set to either `portal_db_admin` or `portal_db_reader`. The helper
+script wires this up for local testing:
 
 ```bash
-make postgrest-gen-jwt      # Generate test token
-make test-postgrest-auth    # Test authentication flow
+# From portal-db directory
+./api/scripts/postgrest-gen-jwt.sh portal_db_reader user@example.com
+export JWT_TOKEN=$(./api/scripts/postgrest-gen-jwt.sh --token-only portal_db_admin admin@example.com)
+curl http://localhost:3000/organizations -H "Authorization: Bearer $JWT_TOKEN"
 ```
 
-See `scripts/gen-jwt.sh` for details.
+PostgREST validates the signature, sets `SET ROLE <role claim>`, and row-level
+security policies in `../schema/002_postgrest_init.sql` scope the session based
+on the selected role.
 
 ## 💾 Database Transactions
 

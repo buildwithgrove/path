@@ -1,7 +1,8 @@
 #!/bin/bash
 
 # 🧪 Test Script for Portal Application Creation
-# This script tests the create_portal_application function and retrieval
+# This script exercises the PostgREST endpoints for inserting a portal
+# application and its RBAC membership using the admin role.
 
 set -e
 
@@ -35,7 +36,7 @@ validate_postgrest() {
 # 🔑 Function to generate JWT token
 generate_jwt() {
     print_status $BLUE "🔑 Generating JWT token..."
-    JWT_TOKEN=$(./postgrest-gen-jwt.sh --token-only authenticated 2>/dev/null)
+    JWT_TOKEN=$(./postgrest-gen-jwt.sh --token-only portal_db_admin admin@example.com 2>/dev/null)
     if [ -z "$JWT_TOKEN" ]; then
         print_status $RED "❌ Error: Failed to generate JWT token"
         exit 1
@@ -47,47 +48,70 @@ generate_jwt() {
 create_portal_app() {
     print_status $BLUE "📱 Creating new portal application..."
 
-    # Generate a unique app name with timestamp
     TIMESTAMP=$(date +%s)
     APP_NAME="Test App ${TIMESTAMP}"
 
-    CREATE_RESPONSE=$(curl -s -X POST http://localhost:3000/rpc/create_portal_application \
+    # Generate secret key and hash (hex encoded)
+    SECRET_KEY=$(openssl rand -hex 32)
+    SECRET_KEY_HASH=$(printf "%s" "$SECRET_KEY" | openssl dgst -sha256 | awk '{print $2}')
+
+    CREATE_RESPONSE=$(curl -s -X POST http://localhost:3000/portal_applications \
         -H "Content-Type: application/json" \
+        -H "Prefer: return=representation" \
         -H "Authorization: Bearer $JWT_TOKEN" \
         -d "{
-            \"p_portal_account_id\": \"10000000-0000-0000-0000-000000000004\",
-            \"p_portal_user_id\": \"30000000-0000-0000-0000-000000000001\",
-            \"p_portal_application_name\": \"$APP_NAME\",
-            \"p_portal_application_description\": \"Test application created via automated test\",
-            \"p_emoji\": \"🧪\",
-            \"p_secret_key_required\": \"false\"
+            \"portal_account_id\": \"10000000-0000-0000-0000-000000000004\",
+            \"portal_application_name\": \"$APP_NAME\",
+            \"portal_application_description\": \"Test application created via automated test\",
+            \"emoji\": \"test\",
+            \"secret_key_hash\": \"$SECRET_KEY_HASH\",
+            \"secret_key_required\": false
         }")
 
-    # Check if the response contains an error
-    if echo "$CREATE_RESPONSE" | grep -q "\"code\""; then
+    if echo "$CREATE_RESPONSE" | jq -e '.[0]' >/dev/null 2>&1; then
+        APP_ID=$(echo "$CREATE_RESPONSE" | jq -r '.[0].portal_application_id')
+    else
         print_status $RED "❌ Error creating portal application:"
         echo "$CREATE_RESPONSE" | jq '.'
         exit 1
     fi
 
-    # Extract the application ID from the response
-    APP_ID=$(echo "$CREATE_RESPONSE" | jq -r '.portal_application_id')
-    SECRET_KEY=$(echo "$CREATE_RESPONSE" | jq -r '.secret_key')
-
-    if [ "$APP_ID" = "null" ] || [ -z "$APP_ID" ]; then
+    if [ -z "$APP_ID" ] || [ "$APP_ID" = "null" ]; then
         print_status $RED "❌ Error: Could not extract application ID from response"
-        echo "$CREATE_RESPONSE"
+        echo "$CREATE_RESPONSE" | jq '.'
         exit 1
     fi
 
     print_status $GREEN "✅ Portal application created successfully!"
     print_status $CYAN "   📱 Application ID: $APP_ID"
     print_status $CYAN "   🏷️  Application Name: $APP_NAME"
-    print_status $CYAN "   🔑 Secret Key: $SECRET_KEY"
+    print_status $CYAN "   🔑 Secret Key (store securely!): $SECRET_KEY"
 
     echo ""
     print_status $PURPLE "📋 Full Create Response:"
     echo "$CREATE_RESPONSE" | jq '.'
+}
+
+# 👥 Function to grant user access via RBAC entry
+create_portal_app_rbac() {
+    print_status $BLUE "👥 Assigning user to portal application..."
+
+    RBAC_RESPONSE=$(curl -s -X POST http://localhost:3000/portal_application_rbac \
+        -H "Content-Type: application/json" \
+        -H "Prefer: return=representation" \
+        -H "Authorization: Bearer $JWT_TOKEN" \
+        -d "{
+            \"portal_application_id\": \"$APP_ID\",
+            \"portal_user_id\": \"30000000-0000-0000-0000-000000000001\"
+        }")
+
+    if echo "$RBAC_RESPONSE" | jq -e '.[0]' >/dev/null 2>&1; then
+        print_status $GREEN "✅ Portal application RBAC entry created"
+    else
+        print_status $RED "❌ Error creating RBAC entry:"
+        echo "$RBAC_RESPONSE" | jq '.'
+        exit 1
+    fi
 }
 
 # 🔍 Function to retrieve portal application
@@ -170,6 +194,7 @@ main() {
     validate_postgrest
     generate_jwt
     create_portal_app
+    create_portal_app_rbac
     retrieve_portal_app
     retrieve_by_name
     show_summary
