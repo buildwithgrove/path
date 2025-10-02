@@ -15,12 +15,28 @@
 
 set -e
 
+# Color codes
+CYAN='\033[0;36m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+BOLD='\033[1m'
+RESET='\033[0m'
+
 # JWT secret from postgrest.conf (must match exactly)
 JWT_SECRET="supersecretjwtsecretforlocaldevelopment123456789"
 
 # Parse arguments
 ROLE="${1:-authenticated}"
 EMAIL="${2:-john@doe.com}"
+TOKEN_ONLY=false
+
+# Check for --token-only flag
+if [[ "$1" == "--token-only" ]]; then
+    TOKEN_ONLY=true
+    ROLE="${2:-authenticated}"
+    EMAIL="${3:-john@doe.com}"
+fi
 
 # Show help
 if [[ "$ROLE" == "--help" || "$ROLE" == "-h" ]]; then
@@ -52,20 +68,24 @@ JWT_TOKEN="$HEADER.$PAYLOAD.$SIGNATURE"
 # Output
 # ============================================================================
 
-echo "JWT Token Generated"
-echo "===================="
-echo "Role:    $ROLE"
-echo "Email:   $EMAIL"
-echo "Expires: $(date -r $EXP 2>/dev/null || date -d @$EXP 2>/dev/null)"
-echo ""
-echo "Token:"
-echo "$JWT_TOKEN"
-echo ""
-echo "Usage:"
-echo "curl http://localhost:3000/rpc/me \\"
-echo "  -H \"Authorization: Bearer \$JWT_TOKEN\""
-echo ""
-
-# Export for use in other scripts
-export JWT_TOKEN
-echo "Exported as \$JWT_TOKEN environment variable"
+if [[ "$TOKEN_ONLY" == true ]]; then
+    # Just output the token for scripting
+    echo "$JWT_TOKEN"
+else
+    # Full colorized output
+    echo -e "${GREEN}${BOLD}🔑 JWT Token Generated${RESET}"
+    echo -e "${GREEN}${BOLD}=======================${RESET}"
+    echo -e "${BOLD}Role:${RESET}    ${BLUE}$ROLE${RESET}"
+    echo -e "${BOLD}Email:${RESET}   ${BLUE}$EMAIL${RESET}"
+    echo -e "${BOLD}Expires:${RESET} ${BLUE}$(date -r $EXP 2>/dev/null || date -d @$EXP 2>/dev/null)${RESET}"
+    echo ""
+    echo -e "${BOLD}Token:${RESET}"
+    echo -e "${YELLOW}$JWT_TOKEN${RESET}"
+    echo ""
+    echo -e "${BOLD}Export to shell:${RESET}"
+    echo -e "${CYAN}export JWT_TOKEN=\"$JWT_TOKEN\"${RESET}"
+    echo ""
+    echo -e "${BOLD}Usage:${RESET}"
+    echo -e "${CYAN}curl http://localhost:3000/rpc/me -H \"Authorization: Bearer \$JWT_TOKEN\"${RESET}"
+    echo ""
+fi
