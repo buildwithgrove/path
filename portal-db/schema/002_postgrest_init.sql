@@ -1,24 +1,24 @@
 -- ============================================================================
--- PostgREST API Setup for Portal DB
+-- PostgREST API Authentication Setup for Portal DB
 -- ============================================================================
 -- This file sets up the database roles and permissions for PostgREST JWT authentication
 
 -- ============================================================================
 -- CREATE ESSENTIAL POSTGREST ROLES
 -- ============================================================================
--- 
+--
 -- THREE-ROLE AUTHENTICATION SYSTEM:
 -- 1. AUTHENTICATOR: The role PostgREST uses to connect to the database
 --    - Has LOGIN permission to connect
---    - Has NOINHERIT so it starts with no permissions  
+--    - Has NOINHERIT so it starts with no permissions
 --    - Can switch to other roles via "SET ROLE" command
--- 
+--
 -- 2. ANON: Role for anonymous/unauthenticated requests
 --    - Has NOLOGIN (cannot connect directly)
 --    - Limited permissions for public data only
 --    - Used when no JWT token is provided
--- 
--- 3. AUTHENTICATED: Role for authenticated requests  
+--
+-- 3. AUTHENTICATED: Role for authenticated requests
 --    - Has NOLOGIN (cannot connect directly)
 --    - Extended permissions for user data
 --    - Used when JWT contains "role": "authenticated"
@@ -41,7 +41,7 @@ CREATE ROLE authenticated NOLOGIN;
 GRANT USAGE ON SCHEMA public TO anon, authenticated;
 
 -- Grant basic SELECT permissions for anonymous users (public data only)
-GRANT SELECT ON TABLE 
+GRANT SELECT ON TABLE
     networks,
     services,
     service_endpoints,
@@ -51,7 +51,7 @@ TO anon;
 
 -- Grant authenticated users access to anon role permissions plus more tables
 GRANT anon TO authenticated;
-GRANT SELECT ON TABLE 
+GRANT SELECT ON TABLE
     organizations,
     portal_accounts,
     portal_applications,
@@ -68,7 +68,7 @@ GRANT USAGE ON SCHEMA api TO anon, authenticated;
 -- ============================================================================
 -- Example function showing how to access JWT claims in SQL
 -- Based on PostgREST documentation: https://postgrest.org/en/stable/explanations/db_authz.html
--- 
+--
 -- NOTE: RPC functions must be in 'public' schema for PostgREST to find them
 -- PostgREST looks for RPC functions in the public schema by default
 --
@@ -101,13 +101,13 @@ GRANT EXECUTE ON FUNCTION public.me TO authenticated;
 -- ============================================================================
 -- GRANTS FOR AUTHENTICATOR
 -- ============================================================================
--- 
+--
 -- CRITICAL: Allow authenticator to "become" other roles
 -- When PostgREST receives a JWT with "role": "authenticated", it executes:
 --   SET ROLE authenticated;
 -- When PostgREST receives no JWT (or invalid JWT), it executes:
 --   SET ROLE anon;
--- 
+--
 -- These GRANT statements make the role switching possible:
 
 -- Grant the authenticator role the ability to switch to API roles

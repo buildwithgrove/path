@@ -1,6 +1,7 @@
 -- ============================================================================
 -- PATH Portal Database Schema
 -- ============================================================================
+-- This file sets up the baseline for PATH's Portal DB.
 
 -- ============================================================================
 -- CUSTOM TYPES
@@ -129,7 +130,7 @@ COMMENT ON COLUMN portal_users.portal_admin IS 'Whether user has admin privilege
 -- TODO_CONSIDERATION: Consider session management table
 
 -- Portal User Auth Table
--- Determines which Auth Provider (portal_auth_provider) and which Auth Type 
+-- Determines which Auth Provider (portal_auth_provider) and which Auth Type
 -- (portal_auth_type) a user is authenticated into the Portal by
 CREATE TABLE portal_user_auth (
     portal_user_auth_id SERIAL PRIMARY KEY,
@@ -299,7 +300,7 @@ CREATE TABLE services (
     coming_soon BOOLEAN DEFAULT FALSE,
     quality_fallback_enabled BOOLEAN DEFAULT FALSE,
     hard_fallback_enabled BOOLEAN DEFAULT FALSE,
-    svg_icon TEXT, 
+    svg_icon TEXT,
     public_endpoint_url VARCHAR(169),
     status_endpoint_url VARCHAR(169),
     status_query TEXT,

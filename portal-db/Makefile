@@ -32,56 +32,44 @@ help: ## Show all available targets
 # SERVICE MANAGEMENT
 # ============================================================================
 
-.PHONY: postgrest-up
-postgrest-up: ## Start PostgREST API service and PostgreSQL DB
-	@echo "🚀 Starting Portal DB API services..."
+.PHONY: portal-db-up
+portal-db-up: ## Start all Portal DB services
+	@echo "🚀 Starting all Portal DB services..."
 	docker compose up -d
 	@echo "✅ Services started!"
 	@echo "   PostgreSQL DB: localhost:5435"
 	@echo "   PostgREST API: http://localhost:3000"
+	@echo ""
+	@echo "🔧 You can connect to the database using:"
+	@echo "   psql 'postgresql://postgres:portal_password@localhost:5435/portal_db'"
 
-.PHONY: postgrest-down
-postgrest-down: ## Stop PostgREST API service and PostgreSQL DB
-	@echo "🛑 Stopping Portal DB API services..."
+.PHONY: portal-db-down
+portal-db-down: ## Stop all Portal DB services
+	@echo "🛑 Stopping all Portal DB services..."
 	docker compose down
 	@echo "✅ Services stopped!"
 
-.PHONY: postgrest-logs
-postgrest-logs: ## Show logs from PostgREST API service and PostgreSQL DB
+.PHONY: portal-db-logs
+portal-db-logs: ## Show logs from all Portal DB services
 	docker compose logs -f
-
-.PHONY: portal-db-up
-portal-db-up: ## Start Portal DB PostgreSQL container only
-	@echo "🚀 Starting Portal DB PostgreSQL container..."
-	docker compose up -d portal-db
-	@echo "✅ PostgreSQL container started!"
-	@echo "   Database: localhost:5435"
-	@echo "   User: postgres"
-	@echo "   Password: portal_password"
-
-.PHONY: portal-db-down
-portal-db-down: ## Stop Portal DB PostgreSQL container only
-	@echo "🛑 Stopping Portal DB PostgreSQL container..."
-	docker compose down portal-db
-	@echo "✅ PostgreSQL container stopped!"
 
 # ============================================================================
 # API GENERATION
 # ============================================================================
 
-.PHONY: generate-openapi
-generate-openapi: ## Generate OpenAPI specification from PostgREST
+.PHONY: postgrest-generate-openapi
+postgrest-generate-openapi: ## Generate OpenAPI specification from PostgREST
 	@echo "📝 Generating OpenAPI specification..."
 	cd api/codegen && ./generate-openapi.sh
 
-.PHONY: generate-sdks
-generate-sdks: ## Generate Go SDK from OpenAPI spec
+.PHONY: postgrest-generate-sdks
+postgrest-generate-sdks: ## Generate Go SDK from OpenAPI spec
 	@echo "🔧 Generating Go SDK..."
 	@echo "   Note: Requires Node.js and oapi-codegen"
 	cd api/codegen && ./generate-sdks.sh
 
-.PHONY: generate-all
-generate-all: generate-openapi generate-sdks ## Generate OpenAPI spec and Go SDK
+.PHONY: postgrest-generate-all
+postgrest-generate-all: postgrest-generate-openapi postgrest-generate-sdks ## Generate OpenAPI spec and Go SDK
 	@echo "✨ All generation tasks completed!"
 
 # ============================================================================

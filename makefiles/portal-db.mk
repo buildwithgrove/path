@@ -5,8 +5,42 @@
 # These targets manage the local PostgreSQL database for portal development.
 # The database runs in a Docker container and is accessible on port 5435.
 
+
+.PHONY: portal_db_quickstart
+portal_db_quickstart: ## Quick start guide for Portal DB (starts services, hydrates data, tests endpoints)
+	@echo ""
+	@echo "$(BOLD)$(CYAN)🗄️ Portal DB Quick Start$(RESET)"
+	@echo ""
+	@echo "$(BOLD)Step 1: Starting Portal DB services...$(RESET)"
+	@cd ./portal-db && make postgrest-up
+	@echo ""
+	@echo "$(BOLD)Step 2: Hydrating test data...$(RESET)"
+	@cd ./portal-db && make hydrate-testdata
+	@echo ""
+	@echo "$(BOLD)Step 3: Testing public endpoint (networks)...$(RESET)"
+	@curl -s http://localhost:3000/networks | jq
+	@echo ""
+	@echo "$(BOLD)Step 4: Generating JWT token...$(RESET)"
+	@cd ./portal-db && make gen-jwt
+	@echo ""
+	@echo "$(BOLD)Step 5: Set your JWT token:$(RESET)"
+	@echo "$(YELLOW)export TOKEN=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYXV0aGVudGljYXRlZCIsImVtYWlsIjoiam9obkBkb2UuY29tIiwiZXhwIjoxNzU4MjEzNjM5fQ.i1_Mrj86xsdgsxDqLmJz8FDd9dd-sJhlS0vBQXGIHuU$(RESET)"
+	@echo ""
+	@echo "$(BOLD)Step 6: Testing authenticated endpoints...$(RESET)"
+	@echo "$(CYAN)Testing portal_accounts:$(RESET)"
+	@curl -s http://localhost:3000/portal_accounts -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYXV0aGVudGljYXRlZCIsImVtYWlsIjoiam9obkBkb2UuY29tIiwiZXhwIjoxNzU4MjEzNjM5fQ.i1_Mrj86xsdgsxDqLmJz8FDd9dd-sJhlS0vBQXGIHuU" | jq
+	@echo ""
+	@echo "$(CYAN)Testing rpc/me:$(RESET)"
+	@curl -s http://localhost:3000/rpc/me -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYXV0aGVudGljYXRlZCIsImVtYWlsIjoiam9obkBkb2UuY29tIiwiZXhwIjoxNzU4MjEzNjM5fQ.i1_Mrj86xsdgsxDqLmJz8FDd9dd-sJhlS0vBQXGIHuU" -H "Content-Type: application/json" | jq
+	@echo ""
+	@echo "$(BOLD)Step 7: Testing portal app creation...$(RESET)"
+	@cd ./portal-db && make test-portal-app
+	@echo ""
+	@echo "$(GREEN)$(BOLD)✅ Quick start complete!$(RESET)"
+	@echo ""
+
 .PHONY: portal_db_up
-portal_db_up: check_docker ## Creates the Portal Postgres DB with the base schema (`./init/001_schema.sql`) and runs the Portal DB on port `:5435`.
+portal_db_up: check_docker ## Creates the Portal Postgres DB with the base schema (`./schema/001_portal_init.sql`) and runs the Portal DB on port `:5435`.
 	@echo "🚀 Starting portal-db PostgreSQL container..."
 	@cd portal-db && docker compose up -d
 	@echo "✅ PostgreSQL is starting up on port 5435"
@@ -17,72 +51,3 @@ portal_db_up: check_docker ## Creates the Portal Postgres DB with the base schem
 	@echo ""
 	@echo "🔧 To use the hydrate scripts, export the DB connection string:"
 	@echo "   export DB_CONNECTION_STRING='postgresql://portal_user:portal_password@localhost:5435/portal_db'"
-
-.PHONY: portal_db_env
-portal_db_env: portal_db_up ## Creates and inits the Database, and helps set up the local development environment.
-	@echo "⏳ Waiting for PostgreSQL to be ready..."
-	@timeout=60; \
-	while [ $$timeout -gt 0 ]; do \
-		if docker exec path-portal-db pg_isready -U portal_user -d portal_db >/dev/null 2>&1; then \
-			echo "✅ PostgreSQL is ready!"; \
-			break; \
-		fi; \
-		echo "⌛ PostgreSQL not ready yet, waiting... ($$timeout seconds left)"; \
-		sleep 2; \
-		timeout=$$((timeout-2)); \
-	done; \
-	if [ $$timeout -eq 0 ]; then \
-		echo "❌ PostgreSQL failed to start within 60 seconds"; \
-		exit 1; \
-	fi
-	@echo ""
-	@echo "🎉 Portal DB is ready! Export the connection string with:"
-	@echo "   export DB_CONNECTION_STRING='postgresql://portal_user:portal_password@localhost:5435/portal_db'"
-	@echo ""
-	@echo "📝 Or copy and paste this command:"
-	@echo 'export DB_CONNECTION_STRING="postgresql://portal_user:portal_password@localhost:5435/portal_db"'
-
-.PHONY: portal_db_down
-portal_db_down: ## Stops running the local Portal Postgres DB
-	@echo "🛑 Stopping portal-db PostgreSQL container..."
-	@cd portal-db && docker compose down
-	@echo "✅ PostgreSQL container stopped"
-
-.PHONY: portal_db_status
-portal_db_status: ## Check status of portal-db PostgreSQL container
-	@echo "📊 Portal DB Status:"
-	@cd portal-db && docker compose ps
-
-.PHONY: portal_db_logs
-portal_db_logs: ## Show logs from portal-db PostgreSQL container
-	@cd portal-db && docker compose logs -f postgres
-
-.PHONY: portal_db_clean
-portal_db_clean: portal_db_down ## Stops the local Portal Postgres DB, deletes the database, and drops the schema.
-	@echo "🧹 Cleaning up portal-db data volumes..."
-	@cd portal-db && docker compose down -v
-	@docker volume prune -f --filter label=com.docker.compose.project=portal-db
-	@echo "✅ All portal-db data removed"
-
-.PHONY: portal_db_connect
-portal_db_connect: ## Connect to the portal database using psql
-	@echo "🔗 Connecting to portal database..."
-	@docker exec -it path-portal-db psql -U portal_user -d portal_db
-
-.PHONY: portal_db_hydrate_gateways
-portal_db_hydrate_gateways: ## Hydrate the portal database with real data
-	@echo "Hydrating portal database..." ; \
-	DB_CONNECTION_STRING='postgresql://portal_user:portal_password@localhost:5435/portal_db' \
-	./portal-db/scripts/hydrate-gateways.sh $(filter-out $@,$(MAKECMDGOALS))
-
-.PHONY: portal_db_hydrate_services
-portal_db_hydrate_services: ## Hydrate the portal database with real data
-	@echo "Hydrating portal database..." ; \
-	DB_CONNECTION_STRING='postgresql://portal_user:portal_password@localhost:5435/portal_db' \
-	./portal-db/scripts/hydrate-services.sh $(filter-out $@,$(MAKECMDGOALS))
-
-.PHONY: portal_db_hydrate_applications
-portal_db_hydrate_applications: ## Hydrate the portal database with real data
-	@echo "Hydrating portal database..." ; \
-	DB_CONNECTION_STRING='postgresql://portal_user:portal_password@localhost:5435/portal_db' \
-	./portal-db/scripts/hydrate-applications.sh $(filter-out $@,$(MAKECMDGOALS))

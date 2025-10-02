@@ -74,7 +74,7 @@ make | grep --line-buffered "portal"
 
 ### `make` Targets
 
-- `make portal_db_up` creates the Portal DB with the base schema (`./schema/001_schema.sql`) and runs the Portal DB on port `:5435`.
+- `make portal_db_up` creates the Portal DB with the base schema (`./schema/001_portal_init.sql`) and runs the Portal DB on port `:5435`.
 - `make portal_db_down` stops running the local Portal DB.
 - `make portal_db_env` creates and inits the Database, and helps set up the local development environment.
 - `make portal_db_clean` stops the local Portal DB and deletes the database and drops the schema.
@@ -196,7 +196,7 @@ Using a postgres MCP server is experimental but worth a shot!
    - Favor correctness, readability, and performance best practices in all SQL you produce.
    ```
 
-5. Upload [schema/001_schema.sql](schema/001_schema.sql) as one of the files to the Claude Project.
+5. Upload [schema/001_portal_init.sql](schema/001_portal_init.sql) as one of the files to the Claude Project.
 
 6. Try using it by asking: `How many records are in my database?`
 

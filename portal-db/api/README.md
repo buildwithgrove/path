@@ -298,7 +298,7 @@ make hydrate-testdata
 
 When you modify tables or add new functions:
 
-1. **Update schema**: Edit `../schema/001_schema.sql`
+1. **Update schema**: Edit `../schema/001_portal_init.sql`
 2. **Restart database**: `make postgrest-down && make postgrest-up`
 3. **Regenerate SDK**: `make generate-all`
 
