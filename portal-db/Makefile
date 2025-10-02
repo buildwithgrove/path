@@ -23,14 +23,14 @@ help: ## Show all available targets
 	@echo "$(BOLD)=== 🛠️ Service Management ===$(RESET)"
 	@grep -h -E '^(portal-db-up|portal-db-down|portal-db-logs):.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "$(CYAN)%-30s$(RESET) %s\n", $$1, $$2}'
 	@echo ""
-	@echo "$(BOLD)=== 📝 API Generation ===$(RESET)"
-	@grep -h -E '^(postgrest-generate-openapi|postgrest-generate-sdks|postgrest-generate-all):.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "$(CYAN)%-30s$(RESET) %s\n", $$1, $$2}'
+	@echo "$(BOLD)=== 💧 Data Hydration ===$(RESET)"
+	@grep -h -E '^(postgrest-hydrate-testdata|hydrate-services|hydrate-applications|hydrate-gateways|hydrate-prod|dehydrate-reset-db):.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "$(CYAN)%-30s$(RESET) %s\n", $$1, $$2}'
 	@echo ""
 	@echo "$(BOLD)=== 🔐 Authentication & Testing ===$(RESET)"
-	@grep -h -E '^(test-auth|test-portal-app|gen-jwt|reset-dev-db):.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "$(CYAN)%-30s$(RESET) %s\n", $$1, $$2}'
+	@grep -h -E '^(test-postgrest-auth|test-postgrest-portal-app-creation|postgrest-gen-jwt):.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "$(CYAN)%-30s$(RESET) %s\n", $$1, $$2}'
 	@echo ""
-	@echo "$(BOLD)=== 💧 Data Hydration ===$(RESET)"
-	@grep -h -E '^(hydrate-testdata|hydrate-services|hydrate-applications|hydrate-gateways|hydrate-prod):.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "$(CYAN)%-30s$(RESET) %s\n", $$1, $$2}'
+	@echo "$(BOLD)=== 📝 API Generation ===$(RESET)"
+	@grep -h -E '^(postgrest-generate-openapi|postgrest-generate-sdks|postgrest-generate-all):.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "$(CYAN)%-30s$(RESET) %s\n", $$1, $$2}'
 	@echo ""
 
 # ============================================================================
@@ -47,13 +47,13 @@ quickstart: ## Quick start guide for Portal DB (shows commands to run)
 	@echo "$(CYAN)  make portal-db-up$(RESET)"
 	@echo ""
 	@echo "$(BOLD)Step 2: Hydrate test data$(RESET)"
-	@echo "$(CYAN)  make hydrate-testdata$(RESET)"
+	@echo "$(CYAN)  make postgrest-hydrate-testdata$(RESET)"
 	@echo ""
 	@echo "$(BOLD)Step 3: Test public endpoint$(RESET)"
 	@echo "$(CYAN)  curl http://localhost:3000/networks | jq$(RESET)"
 	@echo ""
 	@echo "$(BOLD)Step 4: Generate JWT token$(RESET)"
-	@echo "$(CYAN)  make gen-jwt$(RESET)"
+	@echo "$(CYAN)  make postgrest-gen-jwt$(RESET)"
 	@echo "$(YELLOW)  # Copy the export command from output$(RESET)"
 	@echo ""
 	@echo "$(BOLD)Step 5: Test authenticated endpoints$(RESET)"
@@ -114,40 +114,28 @@ postgrest-generate-all: postgrest-generate-openapi postgrest-generate-sdks ## Ge
 # AUTHENTICATION & TESTING
 # ============================================================================
 
-.PHONY: test-auth
-test-auth: ## Test JWT authentication flow
-	@echo "🔐 Testing JWT authentication..."
+.PHONY: _require-postgrest-api
+_require-postgrest-api:
 	@if ! docker ps | grep -q portal-db-api; then \
 		echo "❌ PostgREST API is not running. Please start it first:"; \
-		echo "   make postgrest-up"; \
+		echo "   make portal-db-up"; \
 		exit 1; \
 	fi
+
+.PHONY: test-postgrest-auth
+test-postgrest-auth: _require-postgrest-api ## Test JWT authentication flow
+	@echo "🔐 Testing JWT authentication..."
 	cd api/scripts && ./test-auth.sh
 
-.PHONY: test-portal-app
-test-portal-app: ## Test portal application creation and retrieval
+.PHONY: test-postgrest-portal-app-creation
+test-postgrest-portal-app-creation: _require-postgrest-api ## Test portal application creation and retrieval via authenticated Postgres flow
 	@echo "🧪 Testing portal application creation..."
-	@if ! docker ps | grep -q portal-db-api; then \
-		echo "❌ PostgREST API is not running. Please start it first:"; \
-		echo "   make postgrest-up"; \
-		exit 1; \
-	fi
 	cd api/scripts && ./test-portal-app-creation.sh
 
-.PHONY: gen-jwt
-gen-jwt: ## Generate JWT token
+.PHONY: postgrest-gen-jwt
+postgrest-gen-jwt: _require-postgrest-api ## Generate JWT token
 	@echo "🔑 Generating JWT token..."
-	@if ! docker ps | grep -q portal-db-api; then \
-		echo "❌ PostgREST API is not running. Please start it first:"; \
-		echo "   make postgrest-up"; \
-		exit 1; \
-	fi
 	cd api/scripts && ./gen-jwt.sh
-
-.PHONY: reset-dev-db
-reset-dev-db: ## Reset the development database
-	@echo "🔄 Resetting database..."
-	rm -rf ./tmp/portal_db_data
 
 # ============================================================================
 # DATA HYDRATION
@@ -155,8 +143,8 @@ reset-dev-db: ## Reset the development database
 # Database connection for all hydrate scripts (matches docker-compose.yml)
 DB_CONNECTION_STRING := postgresql://postgres:portal_password@localhost:5435/portal_db
 
-.PHONY: hydrate-testdata
-hydrate-testdata: ## Populate database with test data for development
+.PHONY: postgrest-hydrate-testdata
+postgrest-hydrate-testdata: ## Populate database with test data for development
 	@echo "🧪 Hydrating Portal DB with test data..."
 	@if ! docker ps | grep -q portal-db; then \
 		echo "❌ Portal DB is not running. Please start it first:"; \
@@ -223,3 +211,8 @@ hydrate-prod: ## Hydrate local database with production data
 		exit 1; \
 	fi
 	./scripts/hydrate-prod.sh
+
+.PHONY: dehydrate-reset-db
+dehydrate-reset-db: ## Reset the development database
+	@echo "🔄 Resetting database..."
+	rm -rf ./tmp/portal_db_data

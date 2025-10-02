@@ -25,7 +25,7 @@ check_docker_container() {
     if ! docker ps --format "table {{.Names}}" | grep -q "^$container$"; then
         print_status "$RED" "❌ Docker container '$container' is not running"
         echo "   Please start PostgreSQL and PostgREST services first:"
-        echo "   make postgrest-up"
+        echo "   make portal-db-up"
         exit 1
     fi
 }
@@ -120,7 +120,7 @@ validate_db_connection() {
     print_status "$BLUE" "🔍 Testing database connection..."
     if ! psql "$db_connection_string" -c "SELECT 1;" > /dev/null 2>&1; then
         print_status "$RED" "❌ Error: Cannot connect to database"
-        print_status "$YELLOW" "💡 Make sure the database is running: make postgrest-up"
+        print_status "$YELLOW" "💡 Make sure the database is running: make portal-db-up"
         exit 1
     fi
 

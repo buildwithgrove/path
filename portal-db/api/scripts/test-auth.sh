@@ -4,7 +4,7 @@
 # JWT Authentication Test Script
 # ============================================================================
 # This script tests the basic JWT authentication functionality
-# Make sure the services are running: make postgrest-up
+# Make sure the services are running: make portal-db-up
 
 set -e  # Exit on any error
 
@@ -39,9 +39,8 @@ echo "🔑 Test 2: Generating JWT token (following PostgREST docs) ✨"
 echo "🔧 Generating fresh JWT token using shell script..."
 cd "$(dirname "$0")"  # Ensure we're in the scripts directory
 
-# Generate token and capture output
-JWT_OUTPUT=$(./gen-jwt.sh authenticated 2>/dev/null)
-TOKEN=$(echo "$JWT_OUTPUT" | grep -A1 "🎟️  Token:" | tail -1)
+# Generate token and capture output using --token-only flag for clean parsing
+TOKEN=$(./gen-jwt.sh --token-only authenticated 2>/dev/null)
 
 if [[ -z "$TOKEN" ]]; then
     echo "❌ Failed to generate JWT token"

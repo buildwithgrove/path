@@ -10,8 +10,8 @@ PostgREST automatically generates a REST API from the PostgreSQL database schema
 
 ```bash
 # From portal-db directory
-make portal-db-up           # Start PostgreSQL + PostgREST (port 3000)
-make hydrate-testdata       # Add test data
+make portal-db-up                    # Start PostgreSQL + PostgREST (port 3000)
+make postgrest-hydrate-testdata      # Add test data
 curl http://localhost:3000/networks | jq  # Test API
 ```
 
@@ -94,11 +94,13 @@ Generated SDKs: `../sdk/go/` and `../sdk/typescript/`
 ## 🔧 Development Commands
 
 ```bash
-make portal-db-up               # Start services
-make portal-db-down             # Stop services
-make portal-db-logs             # View logs
-make hydrate-testdata           # Add test data
-make postgrest-generate-all     # Regenerate SDKs after schema changes
+make portal-db-up                    # Start services
+make portal-db-down                  # Stop services
+make portal-db-logs                  # View logs
+make postgrest-hydrate-testdata      # Add test data
+make postgrest-generate-all          # Regenerate SDKs after schema changes
+make test-postgrest-auth             # Test JWT authentication
+make postgrest-gen-jwt               # Generate JWT token
 ```
 
 **After schema changes:**

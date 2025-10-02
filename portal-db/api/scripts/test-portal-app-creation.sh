@@ -26,7 +26,7 @@ validate_postgrest() {
     print_status $BLUE "🔍 Checking if PostgREST is running..."
     if ! curl -s http://localhost:3000/ > /dev/null 2>&1; then
         print_status $RED "❌ Error: PostgREST is not running on localhost:3000"
-        print_status $YELLOW "💡 Start the services first: make postgrest-up"
+        print_status $YELLOW "💡 Start the services first: make portal-db-up"
         exit 1
     fi
     print_status $GREEN "✅ PostgREST is running"

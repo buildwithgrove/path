@@ -77,7 +77,8 @@ Run these commands from the `portal-db/` directory:
 - `make hydrate-gateways` Hydrate gateway data from onchain source
 - `make hydrate-services` Hydrate service data from onchain source
 - `make hydrate-applications` Hydrate application data from onchain source
-- `make hydrate-testdata` Hydrate database with test data
+- `make postgrest-hydrate-testdata` Hydrate database with test data
+- `make dehydrate-reset-db` Reset the development database
 - `make quickstart` Run complete quickstart workflow
 
 Run `make help` from the `portal-db/` directory to see all available targets.
