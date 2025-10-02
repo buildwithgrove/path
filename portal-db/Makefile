@@ -1,4 +1,14 @@
 # Portal DB API Makefile
+# ============================================================================
+# This Makefile provides developer workflows for the Portal DB:
+# - Service management (Docker Compose)
+# - API generation (OpenAPI, SDKs)
+# - Data hydration (test data, blockchain data)
+# - Authentication testing (JWT flows)
+#
+# Quick start: make quickstart
+# Full help:   make help
+# ============================================================================
 
 # Color definitions
 CYAN := \033[0;36m
@@ -30,7 +40,7 @@ help: ## Show all available targets
 	@grep -h -E '^(test-postgrest-auth|test-postgrest-portal-app-creation|postgrest-gen-jwt):.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "$(CYAN)%-30s$(RESET) %s\n", $$1, $$2}'
 	@echo ""
 	@echo "$(BOLD)=== 📝 API Generation ===$(RESET)"
-	@grep -h -E '^(postgrest-generate-openapi|postgrest-generate-sdks|postgrest-generate-all):.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "$(CYAN)%-30s$(RESET) %s\n", $$1, $$2}'
+	@grep -h -E '^(postgrest-generate-openapi|postgrest-swagger-ui|postgrest-generate-sdks|postgrest-generate-all):.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "$(CYAN)%-30s$(RESET) %s\n", $$1, $$2}'
 	@echo ""
 
 # ============================================================================
@@ -49,19 +59,35 @@ quickstart: ## Quick start guide for Portal DB (shows commands to run)
 	@echo "$(BOLD)Step 2: Hydrate test data$(RESET)"
 	@echo "$(CYAN)  make postgrest-hydrate-testdata$(RESET)"
 	@echo ""
-	@echo "$(BOLD)Step 3: Test public endpoint$(RESET)"
-	@echo "$(CYAN)  curl http://localhost:3000/networks | jq$(RESET)"
-	@echo ""
-	@echo "$(BOLD)Step 4: Generate JWT token$(RESET)"
+	@echo "$(BOLD)Step 3: Generate JWT token$(RESET)"
 	@echo "$(CYAN)  make postgrest-gen-jwt$(RESET)"
 	@echo "$(YELLOW)  # Copy the export command from output$(RESET)"
 	@echo ""
-	@echo "$(BOLD)Step 5: Test authenticated endpoints$(RESET)"
+	@echo "$(BOLD)Step 4: Test authenticated endpoint with JWT$(RESET)"
 	@echo "$(CYAN)  curl http://localhost:3000/portal_accounts -H \"Authorization: Bearer \$$JWT_TOKEN\" | jq$(RESET)"
-	@echo "$(CYAN)  curl http://localhost:3000/rpc/me -H \"Authorization: Bearer \$$JWT_TOKEN\" | jq$(RESET)"
 	@echo ""
-	@echo "$(BOLD)Step 6: Test portal app creation$(RESET)"
+	@echo "$(BOLD)Step 5: Connect to database with psql$(RESET)"
+	@echo "$(CYAN)  psql 'postgresql://postgres:portal_password@localhost:5435/portal_db'$(RESET)"
+	@echo ""
+	@echo "$(BOLD)Step 6: Query portal_applications (inside psql)$(RESET)"
+	@echo "$(CYAN)  SELECT * FROM portal_applications;$(RESET)"
+	@echo "$(YELLOW)  # Exit psql with \\q$(RESET)"
+	@echo ""
+	@echo "$(BOLD)Step 7: Test portal application creation$(RESET)"
 	@echo "$(CYAN)  make test-postgrest-portal-app-creation$(RESET)"
+	@echo ""
+	@echo "$(BOLD)Step 8: Query portal_applications again$(RESET)"
+	@echo "$(CYAN)  psql 'postgresql://postgres:portal_password@localhost:5435/portal_db' -c \"SELECT * FROM portal_applications;\"$(RESET)"
+	@echo ""
+	@echo "$(BOLD)Step 9: Start Swagger UI$(RESET)"
+	@echo "$(CYAN)  make postgrest-swagger-ui$(RESET)"
+	@echo "$(YELLOW)  # Open http://localhost:8080 in your browser$(RESET)"
+	@echo ""
+	@echo "$(BOLD)Step 10: Explore the Swagger UI$(RESET)"
+	@echo "  - Browse available endpoints"
+	@echo "  - Test authenticated endpoints using JWT token"
+	@echo "  - View request/response schemas"
+	@echo "  - Try the /rpc/create_portal_application endpoint"
 	@echo ""
 	@echo "$(GREEN)$(BOLD)💡 Tip: Run 'make help' to see all available commands$(RESET)"
 	@echo ""
@@ -100,10 +126,25 @@ postgrest-generate-openapi: ## Generate OpenAPI specification from PostgREST
 	@echo "📝 Generating OpenAPI specification..."
 	cd api/codegen && ./generate-openapi.sh
 
+.PHONY: postgrest-swagger-ui
+postgrest-swagger-ui: ## Start Swagger UI to view OpenAPI specification (http://localhost:8080)
+	@if [ ! -f api/openapi/openapi.json ]; then \
+		echo "❌ OpenAPI spec not found. Generate it first:"; \
+		echo "   $(CYAN)make postgrest-generate-openapi$(RESET)"; \
+		exit 1; \
+	fi
+	@echo "🌐 Starting Swagger UI on $(CYAN)http://localhost:8080$(RESET)..."
+	@echo "   Press Ctrl+C to stop"
+	@docker run --rm -p 8080:8080 \
+		-e SWAGGER_JSON=/openapi.json \
+		-v $(PWD)/api/openapi/openapi.json:/openapi.json \
+		swaggerapi/swagger-ui
+
 # ============================================================================
 # AUTHENTICATION & TESTING
 # ============================================================================
 
+# Internal helper targets (prefixed with _) for pre-condition checks
 .PHONY: _require-postgrest-api
 _require-postgrest-api:
 	@if ! docker ps | grep -q portal-db-api; then \
@@ -186,6 +227,9 @@ hydrate-prod: _require-portal-db ## Hydrate local database with production data
 	./scripts/hydrate-prod.sh
 
 .PHONY: dehydrate-reset-db
-dehydrate-reset-db: ## Reset the development database
+dehydrate-reset-db: ## Reset the development database (deletes all data)
+	@echo "⚠️  WARNING: This will delete ALL database data!"
 	@echo "🔄 Resetting database..."
+	@echo "   Removing ./tmp/portal_db_data..."
 	rm -rf ./tmp/portal_db_data
+	@echo "✅ Database reset complete. Run 'make portal-db-up' to reinitialize."

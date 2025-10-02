@@ -1,6 +1,6 @@
 # Portal Database API
 
-<!-- TODO_DOCUMENTATION(@commoddity): Add section describing potential deployment to production using Pulumi, similar to how Porta database itself is deploted in the infra repo. -->
+<!-- TODO_DOCUMENTATION(@commoddity): Add section describing potential deployment to production using Pulumi, similar to how Portal database itself is deployed in the infra repo. -->
 
 **PostgREST configuration** and **SDK generation tools** for the Portal Database.
 

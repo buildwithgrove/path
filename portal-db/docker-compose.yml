@@ -9,9 +9,9 @@
 # - PostgREST: Automatic REST API generation from database schema
 #
 # Usage:
-#   make postgrest-up    # Start both services
-#   make postgrest-down  # Stop and remove containers
-#   make postgrest-logs  # View service logs
+#   make portal-db-up    # Start both services
+#   make portal-db-down  # Stop and remove containers
+#   make portal-db-logs  # View service logs
 #
 # Access:
 #   Database:  localhost:5435 (user: postgres, password: portal_password)

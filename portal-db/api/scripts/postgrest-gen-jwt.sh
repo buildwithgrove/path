@@ -24,7 +24,9 @@ BOLD='\033[1m'
 RESET='\033[0m'
 
 # JWT secret from postgrest.conf (must match exactly)
-JWT_SECRET="supersecretjwtsecretforlocaldevelopment123456789"
+# TODO_IMPROVE(@olshansky): Extract JWT_SECRET from postgrest.conf automatically
+# to maintain single source of truth and avoid drift between files
+JWT_SECRET="${JWT_SECRET:-supersecretjwtsecretforlocaldevelopment123456789}"
 
 # Parse arguments
 ROLE="${1:-authenticated}"

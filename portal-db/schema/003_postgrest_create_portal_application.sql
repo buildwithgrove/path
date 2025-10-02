@@ -4,6 +4,9 @@
 -- This function creates a portal application with all associated data in a single
 -- atomic transaction. It validates user membership and generates secure API keys.
 --
+-- ⚠️  WARNING: Currently stores secret keys in plain text (line 64).
+--    TODO_IMPROVE: Implement proper hashing before production use.
+--
 -- Usage via PostgREST:
 --   POST /rpc/create_portal_application
 --   {
