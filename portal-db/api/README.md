@@ -16,9 +16,9 @@ make postgrest-gen-jwt reader        # Reader token (optional)
 # Paste the export commands here
 export JWT_TOKEN_ADMIN="..."
 export JWT_TOKEN_READER="..."
-curl http://localhost:3000/networks -H "Authorization: Bearer $JWT_TOKEN_ADMIN" | jq
-curl http://localhost:3000/organizations -H "Authorization: Bearer $JWT_TOKEN_ADMIN" | jq
-curl http://localhost:3000/portal_accounts -H "Authorization: Bearer $JWT_TOKEN_ADMIN" | jq
+curl http://localhost:3000/networks -H "Authorization: Bearer $JWT_TOKEN_READER" | jq
+curl http://localhost:3000/organizations -H "Authorization: Bearer $JWT_TOKEN_READER" | jq
+curl http://localhost:3000/portal_accounts -H "Authorization: Bearer $JWT_TOKEN_READER" | jq
 curl -X POST http://localhost:3000/portal_applications \
   -H "Authorization: Bearer $JWT_TOKEN_ADMIN" \
   -H "Content-Type: application/json" \

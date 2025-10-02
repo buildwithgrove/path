@@ -9,13 +9,13 @@ The Portal DB is a _highly opinionated_ implementation of a Postgres database th
 - [Quickstart](#quickstart)
   - [Fastest Route](#fastest-route)
   - [Manual Scripts](#manual-scripts)
+- [Production Readiness](#production-readiness)
 - [🌐 REST API Access](#-rest-api-access)
 - [Interacting with the database](#interacting-with-the-database)
 - [Tools](#tools)
   - [`psql` (REQUIRED)](#psql-required)
   - [`dbeaver` (RECOMMENDED)](#dbeaver-recommended)
   - [Claude Postgres MCP Server (EXPERIMENTAL)](#claude-postgres-mcp-server-experimental)
-  - [Production Hardening TODOs](#production-hardening-todos)
 
 ## Quickstart
 
@@ -57,6 +57,14 @@ SELECT * FROM applications;
 ```
 
 </details>
+
+## Production Readiness
+
+Search for `TODO_PRODUCTION` in the codebase to see items that need to be addressed before promoting the Portal DB/PostgREST stack to production.
+
+- **Externalize the JWT secret** – replace the hardcoded development secret in `api/postgrest.conf` with a secure value managed via env vars or secrets storage.
+- **Synchronize JWT secret usage** – update `api/scripts/postgrest-gen-jwt.sh` to source the same secret (or invoke PostgREST’s `/jwt` RPC when available) instead of embedding a development constant.
+- **Harden `postgrest.conf`** – create a production configuration (separate file or templated config) that removes the `FOR LOCAL DEVELOPMENT ONLY` settings, disables public schemas not in use, and enforces TLS/connection limits appropriate for production.
 
 ## 🌐 REST API Access
 
@@ -194,13 +202,3 @@ sudo apt-get install dbeaver-ce
 ![claude_desktop_postgres_mcp](../docusaurus/static/img/claude_desktop_postgres_mcp.png)
 
 </details>
-
-### Production Hardening TODOs
-
-Before promoting the Portal DB/PostgREST stack to production, address the following items marked `TODO_PRODUCTION` in the repository:
-
-- **Externalize the JWT secret** – replace the hardcoded development secret in `api/postgrest.conf` with a secure value managed via env vars or secrets storage.
-- **Synchronize JWT secret usage** – update `api/scripts/postgrest-gen-jwt.sh` to source the same secret (or invoke PostgREST’s `/jwt` RPC when available) instead of embedding a development constant.
-- **Harden `postgrest.conf`** – create a production configuration (separate file or templated config) that removes the `FOR LOCAL DEVELOPMENT ONLY` settings, disables public schemas not in use, and enforces TLS/connection limits appropriate for production.
-
-Document the operational plan (secret rotation, config deployment) once these are implemented.
