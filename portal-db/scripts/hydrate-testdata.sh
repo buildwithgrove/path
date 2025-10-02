@@ -76,13 +76,12 @@ WHERE NOT EXISTS (
     AND sf.fallback_url = new_fallbacks.fallback_url
 );
 
--- Insert test portal users (has UNIQUE constraint, so ON CONFLICT works)
--- portal_user_id is auto-incremented, so we don't specify it
-INSERT INTO portal_users (portal_user_email, signed_up, portal_admin) VALUES
-    ('admin@grove.city', true, true),
-    ('alice@acme.com', true, false),
-    ('bob@techinnovators.com', true, false),
-    ('charlie@blockchain.com', false, false)
+-- Insert test portal users with deterministic UUIDs
+INSERT INTO portal_users (portal_user_id, portal_user_email, signed_up, portal_admin) VALUES
+    ('30000000-0000-0000-0000-000000000001', 'admin@grove.city', true, true),
+    ('30000000-0000-0000-0000-000000000002', 'alice@acme.com', true, false),
+    ('30000000-0000-0000-0000-000000000003', 'bob@techinnovators.com', true, false),
+    ('30000000-0000-0000-0000-000000000004', 'charlie@blockchain.com', false, false)
 ON CONFLICT (portal_user_email) DO NOTHING;
 
 -- Insert test portal accounts with deterministic UUIDs
