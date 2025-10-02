@@ -133,6 +133,7 @@ path_run: path_build check_path_config ## Run the path binary as a standalone bi
 
 .PHONY: portal_db_help
 portal_db_help: ## Show Portal DB makefile targets
+	@echo "To use these commands: ${CYAN}cd ./portal-db && make <command>${RESET}"
 	@cd ./portal-db && make help
 
 ###############################

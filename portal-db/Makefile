@@ -42,30 +42,29 @@ quickstart: ## Quick start guide for Portal DB (starts services, hydrates data, 
 	@echo ""
 	@echo "$(BOLD)$(CYAN)🗄️ Portal DB Quick Start$(RESET)"
 	@echo ""
-	@echo "$(BOLD)Step 1: Starting Portal DB services...$(RESET)"
-	@make portal-db-up
+	@echo "$(BOLD)Step 1: Start Portal DB services...$(RESET)"
+	@echo "$(CYAN)make portal-db-up$(RESET)"
 	@echo ""
-	@echo "$(BOLD)Step 2: Hydrating test data...$(RESET)"
-	@make hydrate-testdata
+	@echo "$(BOLD)Step 2: Hydrate test data...$(RESET)"
+	@echo "$(CYAN)make hydrate-testdata$(RESET)"
 	@echo ""
-	@echo "$(BOLD)Step 3: Testing public endpoint (networks)...$(RESET)"
-	@curl -s http://localhost:3000/networks | jq
+	@echo "$(BOLD)Step 3: Test public endpoint (networks)...$(RESET)"
+	@echo "$(CYAN)curl -s http://localhost:3000/networks | jq$(RESET)"
 	@echo ""
-	@echo "$(BOLD)Step 4: Generating JWT token...$(RESET)"
-	@make gen-jwt
+	@echo "$(BOLD)Step 4: Generate JWT token...$(RESET)"
+	@echo "$(CYAN)make gen-jwt$(RESET)"
 	@echo ""
 	@echo "$(BOLD)Step 5: Set your JWT token:$(RESET)"
 	@echo "$(YELLOW)export TOKEN=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYXV0aGVudGljYXRlZCIsImVtYWlsIjoiam9obkBkb2UuY29tIiwiZXhwIjoxNzU4MjEzNjM5fQ.i1_Mrj86xsdgsxDqLmJz8FDd9dd-sJhlS0vBQXGIHuU$(RESET)"
 	@echo ""
-	@echo "$(BOLD)Step 6: Testing authenticated endpoints...$(RESET)"
-	@echo "$(CYAN)Testing portal_accounts:$(RESET)"
-	@curl -s http://localhost:3000/portal_accounts -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYXV0aGVudGljYXRlZCIsImVtYWlsIjoiam9obkBkb2UuY29tIiwiZXhwIjoxNzU4MjEzNjM5fQ.i1_Mrj86xsdgsxDqLmJz8FDd9dd-sJhlS0vBQXGIHuU" | jq
+	@echo "$(BOLD)Step 6: Test authenticated endpoints...$(RESET)"
+	@echo "$(CYAN)curl -s http://localhost:3000/portal_accounts -H \"Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYXV0aGVudGljYXRlZCIsImVtYWlsIjoiam9obkBkb2UuY29tIiwiZXhwIjoxNzU4MjEzNjM5fQ.i1_Mrj86xsdgsxDqLmJz8FDd9dd-sJhlS0vBQXGIHuU\" | jq$(RESET)"
 	@echo ""
-	@echo "$(CYAN)Testing rpc/me:$(RESET)"
-	@curl -s http://localhost:3000/rpc/me -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYXV0aGVudGljYXRlZCIsImVtYWlsIjoiam9obkBkb2UuY29tIiwiZXhwIjoxNzU4MjEzNjM5fQ.i1_Mrj86xsdgsxDqLmJz8FDd9dd-sJhlS0vBQXGIHuU" -H "Content-Type: application/json" | jq
+	@echo "$(BOLD)Step 7: Test rpc/me...$(RESET)"
+	@echo "$(CYAN)curl -s http://localhost:3000/rpc/me -H \"Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYXV0aGVudGljYXRlZCIsImVtYWlsIjoiam9obkBkb2UuY29tIiwiZXhwIjoxNzU4MjEzNjM5fQ.i1_Mrj86xsdgsxDqLmJz8FDd9dd-sJhlS0vBQXGIHuU\" -H \"Content-Type: application/json\" | jq$(RESET)"
 	@echo ""
-	@echo "$(BOLD)Step 7: Testing portal app creation...$(RESET)"
-	@make test-portal-app
+	@echo "$(BOLD)Step 8: Test portal app creation...$(RESET)"
+	@echo "$(CYAN)make test-portal-app$(RESET)"
 	@echo ""
 	@echo "$(GREEN)$(BOLD)✅ Quick start complete!$(RESET)"
 	@echo ""
@@ -79,11 +78,11 @@ portal-db-up: ## Start all Portal DB services
 	@echo "🚀 Starting all Portal DB services..."
 	docker compose up -d
 	@echo "✅ Services started!"
-	@echo "   PostgreSQL DB: localhost:5435"
-	@echo "   PostgREST API: http://localhost:3000"
+	@echo "   PostgreSQL DB: $(CYAN)localhost:5435$(RESET)"
+	@echo "   PostgREST API: $(CYAN)http://localhost:3000$(RESET)"
 	@echo ""
 	@echo "🔧 You can connect to the database using:"
-	@echo "   psql 'postgresql://postgres:portal_password@localhost:5435/portal_db'"
+	@echo "   $(CYAN)psql 'postgresql://postgres:portal_password@localhost:5435/portal_db'$(RESET)"
 
 .PHONY: portal-db-down
 portal-db-down: ## Stop all Portal DB services
