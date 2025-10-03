@@ -5,7 +5,7 @@
 -- This migration follows the PostgREST security model:
 -- - Keep authorization in PostgreSQL; PostgREST only authenticates requests.
 -- - Use three role classes:
---   1. Authenticator role: Chamillion connection role to set application role from JWT.
+--   1. Authenticator role: Chameleon connection role to set application role from JWT.
 --   2. Application roles: JWT impersonation targets.
 --   3. Anon role: fallback for unauthenticated requests.
 -- - Rely on user impersonation via `SET ROLE` after verifying the JWT `role`
