@@ -34,9 +34,6 @@ description: Development environment for the full PATH, GUARD & WATCH stack
 - [Development Workflow](#development-workflow)
   - [Hot Reloading](#hot-reloading)
   - [Viewing Logs](#viewing-logs)
-    - [Recommended: **Tilt UI** (http://localhost:10350):](#recommended-tilt-ui-httplocalhost10350)
-    - [**Inside the container**:](#inside-the-container)
-    - [**Using k9s**:](#using-k9s)
 
 ## Overview
 
@@ -72,7 +69,6 @@ make configs_copy_values_yaml   # Copy default .values.yaml
 
 - `./local/path/.config.yaml` - PATH gateway configuration
 - `./local/path/.values.yaml` - Helm values override file
-
 
 :::note 🌿 Are you a Grove employee 🌿?
 
@@ -224,7 +220,6 @@ The PATH Localnet runs as a Docker container that internally manages a complete 
 - **Tilt**: Development orchestrator that manages hot reloading and service lifecycle
 - **Kind**: Kubernetes-in-Docker providing the cluster environment
 
-
 ## Make Targets
 
 The PATH Localnet provides several make targets for managing your development environment:
@@ -375,20 +370,20 @@ The PATH Localnet supports hot reloading for rapid development:
 
 Multiple ways to view logs:
 
-#### Recommended: **Tilt UI** (http://localhost:10350):
+1. **Tilt UI** (http://localhost:10350):
 
-   - Real-time log streaming
-   - Filtered by service
-   - Search functionality
+- Real-time log streaming
+- Filtered by service
+- Search functionality
 
-#### **Inside the container**:
+2. **Inside the container**:
 
    ```bash
    make localnet_exec
    kubectl logs -f deployment/path
    ```
 
-#### **Using k9s**:
+3. **Using k9s**:
 
    ```bash
    make localnet_k9s

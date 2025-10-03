@@ -4,26 +4,35 @@ The Portal DB is the house for all core business logic for both PATH and the Por
 
 The Portal DB is a _highly opinionated_ implementation of a Postgres database that can be used to manage and administer both PATH and a UI on top of PATH.
 
-:::info TODO: Revisit docs location
-
-Consider if this should be moved into `docusaurus/docs` so it is discoverable as part of [path.grove.city](https://path.grove.city/).
-
-:::
-
 ## Table of Contents <!-- omit in toc -->
 
-- [Quickstart (for Grove Engineering)](#quickstart-for-grove-engineering)
-- [Interacting with the database](#interacting-with-the-database)
-  - [`make` Targets](#make-targets)
-  - [`scripts`](#scripts)
+- [Quickstart](#quickstart)
+  - [Quickstart - Fast Route](#quickstart---fast-route)
+  - [Quickstart - Manual Route](#quickstart---manual-route)
+- [Production Readiness](#production-readiness)
+- [REST API Access](#rest-api-access)
 - [Tools](#tools)
   - [`psql` (REQUIRED)](#psql-required)
   - [`dbeaver` (RECOMMENDED)](#dbeaver-recommended)
   - [Claude Postgres MCP Server (EXPERIMENTAL)](#claude-postgres-mcp-server-experimental)
 
-## Quickstart (for Grove Engineering)
+## Quickstart
 
-We'll connection to the following gateway and applications:
+### Quickstart - Fast Route
+
+```bash
+cd portal-db
+make quickstart
+```
+
+### Quickstart - Manual Route
+
+You can manually populate and check the contents of the database following the instructions below.
+
+<details>
+<summary>Manual Database Population</summary>
+
+We'll connect to the following gateway and applications:
 
 - gateway - `pokt1lf0kekv9zcv9v3wy4v6jx2wh7v4665s8e0sl9s`
 - solana app - `pokt1xd8jrccxtlzs8svrmg6gukn7umln7c2ww327xx`
@@ -31,13 +40,17 @@ We'll connection to the following gateway and applications:
 - xrplevm app - `pokt1gwxwgvlxlzk3ex59cx7lsswyvplf0rfhunxjhy`
 - poly app - `pokt1hufj6cdgu83dluput6klhmh54vtrgtl3drttva`
 
+By simplifying the following commands, we can get started with the Portal DB in minutes.
+
 ```bash
 export DB_CONNECTION_STRING='postgresql://portal_user:portal_password@localhost:5435/portal_db'
-make portal_db_up
 
-make portal_db_hydrate_gateways pokt1lf0kekv9zcv9v3wy4v6jx2wh7v4665s8e0sl9s https://shannon-grove-rpc.mainnet.poktroll.com pocket
-make portal_db_hydrate_services 'eth,poly,solana,xrplevm' https://shannon-grove-rpc.mainnet.poktroll.com pocket
-make portal_db_hydrate_applications 'pokt1xd8jrccxtlzs8svrmg6gukn7umln7c2ww327xx,pokt185tgfw9lxyuznh9rz89556l4p8dshdkjd5283d,pokt1gwxwgvlxlzk3ex59cx7lsswyvplf0rfhunxjhy,pokt1hufj6cdgu83dluput6klhmh54vtrgtl3drttva' https://shannon-grove-rpc.mainnet.poktroll.com pocket
+cd portal-db
+make portal-db-up
+
+make hydrate-gateways GATEWAY_ADDRESSES=pokt1lf0kekv9zcv9v3wy4v6jx2wh7v4665s8e0sl9s NODE=https://shannon-grove-rpc.mainnet.poktroll.com NETWORK=pocket
+make hydrate-services SERVICE_IDS='eth,poly,solana,xrplevm' NODE=https://shannon-grove-rpc.mainnet.poktroll.com NETWORK=pocket
+make hydrate-applications APPLICATION_ADDRESSES='pokt1xd8jrccxtlzs8svrmg6gukn7umln7c2ww327xx,pokt185tgfw9lxyuznh9rz89556l4p8dshdkjd5283d,pokt1gwxwgvlxlzk3ex59cx7lsswyvplf0rfhunxjhy,pokt1hufj6cdgu83dluput6klhmh54vtrgtl3drttva' NODE=https://shannon-grove-rpc.mainnet.poktroll.com NETWORK=pocket
 
 psql $DB_CONNECTION_STRING
 SELECT * FROM gateways;
@@ -45,37 +58,33 @@ SELECT * FROM services;
 SELECT * FROM applications;
 ```
 
-## Interacting with the database
+</details>
 
-:::tip make helpers
+## Production Readiness
 
-You can run the following command to see all available `make` targets:
+Search for `TODO_PRODUCTION` in the codebase to see items that need to be addressed
+before promoting the Portal DB/PostgREST stack to production.
+
+For example, as of #467, the output of this command:
 
 ```bash
-make | grep --line-buffered "portal"
+grep -r "TODO_PRODUCTION" ./portal-db
 ```
 
-:::
+Shows:
 
-### `make` Targets
+1. **Externalize the JWT secret**: Replace the hardcoded development secret in `api/postgrest.conf` with a secure value managed via env vars or secrets storage.
+2. **Synchronize JWT secret usage**: Update `api/scripts/postgrest-gen-jwt.sh` to source the same secret (or invoke PostgREST’s `/jwt` RPC when available) instead of embedding a development constant.
 
-- `make portal_db_up` creates the Portal DB with the base schema (`./init/001_schema.sql`) and runs the Portal DB on port `:5435`.
-- `make portal_db_down` stops running the local Portal DB.
-- `make portal_db_env` creates and inits the Database, and helps set up the local development environment.
-- `make portal_db_clean` stops the local Portal DB and deletes the database and drops the schema.
-- `make portal_db_status` Check status of portal-db PostgreSQL container
-- `make portal_db_logs` Show logs from portal-db PostgreSQL container
-- `make portal_db_connect` Connect to the portal database using psql
+## REST API Access
 
-### `scripts`
+The Portal DB includes a **PostgREST API** that automatically generates REST endpoints from your database schema. This provides instant HTTP access to all your data with authentication, filtering, and Go SDK generation.
 
-Helper scripts exist to quickly populate the database with real data.
-
-- `./scripts/hydrate-gateways.sh` - Retrieves all onchain data about a given `gateway` and populates the Portal DB
-- `./scripts/hydrate-services.sh` - Retrieves all onchain data about a set of `services` and populates the Portal DB
-- `./scripts/hydrate-applications.sh` - Retrieves all onchain data about a set of `applications` and populates the Portal DB
+**➡️ [View PostgREST API Documentation](api/README.md)** for setup, authentication, and SDK usage.
 
 ## Tools
+
+This is a list of tools for interacting with the database.
 
 ### `psql` (REQUIRED)
 
@@ -133,11 +142,8 @@ sudo apt-get install dbeaver-ce
 
 ### Claude Postgres MCP Server (EXPERIMENTAL)
 
-::: warning EXPERIMENTAL
-
-Using a postgres MCP server is experimental but worth a shot!
-
-:::
+<details>
+<summary>Experimental Postgres MCP Server</summary>
 
 1. Install [postgres-mcp](https://github.com/crystaldba/postgres-mcp) using `pipx`.
 
@@ -181,8 +187,10 @@ Using a postgres MCP server is experimental but worth a shot!
    - Favor correctness, readability, and performance best practices in all SQL you produce.
    ```
 
-5. Upload [init/001_schema.sql](init/001_schema.sql) as one of the files to the Claude Project.
+5. Upload [schema/001_portal_init.sql](schema/001_portal_init.sql) as one of the files to the Claude Project.
 
 6. Try using it by asking: `How many records are in my database?`
 
 ![claude_desktop_postgres_mcp](../docusaurus/static/img/claude_desktop_postgres_mcp.png)
+
+</details>

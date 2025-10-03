@@ -59,5 +59,5 @@ guard:
           pullPolicy: Always
     config:
       envoyGateway:
-        extensionApis: null
-        extensionManager: null
+        extensionApis: {}
+        extensionManager: {}

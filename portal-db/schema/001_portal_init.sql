@@ -1,6 +1,7 @@
 -- ============================================================================
 -- PATH Portal Database Schema
 -- ============================================================================
+-- This file sets up the baseline for PATH's Portal DB.
 
 -- ============================================================================
 -- CUSTOM TYPES
@@ -124,12 +125,8 @@ COMMENT ON TABLE portal_users IS 'Users who can access the portal and belong to 
 COMMENT ON COLUMN portal_users.portal_user_email IS 'Unique email address for the user';
 COMMENT ON COLUMN portal_users.portal_admin IS 'Whether user has admin privileges across the portal';
 
--- TODO_IMPROVE: Add user_authentication table for password management
--- TODO_CONSIDERATION: Add support for MFA/2FA
--- TODO_CONSIDERATION: Consider session management table
-
 -- Portal User Auth Table
--- Determines which Auth Provider (portal_auth_provider) and which Auth Type 
+-- Determines which Auth Provider (portal_auth_provider) and which Auth Type
 -- (portal_auth_type) a user is authenticated into the Portal by
 CREATE TABLE portal_user_auth (
     portal_user_auth_id SERIAL PRIMARY KEY,
@@ -221,9 +218,6 @@ CREATE TABLE portal_applications (
 COMMENT ON TABLE portal_applications IS 'Applications created within portal accounts with their own rate limits and settings';
 COMMENT ON COLUMN portal_applications.secret_key_hash IS 'Hashed secret key for application authentication';
 
--- TODO_IMPROVE: Add API key rotation history table
--- TODO_CONSIDERATION: Add webhook configurations table
-
 -- Portal application RBAC table
 -- Sets the role and access controls for a user on a particular application.
 -- Users must be members of the parent Account in order to have access to a particular application
@@ -299,7 +293,7 @@ CREATE TABLE services (
     coming_soon BOOLEAN DEFAULT FALSE,
     quality_fallback_enabled BOOLEAN DEFAULT FALSE,
     hard_fallback_enabled BOOLEAN DEFAULT FALSE,
-    svg_icon TEXT, 
+    svg_icon TEXT,
     public_endpoint_url VARCHAR(169),
     status_endpoint_url VARCHAR(169),
     status_query TEXT,
@@ -312,8 +306,6 @@ CREATE TABLE services (
 COMMENT ON TABLE services IS 'Supported blockchain services from the Pocket Network';
 COMMENT ON COLUMN services.compute_units_per_relay IS 'Cost in compute units for each relay';
 COMMENT ON COLUMN services.service_domains IS 'Valid domains for this service';
-
--- TODO_ITERATE: Consider adding service versioning for API version management
 
 -- Service fallbacks table
 -- Defines the set of fallbacks per service for offchain processing.
@@ -420,10 +412,6 @@ CREATE TABLE crypto_address_blocklist (
 );
 
 COMMENT ON TABLE crypto_address_blocklist IS 'Blocked cryptocurrency addresses for compliance requirements';
-
--- TODO_IMPROVE: Add audit_logs table for compliance tracking
--- TODO_NEXT_UP: Add rate limit buckets table for global multi-region quota rate limiting
--- TODO_CONSIDERATION: Add usage metrics tables
 
 -- ============================================================================
 -- INITIAL DATA
