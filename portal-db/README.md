@@ -7,11 +7,10 @@ The Portal DB is a _highly opinionated_ implementation of a Postgres database th
 ## Table of Contents <!-- omit in toc -->
 
 - [Quickstart](#quickstart)
-  - [Fastest Route](#fastest-route)
-  - [Manual Scripts](#manual-scripts)
+  - [Quickstart - Fast Route](#quickstart---fast-route)
+  - [Quickstart - Manual Route](#quickstart---manual-route)
 - [Production Readiness](#production-readiness)
-- [🌐 REST API Access](#-rest-api-access)
-- [Interacting with the database](#interacting-with-the-database)
+- [REST API Access](#rest-api-access)
 - [Tools](#tools)
   - [`psql` (REQUIRED)](#psql-required)
   - [`dbeaver` (RECOMMENDED)](#dbeaver-recommended)
@@ -19,16 +18,19 @@ The Portal DB is a _highly opinionated_ implementation of a Postgres database th
 
 ## Quickstart
 
-### Fastest Route
+### Quickstart - Fast Route
 
-Run `make quickstart` from the root of `portal-db` and follow the instructions.
+```bash
+cd portal-db
+make quickstart
+```
 
-### Manual Scripts
+### Quickstart - Manual Route
 
-Alternatively, you can manually populate the database like so:
+You can manually populate and check the contents of the database following the instructions below.
 
 <details>
-<summary>Manual Scripts</summary>
+<summary>Manual Database Population</summary>
 
 We'll connect to the following gateway and applications:
 
@@ -60,39 +62,29 @@ SELECT * FROM applications;
 
 ## Production Readiness
 
-Search for `TODO_PRODUCTION` in the codebase to see items that need to be addressed before promoting the Portal DB/PostgREST stack to production.
+Search for `TODO_PRODUCTION` in the codebase to see items that need to be addressed
+before promoting the Portal DB/PostgREST stack to production.
 
-- **Externalize the JWT secret** – replace the hardcoded development secret in `api/postgrest.conf` with a secure value managed via env vars or secrets storage.
-- **Synchronize JWT secret usage** – update `api/scripts/postgrest-gen-jwt.sh` to source the same secret (or invoke PostgREST’s `/jwt` RPC when available) instead of embedding a development constant.
-- **Harden `postgrest.conf`** – create a production configuration (separate file or templated config) that removes the `FOR LOCAL DEVELOPMENT ONLY` settings, disables public schemas not in use, and enforces TLS/connection limits appropriate for production.
+For example, as of #467, the output of this command:
 
-## 🌐 REST API Access
+```bash
+grep -r "TODO_PRODUCTION" ./portal-db
+```
+
+Shows:
+
+1. **Externalize the JWT secret**: Replace the hardcoded development secret in `api/postgrest.conf` with a secure value managed via env vars or secrets storage.
+2. **Synchronize JWT secret usage**: Update `api/scripts/postgrest-gen-jwt.sh` to source the same secret (or invoke PostgREST’s `/jwt` RPC when available) instead of embedding a development constant.
+
+## REST API Access
 
 The Portal DB includes a **PostgREST API** that automatically generates REST endpoints from your database schema. This provides instant HTTP access to all your data with authentication, filtering, and Go SDK generation.
 
 **➡️ [View PostgREST API Documentation](api/README.md)** for setup, authentication, and SDK usage.
 
-## Interacting with the database
-
-From the `portal-db/` directory, run the following command to see all available targets:
-
-```bash
-make
-```
-
-Or, run the following command for a walk-through of the quickstart workflow:
-
-```bash
-make quickstart
-```
-
-To view all of the available scripts, run the following command:
-
-```bash
-ls scripts
-```
-
 ## Tools
+
+This is a list of tools for interacting with the database.
 
 ### `psql` (REQUIRED)
 

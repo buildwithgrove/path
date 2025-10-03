@@ -4,18 +4,48 @@
 
 PostgREST automatically generates a REST API from the PostgreSQL database schema.
 
-## 🚀 Quick Start <!-- omit in toc -->
+## Table of Contents <!-- omit in toc -->
+
+- [QuickStart](#quickstart)
+- [Walkthrough](#walkthrough)
+- [Authentication](#authentication)
+  - [Auth Summary](#auth-summary)
+  - [Database Roles Roles](#database-roles-roles)
+  - [Testing auth locally](#testing-auth-locally)
+  - [JWT Generation](#jwt-generation)
+- [How it Works](#how-it-works)
+- [📚 Resources](#-resources)
+
+## QuickStart
+
+Run `make quickstart` for a guided walkthrough.
+
+Run `make` to see a list of available commands.
+
+## Walkthrough
+
+The following is a minimal walkthrough to get started running the Portal DB API
+and sending a few requests locally:
 
 ```bash
+# Start PostgreSQL + PostgREST (port 3000)
 cd portal-db
-make portal-db-up                    # Start PostgreSQL + PostgREST (port 3000)
-make postgrest-hydrate-testdata      # Add test data
-make postgrest-gen-jwt admin         # Admin token (copy export command)
-make postgrest-gen-jwt reader        # Reader token (optional)
+make portal-db-up
+
+# Add test data
+make postgrest-hydrate-testdata
+
+# Admin token (copy export command)
+make postgrest-gen-jwt admin
+
+# Reader token (optional)
+make postgrest-gen-jwt reader
 
 # Paste the export commands here
 export JWT_TOKEN_ADMIN="..."
 export JWT_TOKEN_READER="..."
+
+# Test the API
 curl http://localhost:3000/networks -H "Authorization: Bearer $JWT_TOKEN_READER" | jq
 curl http://localhost:3000/organizations -H "Authorization: Bearer $JWT_TOKEN_READER" | jq
 curl http://localhost:3000/portal_accounts -H "Authorization: Bearer $JWT_TOKEN_READER" | jq
@@ -33,80 +63,51 @@ make postgrest-generate-openapi
 make postgrest-swagger-ui
 ```
 
-You can run `make` to see a list of available commands.
+## Authentication
 
-You can also run `make quickstart` for a guided walkthrough.
+The PostgREST API is authenticated via the SQL migration in [002_postgrest_init.sql](../schema/002_postgrest_init.sql).
 
-## Table of Contents <!-- omit in toc -->
+### Auth Summary
 
-- [How it Works](#how-it-works)
-- [⚙️ Configuration](#️-configuration)
-- [Authentication](#authentication)
-- [🔧 Development Commands](#-development-commands)
-- [Query Examples](#query-examples)
-- [📚 Resources](#-resources)
+1. SSL Certs to connect to the DB
+2. JWT to authenticate into the DB as a `portal_db_*` user
+3. Top level roles authenticated into the DB subject to RLS (e.g. `portal_db_admin` or `portal_db_reader`)
+4. Portal Application roles defined within the tables (see `rbac` of each table)
+
+### Database Roles Roles
+
+- `authenticator` - "Chameleon" role used exclusively by PostgREST for JWT authentication (no direct API access)
+- `portal_db_admin` - JWT-backed role with read/write access (subject to RLS)
+- `portal_db_reader` - JWT-backed role with read-only access (subject to RLS)
+- `anon` - Default unauthenticated role with no privileges
+
+### Testing auth locally
+
+Run `make` from the `portal-db` directory shows the following scripts which can be used to test things locally:
+
+```bash
+=== 🔐 Authentication & Testing ===
+test-postgrest-auth                Test JWT authentication flow
+test-postgrest-portal-app-creation Test portal application creation and retrieval via authenticated Postgres flow
+postgrest-gen-jwt                  Generate JWT token
+```
+
+### JWT Generation
+
+```bash
+# Admin JWT
+make postgrest-gen-jwt admin
+
+# Reader JWT
+make postgrest-gen-jwt reader
+```
 
 ## How it Works
 
 **PostgREST** introspects PostgreSQL schema and auto-generates REST endpoints:
 
 ```bash
-Database Schema → PostgREST → OpenAPI Spec → Go/TypeScript SDKs
-```
-
-## ⚙️ Configuration
-
-PostgREST configuration in `postgrest.conf`:
-
-```ini
-db-uri = "postgresql://authenticator:password@postgres:5432/portal_db"
-db-schemas = "public,api"
-server-port = 3000
-```
-
-Database roles defined in `../schema/002_postgrest_init.sql`:
-
-- `authenticator` - Connection role used exclusively by PostgREST (no direct API access)
-- `portal_db_admin` - JWT-backed role with read/write access (subject to RLS)
-- `portal_db_reader` - JWT-backed role with read-only access (subject to RLS)
-- `anon` - Default unauthenticated role with no privileges
-
-## Authentication
-
-All API access flows through manually issued JWTs.
-
-The token must contain a `role` claim set to either `portal_db_admin` or `portal_db_reader`. The helper
-script wires this up for local testing:
-
-```bash
-# From portal-db directory
-./api/scripts/postgrest-gen-jwt.sh portal_db_reader user@example.com
-export JWT_TOKEN=$(./api/scripts/postgrest-gen-jwt.sh --token-only portal_db_admin admin@example.com)
-curl http://localhost:3000/organizations -H "Authorization: Bearer $JWT_TOKEN"
-```
-
-PostgREST validates the signature, sets `SET ROLE <role claim>`, and row-level
-security policies in `../schema/002_postgrest_init.sql` scope the session based
-on the selected role.
-
-## 🔧 Development Commands
-
-Run `make help` for a list of available commands.
-
-## Query Examples
-
-```bash
-# Filtering
-curl "http://localhost:3000/services?active=eq.true"
-
-# Field selection
-curl "http://localhost:3000/services?select=service_id,service_name"
-
-# Sorting & pagination
-curl "http://localhost:3000/services?order=service_name.asc&limit=10"
-
-# Joins
-curl "http://localhost:3000/services?select=*,service_endpoints(*)"
+Database Schema → PostgREST → OpenAPI Spec → (Coming Soon) SDKs (Go, TypeScript, etc...)
 ```
 
 ## 📚 Resources
