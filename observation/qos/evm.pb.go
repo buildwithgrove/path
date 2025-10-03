@@ -521,6 +521,9 @@ func (x *EVMRequestUnmarshalingFailure) GetErrorDetails() string {
 	return ""
 }
 
+// TODO_TECHDEBT(@adshmh): Enhance the endpoint observation to include the corresponding request's details (e.g. method field of JSONRPC)
+// This will enable tracking each request of a batch of JSONRPC request alongside the endpoint's response.
+//
 // EVMEndpointObservation stores a single observation from an endpoint servicing the protocol response.
 // Example: A Pocket node on Shannon backed by an Ethereum data node servicing an `eth_getBlockNumber` request.
 type EVMEndpointObservation struct {
