@@ -32,7 +32,3 @@ jobs:
           tag: ${{ steps.tag_version.outputs.new_tag }}
           name: Release ${{ steps.tag_version.outputs.new_tag }}
           generateReleaseNotes: true
-          body: |
-            ## Changes in this release
-
-            **Full Changelog**: https://github.com/${{ github.repository }}/compare/${{ steps.tag_version.outputs.tag }}...${{ steps.tag_version.outputs.new_tag }}

@@ -54,6 +54,10 @@ jobs:
   run-e2e-tests-shannon:
     name: Run E2E tests - HTTP Requests
     runs-on: "ubuntu-22.04"
+    # TODO(@olshansky): Investigate why this job occasionally hangs indefinitely.
+    # Adding explicit timeout to fail fast instead of waiting for GitHub's default 6-hour timeout.
+    # The Go test itself has a 5min timeout (e2e/main_test.go:84), so 10min should be plenty.
+    timeout-minutes: 10
     needs:
       - build-and-test-docker-image
     strategy:
