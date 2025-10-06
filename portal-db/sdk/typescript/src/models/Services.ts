@@ -98,6 +98,24 @@ export interface Services {
      * @type {string}
      * @memberof Services
      */
+    publicEndpointUrl?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof Services
+     */
+    statusEndpointUrl?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof Services
+     */
+    statusQuery?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof Services
+     */
     deletedAt?: string;
     /**
      * 
@@ -145,6 +163,9 @@ export function ServicesFromJSONTyped(json: any, ignoreDiscriminator: boolean): 
         'qualityFallbackEnabled': json['quality_fallback_enabled'] == null ? undefined : json['quality_fallback_enabled'],
         'hardFallbackEnabled': json['hard_fallback_enabled'] == null ? undefined : json['hard_fallback_enabled'],
         'svgIcon': json['svg_icon'] == null ? undefined : json['svg_icon'],
+        'publicEndpointUrl': json['public_endpoint_url'] == null ? undefined : json['public_endpoint_url'],
+        'statusEndpointUrl': json['status_endpoint_url'] == null ? undefined : json['status_endpoint_url'],
+        'statusQuery': json['status_query'] == null ? undefined : json['status_query'],
         'deletedAt': json['deleted_at'] == null ? undefined : json['deleted_at'],
         'createdAt': json['created_at'] == null ? undefined : json['created_at'],
         'updatedAt': json['updated_at'] == null ? undefined : json['updated_at'],
@@ -174,6 +195,9 @@ export function ServicesToJSONTyped(value?: Services | null, ignoreDiscriminator
         'quality_fallback_enabled': value['qualityFallbackEnabled'],
         'hard_fallback_enabled': value['hardFallbackEnabled'],
         'svg_icon': value['svgIcon'],
+        'public_endpoint_url': value['publicEndpointUrl'],
+        'status_endpoint_url': value['statusEndpointUrl'],
+        'status_query': value['statusQuery'],
         'deleted_at': value['deletedAt'],
         'created_at': value['createdAt'],
         'updated_at': value['updatedAt'],

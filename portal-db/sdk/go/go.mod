@@ -1,4 +1,4 @@
-module github.com/grove/path/portal-db/sdk/go
+module github.com/buildwithgrove/path/portal-db/sdk/go
 
 go 1.22.5
 

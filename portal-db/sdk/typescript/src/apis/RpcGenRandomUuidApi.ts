@@ -15,25 +15,25 @@
 
 import * as runtime from '../runtime';
 
-export interface RpcMePostRequest {
+export interface RpcGenRandomUuidPostRequest {
     body: object;
-    prefer?: RpcMePostPreferEnum;
+    prefer?: RpcGenRandomUuidPostPreferEnum;
 }
 
 /**
  * 
  */
-export class RpcMeApi extends runtime.BaseAPI {
+export class RpcGenRandomUuidApi extends runtime.BaseAPI {
 
     /**
      */
-    async rpcMeGetRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<void>> {
+    async rpcGenRandomUuidGetRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<void>> {
         const queryParameters: any = {};
 
         const headerParameters: runtime.HTTPHeaders = {};
 
 
-        let urlPath = `/rpc/me`;
+        let urlPath = `/rpc/gen_random_uuid`;
 
         const response = await this.request({
             path: urlPath,
@@ -47,17 +47,17 @@ export class RpcMeApi extends runtime.BaseAPI {
 
     /**
      */
-    async rpcMeGet(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<void> {
-        await this.rpcMeGetRaw(initOverrides);
+    async rpcGenRandomUuidGet(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<void> {
+        await this.rpcGenRandomUuidGetRaw(initOverrides);
     }
 
     /**
      */
-    async rpcMePostRaw(requestParameters: RpcMePostRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<void>> {
+    async rpcGenRandomUuidPostRaw(requestParameters: RpcGenRandomUuidPostRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<void>> {
         if (requestParameters['body'] == null) {
             throw new runtime.RequiredError(
                 'body',
-                'Required parameter "body" was null or undefined when calling rpcMePost().'
+                'Required parameter "body" was null or undefined when calling rpcGenRandomUuidPost().'
             );
         }
 
@@ -72,7 +72,7 @@ export class RpcMeApi extends runtime.BaseAPI {
         }
 
 
-        let urlPath = `/rpc/me`;
+        let urlPath = `/rpc/gen_random_uuid`;
 
         const response = await this.request({
             path: urlPath,
@@ -87,8 +87,8 @@ export class RpcMeApi extends runtime.BaseAPI {
 
     /**
      */
-    async rpcMePost(requestParameters: RpcMePostRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<void> {
-        await this.rpcMePostRaw(requestParameters, initOverrides);
+    async rpcGenRandomUuidPost(requestParameters: RpcGenRandomUuidPostRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<void> {
+        await this.rpcGenRandomUuidPostRaw(requestParameters, initOverrides);
     }
 
 }
@@ -96,7 +96,7 @@ export class RpcMeApi extends runtime.BaseAPI {
 /**
  * @export
  */
-export const RpcMePostPreferEnum = {
+export const RpcGenRandomUuidPostPreferEnum = {
     ParamssingleObject: 'params=single-object'
 } as const;
-export type RpcMePostPreferEnum = typeof RpcMePostPreferEnum[keyof typeof RpcMePostPreferEnum];
+export type RpcGenRandomUuidPostPreferEnum = typeof RpcGenRandomUuidPostPreferEnum[keyof typeof RpcGenRandomUuidPostPreferEnum];

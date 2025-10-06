@@ -60,62 +60,6 @@ const (
 	PreferReturnReturnRepresentation PreferReturn = "return=representation"
 )
 
-// Defines values for DeleteApplicationsParamsPrefer.
-const (
-	DeleteApplicationsParamsPreferReturnMinimal        DeleteApplicationsParamsPrefer = "return=minimal"
-	DeleteApplicationsParamsPreferReturnNone           DeleteApplicationsParamsPrefer = "return=none"
-	DeleteApplicationsParamsPreferReturnRepresentation DeleteApplicationsParamsPrefer = "return=representation"
-)
-
-// Defines values for GetApplicationsParamsPrefer.
-const (
-	GetApplicationsParamsPreferCountNone GetApplicationsParamsPrefer = "count=none"
-)
-
-// Defines values for PatchApplicationsParamsPrefer.
-const (
-	PatchApplicationsParamsPreferReturnMinimal        PatchApplicationsParamsPrefer = "return=minimal"
-	PatchApplicationsParamsPreferReturnNone           PatchApplicationsParamsPrefer = "return=none"
-	PatchApplicationsParamsPreferReturnRepresentation PatchApplicationsParamsPrefer = "return=representation"
-)
-
-// Defines values for PostApplicationsParamsPrefer.
-const (
-	PostApplicationsParamsPreferResolutionIgnoreDuplicates PostApplicationsParamsPrefer = "resolution=ignore-duplicates"
-	PostApplicationsParamsPreferResolutionMergeDuplicates  PostApplicationsParamsPrefer = "resolution=merge-duplicates"
-	PostApplicationsParamsPreferReturnMinimal              PostApplicationsParamsPrefer = "return=minimal"
-	PostApplicationsParamsPreferReturnNone                 PostApplicationsParamsPrefer = "return=none"
-	PostApplicationsParamsPreferReturnRepresentation       PostApplicationsParamsPrefer = "return=representation"
-)
-
-// Defines values for DeleteGatewaysParamsPrefer.
-const (
-	DeleteGatewaysParamsPreferReturnMinimal        DeleteGatewaysParamsPrefer = "return=minimal"
-	DeleteGatewaysParamsPreferReturnNone           DeleteGatewaysParamsPrefer = "return=none"
-	DeleteGatewaysParamsPreferReturnRepresentation DeleteGatewaysParamsPrefer = "return=representation"
-)
-
-// Defines values for GetGatewaysParamsPrefer.
-const (
-	GetGatewaysParamsPreferCountNone GetGatewaysParamsPrefer = "count=none"
-)
-
-// Defines values for PatchGatewaysParamsPrefer.
-const (
-	PatchGatewaysParamsPreferReturnMinimal        PatchGatewaysParamsPrefer = "return=minimal"
-	PatchGatewaysParamsPreferReturnNone           PatchGatewaysParamsPrefer = "return=none"
-	PatchGatewaysParamsPreferReturnRepresentation PatchGatewaysParamsPrefer = "return=representation"
-)
-
-// Defines values for PostGatewaysParamsPrefer.
-const (
-	PostGatewaysParamsPreferResolutionIgnoreDuplicates PostGatewaysParamsPrefer = "resolution=ignore-duplicates"
-	PostGatewaysParamsPreferResolutionMergeDuplicates  PostGatewaysParamsPrefer = "resolution=merge-duplicates"
-	PostGatewaysParamsPreferReturnMinimal              PostGatewaysParamsPrefer = "return=minimal"
-	PostGatewaysParamsPreferReturnNone                 PostGatewaysParamsPrefer = "return=none"
-	PostGatewaysParamsPreferReturnRepresentation       PostGatewaysParamsPrefer = "return=representation"
-)
-
 // Defines values for DeleteNetworksParamsPrefer.
 const (
 	DeleteNetworksParamsPreferReturnMinimal        DeleteNetworksParamsPrefer = "return=minimal"
@@ -172,6 +116,34 @@ const (
 	PostOrganizationsParamsPreferReturnRepresentation       PostOrganizationsParamsPrefer = "return=representation"
 )
 
+// Defines values for DeletePortalAccountRbacParamsPrefer.
+const (
+	DeletePortalAccountRbacParamsPreferReturnMinimal        DeletePortalAccountRbacParamsPrefer = "return=minimal"
+	DeletePortalAccountRbacParamsPreferReturnNone           DeletePortalAccountRbacParamsPrefer = "return=none"
+	DeletePortalAccountRbacParamsPreferReturnRepresentation DeletePortalAccountRbacParamsPrefer = "return=representation"
+)
+
+// Defines values for GetPortalAccountRbacParamsPrefer.
+const (
+	GetPortalAccountRbacParamsPreferCountNone GetPortalAccountRbacParamsPrefer = "count=none"
+)
+
+// Defines values for PatchPortalAccountRbacParamsPrefer.
+const (
+	PatchPortalAccountRbacParamsPreferReturnMinimal        PatchPortalAccountRbacParamsPrefer = "return=minimal"
+	PatchPortalAccountRbacParamsPreferReturnNone           PatchPortalAccountRbacParamsPrefer = "return=none"
+	PatchPortalAccountRbacParamsPreferReturnRepresentation PatchPortalAccountRbacParamsPrefer = "return=representation"
+)
+
+// Defines values for PostPortalAccountRbacParamsPrefer.
+const (
+	PostPortalAccountRbacParamsPreferResolutionIgnoreDuplicates PostPortalAccountRbacParamsPrefer = "resolution=ignore-duplicates"
+	PostPortalAccountRbacParamsPreferResolutionMergeDuplicates  PostPortalAccountRbacParamsPrefer = "resolution=merge-duplicates"
+	PostPortalAccountRbacParamsPreferReturnMinimal              PostPortalAccountRbacParamsPrefer = "return=minimal"
+	PostPortalAccountRbacParamsPreferReturnNone                 PostPortalAccountRbacParamsPrefer = "return=none"
+	PostPortalAccountRbacParamsPreferReturnRepresentation       PostPortalAccountRbacParamsPrefer = "return=representation"
+)
+
 // Defines values for DeletePortalAccountsParamsPrefer.
 const (
 	DeletePortalAccountsParamsPreferReturnMinimal        DeletePortalAccountsParamsPrefer = "return=minimal"
@@ -198,6 +170,34 @@ const (
 	PostPortalAccountsParamsPreferReturnMinimal              PostPortalAccountsParamsPrefer = "return=minimal"
 	PostPortalAccountsParamsPreferReturnNone                 PostPortalAccountsParamsPrefer = "return=none"
 	PostPortalAccountsParamsPreferReturnRepresentation       PostPortalAccountsParamsPrefer = "return=representation"
+)
+
+// Defines values for DeletePortalApplicationRbacParamsPrefer.
+const (
+	DeletePortalApplicationRbacParamsPreferReturnMinimal        DeletePortalApplicationRbacParamsPrefer = "return=minimal"
+	DeletePortalApplicationRbacParamsPreferReturnNone           DeletePortalApplicationRbacParamsPrefer = "return=none"
+	DeletePortalApplicationRbacParamsPreferReturnRepresentation DeletePortalApplicationRbacParamsPrefer = "return=representation"
+)
+
+// Defines values for GetPortalApplicationRbacParamsPrefer.
+const (
+	GetPortalApplicationRbacParamsPreferCountNone GetPortalApplicationRbacParamsPrefer = "count=none"
+)
+
+// Defines values for PatchPortalApplicationRbacParamsPrefer.
+const (
+	PatchPortalApplicationRbacParamsPreferReturnMinimal        PatchPortalApplicationRbacParamsPrefer = "return=minimal"
+	PatchPortalApplicationRbacParamsPreferReturnNone           PatchPortalApplicationRbacParamsPrefer = "return=none"
+	PatchPortalApplicationRbacParamsPreferReturnRepresentation PatchPortalApplicationRbacParamsPrefer = "return=representation"
+)
+
+// Defines values for PostPortalApplicationRbacParamsPrefer.
+const (
+	PostPortalApplicationRbacParamsPreferResolutionIgnoreDuplicates PostPortalApplicationRbacParamsPrefer = "resolution=ignore-duplicates"
+	PostPortalApplicationRbacParamsPreferResolutionMergeDuplicates  PostPortalApplicationRbacParamsPrefer = "resolution=merge-duplicates"
+	PostPortalApplicationRbacParamsPreferReturnMinimal              PostPortalApplicationRbacParamsPrefer = "return=minimal"
+	PostPortalApplicationRbacParamsPreferReturnNone                 PostPortalApplicationRbacParamsPrefer = "return=none"
+	PostPortalApplicationRbacParamsPreferReturnRepresentation       PostPortalApplicationRbacParamsPrefer = "return=representation"
 )
 
 // Defines values for DeletePortalApplicationsParamsPrefer.
@@ -256,14 +256,34 @@ const (
 	PostPortalPlansParamsPreferReturnRepresentation       PostPortalPlansParamsPrefer = "return=representation"
 )
 
-// Defines values for PostRpcCreatePortalApplicationParamsPrefer.
+// Defines values for PostRpcArmorParamsPrefer.
 const (
-	PostRpcCreatePortalApplicationParamsPreferParamsSingleObject PostRpcCreatePortalApplicationParamsPrefer = "params=single-object"
+	PostRpcArmorParamsPreferParamsSingleObject PostRpcArmorParamsPrefer = "params=single-object"
 )
 
-// Defines values for PostRpcMeParamsPrefer.
+// Defines values for PostRpcDearmorParamsPrefer.
 const (
-	ParamsSingleObject PostRpcMeParamsPrefer = "params=single-object"
+	PostRpcDearmorParamsPreferParamsSingleObject PostRpcDearmorParamsPrefer = "params=single-object"
+)
+
+// Defines values for PostRpcGenRandomUuidParamsPrefer.
+const (
+	PostRpcGenRandomUuidParamsPreferParamsSingleObject PostRpcGenRandomUuidParamsPrefer = "params=single-object"
+)
+
+// Defines values for PostRpcGenSaltParamsPrefer.
+const (
+	PostRpcGenSaltParamsPreferParamsSingleObject PostRpcGenSaltParamsPrefer = "params=single-object"
+)
+
+// Defines values for PostRpcPgpArmorHeadersParamsPrefer.
+const (
+	PostRpcPgpArmorHeadersParamsPreferParamsSingleObject PostRpcPgpArmorHeadersParamsPrefer = "params=single-object"
+)
+
+// Defines values for PostRpcPgpKeyIdParamsPrefer.
+const (
+	ParamsSingleObject PostRpcPgpKeyIdParamsPrefer = "params=single-object"
 )
 
 // Defines values for DeleteServiceEndpointsParamsPrefer.
@@ -350,53 +370,6 @@ const (
 	PostServicesParamsPreferReturnRepresentation       PostServicesParamsPrefer = "return=representation"
 )
 
-// Applications Onchain applications for processing relays through the network
-type Applications struct {
-	// ApplicationAddress Blockchain address of the application
-	//
-	// Note:
-	// This is a Primary Key.<pk/>
-	ApplicationAddress       string  `json:"application_address"`
-	ApplicationPrivateKeyHex *string `json:"application_private_key_hex,omitempty"`
-	CreatedAt                *string `json:"created_at,omitempty"`
-
-	// GatewayAddress Note:
-	// This is a Foreign Key to `gateways.gateway_address`.<fk table='gateways' column='gateway_address'/>
-	GatewayAddress string `json:"gateway_address"`
-
-	// NetworkId Note:
-	// This is a Foreign Key to `networks.network_id`.<fk table='networks' column='network_id'/>
-	NetworkId string `json:"network_id"`
-
-	// ServiceId Note:
-	// This is a Foreign Key to `services.service_id`.<fk table='services' column='service_id'/>
-	ServiceId   string  `json:"service_id"`
-	StakeAmount *int    `json:"stake_amount,omitempty"`
-	StakeDenom  *string `json:"stake_denom,omitempty"`
-	UpdatedAt   *string `json:"updated_at,omitempty"`
-}
-
-// Gateways Onchain gateway information including stake and network details
-type Gateways struct {
-	CreatedAt *string `json:"created_at,omitempty"`
-
-	// GatewayAddress Blockchain address of the gateway
-	//
-	// Note:
-	// This is a Primary Key.<pk/>
-	GatewayAddress       string  `json:"gateway_address"`
-	GatewayPrivateKeyHex *string `json:"gateway_private_key_hex,omitempty"`
-
-	// NetworkId Note:
-	// This is a Foreign Key to `networks.network_id`.<fk table='networks' column='network_id'/>
-	NetworkId string `json:"network_id"`
-
-	// StakeAmount Amount of tokens staked by the gateway
-	StakeAmount int     `json:"stake_amount"`
-	StakeDenom  string  `json:"stake_denom"`
-	UpdatedAt   *string `json:"updated_at,omitempty"`
-}
-
 // Networks Supported blockchain networks (Pocket mainnet, testnet, etc.)
 type Networks struct {
 	// NetworkId Note:
@@ -418,6 +391,23 @@ type Organizations struct {
 	// OrganizationName Name of the organization
 	OrganizationName string  `json:"organization_name"`
 	UpdatedAt        *string `json:"updated_at,omitempty"`
+}
+
+// PortalAccountRbac User roles and permissions for specific portal accounts
+type PortalAccountRbac struct {
+	// Id Note:
+	// This is a Primary Key.<pk/>
+	Id int `json:"id"`
+
+	// PortalAccountId Note:
+	// This is a Foreign Key to `portal_accounts.portal_account_id`.<fk table='portal_accounts' column='portal_account_id'/>
+	PortalAccountId string `json:"portal_account_id"`
+
+	// PortalUserId Note:
+	// This is a Foreign Key to `portal_users.portal_user_id`.<fk table='portal_users' column='portal_user_id'/>
+	PortalUserId      string `json:"portal_user_id"`
+	RoleName          string `json:"role_name"`
+	UserJoinedAccount *bool  `json:"user_joined_account,omitempty"`
 }
 
 // PortalAccounts Multi-tenant accounts with plans and billing integration
@@ -454,6 +444,24 @@ type PortalAccounts struct {
 
 // PortalAccountsPortalAccountUserLimitInterval defines model for PortalAccounts.PortalAccountUserLimitInterval.
 type PortalAccountsPortalAccountUserLimitInterval string
+
+// PortalApplicationRbac User access controls for specific applications
+type PortalApplicationRbac struct {
+	CreatedAt *string `json:"created_at,omitempty"`
+
+	// Id Note:
+	// This is a Primary Key.<pk/>
+	Id int `json:"id"`
+
+	// PortalApplicationId Note:
+	// This is a Foreign Key to `portal_applications.portal_application_id`.<fk table='portal_applications' column='portal_application_id'/>
+	PortalApplicationId string `json:"portal_application_id"`
+
+	// PortalUserId Note:
+	// This is a Foreign Key to `portal_users.portal_user_id`.<fk table='portal_users' column='portal_user_id'/>
+	PortalUserId string  `json:"portal_user_id"`
+	UpdatedAt    *string `json:"updated_at,omitempty"`
+}
 
 // PortalApplications Applications created within portal accounts with their own rate limits and settings
 type PortalApplications struct {
@@ -552,6 +560,7 @@ type Services struct {
 	// NetworkId Note:
 	// This is a Foreign Key to `networks.network_id`.<fk table='networks' column='network_id'/>
 	NetworkId              *string `json:"network_id,omitempty"`
+	PublicEndpointUrl      *string `json:"public_endpoint_url,omitempty"`
 	QualityFallbackEnabled *bool   `json:"quality_fallback_enabled,omitempty"`
 
 	// ServiceDomains Valid domains for this service
@@ -562,6 +571,8 @@ type Services struct {
 	ServiceId           string  `json:"service_id"`
 	ServiceName         string  `json:"service_name"`
 	ServiceOwnerAddress *string `json:"service_owner_address,omitempty"`
+	StatusEndpointUrl   *string `json:"status_endpoint_url,omitempty"`
+	StatusQuery         *string `json:"status_query,omitempty"`
 	SvgIcon             *string `json:"svg_icon,omitempty"`
 	UpdatedAt           *string `json:"updated_at,omitempty"`
 }
@@ -593,54 +604,6 @@ type Range = string
 // RangeUnit defines model for rangeUnit.
 type RangeUnit = string
 
-// RowFilterApplicationsApplicationAddress defines model for rowFilter.applications.application_address.
-type RowFilterApplicationsApplicationAddress = string
-
-// RowFilterApplicationsApplicationPrivateKeyHex defines model for rowFilter.applications.application_private_key_hex.
-type RowFilterApplicationsApplicationPrivateKeyHex = string
-
-// RowFilterApplicationsCreatedAt defines model for rowFilter.applications.created_at.
-type RowFilterApplicationsCreatedAt = string
-
-// RowFilterApplicationsGatewayAddress defines model for rowFilter.applications.gateway_address.
-type RowFilterApplicationsGatewayAddress = string
-
-// RowFilterApplicationsNetworkId defines model for rowFilter.applications.network_id.
-type RowFilterApplicationsNetworkId = string
-
-// RowFilterApplicationsServiceId defines model for rowFilter.applications.service_id.
-type RowFilterApplicationsServiceId = string
-
-// RowFilterApplicationsStakeAmount defines model for rowFilter.applications.stake_amount.
-type RowFilterApplicationsStakeAmount = string
-
-// RowFilterApplicationsStakeDenom defines model for rowFilter.applications.stake_denom.
-type RowFilterApplicationsStakeDenom = string
-
-// RowFilterApplicationsUpdatedAt defines model for rowFilter.applications.updated_at.
-type RowFilterApplicationsUpdatedAt = string
-
-// RowFilterGatewaysCreatedAt defines model for rowFilter.gateways.created_at.
-type RowFilterGatewaysCreatedAt = string
-
-// RowFilterGatewaysGatewayAddress defines model for rowFilter.gateways.gateway_address.
-type RowFilterGatewaysGatewayAddress = string
-
-// RowFilterGatewaysGatewayPrivateKeyHex defines model for rowFilter.gateways.gateway_private_key_hex.
-type RowFilterGatewaysGatewayPrivateKeyHex = string
-
-// RowFilterGatewaysNetworkId defines model for rowFilter.gateways.network_id.
-type RowFilterGatewaysNetworkId = string
-
-// RowFilterGatewaysStakeAmount defines model for rowFilter.gateways.stake_amount.
-type RowFilterGatewaysStakeAmount = string
-
-// RowFilterGatewaysStakeDenom defines model for rowFilter.gateways.stake_denom.
-type RowFilterGatewaysStakeDenom = string
-
-// RowFilterGatewaysUpdatedAt defines model for rowFilter.gateways.updated_at.
-type RowFilterGatewaysUpdatedAt = string
-
 // RowFilterNetworksNetworkId defines model for rowFilter.networks.network_id.
 type RowFilterNetworksNetworkId = string
 
@@ -658,6 +621,21 @@ type RowFilterOrganizationsOrganizationName = string
 
 // RowFilterOrganizationsUpdatedAt defines model for rowFilter.organizations.updated_at.
 type RowFilterOrganizationsUpdatedAt = string
+
+// RowFilterPortalAccountRbacId defines model for rowFilter.portal_account_rbac.id.
+type RowFilterPortalAccountRbacId = string
+
+// RowFilterPortalAccountRbacPortalAccountId defines model for rowFilter.portal_account_rbac.portal_account_id.
+type RowFilterPortalAccountRbacPortalAccountId = string
+
+// RowFilterPortalAccountRbacPortalUserId defines model for rowFilter.portal_account_rbac.portal_user_id.
+type RowFilterPortalAccountRbacPortalUserId = string
+
+// RowFilterPortalAccountRbacRoleName defines model for rowFilter.portal_account_rbac.role_name.
+type RowFilterPortalAccountRbacRoleName = string
+
+// RowFilterPortalAccountRbacUserJoinedAccount defines model for rowFilter.portal_account_rbac.user_joined_account.
+type RowFilterPortalAccountRbacUserJoinedAccount = string
 
 // RowFilterPortalAccountsBillingType defines model for rowFilter.portal_accounts.billing_type.
 type RowFilterPortalAccountsBillingType = string
@@ -703,6 +681,21 @@ type RowFilterPortalAccountsUpdatedAt = string
 
 // RowFilterPortalAccountsUserAccountName defines model for rowFilter.portal_accounts.user_account_name.
 type RowFilterPortalAccountsUserAccountName = string
+
+// RowFilterPortalApplicationRbacCreatedAt defines model for rowFilter.portal_application_rbac.created_at.
+type RowFilterPortalApplicationRbacCreatedAt = string
+
+// RowFilterPortalApplicationRbacId defines model for rowFilter.portal_application_rbac.id.
+type RowFilterPortalApplicationRbacId = string
+
+// RowFilterPortalApplicationRbacPortalApplicationId defines model for rowFilter.portal_application_rbac.portal_application_id.
+type RowFilterPortalApplicationRbacPortalApplicationId = string
+
+// RowFilterPortalApplicationRbacPortalUserId defines model for rowFilter.portal_application_rbac.portal_user_id.
+type RowFilterPortalApplicationRbacPortalUserId = string
+
+// RowFilterPortalApplicationRbacUpdatedAt defines model for rowFilter.portal_application_rbac.updated_at.
+type RowFilterPortalApplicationRbacUpdatedAt = string
 
 // RowFilterPortalApplicationsCreatedAt defines model for rowFilter.portal_applications.created_at.
 type RowFilterPortalApplicationsCreatedAt = string
@@ -818,6 +811,9 @@ type RowFilterServicesHardFallbackEnabled = string
 // RowFilterServicesNetworkId defines model for rowFilter.services.network_id.
 type RowFilterServicesNetworkId = string
 
+// RowFilterServicesPublicEndpointUrl defines model for rowFilter.services.public_endpoint_url.
+type RowFilterServicesPublicEndpointUrl = string
+
 // RowFilterServicesQualityFallbackEnabled defines model for rowFilter.services.quality_fallback_enabled.
 type RowFilterServicesQualityFallbackEnabled = string
 
@@ -833,6 +829,12 @@ type RowFilterServicesServiceName = string
 // RowFilterServicesServiceOwnerAddress defines model for rowFilter.services.service_owner_address.
 type RowFilterServicesServiceOwnerAddress = string
 
+// RowFilterServicesStatusEndpointUrl defines model for rowFilter.services.status_endpoint_url.
+type RowFilterServicesStatusEndpointUrl = string
+
+// RowFilterServicesStatusQuery defines model for rowFilter.services.status_query.
+type RowFilterServicesStatusQuery = string
+
 // RowFilterServicesSvgIcon defines model for rowFilter.services.svg_icon.
 type RowFilterServicesSvgIcon = string
 
@@ -842,185 +844,15 @@ type RowFilterServicesUpdatedAt = string
 // Select defines model for select.
 type Select = string
 
-// DeleteApplicationsParams defines parameters for DeleteApplications.
-type DeleteApplicationsParams struct {
-	// ApplicationAddress Blockchain address of the application
-	ApplicationAddress       *RowFilterApplicationsApplicationAddress       `form:"application_address,omitempty" json:"application_address,omitempty"`
-	GatewayAddress           *RowFilterApplicationsGatewayAddress           `form:"gateway_address,omitempty" json:"gateway_address,omitempty"`
-	ServiceId                *RowFilterApplicationsServiceId                `form:"service_id,omitempty" json:"service_id,omitempty"`
-	StakeAmount              *RowFilterApplicationsStakeAmount              `form:"stake_amount,omitempty" json:"stake_amount,omitempty"`
-	StakeDenom               *RowFilterApplicationsStakeDenom               `form:"stake_denom,omitempty" json:"stake_denom,omitempty"`
-	ApplicationPrivateKeyHex *RowFilterApplicationsApplicationPrivateKeyHex `form:"application_private_key_hex,omitempty" json:"application_private_key_hex,omitempty"`
-	NetworkId                *RowFilterApplicationsNetworkId                `form:"network_id,omitempty" json:"network_id,omitempty"`
-	CreatedAt                *RowFilterApplicationsCreatedAt                `form:"created_at,omitempty" json:"created_at,omitempty"`
-	UpdatedAt                *RowFilterApplicationsUpdatedAt                `form:"updated_at,omitempty" json:"updated_at,omitempty"`
-
-	// Prefer Preference
-	Prefer *DeleteApplicationsParamsPrefer `json:"Prefer,omitempty"`
+// Args defines model for Args.
+type Args struct {
+	Empty string `json:""`
 }
 
-// DeleteApplicationsParamsPrefer defines parameters for DeleteApplications.
-type DeleteApplicationsParamsPrefer string
-
-// GetApplicationsParams defines parameters for GetApplications.
-type GetApplicationsParams struct {
-	// ApplicationAddress Blockchain address of the application
-	ApplicationAddress       *RowFilterApplicationsApplicationAddress       `form:"application_address,omitempty" json:"application_address,omitempty"`
-	GatewayAddress           *RowFilterApplicationsGatewayAddress           `form:"gateway_address,omitempty" json:"gateway_address,omitempty"`
-	ServiceId                *RowFilterApplicationsServiceId                `form:"service_id,omitempty" json:"service_id,omitempty"`
-	StakeAmount              *RowFilterApplicationsStakeAmount              `form:"stake_amount,omitempty" json:"stake_amount,omitempty"`
-	StakeDenom               *RowFilterApplicationsStakeDenom               `form:"stake_denom,omitempty" json:"stake_denom,omitempty"`
-	ApplicationPrivateKeyHex *RowFilterApplicationsApplicationPrivateKeyHex `form:"application_private_key_hex,omitempty" json:"application_private_key_hex,omitempty"`
-	NetworkId                *RowFilterApplicationsNetworkId                `form:"network_id,omitempty" json:"network_id,omitempty"`
-	CreatedAt                *RowFilterApplicationsCreatedAt                `form:"created_at,omitempty" json:"created_at,omitempty"`
-	UpdatedAt                *RowFilterApplicationsUpdatedAt                `form:"updated_at,omitempty" json:"updated_at,omitempty"`
-
-	// Select Filtering Columns
-	Select *Select `form:"select,omitempty" json:"select,omitempty"`
-
-	// Order Ordering
-	Order *Order `form:"order,omitempty" json:"order,omitempty"`
-
-	// Offset Limiting and Pagination
-	Offset *Offset `form:"offset,omitempty" json:"offset,omitempty"`
-
-	// Limit Limiting and Pagination
-	Limit *Limit `form:"limit,omitempty" json:"limit,omitempty"`
-
-	// Range Limiting and Pagination
-	Range *Range `json:"Range,omitempty"`
-
-	// RangeUnit Limiting and Pagination
-	RangeUnit *RangeUnit `json:"Range-Unit,omitempty"`
-
-	// Prefer Preference
-	Prefer *GetApplicationsParamsPrefer `json:"Prefer,omitempty"`
+// Args2 defines model for Args2.
+type Args2 struct {
+	Empty string `json:""`
 }
-
-// GetApplicationsParamsPrefer defines parameters for GetApplications.
-type GetApplicationsParamsPrefer string
-
-// PatchApplicationsParams defines parameters for PatchApplications.
-type PatchApplicationsParams struct {
-	// ApplicationAddress Blockchain address of the application
-	ApplicationAddress       *RowFilterApplicationsApplicationAddress       `form:"application_address,omitempty" json:"application_address,omitempty"`
-	GatewayAddress           *RowFilterApplicationsGatewayAddress           `form:"gateway_address,omitempty" json:"gateway_address,omitempty"`
-	ServiceId                *RowFilterApplicationsServiceId                `form:"service_id,omitempty" json:"service_id,omitempty"`
-	StakeAmount              *RowFilterApplicationsStakeAmount              `form:"stake_amount,omitempty" json:"stake_amount,omitempty"`
-	StakeDenom               *RowFilterApplicationsStakeDenom               `form:"stake_denom,omitempty" json:"stake_denom,omitempty"`
-	ApplicationPrivateKeyHex *RowFilterApplicationsApplicationPrivateKeyHex `form:"application_private_key_hex,omitempty" json:"application_private_key_hex,omitempty"`
-	NetworkId                *RowFilterApplicationsNetworkId                `form:"network_id,omitempty" json:"network_id,omitempty"`
-	CreatedAt                *RowFilterApplicationsCreatedAt                `form:"created_at,omitempty" json:"created_at,omitempty"`
-	UpdatedAt                *RowFilterApplicationsUpdatedAt                `form:"updated_at,omitempty" json:"updated_at,omitempty"`
-
-	// Prefer Preference
-	Prefer *PatchApplicationsParamsPrefer `json:"Prefer,omitempty"`
-}
-
-// PatchApplicationsParamsPrefer defines parameters for PatchApplications.
-type PatchApplicationsParamsPrefer string
-
-// PostApplicationsParams defines parameters for PostApplications.
-type PostApplicationsParams struct {
-	// Select Filtering Columns
-	Select *Select `form:"select,omitempty" json:"select,omitempty"`
-
-	// Prefer Preference
-	Prefer *PostApplicationsParamsPrefer `json:"Prefer,omitempty"`
-}
-
-// PostApplicationsParamsPrefer defines parameters for PostApplications.
-type PostApplicationsParamsPrefer string
-
-// DeleteGatewaysParams defines parameters for DeleteGateways.
-type DeleteGatewaysParams struct {
-	// GatewayAddress Blockchain address of the gateway
-	GatewayAddress *RowFilterGatewaysGatewayAddress `form:"gateway_address,omitempty" json:"gateway_address,omitempty"`
-
-	// StakeAmount Amount of tokens staked by the gateway
-	StakeAmount          *RowFilterGatewaysStakeAmount          `form:"stake_amount,omitempty" json:"stake_amount,omitempty"`
-	StakeDenom           *RowFilterGatewaysStakeDenom           `form:"stake_denom,omitempty" json:"stake_denom,omitempty"`
-	NetworkId            *RowFilterGatewaysNetworkId            `form:"network_id,omitempty" json:"network_id,omitempty"`
-	GatewayPrivateKeyHex *RowFilterGatewaysGatewayPrivateKeyHex `form:"gateway_private_key_hex,omitempty" json:"gateway_private_key_hex,omitempty"`
-	CreatedAt            *RowFilterGatewaysCreatedAt            `form:"created_at,omitempty" json:"created_at,omitempty"`
-	UpdatedAt            *RowFilterGatewaysUpdatedAt            `form:"updated_at,omitempty" json:"updated_at,omitempty"`
-
-	// Prefer Preference
-	Prefer *DeleteGatewaysParamsPrefer `json:"Prefer,omitempty"`
-}
-
-// DeleteGatewaysParamsPrefer defines parameters for DeleteGateways.
-type DeleteGatewaysParamsPrefer string
-
-// GetGatewaysParams defines parameters for GetGateways.
-type GetGatewaysParams struct {
-	// GatewayAddress Blockchain address of the gateway
-	GatewayAddress *RowFilterGatewaysGatewayAddress `form:"gateway_address,omitempty" json:"gateway_address,omitempty"`
-
-	// StakeAmount Amount of tokens staked by the gateway
-	StakeAmount          *RowFilterGatewaysStakeAmount          `form:"stake_amount,omitempty" json:"stake_amount,omitempty"`
-	StakeDenom           *RowFilterGatewaysStakeDenom           `form:"stake_denom,omitempty" json:"stake_denom,omitempty"`
-	NetworkId            *RowFilterGatewaysNetworkId            `form:"network_id,omitempty" json:"network_id,omitempty"`
-	GatewayPrivateKeyHex *RowFilterGatewaysGatewayPrivateKeyHex `form:"gateway_private_key_hex,omitempty" json:"gateway_private_key_hex,omitempty"`
-	CreatedAt            *RowFilterGatewaysCreatedAt            `form:"created_at,omitempty" json:"created_at,omitempty"`
-	UpdatedAt            *RowFilterGatewaysUpdatedAt            `form:"updated_at,omitempty" json:"updated_at,omitempty"`
-
-	// Select Filtering Columns
-	Select *Select `form:"select,omitempty" json:"select,omitempty"`
-
-	// Order Ordering
-	Order *Order `form:"order,omitempty" json:"order,omitempty"`
-
-	// Offset Limiting and Pagination
-	Offset *Offset `form:"offset,omitempty" json:"offset,omitempty"`
-
-	// Limit Limiting and Pagination
-	Limit *Limit `form:"limit,omitempty" json:"limit,omitempty"`
-
-	// Range Limiting and Pagination
-	Range *Range `json:"Range,omitempty"`
-
-	// RangeUnit Limiting and Pagination
-	RangeUnit *RangeUnit `json:"Range-Unit,omitempty"`
-
-	// Prefer Preference
-	Prefer *GetGatewaysParamsPrefer `json:"Prefer,omitempty"`
-}
-
-// GetGatewaysParamsPrefer defines parameters for GetGateways.
-type GetGatewaysParamsPrefer string
-
-// PatchGatewaysParams defines parameters for PatchGateways.
-type PatchGatewaysParams struct {
-	// GatewayAddress Blockchain address of the gateway
-	GatewayAddress *RowFilterGatewaysGatewayAddress `form:"gateway_address,omitempty" json:"gateway_address,omitempty"`
-
-	// StakeAmount Amount of tokens staked by the gateway
-	StakeAmount          *RowFilterGatewaysStakeAmount          `form:"stake_amount,omitempty" json:"stake_amount,omitempty"`
-	StakeDenom           *RowFilterGatewaysStakeDenom           `form:"stake_denom,omitempty" json:"stake_denom,omitempty"`
-	NetworkId            *RowFilterGatewaysNetworkId            `form:"network_id,omitempty" json:"network_id,omitempty"`
-	GatewayPrivateKeyHex *RowFilterGatewaysGatewayPrivateKeyHex `form:"gateway_private_key_hex,omitempty" json:"gateway_private_key_hex,omitempty"`
-	CreatedAt            *RowFilterGatewaysCreatedAt            `form:"created_at,omitempty" json:"created_at,omitempty"`
-	UpdatedAt            *RowFilterGatewaysUpdatedAt            `form:"updated_at,omitempty" json:"updated_at,omitempty"`
-
-	// Prefer Preference
-	Prefer *PatchGatewaysParamsPrefer `json:"Prefer,omitempty"`
-}
-
-// PatchGatewaysParamsPrefer defines parameters for PatchGateways.
-type PatchGatewaysParamsPrefer string
-
-// PostGatewaysParams defines parameters for PostGateways.
-type PostGatewaysParams struct {
-	// Select Filtering Columns
-	Select *Select `form:"select,omitempty" json:"select,omitempty"`
-
-	// Prefer Preference
-	Prefer *PostGatewaysParamsPrefer `json:"Prefer,omitempty"`
-}
-
-// PostGatewaysParamsPrefer defines parameters for PostGateways.
-type PostGatewaysParamsPrefer string
 
 // DeleteNetworksParams defines parameters for DeleteNetworks.
 type DeleteNetworksParams struct {
@@ -1172,6 +1004,81 @@ type PostOrganizationsParams struct {
 // PostOrganizationsParamsPrefer defines parameters for PostOrganizations.
 type PostOrganizationsParamsPrefer string
 
+// DeletePortalAccountRbacParams defines parameters for DeletePortalAccountRbac.
+type DeletePortalAccountRbacParams struct {
+	Id                *RowFilterPortalAccountRbacId                `form:"id,omitempty" json:"id,omitempty"`
+	PortalAccountId   *RowFilterPortalAccountRbacPortalAccountId   `form:"portal_account_id,omitempty" json:"portal_account_id,omitempty"`
+	PortalUserId      *RowFilterPortalAccountRbacPortalUserId      `form:"portal_user_id,omitempty" json:"portal_user_id,omitempty"`
+	RoleName          *RowFilterPortalAccountRbacRoleName          `form:"role_name,omitempty" json:"role_name,omitempty"`
+	UserJoinedAccount *RowFilterPortalAccountRbacUserJoinedAccount `form:"user_joined_account,omitempty" json:"user_joined_account,omitempty"`
+
+	// Prefer Preference
+	Prefer *DeletePortalAccountRbacParamsPrefer `json:"Prefer,omitempty"`
+}
+
+// DeletePortalAccountRbacParamsPrefer defines parameters for DeletePortalAccountRbac.
+type DeletePortalAccountRbacParamsPrefer string
+
+// GetPortalAccountRbacParams defines parameters for GetPortalAccountRbac.
+type GetPortalAccountRbacParams struct {
+	Id                *RowFilterPortalAccountRbacId                `form:"id,omitempty" json:"id,omitempty"`
+	PortalAccountId   *RowFilterPortalAccountRbacPortalAccountId   `form:"portal_account_id,omitempty" json:"portal_account_id,omitempty"`
+	PortalUserId      *RowFilterPortalAccountRbacPortalUserId      `form:"portal_user_id,omitempty" json:"portal_user_id,omitempty"`
+	RoleName          *RowFilterPortalAccountRbacRoleName          `form:"role_name,omitempty" json:"role_name,omitempty"`
+	UserJoinedAccount *RowFilterPortalAccountRbacUserJoinedAccount `form:"user_joined_account,omitempty" json:"user_joined_account,omitempty"`
+
+	// Select Filtering Columns
+	Select *Select `form:"select,omitempty" json:"select,omitempty"`
+
+	// Order Ordering
+	Order *Order `form:"order,omitempty" json:"order,omitempty"`
+
+	// Offset Limiting and Pagination
+	Offset *Offset `form:"offset,omitempty" json:"offset,omitempty"`
+
+	// Limit Limiting and Pagination
+	Limit *Limit `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// Range Limiting and Pagination
+	Range *Range `json:"Range,omitempty"`
+
+	// RangeUnit Limiting and Pagination
+	RangeUnit *RangeUnit `json:"Range-Unit,omitempty"`
+
+	// Prefer Preference
+	Prefer *GetPortalAccountRbacParamsPrefer `json:"Prefer,omitempty"`
+}
+
+// GetPortalAccountRbacParamsPrefer defines parameters for GetPortalAccountRbac.
+type GetPortalAccountRbacParamsPrefer string
+
+// PatchPortalAccountRbacParams defines parameters for PatchPortalAccountRbac.
+type PatchPortalAccountRbacParams struct {
+	Id                *RowFilterPortalAccountRbacId                `form:"id,omitempty" json:"id,omitempty"`
+	PortalAccountId   *RowFilterPortalAccountRbacPortalAccountId   `form:"portal_account_id,omitempty" json:"portal_account_id,omitempty"`
+	PortalUserId      *RowFilterPortalAccountRbacPortalUserId      `form:"portal_user_id,omitempty" json:"portal_user_id,omitempty"`
+	RoleName          *RowFilterPortalAccountRbacRoleName          `form:"role_name,omitempty" json:"role_name,omitempty"`
+	UserJoinedAccount *RowFilterPortalAccountRbacUserJoinedAccount `form:"user_joined_account,omitempty" json:"user_joined_account,omitempty"`
+
+	// Prefer Preference
+	Prefer *PatchPortalAccountRbacParamsPrefer `json:"Prefer,omitempty"`
+}
+
+// PatchPortalAccountRbacParamsPrefer defines parameters for PatchPortalAccountRbac.
+type PatchPortalAccountRbacParamsPrefer string
+
+// PostPortalAccountRbacParams defines parameters for PostPortalAccountRbac.
+type PostPortalAccountRbacParams struct {
+	// Select Filtering Columns
+	Select *Select `form:"select,omitempty" json:"select,omitempty"`
+
+	// Prefer Preference
+	Prefer *PostPortalAccountRbacParamsPrefer `json:"Prefer,omitempty"`
+}
+
+// PostPortalAccountRbacParamsPrefer defines parameters for PostPortalAccountRbac.
+type PostPortalAccountRbacParamsPrefer string
+
 // DeletePortalAccountsParams defines parameters for DeletePortalAccounts.
 type DeletePortalAccountsParams struct {
 	// PortalAccountId Unique identifier for the portal account
@@ -1285,6 +1192,81 @@ type PostPortalAccountsParams struct {
 
 // PostPortalAccountsParamsPrefer defines parameters for PostPortalAccounts.
 type PostPortalAccountsParamsPrefer string
+
+// DeletePortalApplicationRbacParams defines parameters for DeletePortalApplicationRbac.
+type DeletePortalApplicationRbacParams struct {
+	Id                  *RowFilterPortalApplicationRbacId                  `form:"id,omitempty" json:"id,omitempty"`
+	PortalApplicationId *RowFilterPortalApplicationRbacPortalApplicationId `form:"portal_application_id,omitempty" json:"portal_application_id,omitempty"`
+	PortalUserId        *RowFilterPortalApplicationRbacPortalUserId        `form:"portal_user_id,omitempty" json:"portal_user_id,omitempty"`
+	CreatedAt           *RowFilterPortalApplicationRbacCreatedAt           `form:"created_at,omitempty" json:"created_at,omitempty"`
+	UpdatedAt           *RowFilterPortalApplicationRbacUpdatedAt           `form:"updated_at,omitempty" json:"updated_at,omitempty"`
+
+	// Prefer Preference
+	Prefer *DeletePortalApplicationRbacParamsPrefer `json:"Prefer,omitempty"`
+}
+
+// DeletePortalApplicationRbacParamsPrefer defines parameters for DeletePortalApplicationRbac.
+type DeletePortalApplicationRbacParamsPrefer string
+
+// GetPortalApplicationRbacParams defines parameters for GetPortalApplicationRbac.
+type GetPortalApplicationRbacParams struct {
+	Id                  *RowFilterPortalApplicationRbacId                  `form:"id,omitempty" json:"id,omitempty"`
+	PortalApplicationId *RowFilterPortalApplicationRbacPortalApplicationId `form:"portal_application_id,omitempty" json:"portal_application_id,omitempty"`
+	PortalUserId        *RowFilterPortalApplicationRbacPortalUserId        `form:"portal_user_id,omitempty" json:"portal_user_id,omitempty"`
+	CreatedAt           *RowFilterPortalApplicationRbacCreatedAt           `form:"created_at,omitempty" json:"created_at,omitempty"`
+	UpdatedAt           *RowFilterPortalApplicationRbacUpdatedAt           `form:"updated_at,omitempty" json:"updated_at,omitempty"`
+
+	// Select Filtering Columns
+	Select *Select `form:"select,omitempty" json:"select,omitempty"`
+
+	// Order Ordering
+	Order *Order `form:"order,omitempty" json:"order,omitempty"`
+
+	// Offset Limiting and Pagination
+	Offset *Offset `form:"offset,omitempty" json:"offset,omitempty"`
+
+	// Limit Limiting and Pagination
+	Limit *Limit `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// Range Limiting and Pagination
+	Range *Range `json:"Range,omitempty"`
+
+	// RangeUnit Limiting and Pagination
+	RangeUnit *RangeUnit `json:"Range-Unit,omitempty"`
+
+	// Prefer Preference
+	Prefer *GetPortalApplicationRbacParamsPrefer `json:"Prefer,omitempty"`
+}
+
+// GetPortalApplicationRbacParamsPrefer defines parameters for GetPortalApplicationRbac.
+type GetPortalApplicationRbacParamsPrefer string
+
+// PatchPortalApplicationRbacParams defines parameters for PatchPortalApplicationRbac.
+type PatchPortalApplicationRbacParams struct {
+	Id                  *RowFilterPortalApplicationRbacId                  `form:"id,omitempty" json:"id,omitempty"`
+	PortalApplicationId *RowFilterPortalApplicationRbacPortalApplicationId `form:"portal_application_id,omitempty" json:"portal_application_id,omitempty"`
+	PortalUserId        *RowFilterPortalApplicationRbacPortalUserId        `form:"portal_user_id,omitempty" json:"portal_user_id,omitempty"`
+	CreatedAt           *RowFilterPortalApplicationRbacCreatedAt           `form:"created_at,omitempty" json:"created_at,omitempty"`
+	UpdatedAt           *RowFilterPortalApplicationRbacUpdatedAt           `form:"updated_at,omitempty" json:"updated_at,omitempty"`
+
+	// Prefer Preference
+	Prefer *PatchPortalApplicationRbacParamsPrefer `json:"Prefer,omitempty"`
+}
+
+// PatchPortalApplicationRbacParamsPrefer defines parameters for PatchPortalApplicationRbac.
+type PatchPortalApplicationRbacParamsPrefer string
+
+// PostPortalApplicationRbacParams defines parameters for PostPortalApplicationRbac.
+type PostPortalApplicationRbacParams struct {
+	// Select Filtering Columns
+	Select *Select `form:"select,omitempty" json:"select,omitempty"`
+
+	// Prefer Preference
+	Prefer *PostPortalApplicationRbacParamsPrefer `json:"Prefer,omitempty"`
+}
+
+// PostPortalApplicationRbacParamsPrefer defines parameters for PostPortalApplicationRbac.
+type PostPortalApplicationRbacParamsPrefer string
 
 // DeletePortalApplicationsParams defines parameters for DeletePortalApplications.
 type DeletePortalApplicationsParams struct {
@@ -1484,88 +1466,168 @@ type PostPortalPlansParams struct {
 // PostPortalPlansParamsPrefer defines parameters for PostPortalPlans.
 type PostPortalPlansParamsPrefer string
 
-// GetRpcCreatePortalApplicationParams defines parameters for GetRpcCreatePortalApplication.
-type GetRpcCreatePortalApplicationParams struct {
-	PPortalAccountId                    string  `form:"p_portal_account_id" json:"p_portal_account_id"`
-	PPortalUserId                       string  `form:"p_portal_user_id" json:"p_portal_user_id"`
-	PPortalApplicationName              *string `form:"p_portal_application_name,omitempty" json:"p_portal_application_name,omitempty"`
-	PEmoji                              *string `form:"p_emoji,omitempty" json:"p_emoji,omitempty"`
-	PPortalApplicationUserLimit         *int    `form:"p_portal_application_user_limit,omitempty" json:"p_portal_application_user_limit,omitempty"`
-	PPortalApplicationUserLimitInterval *string `form:"p_portal_application_user_limit_interval,omitempty" json:"p_portal_application_user_limit_interval,omitempty"`
-	PPortalApplicationUserLimitRps      *int    `form:"p_portal_application_user_limit_rps,omitempty" json:"p_portal_application_user_limit_rps,omitempty"`
-	PPortalApplicationDescription       *string `form:"p_portal_application_description,omitempty" json:"p_portal_application_description,omitempty"`
-	PFavoriteServiceIds                 *string `form:"p_favorite_service_ids,omitempty" json:"p_favorite_service_ids,omitempty"`
-	PSecretKeyRequired                  *string `form:"p_secret_key_required,omitempty" json:"p_secret_key_required,omitempty"`
+// GetRpcArmorParams defines parameters for GetRpcArmor.
+type GetRpcArmorParams struct {
+	Empty string `form:"" json:""`
 }
 
-// PostRpcCreatePortalApplicationJSONBody defines parameters for PostRpcCreatePortalApplication.
-type PostRpcCreatePortalApplicationJSONBody struct {
-	PEmoji                              *string   `json:"p_emoji,omitempty"`
-	PFavoriteServiceIds                 *[]string `json:"p_favorite_service_ids,omitempty"`
-	PPortalAccountId                    string    `json:"p_portal_account_id"`
-	PPortalApplicationDescription       *string   `json:"p_portal_application_description,omitempty"`
-	PPortalApplicationName              *string   `json:"p_portal_application_name,omitempty"`
-	PPortalApplicationUserLimit         *int      `json:"p_portal_application_user_limit,omitempty"`
-	PPortalApplicationUserLimitInterval *string   `json:"p_portal_application_user_limit_interval,omitempty"`
-	PPortalApplicationUserLimitRps      *int      `json:"p_portal_application_user_limit_rps,omitempty"`
-	PPortalUserId                       string    `json:"p_portal_user_id"`
-	PSecretKeyRequired                  *string   `json:"p_secret_key_required,omitempty"`
+// PostRpcArmorJSONBody defines parameters for PostRpcArmor.
+type PostRpcArmorJSONBody struct {
+	Empty string `json:""`
 }
 
-// PostRpcCreatePortalApplicationApplicationVndPgrstObjectPlusJSONBody defines parameters for PostRpcCreatePortalApplication.
-type PostRpcCreatePortalApplicationApplicationVndPgrstObjectPlusJSONBody struct {
-	PEmoji                              *string   `json:"p_emoji,omitempty"`
-	PFavoriteServiceIds                 *[]string `json:"p_favorite_service_ids,omitempty"`
-	PPortalAccountId                    string    `json:"p_portal_account_id"`
-	PPortalApplicationDescription       *string   `json:"p_portal_application_description,omitempty"`
-	PPortalApplicationName              *string   `json:"p_portal_application_name,omitempty"`
-	PPortalApplicationUserLimit         *int      `json:"p_portal_application_user_limit,omitempty"`
-	PPortalApplicationUserLimitInterval *string   `json:"p_portal_application_user_limit_interval,omitempty"`
-	PPortalApplicationUserLimitRps      *int      `json:"p_portal_application_user_limit_rps,omitempty"`
-	PPortalUserId                       string    `json:"p_portal_user_id"`
-	PSecretKeyRequired                  *string   `json:"p_secret_key_required,omitempty"`
+// PostRpcArmorApplicationVndPgrstObjectPlusJSONBody defines parameters for PostRpcArmor.
+type PostRpcArmorApplicationVndPgrstObjectPlusJSONBody struct {
+	Empty string `json:""`
 }
 
-// PostRpcCreatePortalApplicationApplicationVndPgrstObjectPlusJSONNullsStrippedBody defines parameters for PostRpcCreatePortalApplication.
-type PostRpcCreatePortalApplicationApplicationVndPgrstObjectPlusJSONNullsStrippedBody struct {
-	PEmoji                              *string   `json:"p_emoji,omitempty"`
-	PFavoriteServiceIds                 *[]string `json:"p_favorite_service_ids,omitempty"`
-	PPortalAccountId                    string    `json:"p_portal_account_id"`
-	PPortalApplicationDescription       *string   `json:"p_portal_application_description,omitempty"`
-	PPortalApplicationName              *string   `json:"p_portal_application_name,omitempty"`
-	PPortalApplicationUserLimit         *int      `json:"p_portal_application_user_limit,omitempty"`
-	PPortalApplicationUserLimitInterval *string   `json:"p_portal_application_user_limit_interval,omitempty"`
-	PPortalApplicationUserLimitRps      *int      `json:"p_portal_application_user_limit_rps,omitempty"`
-	PPortalUserId                       string    `json:"p_portal_user_id"`
-	PSecretKeyRequired                  *string   `json:"p_secret_key_required,omitempty"`
+// PostRpcArmorApplicationVndPgrstObjectPlusJSONNullsStrippedBody defines parameters for PostRpcArmor.
+type PostRpcArmorApplicationVndPgrstObjectPlusJSONNullsStrippedBody struct {
+	Empty string `json:""`
 }
 
-// PostRpcCreatePortalApplicationParams defines parameters for PostRpcCreatePortalApplication.
-type PostRpcCreatePortalApplicationParams struct {
+// PostRpcArmorParams defines parameters for PostRpcArmor.
+type PostRpcArmorParams struct {
 	// Prefer Preference
-	Prefer *PostRpcCreatePortalApplicationParamsPrefer `json:"Prefer,omitempty"`
+	Prefer *PostRpcArmorParamsPrefer `json:"Prefer,omitempty"`
 }
 
-// PostRpcCreatePortalApplicationParamsPrefer defines parameters for PostRpcCreatePortalApplication.
-type PostRpcCreatePortalApplicationParamsPrefer string
+// PostRpcArmorParamsPrefer defines parameters for PostRpcArmor.
+type PostRpcArmorParamsPrefer string
 
-// PostRpcMeJSONBody defines parameters for PostRpcMe.
-type PostRpcMeJSONBody = map[string]interface{}
+// GetRpcDearmorParams defines parameters for GetRpcDearmor.
+type GetRpcDearmorParams struct {
+	Empty string `form:"" json:""`
+}
 
-// PostRpcMeApplicationVndPgrstObjectPlusJSONBody defines parameters for PostRpcMe.
-type PostRpcMeApplicationVndPgrstObjectPlusJSONBody = map[string]interface{}
+// PostRpcDearmorJSONBody defines parameters for PostRpcDearmor.
+type PostRpcDearmorJSONBody struct {
+	Empty string `json:""`
+}
 
-// PostRpcMeApplicationVndPgrstObjectPlusJSONNullsStrippedBody defines parameters for PostRpcMe.
-type PostRpcMeApplicationVndPgrstObjectPlusJSONNullsStrippedBody = map[string]interface{}
+// PostRpcDearmorApplicationVndPgrstObjectPlusJSONBody defines parameters for PostRpcDearmor.
+type PostRpcDearmorApplicationVndPgrstObjectPlusJSONBody struct {
+	Empty string `json:""`
+}
 
-// PostRpcMeParams defines parameters for PostRpcMe.
-type PostRpcMeParams struct {
+// PostRpcDearmorApplicationVndPgrstObjectPlusJSONNullsStrippedBody defines parameters for PostRpcDearmor.
+type PostRpcDearmorApplicationVndPgrstObjectPlusJSONNullsStrippedBody struct {
+	Empty string `json:""`
+}
+
+// PostRpcDearmorParams defines parameters for PostRpcDearmor.
+type PostRpcDearmorParams struct {
 	// Prefer Preference
-	Prefer *PostRpcMeParamsPrefer `json:"Prefer,omitempty"`
+	Prefer *PostRpcDearmorParamsPrefer `json:"Prefer,omitempty"`
 }
 
-// PostRpcMeParamsPrefer defines parameters for PostRpcMe.
-type PostRpcMeParamsPrefer string
+// PostRpcDearmorParamsPrefer defines parameters for PostRpcDearmor.
+type PostRpcDearmorParamsPrefer string
+
+// PostRpcGenRandomUuidJSONBody defines parameters for PostRpcGenRandomUuid.
+type PostRpcGenRandomUuidJSONBody = map[string]interface{}
+
+// PostRpcGenRandomUuidApplicationVndPgrstObjectPlusJSONBody defines parameters for PostRpcGenRandomUuid.
+type PostRpcGenRandomUuidApplicationVndPgrstObjectPlusJSONBody = map[string]interface{}
+
+// PostRpcGenRandomUuidApplicationVndPgrstObjectPlusJSONNullsStrippedBody defines parameters for PostRpcGenRandomUuid.
+type PostRpcGenRandomUuidApplicationVndPgrstObjectPlusJSONNullsStrippedBody = map[string]interface{}
+
+// PostRpcGenRandomUuidParams defines parameters for PostRpcGenRandomUuid.
+type PostRpcGenRandomUuidParams struct {
+	// Prefer Preference
+	Prefer *PostRpcGenRandomUuidParamsPrefer `json:"Prefer,omitempty"`
+}
+
+// PostRpcGenRandomUuidParamsPrefer defines parameters for PostRpcGenRandomUuid.
+type PostRpcGenRandomUuidParamsPrefer string
+
+// GetRpcGenSaltParams defines parameters for GetRpcGenSalt.
+type GetRpcGenSaltParams struct {
+	Empty string `form:"" json:""`
+}
+
+// PostRpcGenSaltJSONBody defines parameters for PostRpcGenSalt.
+type PostRpcGenSaltJSONBody struct {
+	Empty string `json:""`
+}
+
+// PostRpcGenSaltApplicationVndPgrstObjectPlusJSONBody defines parameters for PostRpcGenSalt.
+type PostRpcGenSaltApplicationVndPgrstObjectPlusJSONBody struct {
+	Empty string `json:""`
+}
+
+// PostRpcGenSaltApplicationVndPgrstObjectPlusJSONNullsStrippedBody defines parameters for PostRpcGenSalt.
+type PostRpcGenSaltApplicationVndPgrstObjectPlusJSONNullsStrippedBody struct {
+	Empty string `json:""`
+}
+
+// PostRpcGenSaltParams defines parameters for PostRpcGenSalt.
+type PostRpcGenSaltParams struct {
+	// Prefer Preference
+	Prefer *PostRpcGenSaltParamsPrefer `json:"Prefer,omitempty"`
+}
+
+// PostRpcGenSaltParamsPrefer defines parameters for PostRpcGenSalt.
+type PostRpcGenSaltParamsPrefer string
+
+// GetRpcPgpArmorHeadersParams defines parameters for GetRpcPgpArmorHeaders.
+type GetRpcPgpArmorHeadersParams struct {
+	Empty string `form:"" json:""`
+}
+
+// PostRpcPgpArmorHeadersJSONBody defines parameters for PostRpcPgpArmorHeaders.
+type PostRpcPgpArmorHeadersJSONBody struct {
+	Empty string `json:""`
+}
+
+// PostRpcPgpArmorHeadersApplicationVndPgrstObjectPlusJSONBody defines parameters for PostRpcPgpArmorHeaders.
+type PostRpcPgpArmorHeadersApplicationVndPgrstObjectPlusJSONBody struct {
+	Empty string `json:""`
+}
+
+// PostRpcPgpArmorHeadersApplicationVndPgrstObjectPlusJSONNullsStrippedBody defines parameters for PostRpcPgpArmorHeaders.
+type PostRpcPgpArmorHeadersApplicationVndPgrstObjectPlusJSONNullsStrippedBody struct {
+	Empty string `json:""`
+}
+
+// PostRpcPgpArmorHeadersParams defines parameters for PostRpcPgpArmorHeaders.
+type PostRpcPgpArmorHeadersParams struct {
+	// Prefer Preference
+	Prefer *PostRpcPgpArmorHeadersParamsPrefer `json:"Prefer,omitempty"`
+}
+
+// PostRpcPgpArmorHeadersParamsPrefer defines parameters for PostRpcPgpArmorHeaders.
+type PostRpcPgpArmorHeadersParamsPrefer string
+
+// GetRpcPgpKeyIdParams defines parameters for GetRpcPgpKeyId.
+type GetRpcPgpKeyIdParams struct {
+	Empty string `form:"" json:""`
+}
+
+// PostRpcPgpKeyIdJSONBody defines parameters for PostRpcPgpKeyId.
+type PostRpcPgpKeyIdJSONBody struct {
+	Empty string `json:""`
+}
+
+// PostRpcPgpKeyIdApplicationVndPgrstObjectPlusJSONBody defines parameters for PostRpcPgpKeyId.
+type PostRpcPgpKeyIdApplicationVndPgrstObjectPlusJSONBody struct {
+	Empty string `json:""`
+}
+
+// PostRpcPgpKeyIdApplicationVndPgrstObjectPlusJSONNullsStrippedBody defines parameters for PostRpcPgpKeyId.
+type PostRpcPgpKeyIdApplicationVndPgrstObjectPlusJSONNullsStrippedBody struct {
+	Empty string `json:""`
+}
+
+// PostRpcPgpKeyIdParams defines parameters for PostRpcPgpKeyId.
+type PostRpcPgpKeyIdParams struct {
+	// Prefer Preference
+	Prefer *PostRpcPgpKeyIdParamsPrefer `json:"Prefer,omitempty"`
+}
+
+// PostRpcPgpKeyIdParamsPrefer defines parameters for PostRpcPgpKeyId.
+type PostRpcPgpKeyIdParamsPrefer string
 
 // DeleteServiceEndpointsParams defines parameters for DeleteServiceEndpoints.
 type DeleteServiceEndpointsParams struct {
@@ -1735,6 +1797,9 @@ type DeleteServicesParams struct {
 	QualityFallbackEnabled *RowFilterServicesQualityFallbackEnabled `form:"quality_fallback_enabled,omitempty" json:"quality_fallback_enabled,omitempty"`
 	HardFallbackEnabled    *RowFilterServicesHardFallbackEnabled    `form:"hard_fallback_enabled,omitempty" json:"hard_fallback_enabled,omitempty"`
 	SvgIcon                *RowFilterServicesSvgIcon                `form:"svg_icon,omitempty" json:"svg_icon,omitempty"`
+	PublicEndpointUrl      *RowFilterServicesPublicEndpointUrl      `form:"public_endpoint_url,omitempty" json:"public_endpoint_url,omitempty"`
+	StatusEndpointUrl      *RowFilterServicesStatusEndpointUrl      `form:"status_endpoint_url,omitempty" json:"status_endpoint_url,omitempty"`
+	StatusQuery            *RowFilterServicesStatusQuery            `form:"status_query,omitempty" json:"status_query,omitempty"`
 	DeletedAt              *RowFilterServicesDeletedAt              `form:"deleted_at,omitempty" json:"deleted_at,omitempty"`
 	CreatedAt              *RowFilterServicesCreatedAt              `form:"created_at,omitempty" json:"created_at,omitempty"`
 	UpdatedAt              *RowFilterServicesUpdatedAt              `form:"updated_at,omitempty" json:"updated_at,omitempty"`
@@ -1764,6 +1829,9 @@ type GetServicesParams struct {
 	QualityFallbackEnabled *RowFilterServicesQualityFallbackEnabled `form:"quality_fallback_enabled,omitempty" json:"quality_fallback_enabled,omitempty"`
 	HardFallbackEnabled    *RowFilterServicesHardFallbackEnabled    `form:"hard_fallback_enabled,omitempty" json:"hard_fallback_enabled,omitempty"`
 	SvgIcon                *RowFilterServicesSvgIcon                `form:"svg_icon,omitempty" json:"svg_icon,omitempty"`
+	PublicEndpointUrl      *RowFilterServicesPublicEndpointUrl      `form:"public_endpoint_url,omitempty" json:"public_endpoint_url,omitempty"`
+	StatusEndpointUrl      *RowFilterServicesStatusEndpointUrl      `form:"status_endpoint_url,omitempty" json:"status_endpoint_url,omitempty"`
+	StatusQuery            *RowFilterServicesStatusQuery            `form:"status_query,omitempty" json:"status_query,omitempty"`
 	DeletedAt              *RowFilterServicesDeletedAt              `form:"deleted_at,omitempty" json:"deleted_at,omitempty"`
 	CreatedAt              *RowFilterServicesCreatedAt              `form:"created_at,omitempty" json:"created_at,omitempty"`
 	UpdatedAt              *RowFilterServicesUpdatedAt              `form:"updated_at,omitempty" json:"updated_at,omitempty"`
@@ -1811,6 +1879,9 @@ type PatchServicesParams struct {
 	QualityFallbackEnabled *RowFilterServicesQualityFallbackEnabled `form:"quality_fallback_enabled,omitempty" json:"quality_fallback_enabled,omitempty"`
 	HardFallbackEnabled    *RowFilterServicesHardFallbackEnabled    `form:"hard_fallback_enabled,omitempty" json:"hard_fallback_enabled,omitempty"`
 	SvgIcon                *RowFilterServicesSvgIcon                `form:"svg_icon,omitempty" json:"svg_icon,omitempty"`
+	PublicEndpointUrl      *RowFilterServicesPublicEndpointUrl      `form:"public_endpoint_url,omitempty" json:"public_endpoint_url,omitempty"`
+	StatusEndpointUrl      *RowFilterServicesStatusEndpointUrl      `form:"status_endpoint_url,omitempty" json:"status_endpoint_url,omitempty"`
+	StatusQuery            *RowFilterServicesStatusQuery            `form:"status_query,omitempty" json:"status_query,omitempty"`
 	DeletedAt              *RowFilterServicesDeletedAt              `form:"deleted_at,omitempty" json:"deleted_at,omitempty"`
 	CreatedAt              *RowFilterServicesCreatedAt              `form:"created_at,omitempty" json:"created_at,omitempty"`
 	UpdatedAt              *RowFilterServicesUpdatedAt              `form:"updated_at,omitempty" json:"updated_at,omitempty"`
@@ -1833,42 +1904,6 @@ type PostServicesParams struct {
 
 // PostServicesParamsPrefer defines parameters for PostServices.
 type PostServicesParamsPrefer string
-
-// PatchApplicationsJSONRequestBody defines body for PatchApplications for application/json ContentType.
-type PatchApplicationsJSONRequestBody = Applications
-
-// PatchApplicationsApplicationVndPgrstObjectPlusJSONRequestBody defines body for PatchApplications for application/vnd.pgrst.object+json ContentType.
-type PatchApplicationsApplicationVndPgrstObjectPlusJSONRequestBody = Applications
-
-// PatchApplicationsApplicationVndPgrstObjectPlusJSONNullsStrippedRequestBody defines body for PatchApplications for application/vnd.pgrst.object+json;nulls=stripped ContentType.
-type PatchApplicationsApplicationVndPgrstObjectPlusJSONNullsStrippedRequestBody = Applications
-
-// PostApplicationsJSONRequestBody defines body for PostApplications for application/json ContentType.
-type PostApplicationsJSONRequestBody = Applications
-
-// PostApplicationsApplicationVndPgrstObjectPlusJSONRequestBody defines body for PostApplications for application/vnd.pgrst.object+json ContentType.
-type PostApplicationsApplicationVndPgrstObjectPlusJSONRequestBody = Applications
-
-// PostApplicationsApplicationVndPgrstObjectPlusJSONNullsStrippedRequestBody defines body for PostApplications for application/vnd.pgrst.object+json;nulls=stripped ContentType.
-type PostApplicationsApplicationVndPgrstObjectPlusJSONNullsStrippedRequestBody = Applications
-
-// PatchGatewaysJSONRequestBody defines body for PatchGateways for application/json ContentType.
-type PatchGatewaysJSONRequestBody = Gateways
-
-// PatchGatewaysApplicationVndPgrstObjectPlusJSONRequestBody defines body for PatchGateways for application/vnd.pgrst.object+json ContentType.
-type PatchGatewaysApplicationVndPgrstObjectPlusJSONRequestBody = Gateways
-
-// PatchGatewaysApplicationVndPgrstObjectPlusJSONNullsStrippedRequestBody defines body for PatchGateways for application/vnd.pgrst.object+json;nulls=stripped ContentType.
-type PatchGatewaysApplicationVndPgrstObjectPlusJSONNullsStrippedRequestBody = Gateways
-
-// PostGatewaysJSONRequestBody defines body for PostGateways for application/json ContentType.
-type PostGatewaysJSONRequestBody = Gateways
-
-// PostGatewaysApplicationVndPgrstObjectPlusJSONRequestBody defines body for PostGateways for application/vnd.pgrst.object+json ContentType.
-type PostGatewaysApplicationVndPgrstObjectPlusJSONRequestBody = Gateways
-
-// PostGatewaysApplicationVndPgrstObjectPlusJSONNullsStrippedRequestBody defines body for PostGateways for application/vnd.pgrst.object+json;nulls=stripped ContentType.
-type PostGatewaysApplicationVndPgrstObjectPlusJSONNullsStrippedRequestBody = Gateways
 
 // PatchNetworksJSONRequestBody defines body for PatchNetworks for application/json ContentType.
 type PatchNetworksJSONRequestBody = Networks
@@ -1906,6 +1941,24 @@ type PostOrganizationsApplicationVndPgrstObjectPlusJSONRequestBody = Organizatio
 // PostOrganizationsApplicationVndPgrstObjectPlusJSONNullsStrippedRequestBody defines body for PostOrganizations for application/vnd.pgrst.object+json;nulls=stripped ContentType.
 type PostOrganizationsApplicationVndPgrstObjectPlusJSONNullsStrippedRequestBody = Organizations
 
+// PatchPortalAccountRbacJSONRequestBody defines body for PatchPortalAccountRbac for application/json ContentType.
+type PatchPortalAccountRbacJSONRequestBody = PortalAccountRbac
+
+// PatchPortalAccountRbacApplicationVndPgrstObjectPlusJSONRequestBody defines body for PatchPortalAccountRbac for application/vnd.pgrst.object+json ContentType.
+type PatchPortalAccountRbacApplicationVndPgrstObjectPlusJSONRequestBody = PortalAccountRbac
+
+// PatchPortalAccountRbacApplicationVndPgrstObjectPlusJSONNullsStrippedRequestBody defines body for PatchPortalAccountRbac for application/vnd.pgrst.object+json;nulls=stripped ContentType.
+type PatchPortalAccountRbacApplicationVndPgrstObjectPlusJSONNullsStrippedRequestBody = PortalAccountRbac
+
+// PostPortalAccountRbacJSONRequestBody defines body for PostPortalAccountRbac for application/json ContentType.
+type PostPortalAccountRbacJSONRequestBody = PortalAccountRbac
+
+// PostPortalAccountRbacApplicationVndPgrstObjectPlusJSONRequestBody defines body for PostPortalAccountRbac for application/vnd.pgrst.object+json ContentType.
+type PostPortalAccountRbacApplicationVndPgrstObjectPlusJSONRequestBody = PortalAccountRbac
+
+// PostPortalAccountRbacApplicationVndPgrstObjectPlusJSONNullsStrippedRequestBody defines body for PostPortalAccountRbac for application/vnd.pgrst.object+json;nulls=stripped ContentType.
+type PostPortalAccountRbacApplicationVndPgrstObjectPlusJSONNullsStrippedRequestBody = PortalAccountRbac
+
 // PatchPortalAccountsJSONRequestBody defines body for PatchPortalAccounts for application/json ContentType.
 type PatchPortalAccountsJSONRequestBody = PortalAccounts
 
@@ -1923,6 +1976,24 @@ type PostPortalAccountsApplicationVndPgrstObjectPlusJSONRequestBody = PortalAcco
 
 // PostPortalAccountsApplicationVndPgrstObjectPlusJSONNullsStrippedRequestBody defines body for PostPortalAccounts for application/vnd.pgrst.object+json;nulls=stripped ContentType.
 type PostPortalAccountsApplicationVndPgrstObjectPlusJSONNullsStrippedRequestBody = PortalAccounts
+
+// PatchPortalApplicationRbacJSONRequestBody defines body for PatchPortalApplicationRbac for application/json ContentType.
+type PatchPortalApplicationRbacJSONRequestBody = PortalApplicationRbac
+
+// PatchPortalApplicationRbacApplicationVndPgrstObjectPlusJSONRequestBody defines body for PatchPortalApplicationRbac for application/vnd.pgrst.object+json ContentType.
+type PatchPortalApplicationRbacApplicationVndPgrstObjectPlusJSONRequestBody = PortalApplicationRbac
+
+// PatchPortalApplicationRbacApplicationVndPgrstObjectPlusJSONNullsStrippedRequestBody defines body for PatchPortalApplicationRbac for application/vnd.pgrst.object+json;nulls=stripped ContentType.
+type PatchPortalApplicationRbacApplicationVndPgrstObjectPlusJSONNullsStrippedRequestBody = PortalApplicationRbac
+
+// PostPortalApplicationRbacJSONRequestBody defines body for PostPortalApplicationRbac for application/json ContentType.
+type PostPortalApplicationRbacJSONRequestBody = PortalApplicationRbac
+
+// PostPortalApplicationRbacApplicationVndPgrstObjectPlusJSONRequestBody defines body for PostPortalApplicationRbac for application/vnd.pgrst.object+json ContentType.
+type PostPortalApplicationRbacApplicationVndPgrstObjectPlusJSONRequestBody = PortalApplicationRbac
+
+// PostPortalApplicationRbacApplicationVndPgrstObjectPlusJSONNullsStrippedRequestBody defines body for PostPortalApplicationRbac for application/vnd.pgrst.object+json;nulls=stripped ContentType.
+type PostPortalApplicationRbacApplicationVndPgrstObjectPlusJSONNullsStrippedRequestBody = PortalApplicationRbac
 
 // PatchPortalApplicationsJSONRequestBody defines body for PatchPortalApplications for application/json ContentType.
 type PatchPortalApplicationsJSONRequestBody = PortalApplications
@@ -1960,23 +2031,59 @@ type PostPortalPlansApplicationVndPgrstObjectPlusJSONRequestBody = PortalPlans
 // PostPortalPlansApplicationVndPgrstObjectPlusJSONNullsStrippedRequestBody defines body for PostPortalPlans for application/vnd.pgrst.object+json;nulls=stripped ContentType.
 type PostPortalPlansApplicationVndPgrstObjectPlusJSONNullsStrippedRequestBody = PortalPlans
 
-// PostRpcCreatePortalApplicationJSONRequestBody defines body for PostRpcCreatePortalApplication for application/json ContentType.
-type PostRpcCreatePortalApplicationJSONRequestBody PostRpcCreatePortalApplicationJSONBody
+// PostRpcArmorJSONRequestBody defines body for PostRpcArmor for application/json ContentType.
+type PostRpcArmorJSONRequestBody PostRpcArmorJSONBody
 
-// PostRpcCreatePortalApplicationApplicationVndPgrstObjectPlusJSONRequestBody defines body for PostRpcCreatePortalApplication for application/vnd.pgrst.object+json ContentType.
-type PostRpcCreatePortalApplicationApplicationVndPgrstObjectPlusJSONRequestBody PostRpcCreatePortalApplicationApplicationVndPgrstObjectPlusJSONBody
+// PostRpcArmorApplicationVndPgrstObjectPlusJSONRequestBody defines body for PostRpcArmor for application/vnd.pgrst.object+json ContentType.
+type PostRpcArmorApplicationVndPgrstObjectPlusJSONRequestBody PostRpcArmorApplicationVndPgrstObjectPlusJSONBody
 
-// PostRpcCreatePortalApplicationApplicationVndPgrstObjectPlusJSONNullsStrippedRequestBody defines body for PostRpcCreatePortalApplication for application/vnd.pgrst.object+json;nulls=stripped ContentType.
-type PostRpcCreatePortalApplicationApplicationVndPgrstObjectPlusJSONNullsStrippedRequestBody PostRpcCreatePortalApplicationApplicationVndPgrstObjectPlusJSONNullsStrippedBody
+// PostRpcArmorApplicationVndPgrstObjectPlusJSONNullsStrippedRequestBody defines body for PostRpcArmor for application/vnd.pgrst.object+json;nulls=stripped ContentType.
+type PostRpcArmorApplicationVndPgrstObjectPlusJSONNullsStrippedRequestBody PostRpcArmorApplicationVndPgrstObjectPlusJSONNullsStrippedBody
 
-// PostRpcMeJSONRequestBody defines body for PostRpcMe for application/json ContentType.
-type PostRpcMeJSONRequestBody = PostRpcMeJSONBody
+// PostRpcDearmorJSONRequestBody defines body for PostRpcDearmor for application/json ContentType.
+type PostRpcDearmorJSONRequestBody PostRpcDearmorJSONBody
 
-// PostRpcMeApplicationVndPgrstObjectPlusJSONRequestBody defines body for PostRpcMe for application/vnd.pgrst.object+json ContentType.
-type PostRpcMeApplicationVndPgrstObjectPlusJSONRequestBody = PostRpcMeApplicationVndPgrstObjectPlusJSONBody
+// PostRpcDearmorApplicationVndPgrstObjectPlusJSONRequestBody defines body for PostRpcDearmor for application/vnd.pgrst.object+json ContentType.
+type PostRpcDearmorApplicationVndPgrstObjectPlusJSONRequestBody PostRpcDearmorApplicationVndPgrstObjectPlusJSONBody
 
-// PostRpcMeApplicationVndPgrstObjectPlusJSONNullsStrippedRequestBody defines body for PostRpcMe for application/vnd.pgrst.object+json;nulls=stripped ContentType.
-type PostRpcMeApplicationVndPgrstObjectPlusJSONNullsStrippedRequestBody = PostRpcMeApplicationVndPgrstObjectPlusJSONNullsStrippedBody
+// PostRpcDearmorApplicationVndPgrstObjectPlusJSONNullsStrippedRequestBody defines body for PostRpcDearmor for application/vnd.pgrst.object+json;nulls=stripped ContentType.
+type PostRpcDearmorApplicationVndPgrstObjectPlusJSONNullsStrippedRequestBody PostRpcDearmorApplicationVndPgrstObjectPlusJSONNullsStrippedBody
+
+// PostRpcGenRandomUuidJSONRequestBody defines body for PostRpcGenRandomUuid for application/json ContentType.
+type PostRpcGenRandomUuidJSONRequestBody = PostRpcGenRandomUuidJSONBody
+
+// PostRpcGenRandomUuidApplicationVndPgrstObjectPlusJSONRequestBody defines body for PostRpcGenRandomUuid for application/vnd.pgrst.object+json ContentType.
+type PostRpcGenRandomUuidApplicationVndPgrstObjectPlusJSONRequestBody = PostRpcGenRandomUuidApplicationVndPgrstObjectPlusJSONBody
+
+// PostRpcGenRandomUuidApplicationVndPgrstObjectPlusJSONNullsStrippedRequestBody defines body for PostRpcGenRandomUuid for application/vnd.pgrst.object+json;nulls=stripped ContentType.
+type PostRpcGenRandomUuidApplicationVndPgrstObjectPlusJSONNullsStrippedRequestBody = PostRpcGenRandomUuidApplicationVndPgrstObjectPlusJSONNullsStrippedBody
+
+// PostRpcGenSaltJSONRequestBody defines body for PostRpcGenSalt for application/json ContentType.
+type PostRpcGenSaltJSONRequestBody PostRpcGenSaltJSONBody
+
+// PostRpcGenSaltApplicationVndPgrstObjectPlusJSONRequestBody defines body for PostRpcGenSalt for application/vnd.pgrst.object+json ContentType.
+type PostRpcGenSaltApplicationVndPgrstObjectPlusJSONRequestBody PostRpcGenSaltApplicationVndPgrstObjectPlusJSONBody
+
+// PostRpcGenSaltApplicationVndPgrstObjectPlusJSONNullsStrippedRequestBody defines body for PostRpcGenSalt for application/vnd.pgrst.object+json;nulls=stripped ContentType.
+type PostRpcGenSaltApplicationVndPgrstObjectPlusJSONNullsStrippedRequestBody PostRpcGenSaltApplicationVndPgrstObjectPlusJSONNullsStrippedBody
+
+// PostRpcPgpArmorHeadersJSONRequestBody defines body for PostRpcPgpArmorHeaders for application/json ContentType.
+type PostRpcPgpArmorHeadersJSONRequestBody PostRpcPgpArmorHeadersJSONBody
+
+// PostRpcPgpArmorHeadersApplicationVndPgrstObjectPlusJSONRequestBody defines body for PostRpcPgpArmorHeaders for application/vnd.pgrst.object+json ContentType.
+type PostRpcPgpArmorHeadersApplicationVndPgrstObjectPlusJSONRequestBody PostRpcPgpArmorHeadersApplicationVndPgrstObjectPlusJSONBody
+
+// PostRpcPgpArmorHeadersApplicationVndPgrstObjectPlusJSONNullsStrippedRequestBody defines body for PostRpcPgpArmorHeaders for application/vnd.pgrst.object+json;nulls=stripped ContentType.
+type PostRpcPgpArmorHeadersApplicationVndPgrstObjectPlusJSONNullsStrippedRequestBody PostRpcPgpArmorHeadersApplicationVndPgrstObjectPlusJSONNullsStrippedBody
+
+// PostRpcPgpKeyIdJSONRequestBody defines body for PostRpcPgpKeyId for application/json ContentType.
+type PostRpcPgpKeyIdJSONRequestBody PostRpcPgpKeyIdJSONBody
+
+// PostRpcPgpKeyIdApplicationVndPgrstObjectPlusJSONRequestBody defines body for PostRpcPgpKeyId for application/vnd.pgrst.object+json ContentType.
+type PostRpcPgpKeyIdApplicationVndPgrstObjectPlusJSONRequestBody PostRpcPgpKeyIdApplicationVndPgrstObjectPlusJSONBody
+
+// PostRpcPgpKeyIdApplicationVndPgrstObjectPlusJSONNullsStrippedRequestBody defines body for PostRpcPgpKeyId for application/vnd.pgrst.object+json;nulls=stripped ContentType.
+type PostRpcPgpKeyIdApplicationVndPgrstObjectPlusJSONNullsStrippedRequestBody PostRpcPgpKeyIdApplicationVndPgrstObjectPlusJSONNullsStrippedBody
 
 // PatchServiceEndpointsJSONRequestBody defines body for PatchServiceEndpoints for application/json ContentType.
 type PatchServiceEndpointsJSONRequestBody = ServiceEndpoints

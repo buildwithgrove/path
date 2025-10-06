@@ -166,6 +166,11 @@ postgrest-swagger-ui: postgrest-generate-openapi ## Start Swagger UI to view Ope
 		-v $(PWD)/api/openapi/openapi.json:/openapi.json:ro \
 		swaggerapi/swagger-ui
 
+.PHONY: postgrest-generate-sdks
+postgrest-generate-sdks: postgrest-generate-openapi ## Generate Go and TypeScript SDKs from OpenAPI specification
+	@echo "🔧 Generating Go and TypeScript SDKs from OpenAPI specification..."
+	cd api/codegen && ./generate-sdks.sh
+
 # ============================================================================
 # AUTHENTICATION & TESTING
 # ============================================================================

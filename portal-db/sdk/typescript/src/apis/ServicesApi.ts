@@ -35,6 +35,9 @@ export interface ServicesDeleteRequest {
     qualityFallbackEnabled?: boolean;
     hardFallbackEnabled?: boolean;
     svgIcon?: string;
+    publicEndpointUrl?: string;
+    statusEndpointUrl?: string;
+    statusQuery?: string;
     deletedAt?: string;
     createdAt?: string;
     updatedAt?: string;
@@ -54,6 +57,9 @@ export interface ServicesGetRequest {
     qualityFallbackEnabled?: boolean;
     hardFallbackEnabled?: boolean;
     svgIcon?: string;
+    publicEndpointUrl?: string;
+    statusEndpointUrl?: string;
+    statusQuery?: string;
     deletedAt?: string;
     createdAt?: string;
     updatedAt?: string;
@@ -79,6 +85,9 @@ export interface ServicesPatchRequest {
     qualityFallbackEnabled?: boolean;
     hardFallbackEnabled?: boolean;
     svgIcon?: string;
+    publicEndpointUrl?: string;
+    statusEndpointUrl?: string;
+    statusQuery?: string;
     deletedAt?: string;
     createdAt?: string;
     updatedAt?: string;
@@ -149,6 +158,18 @@ export class ServicesApi extends runtime.BaseAPI {
 
         if (requestParameters['svgIcon'] != null) {
             queryParameters['svg_icon'] = requestParameters['svgIcon'];
+        }
+
+        if (requestParameters['publicEndpointUrl'] != null) {
+            queryParameters['public_endpoint_url'] = requestParameters['publicEndpointUrl'];
+        }
+
+        if (requestParameters['statusEndpointUrl'] != null) {
+            queryParameters['status_endpoint_url'] = requestParameters['statusEndpointUrl'];
+        }
+
+        if (requestParameters['statusQuery'] != null) {
+            queryParameters['status_query'] = requestParameters['statusQuery'];
         }
 
         if (requestParameters['deletedAt'] != null) {
@@ -241,6 +262,18 @@ export class ServicesApi extends runtime.BaseAPI {
 
         if (requestParameters['svgIcon'] != null) {
             queryParameters['svg_icon'] = requestParameters['svgIcon'];
+        }
+
+        if (requestParameters['publicEndpointUrl'] != null) {
+            queryParameters['public_endpoint_url'] = requestParameters['publicEndpointUrl'];
+        }
+
+        if (requestParameters['statusEndpointUrl'] != null) {
+            queryParameters['status_endpoint_url'] = requestParameters['statusEndpointUrl'];
+        }
+
+        if (requestParameters['statusQuery'] != null) {
+            queryParameters['status_query'] = requestParameters['statusQuery'];
         }
 
         if (requestParameters['deletedAt'] != null) {
@@ -365,6 +398,18 @@ export class ServicesApi extends runtime.BaseAPI {
 
         if (requestParameters['svgIcon'] != null) {
             queryParameters['svg_icon'] = requestParameters['svgIcon'];
+        }
+
+        if (requestParameters['publicEndpointUrl'] != null) {
+            queryParameters['public_endpoint_url'] = requestParameters['publicEndpointUrl'];
+        }
+
+        if (requestParameters['statusEndpointUrl'] != null) {
+            queryParameters['status_endpoint_url'] = requestParameters['statusEndpointUrl'];
+        }
+
+        if (requestParameters['statusQuery'] != null) {
+            queryParameters['status_query'] = requestParameters['statusQuery'];
         }
 
         if (requestParameters['deletedAt'] != null) {
