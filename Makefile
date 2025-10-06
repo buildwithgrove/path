@@ -4,6 +4,25 @@
 
 # TODO(@olshansk): Remove "Shannon" and just use "Pocket".
 
+# Patterns for classified help categories (automatically used by help-unclassified)
+HELP_PATTERNS := \
+	'^(help|help-unclassified):' \
+	'^path_(build|run):' \
+	'^config.*:' \
+	'^(path_up.*|path_down|install_tools.*|localnet_.*):' \
+	'^load_test.*:' \
+	'^(test_unit|test_all|go_lint):' \
+	'^e2e_test.*:' \
+	'^bench.*:' \
+	'^(get_disqualified_endpoints|grove_get_disqualified_endpoints|shannon_preliminary_services_test_help|shannon_preliminary_services_test|source_shannon_preliminary_services_helpers):' \
+	'^(portal_db_help):' \
+	'^proto.*:' \
+	'^release_.*:' \
+	'^(go_docs|docusaurus.*|gen_.*_docs):' \
+	'^test_(request|healthz|disqualified|load).*:' \
+	'^bench_.*:' \
+	'^claudesync.*:'
+
 .PHONY: help
 .DEFAULT_GOAL := help
 help: ## Prints all the targets in all the Makefiles
@@ -20,7 +39,7 @@ help: ## Prints all the targets in all the Makefiles
 	@grep -h -E '^config.*:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "$(CYAN)%-40s$(RESET) %s\n", $$1, $$2}'
 	@echo ""
 	@echo "$(BOLD)=== 🛠️ Development Environment ===$(RESET)"
-	@grep -h -E '^(path_up|path_down|install_tools.*|localnet_.*):.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "$(CYAN)%-40s$(RESET) %s\n", $$1, $$2}'
+	@grep -h -E '^(path_up.*|path_down|install_tools.*|localnet_.*):.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "$(CYAN)%-40s$(RESET) %s\n", $$1, $$2}'
 	@echo ""
 	@echo "$(BOLD)=== 🚀 Load Testing ===$(RESET)"
 	@grep -h -E '^load_test.*:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "$(CYAN)%-40s$(RESET) %s\n", $$1, $$2}'
@@ -36,15 +55,13 @@ help: ## Prints all the targets in all the Makefiles
 	@grep -h -E '^(get_disqualified_endpoints|grove_get_disqualified_endpoints|shannon_preliminary_services_test_help|shannon_preliminary_services_test|source_shannon_preliminary_services_helpers):.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "$(CYAN)%-40s$(RESET) %s\n", $$1, $$2}'
 	@echo ""
 	@echo "$(BOLD)=== 🗄️ Portal Database ===$(RESET)"
-	@grep -h -E '^portal_db.*:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "$(CYAN)%-40s$(RESET) %s\n", $$1, $$2}'
+	@grep -h -E '^(portal_db_help):.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "$(CYAN)%-40s$(RESET) %s\n", $$1, $$2}'
 	@echo ""
 	@echo "$(BOLD)=== 📦 Protocol Buffers ===$(RESET)"
 	@grep -h -E '^proto.*:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "$(CYAN)%-40s$(RESET) %s\n", $$1, $$2}'
 	@echo ""
 	@echo "$(BOLD)=== 🚢 Release Management ===$(RESET)"
 	@grep -h -E '^release_.*:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "$(CYAN)%-40s$(RESET) %s\n", $$1, $$2}'
-	@echo ""
-	@echo "$(BOLD)=== 🔧 Utilities ===$(RESET)"
 	@echo ""
 	@echo "$(BOLD)=== 📚 Documentation ===$(RESET)"
 	@grep -h -E '^(go_docs|docusaurus.*|gen_.*_docs):.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "$(CYAN)%-40s$(RESET) %s\n", $$1, $$2}'
@@ -64,42 +81,16 @@ help-unclassified: ## Show all unclassified targets
 	@echo ""
 	@echo "$(BOLD)$(CYAN)📦 Unclassified Targets$(RESET)"
 	@echo ""
-	@grep -h -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
-		grep -v -E '^(help|help-unclassified|portaldb-quickstart|path_build|path_run|path_up|path_down|config.*|install_tools.*|localnet_.*|load_test.*|test_unit|test_all|go_lint|e2e_test.*|bench.*|get_disqualified_endpoints|grove_get_disqualified_endpoints|shannon_preliminary_services_test_help|shannon_preliminary_services_test|source_shannon_preliminary_services_helpers|portal_db.*|proto.*|release_.*|go_docs|docusaurus.*|gen_.*_docs|test_request.*|test_healthz.*|test_disqualified.*|test_load.*|claudesync.*):.*?## .*$$' | \
-		awk 'BEGIN {FS = ":.*?## "}; {printf "$(CYAN)%-40s$(RESET) %s\n", $$1, $$2}'
-	@echo ""
-
-.PHONY: portaldb-quickstart
-portaldb-quickstart: ## Quick start guide for Portal DB (starts services, hydrates data, tests endpoints)
-	@echo ""
-	@echo "$(BOLD)$(CYAN)🗄️ Portal DB Quick Start$(RESET)"
-	@echo ""
-	@echo "$(BOLD)Step 1: Starting Portal DB services...$(RESET)"
-	@cd ./portal-db && make postgrest-up
-	@echo ""
-	@echo "$(BOLD)Step 2: Hydrating test data...$(RESET)"
-	@cd ./portal-db && make hydrate-testdata
-	@echo ""
-	@echo "$(BOLD)Step 3: Testing public endpoint (networks)...$(RESET)"
-	@curl -s http://localhost:3000/networks | jq
-	@echo ""
-	@echo "$(BOLD)Step 4: Generating JWT token...$(RESET)"
-	@cd ./portal-db && make gen-jwt
-	@echo ""
-	@echo "$(BOLD)Step 5: Set your JWT token:$(RESET)"
-	@echo "$(YELLOW)export TOKEN=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYXV0aGVudGljYXRlZCIsImVtYWlsIjoiam9obkBkb2UuY29tIiwiZXhwIjoxNzU4MjEzNjM5fQ.i1_Mrj86xsdgsxDqLmJz8FDd9dd-sJhlS0vBQXGIHuU$(RESET)"
-	@echo ""
-	@echo "$(BOLD)Step 6: Testing authenticated endpoints...$(RESET)"
-	@echo "$(CYAN)Testing portal_accounts:$(RESET)"
-	@curl -s http://localhost:3000/portal_accounts -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYXV0aGVudGljYXRlZCIsImVtYWlsIjoiam9obkBkb2UuY29tIiwiZXhwIjoxNzU4MjEzNjM5fQ.i1_Mrj86xsdgsxDqLmJz8FDd9dd-sJhlS0vBQXGIHuU" | jq
-	@echo ""
-	@echo "$(CYAN)Testing rpc/me:$(RESET)"
-	@curl -s http://localhost:3000/rpc/me -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYXV0aGVudGljYXRlZCIsImVtYWlsIjoiam9obkBkb2UuY29tIiwiZXhwIjoxNzU4MjEzNjM5fQ.i1_Mrj86xsdgsxDqLmJz8FDd9dd-sJhlS0vBQXGIHuU" -H "Content-Type: application/json" | jq
-	@echo ""
-	@echo "$(BOLD)Step 7: Testing portal app creation...$(RESET)"
-	@cd ./portal-db && make test-portal-app
-	@echo ""
-	@echo "$(GREEN)$(BOLD)✅ Quick start complete!$(RESET)"
+	@grep -h -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sed 's/:.*//g' | sort -u > /tmp/all_targets.txt
+	@( \
+		for pattern in $(HELP_PATTERNS); do \
+			grep -h -E "$$pattern.*?## .*\$$" $(MAKEFILE_LIST) 2>/dev/null || true; \
+		done \
+	) | sed 's/:.*//g' | sort -u > /tmp/classified_targets.txt
+	@comm -23 /tmp/all_targets.txt /tmp/classified_targets.txt | while read target; do \
+		grep -h -E "^$$target:.*?## .*\$$" $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "$(CYAN)%-40s$(RESET) %s\n", $$1, $$2}'; \
+	done
+	@rm -f /tmp/all_targets.txt /tmp/classified_targets.txt
 	@echo ""
 
 #############################
@@ -137,6 +128,15 @@ path_run: path_build check_path_config ## Run the path binary as a standalone bi
 	(cd bin; ./path -config ../${CONFIG_PATH})
 
 ###############################
+###  Portal Database Help   ###
+###############################
+
+.PHONY: portal_db_help
+portal_db_help: ## Show Portal DB makefile targets
+	@echo "To use these commands: ${CYAN}cd ./portal-db && make <command>${RESET}"
+	@cd ./portal-db && make help
+
+###############################
 ###    Makefile imports     ###
 ###############################
 
@@ -147,7 +147,6 @@ include ./makefiles/deps.mk
 include ./makefiles/devtools.mk
 include ./makefiles/docs.mk
 include ./makefiles/localnet.mk
-include ./makefiles/portal-db.mk
 include ./makefiles/test.mk
 include ./makefiles/bench.mk
 include ./makefiles/test_requests.mk

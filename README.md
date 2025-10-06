@@ -37,15 +37,12 @@ For Technical Support please open a ticket in [Grove's Discord](https://discord.
 
 ## Portal DB
 
-The portal DB is the source of truth for running a SaaS using PATH to deploy
-a service similar to [Grove's Portal](https://portal.grove.city)
+The portal DB is the source of truth for running a SaaS using PATH to deploya service similar to [Grove's Portal](https://portal.grove.city)
 
 See the following docs for more information:
 
 - [portal-db](./portal-db/README.md)
 - [portal-db/api](./portal-db/api/README.md)
-- [portal-db/sdk/go](./portal-db/sdk/go/README.md)
-- [portal-db/sdk/typescript](./portal-db/sdk/typescript/README.md)
 
 ---
 

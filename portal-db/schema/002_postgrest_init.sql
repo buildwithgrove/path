@@ -1,115 +1,170 @@
 -- ============================================================================
--- PostgREST API Setup for Portal DB
+-- PostgREST Authentication + Authorization Bootstrap for Portal DB
 -- ============================================================================
--- This file sets up the database roles and permissions for PostgREST JWT authentication
+--
+-- This migration follows the PostgREST security model:
+-- - Keep authorization in PostgreSQL; PostgREST only authenticates requests.
+-- - Use three role classes:
+--   1. Authenticator role: Chameleon connection role to set application role from JWT.
+--   2. Application roles: JWT impersonation targets.
+--   3. Anon role: fallback for unauthenticated requests.
+-- - Rely on user impersonation via `SET ROLE` after verifying the JWT `role`
+--   claim. Note that the authenticator must be granted each impersonated role.
+-- - Default the anonymous role to minimal privileges so unauthenticated
+--   sessions cannot access data.
+--
+-- Further reading: https://postgrest.org/en/stable/explanations/auth.html
+
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
 -- ============================================================================
--- CREATE ESSENTIAL POSTGREST ROLES
+-- ROLES
 -- ============================================================================
--- 
--- THREE-ROLE AUTHENTICATION SYSTEM:
--- 1. AUTHENTICATOR: The role PostgREST uses to connect to the database
---    - Has LOGIN permission to connect
---    - Has NOINHERIT so it starts with no permissions  
---    - Can switch to other roles via "SET ROLE" command
--- 
--- 2. ANON: Role for anonymous/unauthenticated requests
---    - Has NOLOGIN (cannot connect directly)
---    - Limited permissions for public data only
---    - Used when no JWT token is provided
--- 
--- 3. AUTHENTICATED: Role for authenticated requests  
---    - Has NOLOGIN (cannot connect directly)
---    - Extended permissions for user data
---    - Used when JWT contains "role": "authenticated"
 
--- Create the authenticator role (used by PostgREST to connect)
--- This role can switch to other roles but has no direct permissions
-CREATE ROLE authenticator NOINHERIT LOGIN PASSWORD 'authenticator_password';
+-- PostgREST connection role; configure its password outside of migrations.
+CREATE ROLE authenticator WITH NOINHERIT LOGIN;
+COMMENT ON ROLE authenticator IS 'PostgREST connection role; password managed outside migrations.';
 
--- Anonymous role - for public API access (read-only by default)
+-- Role assumed for unauthenticated requests (no privileges granted).
 CREATE ROLE anon NOLOGIN;
+COMMENT ON ROLE anon IS 'Unauthenticated PostgREST role with no privileges.';
 
--- Authenticated role - for authenticated API access
-CREATE ROLE authenticated NOLOGIN;
+-- Read/write application role.
+CREATE ROLE portal_db_admin NOLOGIN;
+COMMENT ON ROLE portal_db_admin IS 'PostgREST role for administrative clients (read/write).';
+
+-- Read-only application role.
+CREATE ROLE portal_db_reader NOLOGIN;
+COMMENT ON ROLE portal_db_reader IS 'PostgREST role for read-only clients.';
+
+-- Allow PostgREST to impersonate application roles.
+GRANT anon TO authenticator;
+GRANT portal_db_admin TO authenticator;
+GRANT portal_db_reader TO authenticator;
 
 -- ============================================================================
--- GRANT BASIC PERMISSIONS
+-- SCHEMAS & DEFAULT PRIVILEGES
 -- ============================================================================
 
--- Grant usage on public schema
-GRANT USAGE ON SCHEMA public TO anon, authenticated;
+CREATE SCHEMA IF NOT EXISTS api;
 
--- Grant basic SELECT permissions for anonymous users (public data only)
-GRANT SELECT ON TABLE 
+-- Remove implicit PUBLIC access and grant only what the API roles need.
+REVOKE ALL ON SCHEMA public FROM PUBLIC;
+REVOKE ALL ON SCHEMA api FROM PUBLIC;
+GRANT USAGE ON SCHEMA public TO portal_db_admin, portal_db_reader;
+GRANT USAGE ON SCHEMA api TO portal_db_admin, portal_db_reader;
+
+-- Ensure new tables/sequences created under `public` remain private by default.
+ALTER DEFAULT PRIVILEGES IN SCHEMA public REVOKE ALL ON TABLES FROM PUBLIC;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public REVOKE ALL ON SEQUENCES FROM PUBLIC;
+
+-- Keep the runtime search_path deterministic for the connection role.
+ALTER ROLE authenticator SET search_path = 'public, api';
+
+-- ============================================================================
+-- TABLE & SEQUENCE PRIVILEGES
+-- ============================================================================
+
+REVOKE ALL ON ALL TABLES IN SCHEMA public FROM PUBLIC;
+REVOKE ALL ON ALL SEQUENCES IN SCHEMA public FROM PUBLIC;
+
+-- Shared read access to public reference data.
+GRANT SELECT ON TABLE
     networks,
     services,
     service_endpoints,
     service_fallbacks,
     portal_plans
-TO anon;
+TO portal_db_admin, portal_db_reader;
 
--- Grant authenticated users access to anon role permissions plus more tables
-GRANT anon TO authenticated;
-GRANT SELECT ON TABLE 
+-- Administrative access to mutable business data.
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE
     organizations,
     portal_accounts,
+    portal_account_rbac,
     portal_applications,
-    applications,
-    gateways
-TO authenticated;
+    portal_application_rbac
+TO portal_db_admin;
 
--- Create API schema for functions
-CREATE SCHEMA IF NOT EXISTS api;
-GRANT USAGE ON SCHEMA api TO anon, authenticated;
+-- Read-only access to business data for reader role.
+GRANT SELECT ON TABLE
+    organizations,
+    portal_accounts,
+    portal_account_rbac,
+    portal_applications,
+    portal_application_rbac
+TO portal_db_reader;
 
--- ============================================================================
--- JWT CLAIMS ACCESS EXAMPLE
--- ============================================================================
--- Example function showing how to access JWT claims in SQL
--- Based on PostgREST documentation: https://postgrest.org/en/stable/explanations/db_authz.html
--- 
--- NOTE: RPC functions must be in 'public' schema for PostgREST to find them
--- PostgREST looks for RPC functions in the public schema by default
---
--- JWT AUTHENTICATION FLOW:
--- 1. Client generates JWT externally
--- 2. Client sends request with "Authorization: Bearer <JWT_TOKEN>"
--- 3. PostgREST verifies JWT signature using jwt-secret from postgrest.conf
--- 4. PostgREST extracts 'role' claim from JWT payload
--- 5. PostgREST executes "SET ROLE <extracted_role>;" in database
--- 6. Database query runs with that role's permissions
--- 7. PostgREST sets JWT claims as transaction-scoped settings for SQL access
-
--- Function to get current user info from JWT claims
-CREATE OR REPLACE FUNCTION public.me()
-RETURNS JSON AS $$
-BEGIN
-    -- Access JWT claims as shown in PostgREST docs
-    -- PostgREST automatically sets 'request.jwt.claims' with the JWT payload
-    -- current_setting('request.jwt.claims', true)::json->>'claim_name'
-    RETURN json_build_object(
-        'role', current_setting('request.jwt.claims', true)::json->>'role',
-        'email', current_setting('request.jwt.claims', true)::json->>'email'
-    );
-END;
-$$ LANGUAGE plpgsql STABLE SECURITY DEFINER;
-
--- Grant execute permission to authenticated users only
-GRANT EXECUTE ON FUNCTION public.me TO authenticated;
+-- Sequence usage for administrators; readers can observe values if needed.
+GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO portal_db_admin;
+GRANT SELECT ON ALL SEQUENCES IN SCHEMA public TO portal_db_reader;
 
 -- ============================================================================
--- GRANTS FOR AUTHENTICATOR
+-- ROW LEVEL SECURITY POLICIES
 -- ============================================================================
--- 
--- CRITICAL: Allow authenticator to "become" other roles
--- When PostgREST receives a JWT with "role": "authenticated", it executes:
---   SET ROLE authenticated;
--- When PostgREST receives no JWT (or invalid JWT), it executes:
---   SET ROLE anon;
--- 
--- These GRANT statements make the role switching possible:
 
--- Grant the authenticator role the ability to switch to API roles
-GRANT anon TO authenticator;        -- Allows: SET ROLE anon;
-GRANT authenticated TO authenticator; -- Allows: SET ROLE authenticated;
+ALTER TABLE organizations ENABLE ROW LEVEL SECURITY;
+ALTER TABLE portal_accounts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE portal_account_rbac ENABLE ROW LEVEL SECURITY;
+ALTER TABLE portal_applications ENABLE ROW LEVEL SECURITY;
+ALTER TABLE portal_application_rbac ENABLE ROW LEVEL SECURITY;
+
+-- Organizations
+CREATE POLICY organizations_admin_all ON organizations
+    FOR ALL
+    TO portal_db_admin
+    USING (TRUE)
+    WITH CHECK (TRUE);
+
+CREATE POLICY organizations_reader_select ON organizations
+    FOR SELECT
+    TO portal_db_reader
+    USING (TRUE);
+
+-- Portal accounts
+CREATE POLICY portal_accounts_admin_all ON portal_accounts
+    FOR ALL
+    TO portal_db_admin
+    USING (TRUE)
+    WITH CHECK (TRUE);
+
+CREATE POLICY portal_accounts_reader_select ON portal_accounts
+    FOR SELECT
+    TO portal_db_reader
+    USING (TRUE);
+
+-- Portal account RBAC memberships
+CREATE POLICY portal_account_rbac_admin_all ON portal_account_rbac
+    FOR ALL
+    TO portal_db_admin
+    USING (TRUE)
+    WITH CHECK (TRUE);
+
+CREATE POLICY portal_account_rbac_reader_select ON portal_account_rbac
+    FOR SELECT
+    TO portal_db_reader
+    USING (TRUE);
+
+-- Portal applications
+CREATE POLICY portal_applications_admin_all ON portal_applications
+    FOR ALL
+    TO portal_db_admin
+    USING (TRUE)
+    WITH CHECK (TRUE);
+
+CREATE POLICY portal_applications_reader_select ON portal_applications
+    FOR SELECT
+    TO portal_db_reader
+    USING (TRUE);
+
+-- Portal application RBAC memberships
+CREATE POLICY portal_application_rbac_admin_all ON portal_application_rbac
+    FOR ALL
+    TO portal_db_admin
+    USING (TRUE)
+    WITH CHECK (TRUE);
+
+CREATE POLICY portal_application_rbac_reader_select ON portal_application_rbac
+    FOR SELECT
+    TO portal_db_reader
+    USING (TRUE);

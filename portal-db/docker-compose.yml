@@ -9,9 +9,9 @@
 # - PostgREST: Automatic REST API generation from database schema
 #
 # Usage:
-#   make postgrest-up    # Start both services
-#   make postgrest-down  # Stop and remove containers
-#   make postgrest-logs  # View service logs
+#   make portal-db-up    # Start both services
+#   make portal-db-down  # Stop and remove containers
+#   make portal-db-logs  # View service logs
 #
 # Access:
 #   Database:  localhost:5435 (user: postgres, password: portal_password)
@@ -43,12 +43,10 @@ services:
       - ./tmp/portal_db_data:/var/lib/postgresql/data
       # Initialization scripts (run in alphabetical order on first startup)
       # Documentation: https://hub.docker.com/_/postgres#initialization-scripts
-      # 001_schema.sql: Initial PostgreSQL schema
-      - ./schema/001_schema.sql:/docker-entrypoint-initdb.d/001_schema.sql:ro
-      # 002_postgrest_init.sql: PostgREST API setup
+      # 001_portal_init.sql: Initial PostgreSQL schema
+      - ./schema/001_portal_init.sql:/docker-entrypoint-initdb.d/001_portal_init.sql:ro
+      # 002_postgrest_init.sql: PostgREST API setup (roles, permissions, JWT)
       - ./schema/002_postgrest_init.sql:/docker-entrypoint-initdb.d/002_postgrest_init.sql:ro
-      # 003_postgrest_transactions.sql: Custom transaction functions
-      - ./schema/003_postgrest_transactions.sql:/docker-entrypoint-initdb.d/003_postgrest_transactions.sql:ro
     healthcheck:
       # Health check to ensure database is ready before starting PostgREST
       test: ["CMD", "pg_isready", "-U", "postgres", "-d", "portal_db"]
@@ -80,7 +78,15 @@ services:
     restart: unless-stopped
     healthcheck:
       # Health check for PostgREST API availability
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/"]
+      test:
+        [
+          "CMD",
+          "wget",
+          "--quiet",
+          "--tries=1",
+          "--spider",
+          "http://localhost:3000/",
+        ]
       interval: 30s
       timeout: 10s
       retries: 3
