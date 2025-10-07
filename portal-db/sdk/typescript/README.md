@@ -1,46 +1,96 @@
-## @grove/portal-db-sdk@12.0.2 (a4e00ff)
+# TypeScript SDK for Portal DB
 
-This generator creates TypeScript/JavaScript client that utilizes [Fetch API](https://fetch.spec.whatwg.org/). The generated Node module can be used in the following environments:
+Auto-generated TypeScript client for the Portal Database API.
 
-Environment
-* Node.js
-* Webpack
-* Browserify
+## Installation
 
-Language level
-* ES5 - you must have a Promises/A+ library installed
-* ES6
-
-Module system
-* CommonJS
-* ES6 module system
-
-It can be used in both TypeScript and JavaScript. In TypeScript, the definition will be automatically resolved via `package.json`. ([Reference](https://www.typescriptlang.org/docs/handbook/declaration-files/consumption.html))
-
-### Building
-
-To build and compile the typescript sources to javascript use:
-```
-npm install
-npm run build
+```bash
+npm install @grove/portal-db-sdk
 ```
 
-### Publishing
+> **TODO**: Publish this package to npm registry
 
-First build the package then run `npm publish`
+## Quick Start
 
-### Consuming
+Built-in client methods (auto-generated):
 
-navigate to the folder of your consuming project and run one of the following commands.
+```typescript
+import { PortalApplicationsApi, Configuration } from "@grove/portal-db-sdk";
 
-_published:_
+// Create client
+const config = new Configuration({
+  basePath: "http://localhost:3000"
+});
+const client = new PortalApplicationsApi(config);
 
+// Use built-in methods - no manual paths needed!
+const applications = await client.portalApplicationsGet();
 ```
-npm install @grove/portal-db-sdk@12.0.2 (a4e00ff) --save
+
+React integration:
+
+```typescript
+import { PortalApplicationsApi, RpcCreatePortalApplicationApi, Configuration } from "@grove/portal-db-sdk";
+import { useState, useEffect } from "react";
+
+const config = new Configuration({ basePath: "http://localhost:3000" });
+const portalAppsClient = new PortalApplicationsApi(config);
+const createAppClient = new RpcCreatePortalApplicationApi(config);
+
+function PortalApplicationsList() {
+  const [applications, setApplications] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    portalAppsClient.portalApplicationsGet().then((apps) => {
+      setApplications(apps);
+      setLoading(false);
+    });
+  }, []);
+
+  const createApp = async () => {
+    await createAppClient.rpcCreatePortalApplicationPost({
+      rpcCreatePortalApplicationPostRequest: {
+        pPortalAccountId: "account-123",
+        pPortalUserId: "user-456",
+        pPortalApplicationName: "My App",
+        pEmoji: "🚀"
+      }
+    });
+    // Refresh list
+    const apps = await portalAppsClient.portalApplicationsGet();
+    setApplications(apps);
+  };
+
+  if (loading) return "Loading...";
+
+  return (
+    <div>
+      <button onClick={createApp}>Create App</button>
+      <ul>
+        {applications.map(app => (
+          <li key={app.portalApplicationId}>
+            {app.emoji} {app.portalApplicationName}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
 ```
 
-_unPublished (not recommended):_
+## Authentication
 
-```
-npm install PATH_TO_GENERATED_PACKAGE --save
+Add JWT tokens to your requests:
+
+```typescript
+import { PortalApplicationsApi, Configuration } from "@grove/portal-db-sdk";
+
+// With JWT auth
+const config = new Configuration({
+  basePath: "http://localhost:3000",
+  accessToken: jwtToken
+});
+
+const client = new PortalApplicationsApi(config);
 ```
