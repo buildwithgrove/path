@@ -1680,6 +1680,103 @@
                 ]
             }
         },
+        "/portal_workers_account_data": {
+            "get": {
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/rowFilter.portal_workers_account_data.portal_account_id"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.portal_workers_account_data.user_account_name"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.portal_workers_account_data.portal_plan_type"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.portal_workers_account_data.billing_type"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.portal_workers_account_data.portal_account_user_limit"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.portal_workers_account_data.gcp_entitlement_id"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.portal_workers_account_data.owner_email"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rowFilter.portal_workers_account_data.owner_user_id"
+                    },
+                    {
+                        "$ref": "#/components/parameters/select"
+                    },
+                    {
+                        "$ref": "#/components/parameters/order"
+                    },
+                    {
+                        "$ref": "#/components/parameters/range"
+                    },
+                    {
+                        "$ref": "#/components/parameters/rangeUnit"
+                    },
+                    {
+                        "$ref": "#/components/parameters/offset"
+                    },
+                    {
+                        "$ref": "#/components/parameters/limit"
+                    },
+                    {
+                        "$ref": "#/components/parameters/preferCount"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "items": {
+                                        "$ref": "#/components/schemas/portal_workers_account_data"
+                                    },
+                                    "type": "array"
+                                }
+                            },
+                            "application/vnd.pgrst.object+json;nulls=stripped": {
+                                "schema": {
+                                    "items": {
+                                        "$ref": "#/components/schemas/portal_workers_account_data"
+                                    },
+                                    "type": "array"
+                                }
+                            },
+                            "application/vnd.pgrst.object+json": {
+                                "schema": {
+                                    "items": {
+                                        "$ref": "#/components/schemas/portal_workers_account_data"
+                                    },
+                                    "type": "array"
+                                }
+                            },
+                            "text/csv": {
+                                "schema": {
+                                    "items": {
+                                        "$ref": "#/components/schemas/portal_workers_account_data"
+                                    },
+                                    "type": "array"
+                                }
+                            }
+                        }
+                    },
+                    "206": {
+                        "description": "Partial Content"
+                    }
+                },
+                "summary": "Account data for portal-workers billing operations with owner email. Filter using WHERE portal_plan_type = 'PLAN_UNLIMITED' AND billing_type = 'stripe'",
+                "tags": [
+                    "portal_workers_account_data"
+                ]
+            }
+        },
         "/portal_account_rbac": {
             "get": {
                 "parameters": [
@@ -3047,6 +3144,78 @@
                     "format": "character varying"
                 }
             },
+            "rowFilter.portal_workers_account_data.portal_account_id": {
+                "name": "portal_account_id",
+                "required": false,
+                "in": "query",
+                "schema": {
+                    "type": "string",
+                    "format": "character varying"
+                }
+            },
+            "rowFilter.portal_workers_account_data.user_account_name": {
+                "name": "user_account_name",
+                "required": false,
+                "in": "query",
+                "schema": {
+                    "type": "string",
+                    "format": "character varying"
+                }
+            },
+            "rowFilter.portal_workers_account_data.portal_plan_type": {
+                "name": "portal_plan_type",
+                "required": false,
+                "in": "query",
+                "schema": {
+                    "type": "string",
+                    "format": "character varying"
+                }
+            },
+            "rowFilter.portal_workers_account_data.billing_type": {
+                "name": "billing_type",
+                "required": false,
+                "in": "query",
+                "schema": {
+                    "type": "string",
+                    "format": "character varying"
+                }
+            },
+            "rowFilter.portal_workers_account_data.portal_account_user_limit": {
+                "name": "portal_account_user_limit",
+                "required": false,
+                "in": "query",
+                "schema": {
+                    "type": "string",
+                    "format": "integer"
+                }
+            },
+            "rowFilter.portal_workers_account_data.gcp_entitlement_id": {
+                "name": "gcp_entitlement_id",
+                "required": false,
+                "in": "query",
+                "schema": {
+                    "type": "string",
+                    "format": "character varying"
+                }
+            },
+            "rowFilter.portal_workers_account_data.owner_email": {
+                "name": "owner_email",
+                "required": false,
+                "in": "query",
+                "schema": {
+                    "type": "string",
+                    "format": "character varying"
+                }
+            },
+            "rowFilter.portal_workers_account_data.owner_user_id": {
+                "name": "owner_user_id",
+                "required": false,
+                "in": "query",
+                "schema": {
+                    "type": "string",
+                    "format": "character varying"
+                }
+            },
             "rowFilter.portal_account_rbac.id": {
                 "name": "id",
                 "required": false,
@@ -3957,6 +4126,54 @@
                         "description": "Note:\nThis is a Primary Key.<pk/>",
                         "format": "character varying",
                         "maxLength": 42,
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "portal_workers_account_data": {
+                "description": "Account data for portal-workers billing operations with owner email. Filter using WHERE portal_plan_type = 'PLAN_UNLIMITED' AND billing_type = 'stripe'",
+                "properties": {
+                    "portal_account_id": {
+                        "description": "Note:\nThis is a Primary Key.<pk/>",
+                        "format": "character varying",
+                        "maxLength": 36,
+                        "type": "string"
+                    },
+                    "user_account_name": {
+                        "format": "character varying",
+                        "maxLength": 42,
+                        "type": "string"
+                    },
+                    "portal_plan_type": {
+                        "description": "Note:\nThis is a Foreign Key to `portal_plans.portal_plan_type`.<fk table='portal_plans' column='portal_plan_type'/>",
+                        "format": "character varying",
+                        "maxLength": 42,
+                        "type": "string"
+                    },
+                    "billing_type": {
+                        "format": "character varying",
+                        "maxLength": 20,
+                        "type": "string"
+                    },
+                    "portal_account_user_limit": {
+                        "format": "integer",
+                        "type": "integer"
+                    },
+                    "gcp_entitlement_id": {
+                        "format": "character varying",
+                        "maxLength": 255,
+                        "type": "string"
+                    },
+                    "owner_email": {
+                        "format": "character varying",
+                        "maxLength": 255,
+                        "type": "string"
+                    },
+                    "owner_user_id": {
+                        "description": "Note:\nThis is a Primary Key.<pk/>",
+                        "format": "character varying",
+                        "maxLength": 36,
                         "type": "string"
                     }
                 },

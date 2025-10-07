@@ -8,6 +8,7 @@ export * from './PortalAccountsApi';
 export * from './PortalApplicationRbacApi';
 export * from './PortalApplicationsApi';
 export * from './PortalPlansApi';
+export * from './PortalWorkersAccountDataApi';
 export * from './RpcArmorApi';
 export * from './RpcDearmorApi';
 export * from './RpcGenRandomUuidApi';

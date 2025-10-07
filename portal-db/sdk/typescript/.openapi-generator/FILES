@@ -1,6 +1,5 @@
 .gitignore
 .npmignore
-.openapi-generator-ignore
 README.md
 package.json
 src/apis/IntrospectionApi.ts
@@ -11,6 +10,7 @@ src/apis/PortalAccountsApi.ts
 src/apis/PortalApplicationRbacApi.ts
 src/apis/PortalApplicationsApi.ts
 src/apis/PortalPlansApi.ts
+src/apis/PortalWorkersAccountDataApi.ts
 src/apis/RpcArmorApi.ts
 src/apis/RpcDearmorApi.ts
 src/apis/RpcGenRandomUuidApi.ts
@@ -29,6 +29,7 @@ src/models/PortalAccounts.ts
 src/models/PortalApplicationRbac.ts
 src/models/PortalApplications.ts
 src/models/PortalPlans.ts
+src/models/PortalWorkersAccountData.ts
 src/models/RpcArmorPostRequest.ts
 src/models/RpcGenSaltPostRequest.ts
 src/models/ServiceEndpoints.ts

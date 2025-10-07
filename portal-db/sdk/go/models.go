@@ -256,6 +256,11 @@ const (
 	PostPortalPlansParamsPreferReturnRepresentation       PostPortalPlansParamsPrefer = "return=representation"
 )
 
+// Defines values for GetPortalWorkersAccountDataParamsPrefer.
+const (
+	GetPortalWorkersAccountDataParamsPreferCountNone GetPortalWorkersAccountDataParamsPrefer = "count=none"
+)
+
 // Defines values for PostRpcArmorParamsPrefer.
 const (
 	PostRpcArmorParamsPreferParamsSingleObject PostRpcArmorParamsPrefer = "params=single-object"
@@ -351,7 +356,7 @@ const (
 
 // Defines values for GetServicesParamsPrefer.
 const (
-	CountNone GetServicesParamsPrefer = "count=none"
+	GetServicesParamsPreferCountNone GetServicesParamsPrefer = "count=none"
 )
 
 // Defines values for PatchServicesParamsPrefer.
@@ -511,6 +516,27 @@ type PortalPlans struct {
 
 // PortalPlansPlanUsageLimitInterval defines model for PortalPlans.PlanUsageLimitInterval.
 type PortalPlansPlanUsageLimitInterval string
+
+// PortalWorkersAccountData Account data for portal-workers billing operations with owner email. Filter using WHERE portal_plan_type = 'PLAN_UNLIMITED' AND billing_type = 'stripe'
+type PortalWorkersAccountData struct {
+	BillingType      *string `json:"billing_type,omitempty"`
+	GcpEntitlementId *string `json:"gcp_entitlement_id,omitempty"`
+	OwnerEmail       *string `json:"owner_email,omitempty"`
+
+	// OwnerUserId Note:
+	// This is a Primary Key.<pk/>
+	OwnerUserId *string `json:"owner_user_id,omitempty"`
+
+	// PortalAccountId Note:
+	// This is a Primary Key.<pk/>
+	PortalAccountId        *string `json:"portal_account_id,omitempty"`
+	PortalAccountUserLimit *int    `json:"portal_account_user_limit,omitempty"`
+
+	// PortalPlanType Note:
+	// This is a Foreign Key to `portal_plans.portal_plan_type`.<fk table='portal_plans' column='portal_plan_type'/>
+	PortalPlanType  *string `json:"portal_plan_type,omitempty"`
+	UserAccountName *string `json:"user_account_name,omitempty"`
+}
 
 // ServiceEndpoints Available endpoint types for each service
 type ServiceEndpoints struct {
@@ -756,6 +782,30 @@ type RowFilterPortalPlansPortalPlanType = string
 
 // RowFilterPortalPlansPortalPlanTypeDescription defines model for rowFilter.portal_plans.portal_plan_type_description.
 type RowFilterPortalPlansPortalPlanTypeDescription = string
+
+// RowFilterPortalWorkersAccountDataBillingType defines model for rowFilter.portal_workers_account_data.billing_type.
+type RowFilterPortalWorkersAccountDataBillingType = string
+
+// RowFilterPortalWorkersAccountDataGcpEntitlementId defines model for rowFilter.portal_workers_account_data.gcp_entitlement_id.
+type RowFilterPortalWorkersAccountDataGcpEntitlementId = string
+
+// RowFilterPortalWorkersAccountDataOwnerEmail defines model for rowFilter.portal_workers_account_data.owner_email.
+type RowFilterPortalWorkersAccountDataOwnerEmail = string
+
+// RowFilterPortalWorkersAccountDataOwnerUserId defines model for rowFilter.portal_workers_account_data.owner_user_id.
+type RowFilterPortalWorkersAccountDataOwnerUserId = string
+
+// RowFilterPortalWorkersAccountDataPortalAccountId defines model for rowFilter.portal_workers_account_data.portal_account_id.
+type RowFilterPortalWorkersAccountDataPortalAccountId = string
+
+// RowFilterPortalWorkersAccountDataPortalAccountUserLimit defines model for rowFilter.portal_workers_account_data.portal_account_user_limit.
+type RowFilterPortalWorkersAccountDataPortalAccountUserLimit = string
+
+// RowFilterPortalWorkersAccountDataPortalPlanType defines model for rowFilter.portal_workers_account_data.portal_plan_type.
+type RowFilterPortalWorkersAccountDataPortalPlanType = string
+
+// RowFilterPortalWorkersAccountDataUserAccountName defines model for rowFilter.portal_workers_account_data.user_account_name.
+type RowFilterPortalWorkersAccountDataUserAccountName = string
 
 // RowFilterServiceEndpointsCreatedAt defines model for rowFilter.service_endpoints.created_at.
 type RowFilterServiceEndpointsCreatedAt = string
@@ -1465,6 +1515,42 @@ type PostPortalPlansParams struct {
 
 // PostPortalPlansParamsPrefer defines parameters for PostPortalPlans.
 type PostPortalPlansParamsPrefer string
+
+// GetPortalWorkersAccountDataParams defines parameters for GetPortalWorkersAccountData.
+type GetPortalWorkersAccountDataParams struct {
+	PortalAccountId        *RowFilterPortalWorkersAccountDataPortalAccountId        `form:"portal_account_id,omitempty" json:"portal_account_id,omitempty"`
+	UserAccountName        *RowFilterPortalWorkersAccountDataUserAccountName        `form:"user_account_name,omitempty" json:"user_account_name,omitempty"`
+	PortalPlanType         *RowFilterPortalWorkersAccountDataPortalPlanType         `form:"portal_plan_type,omitempty" json:"portal_plan_type,omitempty"`
+	BillingType            *RowFilterPortalWorkersAccountDataBillingType            `form:"billing_type,omitempty" json:"billing_type,omitempty"`
+	PortalAccountUserLimit *RowFilterPortalWorkersAccountDataPortalAccountUserLimit `form:"portal_account_user_limit,omitempty" json:"portal_account_user_limit,omitempty"`
+	GcpEntitlementId       *RowFilterPortalWorkersAccountDataGcpEntitlementId       `form:"gcp_entitlement_id,omitempty" json:"gcp_entitlement_id,omitempty"`
+	OwnerEmail             *RowFilterPortalWorkersAccountDataOwnerEmail             `form:"owner_email,omitempty" json:"owner_email,omitempty"`
+	OwnerUserId            *RowFilterPortalWorkersAccountDataOwnerUserId            `form:"owner_user_id,omitempty" json:"owner_user_id,omitempty"`
+
+	// Select Filtering Columns
+	Select *Select `form:"select,omitempty" json:"select,omitempty"`
+
+	// Order Ordering
+	Order *Order `form:"order,omitempty" json:"order,omitempty"`
+
+	// Offset Limiting and Pagination
+	Offset *Offset `form:"offset,omitempty" json:"offset,omitempty"`
+
+	// Limit Limiting and Pagination
+	Limit *Limit `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// Range Limiting and Pagination
+	Range *Range `json:"Range,omitempty"`
+
+	// RangeUnit Limiting and Pagination
+	RangeUnit *RangeUnit `json:"Range-Unit,omitempty"`
+
+	// Prefer Preference
+	Prefer *GetPortalWorkersAccountDataParamsPrefer `json:"Prefer,omitempty"`
+}
+
+// GetPortalWorkersAccountDataParamsPrefer defines parameters for GetPortalWorkersAccountData.
+type GetPortalWorkersAccountDataParamsPrefer string
 
 // GetRpcArmorParams defines parameters for GetRpcArmor.
 type GetRpcArmorParams struct {
