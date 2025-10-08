@@ -9,13 +9,11 @@ set -e
 
 # Configuration
 OPENAPI_DIR="../openapi"
-OPENAPI_V2_FILE="$OPENAPI_DIR/openapi-v2.json"
 OPENAPI_V3_FILE="$OPENAPI_DIR/openapi.json"
 GO_OUTPUT_DIR="../../sdk/go"
 TS_OUTPUT_DIR="../../sdk/typescript"
 CONFIG_MODELS="./codegen-models.yaml"
 CONFIG_CLIENT="./codegen-client.yaml"
-POSTGREST_URL="http://localhost:3000"
 
 # Colors for output
 RED='\033[0;31m'
@@ -106,18 +104,6 @@ fi
 
 echo -e "${GREEN}✅ openapi-generator-cli is available: $(openapi-generator-cli version 2>/dev/null || echo 'installed')${NC}"
 
-# Check if PostgREST is running
-echo "🌐 Checking PostgREST availability..."
-if ! curl -s --connect-timeout 5 "$POSTGREST_URL" >/dev/null 2>&1; then
-    echo -e "${RED}❌ PostgREST is not accessible at $POSTGREST_URL${NC}"
-    echo "   Please ensure PostgREST is running:"
-    echo "   cd .. && docker compose up -d"
-    echo "   cd api && docker compose up -d"
-    exit 1
-fi
-
-echo -e "${GREEN}✅ PostgREST is accessible at $POSTGREST_URL${NC}"
-
 # Check if configuration files exist
 for config_file in "$CONFIG_MODELS" "$CONFIG_CLIENT"; do
     if [ ! -f "$config_file" ]; then
@@ -130,77 +116,20 @@ done
 echo -e "${GREEN}✅ Configuration files found: models, client${NC}"
 
 # ============================================================================
-# PHASE 2: SPEC RETRIEVAL & CONVERSION
+# PHASE 2: OPENAPI SPEC GENERATION
 # ============================================================================
 
 echo ""
-echo -e "${BLUE}📋 Phase 2: Spec Retrieval & Conversion${NC}"
+echo -e "${BLUE}📋 Phase 2: OpenAPI Spec Generation${NC}"
 
-# Create openapi directory if it doesn't exist
-mkdir -p "$OPENAPI_DIR"
-
-# Clean any existing files to start fresh
-echo "🧹 Cleaning previous OpenAPI files..."
-rm -f "$OPENAPI_V2_FILE" "$OPENAPI_V3_FILE"
-
-# Generate JWT token for authenticated access to get all endpoints
-echo "🔑 Generating JWT token for authenticated OpenAPI spec..."
-JWT_TOKEN=$(cd ../scripts && ./postgrest-gen-jwt.sh portal_db_admin 2>/dev/null | grep -A1 "🎟️  Token:" | tail -1)
-
-if [ -z "$JWT_TOKEN" ]; then
-    echo "⚠️  Could not generate JWT token, fetching public endpoints only..."
-    AUTH_HEADER=""
-else
-    echo "✅ JWT token generated, will fetch all endpoints (public + protected)"
-    AUTH_HEADER="Authorization: Bearer $JWT_TOKEN"
-fi
-
-# Fetch OpenAPI spec from PostgREST (Swagger 2.0 format)
-echo "📥 Fetching OpenAPI specification from PostgREST..."
-if ! curl -s "$POSTGREST_URL" -H "Accept: application/openapi+json" ${AUTH_HEADER:+-H "$AUTH_HEADER"} > "$OPENAPI_V2_FILE"; then
-    echo -e "${RED}❌ Failed to fetch OpenAPI specification from $POSTGREST_URL${NC}"
+# Generate OpenAPI specification using the dedicated script
+echo "📝 Generating OpenAPI specification..."
+if ! ./generate-openapi.sh; then
+    echo -e "${RED}❌ Failed to generate OpenAPI specification${NC}"
     exit 1
 fi
 
-# Verify the file was created and has content
-if [ ! -f "$OPENAPI_V2_FILE" ] || [ ! -s "$OPENAPI_V2_FILE" ]; then
-    echo -e "${RED}❌ OpenAPI specification file is empty or missing${NC}"
-    exit 1
-fi
-
-echo -e "${GREEN}✅ Swagger 2.0 specification saved to: $OPENAPI_V2_FILE${NC}"
-
-# Convert Swagger 2.0 to OpenAPI 3.x
-echo "🔄 Converting Swagger 2.0 to OpenAPI 3.x..."
-
-# Check if swagger2openapi is available
-if ! command -v swagger2openapi >/dev/null 2>&1; then
-    echo "📦 Installing swagger2openapi converter..."
-    if command -v npm >/dev/null 2>&1; then
-        npm install -g swagger2openapi
-    else
-        echo -e "${RED}❌ npm not found. Please install Node.js and npm first.${NC}"
-        echo "   - Mac: brew install node"
-        echo "   - Or download from: https://nodejs.org/"
-        exit 1
-    fi
-fi
-
-if ! swagger2openapi "$OPENAPI_V2_FILE" -o "$OPENAPI_V3_FILE"; then
-    echo -e "${RED}❌ Failed to convert Swagger 2.0 to OpenAPI 3.x${NC}"
-    exit 1
-fi
-
-# Fix boolean format issues in the converted spec (in place)
-echo "🔧 Fixing boolean format issues..."
-sed -i.bak 's/"format": "boolean",//g' "$OPENAPI_V3_FILE"
-rm -f "${OPENAPI_V3_FILE}.bak"
-
-# Remove the temporary Swagger 2.0 file since we only need the OpenAPI 3.x version
-echo "🧹 Cleaning temporary Swagger 2.0 file..."
-rm -f "$OPENAPI_V2_FILE"
-
-echo -e "${GREEN}✅ OpenAPI 3.x specification ready: $OPENAPI_V3_FILE${NC}"
+echo -e "${GREEN}✅ OpenAPI specification ready: $OPENAPI_V3_FILE${NC}"
 
 # ============================================================================
 # PHASE 3: SDK GENERATION

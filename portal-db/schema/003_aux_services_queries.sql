@@ -29,7 +29,7 @@ WHERE
     AND pu.deleted_at IS NULL
     AND par.role_name = 'LEGACY_OWNER';
 
--- Grant select permissions to both reader and admin roles
-GRANT SELECT ON portal_workers_account_data TO portal_db_reader, portal_db_admin;
+-- Grant select permissions to admin role only (admin has access to portal_users)
+GRANT SELECT ON portal_workers_account_data TO portal_db_admin;
 
 COMMENT ON VIEW portal_workers_account_data IS 'Account data for portal-workers billing operations with owner email. Filter using WHERE portal_plan_type = ''PLAN_UNLIMITED'' AND billing_type = ''stripe''';

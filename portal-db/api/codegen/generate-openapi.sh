@@ -62,10 +62,43 @@ while [ $attempt -le $max_attempts ]; do
     ((attempt++))
 done
 
-# Fetch OpenAPI specification
+# Fetch OpenAPI specification (Swagger 2.0 format from PostgREST)
 echo -e "${BLUE}📥 Fetching OpenAPI specification...${RESET}"
-if curl -s -f -H "Accept: application/openapi+json" ${AUTH_HEADER:+-H "$AUTH_HEADER"} "$POSTGREST_URL/" -o "$OUTPUT_FILE"; then
-    echo -e "${GREEN}✅ OpenAPI specification saved to: ${CYAN}$OUTPUT_FILE${RESET}"
+SWAGGER_FILE="${OUTPUT_FILE%.json}-swagger.json"
+
+if curl -s -f -H "Accept: application/openapi+json" ${AUTH_HEADER:+-H "$AUTH_HEADER"} "$POSTGREST_URL/" -o "$SWAGGER_FILE"; then
+    echo -e "${GREEN}✅ Swagger 2.0 specification fetched${RESET}"
+
+    # Convert Swagger 2.0 to OpenAPI 3.x
+    echo -e "${BLUE}🔄 Converting Swagger 2.0 to OpenAPI 3.x...${RESET}"
+    
+    # Check if swagger2openapi is available
+    if ! command -v swagger2openapi >/dev/null 2>&1; then
+        echo -e "${BLUE}📦 Installing swagger2openapi converter...${RESET}"
+        if command -v npm >/dev/null 2>&1; then
+            npm install -g swagger2openapi
+        else
+            echo -e "${RED}❌ npm not found. Please install Node.js and npm first.${RESET}"
+            echo "   - Mac: brew install node"
+            echo "   - Or download from: https://nodejs.org/"
+            exit 1
+        fi
+    fi
+
+    if ! swagger2openapi "$SWAGGER_FILE" -o "$OUTPUT_FILE"; then
+        echo -e "${RED}❌ Failed to convert Swagger 2.0 to OpenAPI 3.x${RESET}"
+        exit 1
+    fi
+
+    # Fix boolean format issues in the converted spec
+    echo -e "${BLUE}🔧 Fixing boolean format issues...${RESET}"
+    sed -i.bak 's/"format": "boolean",//g' "$OUTPUT_FILE"
+    rm -f "${OUTPUT_FILE}.bak"
+
+    # Clean up temporary Swagger file
+    rm -f "$SWAGGER_FILE"
+
+    echo -e "${GREEN}✅ OpenAPI 3.x specification saved to: ${CYAN}$OUTPUT_FILE${RESET}"
 
     # Pretty print the JSON
     if command -v jq >/dev/null 2>&1; then
