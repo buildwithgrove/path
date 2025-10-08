@@ -145,7 +145,7 @@ rm -f "$OPENAPI_V2_FILE" "$OPENAPI_V3_FILE"
 
 # Generate JWT token for authenticated access to get all endpoints
 echo "🔑 Generating JWT token for authenticated OpenAPI spec..."
-JWT_TOKEN=$(cd ../scripts && ./gen-jwt.sh portal_db_admin 2>/dev/null | grep -A1 "🎟️  Token:" | tail -1)
+JWT_TOKEN=$(cd ../scripts && ./postgrest-gen-jwt.sh portal_db_admin 2>/dev/null | grep -A1 "🎟️  Token:" | tail -1)
 
 if [ -z "$JWT_TOKEN" ]; then
     echo "⚠️  Could not generate JWT token, fetching public endpoints only..."

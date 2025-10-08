@@ -83,7 +83,8 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE
     portal_accounts,
     portal_account_rbac,
     portal_applications,
-    portal_application_rbac
+    portal_application_rbac,
+    portal_users
 TO portal_db_admin;
 
 -- Read-only access to business data for reader role.
@@ -108,6 +109,7 @@ ALTER TABLE portal_accounts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE portal_account_rbac ENABLE ROW LEVEL SECURITY;
 ALTER TABLE portal_applications ENABLE ROW LEVEL SECURITY;
 ALTER TABLE portal_application_rbac ENABLE ROW LEVEL SECURITY;
+ALTER TABLE portal_users ENABLE ROW LEVEL SECURITY;
 
 -- Organizations
 CREATE POLICY organizations_admin_all ON organizations
@@ -168,3 +170,10 @@ CREATE POLICY portal_application_rbac_reader_select ON portal_application_rbac
     FOR SELECT
     TO portal_db_reader
     USING (TRUE);
+
+-- Portal users
+CREATE POLICY portal_users_admin_all ON portal_users
+    FOR ALL
+    TO portal_db_admin
+    USING (TRUE)
+    WITH CHECK (TRUE);

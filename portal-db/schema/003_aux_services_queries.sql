@@ -27,7 +27,7 @@ INNER JOIN portal_users pu ON par.portal_user_id = pu.portal_user_id
 WHERE 
     pa.deleted_at IS NULL
     AND pu.deleted_at IS NULL
-    AND par.role_name = 'OWNER';
+    AND par.role_name = 'LEGACY_OWNER';
 
 -- Grant select permissions to both reader and admin roles
 GRANT SELECT ON portal_workers_account_data TO portal_db_reader, portal_db_admin;
