@@ -1,46 +1,57 @@
-## @grove/portal-db-sdk@12.0.2 (a4e00ff)
+# Portal DB TypeScript SDK
 
-This generator creates TypeScript/JavaScript client that utilizes [Fetch API](https://fetch.spec.whatwg.org/). The generated Node module can be used in the following environments:
+Type-safe TypeScript client for the Portal DB API, generated from OpenAPI specification using [openapi-typescript](https://github.com/openapi-ts/openapi-typescript) and [openapi-fetch](https://github.com/openapi-ts/openapi-typescript/tree/main/packages/openapi-fetch).
 
-Environment
-* Node.js
-* Webpack
-* Browserify
+## Installation
 
-Language level
-* ES5 - you must have a Promises/A+ library installed
-* ES6
-
-Module system
-* CommonJS
-* ES6 module system
-
-It can be used in both TypeScript and JavaScript. In TypeScript, the definition will be automatically resolved via `package.json`. ([Reference](https://www.typescriptlang.org/docs/handbook/declaration-files/consumption.html))
-
-### Building
-
-To build and compile the typescript sources to javascript use:
-```
-npm install
-npm run build
+```bash
+npm install openapi-fetch
 ```
 
-### Publishing
+## Usage
 
-First build the package then run `npm publish`
+### Basic GET Request
 
-### Consuming
+```typescript
+import createClient from 'openapi-fetch';
+import type { paths } from './types';
 
-navigate to the folder of your consuming project and run one of the following commands.
+const client = createClient<paths>({
+  baseUrl: 'http://localhost:3000',
+  headers: {
+    'Authorization': `Bearer ${JWT_TOKEN}`,
+  },
+});
 
-_published:_
+// Fetch all services
+const { data, error } = await client.GET('/services');
 
+if (error) {
+  console.error('Error:', error);
+} else {
+  console.log('Services:', data);
+}
 ```
-npm install @grove/portal-db-sdk@12.0.2 (a4e00ff) --save
+
+### Query with Filters
+
+```typescript
+// GET with PostgREST filters
+const { data, error } = await client.GET('/services', {
+  params: {
+    query: {
+      active: 'eq.true',              // Filter: active = true
+      service_id: 'like.*ethereum*',  // Pattern match
+    }
+  }
+});
 ```
 
-_unPublished (not recommended):_
+## Documentation
 
-```
-npm install PATH_TO_GENERATED_PACKAGE --save
-```
+- **openapi-fetch**: https://openapi-ts.dev/openapi-fetch/
+- **PostgREST API Reference**: https://postgrest.org/en/stable/references/api/tables_views.html
+
+## Type Safety
+
+All endpoints, parameters, and responses are fully typed based on the OpenAPI specification. TypeScript will provide autocomplete and catch errors at compile time.

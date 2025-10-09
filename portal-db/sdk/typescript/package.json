@@ -1,19 +1,24 @@
 {
   "name": "@grove/portal-db-sdk",
-  "version": "12.0.2 (a4e00ff)",
-  "description": "OpenAPI client for @grove/portal-db-sdk",
-  "author": "OpenAPI-Generator",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/GIT_USER_ID/GIT_REPO_ID.git"
-  },
-  "main": "./dist/index.js",
-  "typings": "./dist/index.d.ts",
+  "version": "1.0.0",
+  "description": "TypeScript SDK for Grove Portal DB API",
+  "type": "module",
+  "main": "client.ts",
+  "types": "types.ts",
   "scripts": {
-    "build": "tsc",
-    "prepare": "npm run build"
+    "type-check": "tsc --noEmit"
+  },
+  "keywords": ["grove", "portal", "db", "api", "sdk", "typescript"],
+  "author": "Grove Team",
+  "license": "MIT",
+  "dependencies": {
+    "openapi-fetch": "^0.12.2"
   },
   "devDependencies": {
-    "typescript": "^4.0 || ^5.0"
+    "typescript": "^5.0.0",
+    "openapi-typescript": "^7.4.3"
+  },
+  "peerDependencies": {
+    "typescript": ">=5.0.0"
   }
 }
