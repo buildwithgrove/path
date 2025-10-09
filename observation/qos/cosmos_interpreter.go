@@ -94,18 +94,37 @@ func (i *CosmosSDKObservationInterpreter) IsRequestSuccessful() bool {
 }
 
 // GetRequestErrorType returns the error type if request failed or empty string if successful.
+// GetRequestErrorType returns the error type if request failed or empty string if successful.
+// If no request-level error exists, it checks the last endpoint observation for validation errors.
 func (i *CosmosSDKObservationInterpreter) GetRequestErrorType() string {
 	if i.Observations == nil {
 		i.Logger.ProbabilisticDebugInfo(polylog.ProbabilisticDebugInfoProb).Msg("SHOULD RARELY HAPPEN: Cannot get error type: nil observations")
 		return ""
 	}
 
-	// RequestLevelError being nil is normal for successful requests
-	if i.Observations.RequestLevelError == nil {
+	// Check for request-level error first
+	if i.Observations.RequestLevelError != nil {
+		return i.Observations.RequestLevelError.ErrorKind.String()
+	}
+
+	// If no request-level error, check endpoint observations for validation errors
+	endpointObservations := i.Observations.GetEndpointObservations()
+	if len(endpointObservations) == 0 {
 		return ""
 	}
 
-	return i.Observations.RequestLevelError.ErrorKind.String()
+	// Check the last endpoint observation for validation errors
+	lastEndpointObs := endpointObservations[len(endpointObservations)-1]
+	if lastEndpointObs.EndpointResponseValidationResult == nil {
+		return ""
+	}
+
+	// Return validation error if present
+	if lastEndpointObs.EndpointResponseValidationResult.ValidationError != nil {
+		return lastEndpointObs.EndpointResponseValidationResult.ValidationError.String()
+	}
+
+	return ""
 }
 
 // GetRPCType returns the RPC type from the backend service details.
