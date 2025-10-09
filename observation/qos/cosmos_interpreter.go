@@ -84,13 +84,7 @@ func (i *CosmosSDKObservationInterpreter) GetRequestMethods() ([]string, bool) {
 
 // IsRequestSuccessful determines if the request completed without errors.
 func (i *CosmosSDKObservationInterpreter) IsRequestSuccessful() bool {
-	if i.Observations == nil {
-		i.Logger.ProbabilisticDebugInfo(polylog.ProbabilisticDebugInfoProb).Msg("SHOULD RARELY HAPPEN: Cannot determine request success: nil observations")
-		return false
-	}
-
-	// RequestLevelError being nil is normal for successful requests
-	return i.Observations.RequestLevelError == nil
+	return i.GetRequestErrorType() == ""
 }
 
 // GetRequestErrorType returns the error type if request failed or empty string if successful.
