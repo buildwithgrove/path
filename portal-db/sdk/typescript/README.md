@@ -1,5 +1,7 @@
 # Portal DB TypeScript SDK
 
+<!-- TODO_NEXT: Publish @buildwithgrove/portal-db-ts-sdk to NPM in the CI run -->
+
 Type-safe TypeScript client for the Portal DB API, generated from OpenAPI specification using [openapi-typescript](https://github.com/openapi-ts/openapi-typescript) and [openapi-fetch](https://github.com/openapi-ts/openapi-typescript/tree/main/packages/openapi-fetch).
 
 ## **Installation**
@@ -14,7 +16,7 @@ npm install openapi-fetch
 
 ```typescript
 import createClient from 'openapi-fetch';
-import type { paths } from './types';
+import type { paths } from '@buildwithgrove/portal-db-ts-sdk';
 
 const client = createClient<paths>({
   baseUrl: 'http://localhost:3000',
@@ -58,7 +60,7 @@ npm install openapi-react-query openapi-fetch @tanstack/react-query
 ```typescript
 import createFetchClient from 'openapi-fetch';
 import createClient from 'openapi-react-query';
-import type { paths } from './types';
+import type { paths } from '@buildwithgrove/portal-db-ts-sdk';
 
 const fetchClient = createFetchClient<paths>({
   baseUrl: 'http://localhost:3000',
