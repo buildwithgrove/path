@@ -9,12 +9,13 @@
 # Reference: https://docs.postgrest.org/en/v13/tutorials/tut1.html
 #
 # Usage:
-#   ./postgrest-gen-jwt.sh                              # portal_db_admin role, sample email, 1h expiry
-#   ./postgrest-gen-jwt.sh portal_db_reader user@email  # custom role + email
-#   ./postgrest-gen-jwt.sh --expires 24h                # 24 hour expiry
-#   ./postgrest-gen-jwt.sh --expires never              # Never expires
-#   ./postgrest-gen-jwt.sh --token-only portal_db_admin user@email
-#   ./postgrest-gen-jwt.sh --help                       # display usage information
+#   ./postgrest-gen-jwt.sh                                    # Use defaults (reads secret from .env)
+#   ./postgrest-gen-jwt.sh --role reader --email user@email   # Custom role and email
+#   ./postgrest-gen-jwt.sh --expires 24h                      # 24 hour expiry
+#   ./postgrest-gen-jwt.sh --expires never                    # Never expires
+#   ./postgrest-gen-jwt.sh --token-only                       # Output token only (for scripting)
+#   ./postgrest-gen-jwt.sh --secret YOUR_SECRET               # Provide custom JWT secret
+#   ./postgrest-gen-jwt.sh --help                             # Display usage information
 
 set -e
 
@@ -23,12 +24,25 @@ CYAN='\033[0;36m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
+RED='\033[0;31m'
 BOLD='\033[1m'
 RESET='\033[0m'
 
-# JWT secret from postgrest.conf (must match exactly)
-# TODO_PRODUCTION: Extract JWT_SECRET from postgrest.conf automatically to maintain single source of truth and avoid drift between files
-JWT_SECRET="${JWT_SECRET:-supersecretjwtsecretforlocaldevelopment123456789}"
+# Determine the script directory and portal-db root
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PORTAL_DB_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+
+# Try to load JWT secret from .env file
+if [[ -f "$PORTAL_DB_ROOT/.env" ]]; then
+    # Source the .env file to get POSTGREST_JWT_SECRET
+    set -a
+    source "$PORTAL_DB_ROOT/.env"
+    set +a
+    
+    if [[ -n "$POSTGREST_JWT_SECRET" ]]; then
+        JWT_SECRET="$POSTGREST_JWT_SECRET"
+    fi
+fi
 
 # Default values
 ROLE="portal_db_admin"
@@ -36,76 +50,177 @@ EMAIL="john@doe.com"
 EXPIRES="1h"
 TOKEN_ONLY=false
 
+# Show help function (defined early so it can be called during argument parsing)
+print_help() {
+    cat <<EOF
+${BOLD}${CYAN}JWT Token Generator for PostgREST${RESET}
+
+${BOLD}DESCRIPTION${RESET}
+    Generates JWT tokens for PostgREST authentication using HMAC-SHA256 signing.
+    The JWT secret is required and can be provided via .env file, environment 
+    variable, or command line flag.
+
+${BOLD}USAGE${RESET}
+    postgrest-gen-jwt.sh [OPTIONS]
+
+${BOLD}OPTIONS${RESET}
+    ${CYAN}-h, --help${RESET}
+        Show this help message and exit
+
+    ${CYAN}--role ROLE${RESET}
+        Database role to embed in the JWT
+        Default: portal_db_admin
+        Aliases: admin (portal_db_admin), reader (portal_db_reader)
+
+    ${CYAN}--email EMAIL${RESET}
+        Email claim to embed in the JWT
+        Default: john@doe.com
+
+    ${CYAN}--expires DURATION${RESET}
+        Set token expiration time
+        Default: 1h
+        Formats:
+          - Hours: 1h, 2h, 24h, etc.
+          - Days:  1d, 7d, 30d, etc.
+          - Never: never (token never expires)
+
+    ${CYAN}--secret SECRET${RESET}
+        JWT secret for signing the token
+        Overrides .env file and environment variable
+        Note: Must match the secret in postgrest.conf
+
+    ${CYAN}--token-only${RESET}
+        Output only the JWT token (for scripting)
+        Suppresses all other output
+
+${BOLD}JWT SECRET (REQUIRED)${RESET}
+    The script requires a JWT secret to sign tokens. It looks for the secret 
+    in the following order (first found wins):
+    
+    ${CYAN}1.${RESET} --secret command line flag
+    ${CYAN}2.${RESET} POSTGREST_JWT_SECRET in portal-db/.env file
+    ${CYAN}3.${RESET} JWT_SECRET environment variable
+
+    ${YELLOW}Important: The secret must match the one configured in postgrest.conf${RESET}
+
+${BOLD}EXAMPLES${RESET}
+    ${CYAN}# Generate token with defaults (reads secret from .env)${RESET}
+    ./postgrest-gen-jwt.sh
+
+    ${CYAN}# Generate token with custom role and email${RESET}
+    ./postgrest-gen-jwt.sh --role reader --email user@example.com
+
+    ${CYAN}# Generate token using role alias${RESET}
+    ./postgrest-gen-jwt.sh --role admin --email admin@example.com
+
+    ${CYAN}# Generate token that expires in 24 hours${RESET}
+    ./postgrest-gen-jwt.sh --expires 24h
+
+    ${CYAN}# Generate token that expires in 7 days${RESET}
+    ./postgrest-gen-jwt.sh --expires 7d --role admin --email user@example.com
+
+    ${CYAN}# Generate token that never expires${RESET}
+    ./postgrest-gen-jwt.sh --expires never
+
+    ${CYAN}# Generate token with custom secret${RESET}
+    ./postgrest-gen-jwt.sh --secret your_jwt_secret_here --role admin
+
+    ${CYAN}# Generate token for scripting (token only output)${RESET}
+    ./postgrest-gen-jwt.sh --token-only --expires never --role admin
+
+    ${CYAN}# Use token in curl request${RESET}
+    export POSTGREST_JWT_TOKEN=\$(./postgrest-gen-jwt.sh --token-only)
+    curl -H "Authorization: Bearer \$POSTGREST_JWT_TOKEN" http://localhost:3000/organizations
+
+${BOLD}ROLE ALIASES${RESET}
+    ${CYAN}admin${RESET}   -> portal_db_admin
+    ${CYAN}reader${RESET}  -> portal_db_reader
+
+${BOLD}DEPENDENCIES${RESET}
+    - openssl (for HMAC-SHA256 signing)
+    - base64 (for encoding)
+    - date (for expiration calculation)
+
+${BOLD}REFERENCE${RESET}
+    https://docs.postgrest.org/en/v13/tutorials/tut1.html
+
+EOF
+}
+
 # Parse arguments
 while [[ $# -gt 0 ]]; do
     case "$1" in
-        --token-only)
-            TOKEN_ONLY=true
-            shift
-            ;;
-        --expires)
-            EXPIRES="$2"
-            shift 2
-            ;;
         --help|-h)
             print_help
             exit 0
             ;;
-        *)
-            if [[ -z "$ROLE" || "$ROLE" == "portal_db_admin" ]]; then
-                ROLE="$1"
-            elif [[ "$EMAIL" == "john@doe.com" ]]; then
-                EMAIL="$1"
-            fi
+        --token-only)
+            TOKEN_ONLY=true
             shift
+            ;;
+        --role)
+            if [[ -z "$2" || "$2" == --* ]]; then
+                echo -e "${RED}${BOLD}Error: --role requires a value${RESET}" >&2
+                echo "Run with --help for usage information" >&2
+                exit 1
+            fi
+            ROLE="$2"
+            shift 2
+            ;;
+        --email)
+            if [[ -z "$2" || "$2" == --* ]]; then
+                echo -e "${RED}${BOLD}Error: --email requires a value${RESET}" >&2
+                echo "Run with --help for usage information" >&2
+                exit 1
+            fi
+            EMAIL="$2"
+            shift 2
+            ;;
+        --expires)
+            if [[ -z "$2" || "$2" == --* ]]; then
+                echo -e "${RED}${BOLD}Error: --expires requires a value${RESET}" >&2
+                echo "Run with --help for usage information" >&2
+                exit 1
+            fi
+            EXPIRES="$2"
+            shift 2
+            ;;
+        --secret)
+            if [[ -z "$2" || "$2" == --* ]]; then
+                echo -e "${RED}${BOLD}Error: --secret requires a value${RESET}" >&2
+                echo "Run with --help for usage information" >&2
+                exit 1
+            fi
+            JWT_SECRET="$2"
+            shift 2
+            ;;
+        *)
+            echo -e "${RED}${BOLD}Error: Unknown option '$1'${RESET}" >&2
+            echo "Run with --help for usage information" >&2
+            exit 1
             ;;
     esac
 done
 
-# Show help
-print_help() {
-    cat <<'EOF'
-Usage: postgrest-gen-jwt.sh [OPTIONS] [ROLE] [EMAIL]
-
-Options:
-  --help, -h              Show this help message and exit
-  --token-only            Print only the JWT for scripting
-  --expires DURATION      Set token expiration (default: 1h)
-                          Examples: 1h, 24h, 7d, 30d, never
-
-Role aliases:
-  admin                   Shortcut for portal_db_admin
-  reader                  Shortcut for portal_db_reader
-
-Positional arguments:
-  ROLE                    Database role to embed in the JWT (default: portal_db_admin)
-  EMAIL                   Email claim to embed in the JWT (default: john@doe.com)
-
-Expiration formats:
-  1h, 2h, etc.           Hours (e.g., 1h = 1 hour from now)
-  1d, 7d, 30d            Days (e.g., 7d = 7 days from now)
-  never                  Token never expires (no exp claim)
-
-Examples:
-  # Generate token with default 1 hour expiry
-  ./postgrest-gen-jwt.sh
-
-  # Generate token with custom role and email
-  ./postgrest-gen-jwt.sh reader user@example.com
-
-  # Generate token that expires in 24 hours
-  ./postgrest-gen-jwt.sh --expires 24h
-
-  # Generate token that expires in 7 days
-  ./postgrest-gen-jwt.sh --expires 7d admin user@example.com
-
-  # Generate token that never expires
-  ./postgrest-gen-jwt.sh --expires never
-
-  # Generate token for scripting (token only output)
-  ./postgrest-gen-jwt.sh --token-only --expires never admin
-EOF
-}
+# Validate that JWT_SECRET is available
+if [[ -z "$JWT_SECRET" ]]; then
+    echo -e "${RED}${BOLD}❌ Error: JWT secret not found${RESET}" >&2
+    echo "" >&2
+    echo -e "${BOLD}The JWT secret must be provided via one of the following methods:${RESET}" >&2
+    echo "" >&2
+    echo -e "  ${CYAN}1.${RESET} Use the ${CYAN}--secret${RESET} flag:" >&2
+    echo -e "     ${CYAN}./postgrest-gen-jwt.sh --secret YOUR_SECRET${RESET}" >&2
+    echo "" >&2
+    echo -e "  ${CYAN}2.${RESET} Create a ${CYAN}.env${RESET} file at ${YELLOW}$PORTAL_DB_ROOT/.env${RESET} with:" >&2
+    echo -e "     ${CYAN}POSTGREST_JWT_SECRET=your_secret_here${RESET}" >&2
+    echo "" >&2
+    echo -e "  ${CYAN}3.${RESET} Set the ${CYAN}JWT_SECRET${RESET} environment variable:" >&2
+    echo -e "     ${CYAN}JWT_SECRET=your_secret ./postgrest-gen-jwt.sh${RESET}" >&2
+    echo "" >&2
+    echo -e "${YELLOW}Note: The secret must match the one configured in postgrest.conf${RESET}" >&2
+    echo -e "${YELLOW}Run with --help for more information${RESET}" >&2
+    exit 1
+fi
 
 # Allow short aliases for role names
 translate_role() {
@@ -183,7 +298,7 @@ fi
 SIGNATURE=$(echo -n "$HEADER.$PAYLOAD" | openssl dgst -sha256 -hmac "$JWT_SECRET" -binary | base64url)
 
 # Complete JWT token
-JWT_TOKEN="$HEADER.$PAYLOAD.$SIGNATURE"
+POSTGREST_JWT_TOKEN="$HEADER.$PAYLOAD.$SIGNATURE"
 
 # ============================================================================
 # Output
@@ -191,7 +306,7 @@ JWT_TOKEN="$HEADER.$PAYLOAD.$SIGNATURE"
 
 if [[ "$TOKEN_ONLY" == true ]]; then
     # Just output the token for scripting
-    echo "$JWT_TOKEN"
+    echo "$POSTGREST_JWT_TOKEN"
 else
     # Full colorized output
     echo -e "${GREEN}${BOLD}🔑 JWT Token Generated${RESET}"
@@ -207,12 +322,12 @@ else
     
     echo ""
     echo -e "${BOLD}Token:${RESET}"
-    echo -e "${YELLOW}$JWT_TOKEN${RESET}"
+    echo -e "${YELLOW}$POSTGREST_JWT_TOKEN${RESET}"
     echo ""
     echo -e "${BOLD}Export to shell:${RESET}"
-    echo -e "${CYAN}export JWT_TOKEN=\"$JWT_TOKEN\"${RESET}"
+    echo -e "${CYAN}export POSTGREST_JWT_TOKEN=\"$POSTGREST_JWT_TOKEN\"${RESET}"
     echo ""
     echo -e "${BOLD}Usage:${RESET}"
-    echo -e "${CYAN}curl http://localhost:3000/organizations -H \"Authorization: Bearer \$JWT_TOKEN\"${RESET}"
+    echo -e "${CYAN}curl http://localhost:3000/organizations -H \"Authorization: Bearer \$POSTGREST_JWT_TOKEN\"${RESET}"
     echo ""
 fi

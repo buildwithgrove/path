@@ -50,6 +50,8 @@ services:
       - ./schema/002_postgrest_init.sql:/docker-entrypoint-initdb.d/002_postgrest_init.sql:ro
       # 003_grove_backend.sql: Grove backend queries
       - ./schema/003_grove_backend.sql:/docker-entrypoint-initdb.d/003_grove_backend.sql:ro
+      # 004_grove_portal.sql: Grove portal queries
+      - ./schema/004_grove_portal_access.sql:/docker-entrypoint-initdb.d/004_grove_portal_access.sql:ro
 
       # 2. LOCAL DEV ONLY: mount set_authenticator_password.sql: Set authenticator password
       #   - Required to set the authenticator role's password to 'authenticator_password' for the local development environment.
@@ -79,6 +81,9 @@ services:
       # Mount PostgREST configuration file (see api/postgrest.conf)
       # Configuration docs: https://docs.postgrest.org/en/v13/references/configuration.html
       - ./api/postgrest.conf:/etc/postgrest/postgrest.conf:ro
+      # Mount JWKS (JSON Web Key Set) for dual JWT authentication
+      # Contains both HS256 (backend) and RS256 (Auth0) keys
+      - ./api/jwks.json:/etc/postgrest/jwks.json:ro
     command: ["postgrest", "/etc/postgrest/postgrest.conf"]
     depends_on:
       postgres:

@@ -19,24 +19,7 @@ GREEN := \033[0;32m
 
 JWT_ROLE ?= portal_db_admin
 JWT_EMAIL ?= john@doe.com
-
-SECOND_GOAL := $(word 2,$(MAKECMDGOALS))
-
-ifeq ($(SECOND_GOAL),admin)
-  JWT_ROLE := portal_db_admin
-endif
-
-ifeq ($(SECOND_GOAL),reader)
-  JWT_ROLE := portal_db_reader
-endif
-
-ifdef ROLE
-  JWT_ROLE := $(ROLE)
-endif
-
-ifdef EMAIL
-  JWT_EMAIL := $(EMAIL)
-endif
+JWT_EXPIRES ?= 1h
 
 # ============================================================================
 # HELP
@@ -58,7 +41,7 @@ help: ## Show all available targets
 	@grep -h -E '^(postgrest-hydrate-testdata|hydrate-services|hydrate-applications|hydrate-gateways|hydrate-prod|dehydrate-reset-db):.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "$(CYAN)%-30s$(RESET) %s\n", $$1, $$2}'
 	@echo ""
 	@echo "$(BOLD)=== 🔐 Authentication & Testing ===$(RESET)"
-	@grep -h -E '^(test-postgrest-auth|test-postgrest-portal-app-creation|postgrest-gen-jwt):.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "$(CYAN)%-30s$(RESET) %s\n", $$1, $$2}'
+	@grep -h -E '^(test-postgrest-auth|test-postgrest-portal-app-creation|postgrest-gen-jwt|grove-download-jwks|check-jwks):.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "$(CYAN)%-30s$(RESET) %s\n", $$1, $$2}'
 	@echo ""
 	@echo "$(BOLD)=== 📝 API Generation ===$(RESET)"
 	@grep -h -E '^(postgrest-generate-openapi|postgrest-swagger-ui|postgrest-generate-sdks|postgrest-generate-all):.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "$(CYAN)%-30s$(RESET) %s\n", $$1, $$2}'
@@ -81,8 +64,10 @@ quickstart: ## Quick start guide for Portal DB (shows commands to run)
 	@echo "$(CYAN)  make postgrest-hydrate-testdata$(RESET)"
 	@echo ""
 	@echo "$(BOLD)Step 3: Generate JWT tokens$(RESET)"
-	@echo "$(CYAN)  make postgrest-gen-jwt admin$(RESET)"
-	@echo "  # Optionally, generate reader token: $(CYAN)make postgrest-gen-jwt reader$(RESET)"
+	@echo "$(CYAN)  make postgrest-gen-jwt$(RESET)  # Defaults to admin role"
+	@echo "  # Optionally, generate reader token: $(CYAN)JWT_ROLE=reader make postgrest-gen-jwt$(RESET)"
+	@echo "  # With custom email: $(CYAN)JWT_EMAIL=user@example.com make postgrest-gen-jwt$(RESET)"
+	@echo "  # With custom expiry: $(CYAN)JWT_EXPIRES=24h make postgrest-gen-jwt$(RESET)"
 	@echo ""
 	@echo "$(BOLD)Step 4: Export JWT token$(RESET)"
 	@echo "$(YELLOW)  # Copy the export commands from the previous output$(RESET)"
@@ -128,7 +113,7 @@ quickstart: ## Quick start guide for Portal DB (shows commands to run)
 # ============================================================================
 
 .PHONY: portal-db-up
-portal-db-up: ## Start all Portal DB services
+portal-db-up: check-jwks ## Start all Portal DB services
 	@echo "🚀 Starting all Portal DB services..."
 	docker compose up -d
 	@echo "✅ Services started!"
@@ -137,6 +122,14 @@ portal-db-up: ## Start all Portal DB services
 	@echo ""
 	@echo "🔧 You can connect to the database using:"
 	@echo "   $(CYAN)psql 'postgresql://postgres:portal_password@localhost:5435/portal_db'$(RESET)"
+	@echo ""
+	@echo "🔐 To test the API with authentication:"
+	@echo "   1. Generate a JWT token:"
+	@echo "      $(CYAN)make postgrest-gen-jwt$(RESET)"
+	@echo "   2. Export the token (copy from output above):"
+	@echo "      $(CYAN)export POSTGREST_JWT_TOKEN=\"eyJ...\"$(RESET)"
+	@echo "   3. Make an authenticated request:"
+	@echo "      $(CYAN)curl -H \"Authorization: Bearer \$$POSTGREST_JWT_TOKEN\" \"http://localhost:3000/networks\" | jq '.'$(RESET)"
 
 .PHONY: portal-db-down
 portal-db-down: ## Stop all Portal DB services
@@ -203,16 +196,34 @@ test-postgrest-portal-app-creation: _require-postgrest-api ## Test portal applic
 	cd api/scripts && ./test-postgrest-portal-app-creation.sh
 
 .PHONY: postgrest-gen-jwt
-postgrest-gen-jwt: _require-postgrest-api ## Generate JWT token
+postgrest-gen-jwt: _require-postgrest-api ## Generate JWT token (use JWT_ROLE=admin JWT_EMAIL=user@example.com JWT_EXPIRES=24h to customize)
 	@echo "🔑 Generating JWT token..."
-	cd api/scripts && ./postgrest-gen-jwt.sh $(JWT_ROLE) $(JWT_EMAIL)
+	cd api/scripts && ./postgrest-gen-jwt.sh --role $(JWT_ROLE) --email $(JWT_EMAIL) --expires $(JWT_EXPIRES)
 
-.PHONY: admin reader
-admin:
-	@:
+.PHONY: grove-download-jwks
+grove-download-jwks: ## 🌿 GROVE EMPLOYEES ONLY - Download JWKS from 1Password to api/jwks.json
+	@echo "🌿 $(BOLD)GROVE EMPLOYEES ONLY$(RESET)"
+	@echo "🔐 Downloading JWKS from 1Password..."
+	@if ! command -v op >/dev/null 2>&1; then \
+		echo "❌ 1Password CLI (op) is not installed. Please install it first:"; \
+		echo "   brew install 1password-cli"; \
+		exit 1; \
+	fi
+	@op item get 6hh3pjg7m2qdpkg26kf6gzmjs4 --format json | jq -r '.fields[] | select(.id == "notesPlain") | .value' | jq '.' > api/jwks.json
+	@echo "✅ JWKS downloaded to api/jwks.json"
 
-reader:
-	@:
+.PHONY: check-jwks
+check-jwks: ## Check if api/jwks.json exists, show instructions if missing
+	@if [ ! -f api/jwks.json ]; then \
+		echo "❌ $(YELLOW)api/jwks.json not found!$(RESET)"; \
+		echo ""; \
+		echo "$(BOLD)🌿 GROVE EMPLOYEES: Download the JWKS file from 1Password:$(RESET)"; \
+		echo "   $(CYAN)make grove-download-jwks$(RESET)"; \
+		echo ""; \
+		echo "$(YELLOW)Note: Requires 1Password CLI (op) to be installed and authenticated.$(RESET)"; \
+		exit 1; \
+	fi
+	@echo "✅ api/jwks.json found"
 
 # ============================================================================
 # DATA HYDRATION

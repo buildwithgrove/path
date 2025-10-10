@@ -1,8 +1,7 @@
 -- ============================================================================
 -- Auxiliary Services Queries
 -- ============================================================================
--- This file contains custom views to support auxiliary services
--- like portal-workers, notifications, billing, etc.
+-- This file contains custom views to support auxiliary services (portal-workers).
 
 -- ============================================================================
 -- PORTAL WORKERS ACCOUNT DATA VIEW
@@ -32,4 +31,4 @@ WHERE
 -- Grant select permissions to admin role only (admin has access to portal_users)
 GRANT SELECT ON portal_workers_account_data TO portal_db_admin;
 
-COMMENT ON VIEW portal_workers_account_data IS 'Account data for portal-workers billing operations with owner email. Filter using WHERE portal_plan_type = ''PLAN_UNLIMITED'' AND billing_type = ''stripe''';
+COMMENT ON VIEW portal_workers_account_data IS 'Account data for portal-workers billing operations with owner email.';
