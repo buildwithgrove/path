@@ -47,6 +47,8 @@ func (i *CosmosSDKObservationInterpreter) GetServiceID() string {
 	return i.Observations.ServiceId
 }
 
+// TODO_TECHDEBT(@adshmh): Drop this method once separate proto messages are added for single and batch JSONRPC requests.
+//
 // TODO_TECHDEBT: For batch requests, this will only return one of the methods in the batch.
 // GetRequestMethod returns the CosmosSDK RPC method name from the request profile.
 func (i *CosmosSDKObservationInterpreter) GetRequestMethods() ([]string, bool) {

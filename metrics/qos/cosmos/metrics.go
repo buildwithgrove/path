@@ -20,6 +20,7 @@ const (
 
 func init() {
 	prometheus.MustRegister(requestsTotal)
+	prometheus.MustRegister(jsonrpcErrorsTotal)
 }
 
 var (
