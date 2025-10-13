@@ -24,7 +24,7 @@ enum CosmosResponseValidationType {
 
 // CosmosEndpointResponseValidationResult contains the outcome of contacting an endpoint
 message CosmosEndpointResponseValidationResult {
-	// Next free field number: 12
+	// Next free field number: 13
 
 	// CosmosResponseHealth response_health = 5;
 	// CosmosResponseStatus response_status = 6;
@@ -43,6 +43,14 @@ message CosmosEndpointResponseValidationResult {
 	// Validation error, if any.
 	// This is set if parsing the endpoint response fails.
 	optional CosmosResponseValidationError validation_error = 3;
+
+        // TODO_TECHDEBT(@adshmh): Replace the parsed_response and user_response with request-type-specific messages, i.e. separate message type for:
+	// - single JSONRPC requests
+	// - RESTful API requests
+	//
+        // Tracks the JSONRPC response returned to the user
+        // Only set for JSONRPC requests.
+        optional JsonRpcResponse user_jsonrpc_response = 12;
 
 	// The parsed response; JSON, JSONRPC, REST, unstructured, etc..
 	// Only set if validation succeeded.

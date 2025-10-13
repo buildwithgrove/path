@@ -280,3 +280,42 @@ func (i *CosmosSDKObservationInterpreter) GetEndpointDomain() string {
 
 	return domain
 }
+
+// GetJSONRPCErrorCode extracts the JSON-RPC error code from the last endpoint observation.
+// Returns (errorCode, true) if a JSON-RPC error is present in the user_jsonrpc_response
+// Returns (0, false) if no error is present or user_jsonrpc_response is nil
+func (i *CosmosSDKObservationInterpreter) GetJSONRPCErrorCode() (int, bool) {
+	if i.Observations == nil {
+		i.Logger.ProbabilisticDebugInfo(polylog.ProbabilisticDebugInfoProb).Msg("SHOULD RARELY HAPPEN: Cannot get JSONRPC error code: nil observations")
+		return 0, false
+	}
+
+	// Get endpoint observations
+	endpointObservations := i.Observations.GetEndpointObservations()
+	if len(endpointObservations) == 0 {
+		return 0, false
+	}
+
+	// Use only the last observation (latest response)
+	lastObs := endpointObservations[len(endpointObservations)-1]
+
+	// Check if the endpoint response validation result exists
+	if lastObs.EndpointResponseValidationResult == nil {
+		return 0, false
+	}
+
+	// Get the user JSON-RPC response
+	userJsonrpcResponse := lastObs.EndpointResponseValidationResult.GetUserJsonrpcResponse()
+	if userJsonrpcResponse == nil {
+		return 0, false
+	}
+
+	// Check if there's an error in the JSON-RPC response
+	jsonrpcError := userJsonrpcResponse.GetError()
+	if jsonrpcError == nil {
+		return 0, false
+	}
+
+	// Return the error code
+	return int(jsonrpcError.GetCode()), true
+}
