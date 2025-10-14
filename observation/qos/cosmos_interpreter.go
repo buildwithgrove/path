@@ -86,7 +86,18 @@ func (i *CosmosSDKObservationInterpreter) GetRequestMethods() ([]string, bool) {
 
 // IsRequestSuccessful determines if the request completed without errors.
 func (i *CosmosSDKObservationInterpreter) IsRequestSuccessful() bool {
-	return i.GetRequestErrorType() == ""
+	// Request/endpoint errors: request failed
+	if i.GetRequestErrorType() != "" {
+		return false
+	}
+
+	// JSONRPC Error code set: request failed
+	if _, hasJSONRPCError := i.GetJSONRPCErrorCode(); hasJSONRPCError {
+		return false
+	}
+
+	// Successful request
+	return true
 }
 
 // GetRequestErrorType returns the error type if request failed or empty string if successful.
@@ -144,6 +155,9 @@ func (i *CosmosSDKObservationInterpreter) GetRPCType() string {
 	return requestProfile.BackendServiceDetails.BackendServiceType.String()
 }
 
+// TODO_TECHDEBT(@adshmh): Update proto messages to make the HTTP Status code explicit on each request.
+// Removes the need for reasoning in the observations/metrics logic.
+//
 // GetRequestHTTPStatus returns the HTTP status code from the request error or endpoint responses.
 // Returns 200 if request was successful, 0 if observations are nil.
 func (i *CosmosSDKObservationInterpreter) GetRequestHTTPStatus() int32 {
