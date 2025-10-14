@@ -26,7 +26,7 @@ mkdir -p "$OUTPUT_DIR"
 
 # Generate JWT token for authenticated access to get all endpoints
 echo -e "${BLUE}🔑 Generating JWT token for authenticated OpenAPI spec...${RESET}"
-JWT_TOKEN=$(cd ../scripts && ./postgrest-gen-jwt.sh --token-only portal_db_admin 2>/dev/null)
+JWT_TOKEN=$(cd ../scripts && ./postgrest-gen-jwt.sh --token-only --role portal_db_admin 2>/dev/null)
 
 if [ -z "$JWT_TOKEN" ]; then
     echo -e "${YELLOW}⚠️  Could not generate JWT token, fetching public endpoints only...${RESET}"

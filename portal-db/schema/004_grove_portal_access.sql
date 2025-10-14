@@ -45,7 +45,7 @@ TO authenticated_user;
 -- Grant access to public tables used by the UI (read-only, contains no sensitive data)
 GRANT SELECT ON TABLE
     services,
-    portal_plans,
+    portal_plans
 TO authenticated_user;
 
 -- Grant access to portal_user_auth for JWT sub claim lookup

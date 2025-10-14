@@ -39,11 +39,6 @@ const (
 	PreferCountCountNone PreferCount = "count=none"
 )
 
-// Defines values for PreferParams.
-const (
-	PreferParamsParamsSingleObject PreferParams = "params=single-object"
-)
-
 // Defines values for PreferPost.
 const (
 	PreferPostResolutionIgnoreDuplicates PreferPost = "resolution=ignore-duplicates"
@@ -287,36 +282,6 @@ const (
 // Defines values for GetPortalWorkersAccountDataParamsPrefer.
 const (
 	GetPortalWorkersAccountDataParamsPreferCountNone GetPortalWorkersAccountDataParamsPrefer = "count=none"
-)
-
-// Defines values for PostRpcArmorParamsPrefer.
-const (
-	PostRpcArmorParamsPreferParamsSingleObject PostRpcArmorParamsPrefer = "params=single-object"
-)
-
-// Defines values for PostRpcDearmorParamsPrefer.
-const (
-	PostRpcDearmorParamsPreferParamsSingleObject PostRpcDearmorParamsPrefer = "params=single-object"
-)
-
-// Defines values for PostRpcGenRandomUuidParamsPrefer.
-const (
-	PostRpcGenRandomUuidParamsPreferParamsSingleObject PostRpcGenRandomUuidParamsPrefer = "params=single-object"
-)
-
-// Defines values for PostRpcGenSaltParamsPrefer.
-const (
-	PostRpcGenSaltParamsPreferParamsSingleObject PostRpcGenSaltParamsPrefer = "params=single-object"
-)
-
-// Defines values for PostRpcPgpArmorHeadersParamsPrefer.
-const (
-	PostRpcPgpArmorHeadersParamsPreferParamsSingleObject PostRpcPgpArmorHeadersParamsPrefer = "params=single-object"
-)
-
-// Defines values for PostRpcPgpKeyIdParamsPrefer.
-const (
-	ParamsSingleObject PostRpcPgpKeyIdParamsPrefer = "params=single-object"
 )
 
 // Defines values for DeleteServiceEndpointsParamsPrefer.
@@ -563,7 +528,7 @@ type PortalUsers struct {
 	UpdatedAt    *string `json:"updated_at,omitempty"`
 }
 
-// PortalWorkersAccountData Account data for portal-workers billing operations with owner email. Filter using WHERE portal_plan_type = 'PLAN_UNLIMITED' AND billing_type = 'stripe'
+// PortalWorkersAccountData Account data for portal-workers billing operations with owner email.
 type PortalWorkersAccountData struct {
 	BillingType      *string `json:"billing_type,omitempty"`
 	GcpEntitlementId *string `json:"gcp_entitlement_id,omitempty"`
@@ -662,7 +627,7 @@ type Order = string
 type PreferCount string
 
 // PreferParams defines model for preferParams.
-type PreferParams string
+type PreferParams = string
 
 // PreferPost defines model for preferPost.
 type PreferPost string
@@ -1712,6 +1677,33 @@ type GetPortalWorkersAccountDataParams struct {
 // GetPortalWorkersAccountDataParamsPrefer defines parameters for GetPortalWorkersAccountData.
 type GetPortalWorkersAccountDataParamsPrefer string
 
+// PostRpcAdminCreatePortalUserJSONBody defines parameters for PostRpcAdminCreatePortalUser.
+type PostRpcAdminCreatePortalUserJSONBody struct {
+	PAuthProviderUserId string  `json:"p_auth_provider_user_id"`
+	PEmail              string  `json:"p_email"`
+	PGcpAccountId       *string `json:"p_gcp_account_id,omitempty"`
+}
+
+// PostRpcAdminCreatePortalUserApplicationVndPgrstObjectPlusJSONBody defines parameters for PostRpcAdminCreatePortalUser.
+type PostRpcAdminCreatePortalUserApplicationVndPgrstObjectPlusJSONBody struct {
+	PAuthProviderUserId string  `json:"p_auth_provider_user_id"`
+	PEmail              string  `json:"p_email"`
+	PGcpAccountId       *string `json:"p_gcp_account_id,omitempty"`
+}
+
+// PostRpcAdminCreatePortalUserApplicationVndPgrstObjectPlusJSONNullsStrippedBody defines parameters for PostRpcAdminCreatePortalUser.
+type PostRpcAdminCreatePortalUserApplicationVndPgrstObjectPlusJSONNullsStrippedBody struct {
+	PAuthProviderUserId string  `json:"p_auth_provider_user_id"`
+	PEmail              string  `json:"p_email"`
+	PGcpAccountId       *string `json:"p_gcp_account_id,omitempty"`
+}
+
+// PostRpcAdminCreatePortalUserParams defines parameters for PostRpcAdminCreatePortalUser.
+type PostRpcAdminCreatePortalUserParams struct {
+	// Prefer Preference
+	Prefer *PreferParams `json:"Prefer,omitempty"`
+}
+
 // GetRpcArmorParams defines parameters for GetRpcArmor.
 type GetRpcArmorParams struct {
 	Empty string `form:"" json:""`
@@ -1735,11 +1727,8 @@ type PostRpcArmorApplicationVndPgrstObjectPlusJSONNullsStrippedBody struct {
 // PostRpcArmorParams defines parameters for PostRpcArmor.
 type PostRpcArmorParams struct {
 	// Prefer Preference
-	Prefer *PostRpcArmorParamsPrefer `json:"Prefer,omitempty"`
+	Prefer *PreferParams `json:"Prefer,omitempty"`
 }
-
-// PostRpcArmorParamsPrefer defines parameters for PostRpcArmor.
-type PostRpcArmorParamsPrefer string
 
 // GetRpcDearmorParams defines parameters for GetRpcDearmor.
 type GetRpcDearmorParams struct {
@@ -1764,11 +1753,8 @@ type PostRpcDearmorApplicationVndPgrstObjectPlusJSONNullsStrippedBody struct {
 // PostRpcDearmorParams defines parameters for PostRpcDearmor.
 type PostRpcDearmorParams struct {
 	// Prefer Preference
-	Prefer *PostRpcDearmorParamsPrefer `json:"Prefer,omitempty"`
+	Prefer *PreferParams `json:"Prefer,omitempty"`
 }
-
-// PostRpcDearmorParamsPrefer defines parameters for PostRpcDearmor.
-type PostRpcDearmorParamsPrefer string
 
 // PostRpcGenRandomUuidJSONBody defines parameters for PostRpcGenRandomUuid.
 type PostRpcGenRandomUuidJSONBody = map[string]interface{}
@@ -1782,15 +1768,7 @@ type PostRpcGenRandomUuidApplicationVndPgrstObjectPlusJSONNullsStrippedBody = ma
 // PostRpcGenRandomUuidParams defines parameters for PostRpcGenRandomUuid.
 type PostRpcGenRandomUuidParams struct {
 	// Prefer Preference
-	Prefer *PostRpcGenRandomUuidParamsPrefer `json:"Prefer,omitempty"`
-}
-
-// PostRpcGenRandomUuidParamsPrefer defines parameters for PostRpcGenRandomUuid.
-type PostRpcGenRandomUuidParamsPrefer string
-
-// GetRpcGenSaltParams defines parameters for GetRpcGenSalt.
-type GetRpcGenSaltParams struct {
-	Empty string `form:"" json:""`
+	Prefer *PreferParams `json:"Prefer,omitempty"`
 }
 
 // PostRpcGenSaltJSONBody defines parameters for PostRpcGenSalt.
@@ -1811,11 +1789,23 @@ type PostRpcGenSaltApplicationVndPgrstObjectPlusJSONNullsStrippedBody struct {
 // PostRpcGenSaltParams defines parameters for PostRpcGenSalt.
 type PostRpcGenSaltParams struct {
 	// Prefer Preference
-	Prefer *PostRpcGenSaltParamsPrefer `json:"Prefer,omitempty"`
+	Prefer *PreferParams `json:"Prefer,omitempty"`
 }
 
-// PostRpcGenSaltParamsPrefer defines parameters for PostRpcGenSalt.
-type PostRpcGenSaltParamsPrefer string
+// PostRpcGetPortalUserJSONBody defines parameters for PostRpcGetPortalUser.
+type PostRpcGetPortalUserJSONBody = map[string]interface{}
+
+// PostRpcGetPortalUserApplicationVndPgrstObjectPlusJSONBody defines parameters for PostRpcGetPortalUser.
+type PostRpcGetPortalUserApplicationVndPgrstObjectPlusJSONBody = map[string]interface{}
+
+// PostRpcGetPortalUserApplicationVndPgrstObjectPlusJSONNullsStrippedBody defines parameters for PostRpcGetPortalUser.
+type PostRpcGetPortalUserApplicationVndPgrstObjectPlusJSONNullsStrippedBody = map[string]interface{}
+
+// PostRpcGetPortalUserParams defines parameters for PostRpcGetPortalUser.
+type PostRpcGetPortalUserParams struct {
+	// Prefer Preference
+	Prefer *PreferParams `json:"Prefer,omitempty"`
+}
 
 // GetRpcPgpArmorHeadersParams defines parameters for GetRpcPgpArmorHeaders.
 type GetRpcPgpArmorHeadersParams struct {
@@ -1840,11 +1830,8 @@ type PostRpcPgpArmorHeadersApplicationVndPgrstObjectPlusJSONNullsStrippedBody st
 // PostRpcPgpArmorHeadersParams defines parameters for PostRpcPgpArmorHeaders.
 type PostRpcPgpArmorHeadersParams struct {
 	// Prefer Preference
-	Prefer *PostRpcPgpArmorHeadersParamsPrefer `json:"Prefer,omitempty"`
+	Prefer *PreferParams `json:"Prefer,omitempty"`
 }
-
-// PostRpcPgpArmorHeadersParamsPrefer defines parameters for PostRpcPgpArmorHeaders.
-type PostRpcPgpArmorHeadersParamsPrefer string
 
 // GetRpcPgpKeyIdParams defines parameters for GetRpcPgpKeyId.
 type GetRpcPgpKeyIdParams struct {
@@ -1869,11 +1856,8 @@ type PostRpcPgpKeyIdApplicationVndPgrstObjectPlusJSONNullsStrippedBody struct {
 // PostRpcPgpKeyIdParams defines parameters for PostRpcPgpKeyId.
 type PostRpcPgpKeyIdParams struct {
 	// Prefer Preference
-	Prefer *PostRpcPgpKeyIdParamsPrefer `json:"Prefer,omitempty"`
+	Prefer *PreferParams `json:"Prefer,omitempty"`
 }
-
-// PostRpcPgpKeyIdParamsPrefer defines parameters for PostRpcPgpKeyId.
-type PostRpcPgpKeyIdParamsPrefer string
 
 // DeleteServiceEndpointsParams defines parameters for DeleteServiceEndpoints.
 type DeleteServiceEndpointsParams struct {
@@ -2295,6 +2279,15 @@ type PostPortalUsersApplicationVndPgrstObjectPlusJSONRequestBody = PortalUsers
 // PostPortalUsersApplicationVndPgrstObjectPlusJSONNullsStrippedRequestBody defines body for PostPortalUsers for application/vnd.pgrst.object+json;nulls=stripped ContentType.
 type PostPortalUsersApplicationVndPgrstObjectPlusJSONNullsStrippedRequestBody = PortalUsers
 
+// PostRpcAdminCreatePortalUserJSONRequestBody defines body for PostRpcAdminCreatePortalUser for application/json ContentType.
+type PostRpcAdminCreatePortalUserJSONRequestBody PostRpcAdminCreatePortalUserJSONBody
+
+// PostRpcAdminCreatePortalUserApplicationVndPgrstObjectPlusJSONRequestBody defines body for PostRpcAdminCreatePortalUser for application/vnd.pgrst.object+json ContentType.
+type PostRpcAdminCreatePortalUserApplicationVndPgrstObjectPlusJSONRequestBody PostRpcAdminCreatePortalUserApplicationVndPgrstObjectPlusJSONBody
+
+// PostRpcAdminCreatePortalUserApplicationVndPgrstObjectPlusJSONNullsStrippedRequestBody defines body for PostRpcAdminCreatePortalUser for application/vnd.pgrst.object+json;nulls=stripped ContentType.
+type PostRpcAdminCreatePortalUserApplicationVndPgrstObjectPlusJSONNullsStrippedRequestBody PostRpcAdminCreatePortalUserApplicationVndPgrstObjectPlusJSONNullsStrippedBody
+
 // PostRpcArmorJSONRequestBody defines body for PostRpcArmor for application/json ContentType.
 type PostRpcArmorJSONRequestBody PostRpcArmorJSONBody
 
@@ -2330,6 +2323,15 @@ type PostRpcGenSaltApplicationVndPgrstObjectPlusJSONRequestBody PostRpcGenSaltAp
 
 // PostRpcGenSaltApplicationVndPgrstObjectPlusJSONNullsStrippedRequestBody defines body for PostRpcGenSalt for application/vnd.pgrst.object+json;nulls=stripped ContentType.
 type PostRpcGenSaltApplicationVndPgrstObjectPlusJSONNullsStrippedRequestBody PostRpcGenSaltApplicationVndPgrstObjectPlusJSONNullsStrippedBody
+
+// PostRpcGetPortalUserJSONRequestBody defines body for PostRpcGetPortalUser for application/json ContentType.
+type PostRpcGetPortalUserJSONRequestBody = PostRpcGetPortalUserJSONBody
+
+// PostRpcGetPortalUserApplicationVndPgrstObjectPlusJSONRequestBody defines body for PostRpcGetPortalUser for application/vnd.pgrst.object+json ContentType.
+type PostRpcGetPortalUserApplicationVndPgrstObjectPlusJSONRequestBody = PostRpcGetPortalUserApplicationVndPgrstObjectPlusJSONBody
+
+// PostRpcGetPortalUserApplicationVndPgrstObjectPlusJSONNullsStrippedRequestBody defines body for PostRpcGetPortalUser for application/vnd.pgrst.object+json;nulls=stripped ContentType.
+type PostRpcGetPortalUserApplicationVndPgrstObjectPlusJSONNullsStrippedRequestBody = PostRpcGetPortalUserApplicationVndPgrstObjectPlusJSONNullsStrippedBody
 
 // PostRpcPgpArmorHeadersJSONRequestBody defines body for PostRpcPgpArmorHeaders for application/json ContentType.
 type PostRpcPgpArmorHeadersJSONRequestBody PostRpcPgpArmorHeadersJSONBody

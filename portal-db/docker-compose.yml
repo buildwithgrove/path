@@ -52,6 +52,8 @@ services:
       - ./schema/003_grove_backend.sql:/docker-entrypoint-initdb.d/003_grove_backend.sql:ro
       # 004_grove_portal.sql: Grove portal queries
       - ./schema/004_grove_portal_access.sql:/docker-entrypoint-initdb.d/004_grove_portal_access.sql:ro
+      # 005_grove_portal_funcs.sql: Grove portal functions
+      - ./schema/005_grove_portal_funcs.sql:/docker-entrypoint-initdb.d/005_grove_portal_funcs.sql:ro
 
       # 2. LOCAL DEV ONLY: mount set_authenticator_password.sql: Set authenticator password
       #   - Required to set the authenticator role's password to 'authenticator_password' for the local development environment.
@@ -72,7 +74,7 @@ services:
   # Provides instant CRUD operations, OpenAPI docs, and JWT authentication
   # Documentation: https://docs.postgrest.org/en/v13/
   postgrest:
-    image: postgrest/postgrest:v12.0.2
+    image: postgrest/postgrest:v13.0.7
     container_name: portal-db-api
     ports:
       # PostgREST API and documentation server
