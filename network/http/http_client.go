@@ -191,12 +191,7 @@ func (h *HTTPClientWithDebugMetrics) SendHTTPRelay(
 
 	// Read and validate response
 	responseBody, err := h.readAndValidateResponse(resp)
-	if err != nil {
-		requestErr = err
-		return nil, resp.StatusCode, requestErr
-	}
-
-	return responseBody, resp.StatusCode, nil
+	return responseBody, resp.StatusCode, err
 }
 
 // setupRequestDebugging initializes request metrics, HTTP debugging context, and atomic counters.
@@ -263,7 +258,7 @@ func (h *HTTPClientWithDebugMetrics) readAndValidateResponse(resp *http.Response
 
 	// Validate HTTP status code
 	if err := EnsureHTTPSuccess(resp.StatusCode); err != nil {
-		return nil, err
+		return responseBody, err
 	}
 
 	return responseBody, nil

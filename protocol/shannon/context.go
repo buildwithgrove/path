@@ -563,9 +563,19 @@ func (rc *requestContext) sendProtocolRelay(payload protocol.Payload) (protocol.
 	// Send the HTTP request to the protocol endpoint.
 	httpRelayResponseBz, httpStatusCode, err := rc.sendHTTPRequest(payload, targetServerURL, relayRequestBz)
 	if err != nil {
+		rc.logger.With(
+			"http_relay_response_preview", polylog.Preview(string(httpRelayResponseBz)),
+			"http_status_code", httpStatusCode,
+		).Error().Err(err).Msg("HTTP relay failed.")
 		return defaultResponse, err
 	}
 
+	// TODO_TECHDEBT(@adshmh): Refactor to clarify the request flow via matching of processing logic:
+	// PATH -> RelayMiner -> Backend Service
+	// There are 2 HTTP status codes:
+	// 1. From the RelayMiner when sending a relay
+	// 2. From the backend service: contained in the RelayResponse struct parsed from payload returned by RelayMiner.
+	//
 	// Non-2xx HTTP status code received from the endpoint: build and return an error
 	if httpStatusCode != http.StatusOK {
 		return defaultResponse, fmt.Errorf("%w %w: %d", errSendHTTPRelay, errEndpointNon2XXHTTPStatusCode, httpStatusCode)
@@ -602,7 +612,6 @@ func (rc *requestContext) sendProtocolRelay(payload protocol.Payload) (protocol.
 	responseHTTPStatusCode := deserializedResponse.HTTPStatusCode
 	if err := pathhttp.EnsureHTTPSuccess(responseHTTPStatusCode); err != nil {
 		errMsg := fmt.Sprintf("Backend service returned status non-2xx: %d", responseHTTPStatusCode)
-		rc.logger.Error().Err(err).Msg(errMsg)
 		return defaultResponse, fmt.Errorf("%w: %s", err, errMsg)
 	}
 
