@@ -969,14 +969,15 @@ func (rc *requestContext) sendHTTPRequest(
 	if err != nil {
 		// Endpoint failed to respond before the timeout expires
 		// Wrap the net/http error with our classification error
-		wrappedErr := fmt.Errorf("%w: %v", errSendHTTPRelay, err)
+		// Include the net/http error for HTTP relay error classification.
+		wrappedErr := fmt.Errorf("%w: %w", errSendHTTPRelay, err)
 
 		selectedEndpoint := rc.getSelectedEndpoint()
 		rc.logger.With(
 			"http_response_preview", polylog.Preview(string(httpResponseBz)),
 			"http_status_code", httpStatusCode,
 		).Debug().Err(wrappedErr).Msgf("Failed to receive a response from the selected endpoint: '%s'. Relay request will FAIL", selectedEndpoint.Addr())
-		return nil, 0, fmt.Errorf("error sending request to endpoint %s: %w", selectedEndpoint.Addr(), wrappedErr)
+		return httpResponseBz, httpStatusCode, fmt.Errorf("error sending request to endpoint %s: %w", selectedEndpoint.Addr(), wrappedErr)
 	}
 
 	return httpResponseBz, httpStatusCode, nil
