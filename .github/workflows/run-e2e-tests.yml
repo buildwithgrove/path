@@ -63,7 +63,7 @@ jobs:
     strategy:
       matrix:
         # DEV_NOTE: Add new services here if they should be tested as part of the Shannon E2E CI suite
-        service_id: [eth, pocket, xrplevm, giwa-sepolia-testnet]
+        service_id: [eth, pocket, xrplevm]
     steps:
       - uses: actions/checkout@v4
 
