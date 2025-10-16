@@ -140,6 +140,13 @@ type CosmosEndpointResponseValidationResult struct {
 	// Validation error, if any.
 	// This is set if parsing the endpoint response fails.
 	ValidationError *CosmosResponseValidationError `protobuf:"varint,3,opt,name=validation_error,json=validationError,proto3,enum=path.qos.CosmosResponseValidationError,oneof" json:"validation_error,omitempty"`
+	// TODO_TECHDEBT(@adshmh): Replace the parsed_response and user_response with request-type-specific messages, i.e. separate message type for:
+	// - single JSONRPC requests
+	// - RESTful API requests
+	//
+	// Tracks the JSONRPC response returned to the user
+	// Only set for JSONRPC requests.
+	UserJsonrpcResponse *JsonRpcResponse `protobuf:"bytes,12,opt,name=user_jsonrpc_response,json=userJsonrpcResponse,proto3,oneof" json:"user_jsonrpc_response,omitempty"`
 	// The parsed response; JSON, JSONRPC, REST, unstructured, etc..
 	// Only set if validation succeeded.
 	//
@@ -205,6 +212,13 @@ func (x *CosmosEndpointResponseValidationResult) GetValidationError() CosmosResp
 		return *x.ValidationError
 	}
 	return CosmosResponseValidationError_COSMOS_RESPONSE_VALIDATION_ERROR_UNSPECIFIED
+}
+
+func (x *CosmosEndpointResponseValidationResult) GetUserJsonrpcResponse() *JsonRpcResponse {
+	if x != nil {
+		return x.UserJsonrpcResponse
+	}
+	return nil
 }
 
 func (x *CosmosEndpointResponseValidationResult) GetParsedResponse() isCosmosEndpointResponseValidationResult_ParsedResponse {
@@ -582,11 +596,12 @@ var File_path_qos_cosmos_response_proto protoreflect.FileDescriptor
 
 const file_path_qos_cosmos_response_proto_rawDesc = "" +
 	"\n" +
-	"\x1epath/qos/cosmos_response.proto\x12\bpath.qos\x1a\x16path/qos/jsonrpc.proto\"\xa3\a\n" +
+	"\x1epath/qos/cosmos_response.proto\x12\bpath.qos\x1a\x16path/qos/jsonrpc.proto\"\x91\b\n" +
 	"&CosmosEndpointResponseValidationResult\x12`\n" +
 	"\x18response_validation_type\x18\x01 \x01(\x0e2&.path.qos.CosmosResponseValidationTypeR\x16responseValidationType\x12(\n" +
 	"\x10http_status_code\x18\x02 \x01(\x05R\x0ehttpStatusCode\x12W\n" +
-	"\x10validation_error\x18\x03 \x01(\x0e2'.path.qos.CosmosResponseValidationErrorH\x01R\x0fvalidationError\x88\x01\x01\x12F\n" +
+	"\x10validation_error\x18\x03 \x01(\x0e2'.path.qos.CosmosResponseValidationErrorH\x01R\x0fvalidationError\x88\x01\x01\x12R\n" +
+	"\x15user_jsonrpc_response\x18\f \x01(\v2\x19.path.qos.JsonRpcResponseH\x02R\x13userJsonrpcResponse\x88\x01\x01\x12F\n" +
 	"\x10response_jsonrpc\x18\x04 \x01(\v2\x19.path.qos.JsonRpcResponseH\x00R\x0fresponseJsonrpc\x12U\n" +
 	"\x15response_unrecognized\x18\a \x01(\v2\x1e.path.qos.UnrecognizedResponseH\x00R\x14responseUnrecognized\x12c\n" +
 	"\x19response_comet_bft_health\x18\b \x01(\v2&.path.qos.CosmosResponseCometBFTHealthH\x00R\x16responseCometBftHealth\x12c\n" +
@@ -595,7 +610,8 @@ const file_path_qos_cosmos_response_proto_rawDesc = "" +
 	" \x01(\v2'.path.qos.CosmosResponseCosmosSDKStatusH\x00R\x17responseCosmosSdkStatus\x12m\n" +
 	"\x1dresponse_evm_jsonrpc_chain_id\x18\v \x01(\v2).path.qos.CosmosResponseEVMJSONRPCChainIDH\x00R\x19responseEvmJsonrpcChainIdB\x11\n" +
 	"\x0fparsed_responseB\x13\n" +
-	"\x11_validation_errorJ\x04\b\x05\x10\x06J\x04\b\x06\x10\aR\x0fresponse_healthR\x0fresponse_status\"C\n" +
+	"\x11_validation_errorB\x18\n" +
+	"\x16_user_jsonrpc_responseJ\x04\b\x05\x10\x06J\x04\b\x06\x10\aR\x0fresponse_healthR\x0fresponse_status\"C\n" +
 	"\x1cCosmosResponseCometBFTHealth\x12#\n" +
 	"\rhealth_status\x18\x01 \x01(\bR\fhealthStatus\"\x8a\x01\n" +
 	"\x1cCosmosResponseCometBFTStatus\x12\x19\n" +
@@ -650,17 +666,18 @@ var file_path_qos_cosmos_response_proto_goTypes = []any{
 var file_path_qos_cosmos_response_proto_depIdxs = []int32{
 	1, // 0: path.qos.CosmosEndpointResponseValidationResult.response_validation_type:type_name -> path.qos.CosmosResponseValidationType
 	0, // 1: path.qos.CosmosEndpointResponseValidationResult.validation_error:type_name -> path.qos.CosmosResponseValidationError
-	8, // 2: path.qos.CosmosEndpointResponseValidationResult.response_jsonrpc:type_name -> path.qos.JsonRpcResponse
-	7, // 3: path.qos.CosmosEndpointResponseValidationResult.response_unrecognized:type_name -> path.qos.UnrecognizedResponse
-	3, // 4: path.qos.CosmosEndpointResponseValidationResult.response_comet_bft_health:type_name -> path.qos.CosmosResponseCometBFTHealth
-	4, // 5: path.qos.CosmosEndpointResponseValidationResult.response_comet_bft_status:type_name -> path.qos.CosmosResponseCometBFTStatus
-	5, // 6: path.qos.CosmosEndpointResponseValidationResult.response_cosmos_sdk_status:type_name -> path.qos.CosmosResponseCosmosSDKStatus
-	6, // 7: path.qos.CosmosEndpointResponseValidationResult.response_evm_jsonrpc_chain_id:type_name -> path.qos.CosmosResponseEVMJSONRPCChainID
-	8, // [8:8] is the sub-list for method output_type
-	8, // [8:8] is the sub-list for method input_type
-	8, // [8:8] is the sub-list for extension type_name
-	8, // [8:8] is the sub-list for extension extendee
-	0, // [0:8] is the sub-list for field type_name
+	8, // 2: path.qos.CosmosEndpointResponseValidationResult.user_jsonrpc_response:type_name -> path.qos.JsonRpcResponse
+	8, // 3: path.qos.CosmosEndpointResponseValidationResult.response_jsonrpc:type_name -> path.qos.JsonRpcResponse
+	7, // 4: path.qos.CosmosEndpointResponseValidationResult.response_unrecognized:type_name -> path.qos.UnrecognizedResponse
+	3, // 5: path.qos.CosmosEndpointResponseValidationResult.response_comet_bft_health:type_name -> path.qos.CosmosResponseCometBFTHealth
+	4, // 6: path.qos.CosmosEndpointResponseValidationResult.response_comet_bft_status:type_name -> path.qos.CosmosResponseCometBFTStatus
+	5, // 7: path.qos.CosmosEndpointResponseValidationResult.response_cosmos_sdk_status:type_name -> path.qos.CosmosResponseCosmosSDKStatus
+	6, // 8: path.qos.CosmosEndpointResponseValidationResult.response_evm_jsonrpc_chain_id:type_name -> path.qos.CosmosResponseEVMJSONRPCChainID
+	9, // [9:9] is the sub-list for method output_type
+	9, // [9:9] is the sub-list for method input_type
+	9, // [9:9] is the sub-list for extension type_name
+	9, // [9:9] is the sub-list for extension extendee
+	0, // [0:9] is the sub-list for field type_name
 }
 
 func init() { file_path_qos_cosmos_response_proto_init() }
