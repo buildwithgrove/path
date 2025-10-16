@@ -68,14 +68,6 @@ localnet_k9s: ## Launches k9s inside the path-localnet container for Kubernetes 
 	@echo "🚀 Launching k9s inside path-localnet container..."
 	@docker exec -it path-localnet k9s
 
-.PHONY: path_help
-path_help: ## Prints help commands if you cannot start path
-	@echo "################################################################";
-	@echo "💡 If you're hitting issues running PATH, try running following commands:";
-	@echo "	make path_down";
-	@echo "	make path_up";
-	@echo "################################################################";
-
 .PHONY: build_and_push_localnet_image
 build_and_push_localnet_image: ## Builds and pushes the localnet Docker image for multi-architecture builds
 	@echo "🔨 Building and pushing multi-architecture localnet Docker image..."

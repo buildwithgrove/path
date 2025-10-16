@@ -32,7 +32,7 @@ func (sc *ServicesQoSConfig) Validate(logger polylog.Logger, gatewayServices map
 
 		// Check if service is configured in the gateway
 		if _, found := gatewayServices[serviceID]; !found {
-			logger.Warn().Msgf("Service ID %s has an available QoS configuration but is not configured for the gateway. Skipping...", serviceID)
+			logger.Warn().Msgf("⚠️  🔍 Service ID '%s' has QoS configuration defined BUT no owned apps configured! 🚫 All requests for this service will fail. Configure owned app private keys for this service to enable QoS.", serviceID)
 			continue
 		}
 

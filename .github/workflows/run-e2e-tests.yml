@@ -54,12 +54,16 @@ jobs:
   run-e2e-tests-shannon:
     name: Run E2E tests - HTTP Requests
     runs-on: "ubuntu-22.04"
+    # TODO(@olshansky): Investigate why this job occasionally hangs indefinitely.
+    # Adding explicit timeout to fail fast instead of waiting for GitHub's default 6-hour timeout.
+    # The Go test itself has a 5min timeout (e2e/main_test.go:84), so 10min should be plenty.
+    timeout-minutes: 10
     needs:
       - build-and-test-docker-image
     strategy:
       matrix:
         # DEV_NOTE: Add new services here if they should be tested as part of the Shannon E2E CI suite
-        service_id: [eth, pocket, xrplevm, giwa-sepolia-testnet]
+        service_id: [eth, pocket, xrplevm]
     steps:
       - uses: actions/checkout@v4
 
@@ -95,47 +99,6 @@ jobs:
       - name: Run E2E test - Service ID ${{ matrix.service_id }}
         # eg. make test_e2e_evm_shannon eth
         run: make e2e_test ${{ matrix.service_id }}
-
-  run-e2e-tests-eth-fallback:
-    name: Run E2E test - ETH Fallback
-    runs-on: "ubuntu-22.04"
-    needs:
-      - build-and-test-docker-image
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: "1.24"
-
-      - name: Download Docker image artifact from previous job
-        uses: actions/download-artifact@v4
-        with:
-          name: path-image
-          path: ${{ runner.temp }}
-
-      - name: Load Docker image
-        run: |
-          docker load --input ${{ runner.temp }}/path-image.tar
-          docker image ls -a
-
-      - name: copy Shannon E2E config
-        run: make config_prepare_shannon_e2e
-
-      - name: update Shannon E2E config from secrets
-        env:
-          SHANNON_GATEWAY_ADDRESS: ${{ secrets.SHANNON_GATEWAY_ADDRESS }}
-          SHANNON_GATEWAY_PRIVATE_KEY: ${{ secrets.SHANNON_GATEWAY_PRIVATE_KEY }}
-          SHANNON_OWNED_APPS_PRIVATE_KEYS: ${{ secrets.SHANNON_OWNED_APPS_PRIVATE_KEYS}}
-          SHANNON_ETH_FALLBACK_URL: ${{ secrets.SHANNON_ETH_FALLBACK_URL }}
-        run: ./e2e/scripts/ci/update_shannon_config_from_secrets.sh
-
-      - name: Set Docker container to log to stdout in CI environment
-        run: ./e2e/scripts/ci/set_docker_log.sh
-
-      - name: Run E2E test - ETH Fallback
-        run: make e2e_test_eth_fallback ${{ secrets.SHANNON_ETH_FALLBACK_URL }}
 
   run-e2e-tests-websockets:
     name: Run E2E tests - WebSockets

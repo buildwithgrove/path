@@ -1,21 +1,92 @@
+# ============================================================================
+# Portal Database Local Development Environment
+# ============================================================================
+# This Docker Compose file provides a complete local development setup for
+# the Grove Portal Database with PostgREST API access.
+#
+# Services included:
+# - PostgreSQL 17: Portal database with schema and test data
+# - PostgREST: Automatic REST API generation from database schema
+#
+# Usage:
+#   make portal-db-up    # Start both services
+#   make portal-db-down  # Stop and remove containers
+#   make portal-db-logs  # View service logs
+#
+# Access:
+#   Database:  localhost:5435 (user: postgres, password: portal_password)
+#   REST API:  http://localhost:3000
+#   API Docs:  http://localhost:3000 (OpenAPI/Swagger)
+#
+# ============================================================================
+
 services:
+  # ============================================================================
+  # PostgreSQL Database Server
+  # ============================================================================
+  # Provides the core Portal database with complete schema and optional test data
+  # Documentation: https://hub.docker.com/_/postgres
   postgres:
-    image: postgres:15
-    container_name: path-portal-db
+    image: postgres:17
+    container_name: portal-db
     environment:
+      # Database configuration for local development
+      # Production uses CloudSQL with different credentials
       POSTGRES_DB: portal_db
-      POSTGRES_USER: portal_user
       POSTGRES_PASSWORD: portal_password
+      # Using default 'postgres' superuser for initialization scripts
     ports:
+      # Map to non-standard port to avoid conflicts with existing PostgreSQL
       - "5435:5432"
     volumes:
-      - portal_db_data:/var/lib/postgresql/data
-      - ./init:/docker-entrypoint-initdb.d
+      # PostgreSQL data persistence (survives container restarts)
+      - ./tmp/portal_db_data:/var/lib/postgresql/data
+      # Initialization scripts (run in alphabetical order on first startup)
+      # Documentation: https://hub.docker.com/_/postgres#initialization-scripts
+      # 001_portal_init.sql: Initial PostgreSQL schema
+      - ./schema/001_portal_init.sql:/docker-entrypoint-initdb.d/001_portal_init.sql:ro
+      # 002_postgrest_init.sql: PostgREST API setup (roles, permissions, JWT)
+      - ./schema/002_postgrest_init.sql:/docker-entrypoint-initdb.d/002_postgrest_init.sql:ro
     healthcheck:
-      test: ["CMD", "pg_isready", "-U", "portal_user", "-d", "portal_db"]
+      # Health check to ensure database is ready before starting PostgREST
+      test: ["CMD", "pg_isready", "-U", "postgres", "-d", "portal_db"]
       interval: 10s
       timeout: 5s
       retries: 5
 
-volumes:
-  portal_db_data:
+  # ============================================================================
+  # PostgREST API Server
+  # ============================================================================
+  # Automatically generates REST API endpoints from PostgreSQL schema
+  # Provides instant CRUD operations, OpenAPI docs, and JWT authentication
+  # Documentation: https://docs.postgrest.org/en/v13/
+  postgrest:
+    image: postgrest/postgrest:v12.0.2
+    container_name: portal-db-api
+    ports:
+      # PostgREST API and documentation server
+      - "3000:3000"
+    volumes:
+      # Mount PostgREST configuration file (see api/postgrest.conf)
+      # Configuration docs: https://docs.postgrest.org/en/v13/references/configuration.html
+      - ./api/postgrest.conf:/etc/postgrest/postgrest.conf:ro
+    command: ["postgrest", "/etc/postgrest/postgrest.conf"]
+    depends_on:
+      postgres:
+        # Wait for PostgreSQL to be healthy before starting PostgREST
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      # Health check for PostgREST API availability
+      test:
+        [
+          "CMD",
+          "wget",
+          "--quiet",
+          "--tries=1",
+          "--spider",
+          "http://localhost:3000/",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3

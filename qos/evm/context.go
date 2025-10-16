@@ -130,6 +130,11 @@ func (rc *requestContext) UpdateWithResponse(endpointAddr protocol.EndpointAddr,
 	})
 }
 
+// TODO_TECHDEBT(@adshmh): Drop the responseNone struct:
+// - Not having received a response from protocol layer is a protocol error
+// - Use a RequestError, consistent with qos/cosmos and qos/solana packages.
+// - Update the metrics/qos/evm package to use RequestError.
+//
 // GetHTTPResponse builds the HTTP response that should be returned for
 // an EVM blockchain service request.
 // Implements the gateway.RequestQoSContext interface.

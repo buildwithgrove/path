@@ -29,6 +29,7 @@ guard:
       aliases:
         - polygon
     - serviceId: xrplevm
+    - serviceId: oasys
 
   # The auth section allows configuring the API key authentication for the PATH service.
   auth:
@@ -41,22 +42,3 @@ guard:
         # - api_key_123
         # - api_key_456
         # etc..
-
-  ###########################################################################
-  # ------------------------- GUARD Helm Configurations --------------------- #
-  ###########################################################################
-  # TODO_TECHDEBT: This is a temporary fix to use the pre-release version of the ratelimit image.
-  # Can remove 'global' and all child keys once the release version of ratelimit is available
-  # PR reference: https://github.com/envoyproxy/ratelimit/pull/941#issuecomment-3186314121
-  # Discord discussion: https://discord.com/channels/824324475256438814/1404887238562545786/1405564826717130893
-  # Dockerhub image: https://hub.docker.com/layers/envoyproxy/ratelimit/38f01982/images/sha256-3bdd0399d31e72332823ca618b4f9ea7cfa9ad8ed27b793fa5d7ef7882ea2057
-  gateway-helm:
-    global:
-      images:
-        ratelimit:
-          image: "envoyproxy/ratelimit:38f01982"
-          pullPolicy: Always
-    config:
-      envoyGateway:
-        extensionApis: null
-        extensionManager: null

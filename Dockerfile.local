@@ -1,0 +1,29 @@
+# TODO_TECHDEBT: Consolidate Dockerfile.local and Dockerfile
+ARG GO_VERSION=1.24-alpine
+
+FROM golang:${GO_VERSION} AS builder
+WORKDIR /src
+RUN apk add --no-cache build-base git
+# Default: CGO enabled (musl) for Alpine runtime
+ENV CGO_ENABLED=1 GOOS=linux \
+    CGO_CFLAGS="-Wno-implicit-function-declaration -Wno-error=implicit-function-declaration"
+
+# Better layer caching
+COPY go.mod go.sum ./
+RUN go mod download
+COPY . .
+
+# Build with tags (CGO enabled)
+RUN go build -tags "ethereum_secp256k1" -buildvcs=false -o /out/path ./cmd
+
+# Optional no-CGO build (commented by default)
+# RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -buildvcs=false -o /out/path_nocgo ./cmd
+
+FROM alpine:3.19
+RUN apk add --no-cache ca-certificates tzdata
+WORKDIR /app
+# Default artifact: CGO-enabled
+COPY --from=builder /out/path /app/path
+# Swap to no-CGO by uncommenting this and commenting the line above:
+# COPY --from=builder /out/path_nocgo /app/path
+ENTRYPOINT ["/app/path"]
