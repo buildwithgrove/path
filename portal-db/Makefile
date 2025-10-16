@@ -195,7 +195,7 @@ _require-portal-db:
 .PHONY: test-postgrest-auth
 test-postgrest-auth: _require-postgrest-api ## Test JWT authentication flow
 	@echo "🔐 Testing JWT authentication..."
-	cd api/scripts && ./test-postgrest-auth.sh
+	cd api/scripts && ./postgrest-test-auth.sh
 
 .PHONY: test-postgrest-portal-app-creation
 test-postgrest-portal-app-creation: _require-postgrest-api ## Test portal application creation and retrieval via authenticated Postgres flow

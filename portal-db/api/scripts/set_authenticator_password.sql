@@ -5,6 +5,9 @@
 -- This is separate from the role creation to follow the principle of 
 -- configuring passwords outside of the main schema migrations.
 --
+-- See this file details on Postgres schema authentication and authorization: 
+-- https://github.com/buildwithgrove/path/blob/main/portal-db/schema/002_postgrest_init.sql
+--
 -- ⚠️  LOCAL DEVELOPMENT ONLY - NOT FOR PRODUCTION USE
 -- 
 -- In production environments, database passwords should be managed through:
