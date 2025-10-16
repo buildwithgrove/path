@@ -441,6 +441,8 @@ func (rc *requestContext) sendRelayWithFallback(payload protocol.Payload) (proto
 			return endpointResponse, nil
 		}
 
+		// TODO_TECHDEBT(@adshmh): Verify correct observations/sanctions when using fallback due to endpoint error.
+		//
 		rc.logger.Info().Err(err).Msg("Got a response from Pocket Network, but it contained an error. Using a fallback endpoint instead")
 
 		// Shannon endpoint failed, use fallback
