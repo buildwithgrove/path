@@ -47,6 +47,8 @@ func (i *CosmosSDKObservationInterpreter) GetServiceID() string {
 	return i.Observations.ServiceId
 }
 
+// TODO_TECHDEBT(@adshmh): Drop this method once separate proto messages are added for single and batch JSONRPC requests.
+//
 // TODO_TECHDEBT: For batch requests, this will only return one of the methods in the batch.
 // GetRequestMethod returns the CosmosSDK RPC method name from the request profile.
 func (i *CosmosSDKObservationInterpreter) GetRequestMethods() ([]string, bool) {
@@ -84,28 +86,52 @@ func (i *CosmosSDKObservationInterpreter) GetRequestMethods() ([]string, bool) {
 
 // IsRequestSuccessful determines if the request completed without errors.
 func (i *CosmosSDKObservationInterpreter) IsRequestSuccessful() bool {
-	if i.Observations == nil {
-		i.Logger.ProbabilisticDebugInfo(polylog.ProbabilisticDebugInfoProb).Msg("SHOULD RARELY HAPPEN: Cannot determine request success: nil observations")
+	// Request/endpoint errors: request failed
+	if i.GetRequestErrorType() != "" {
 		return false
 	}
 
-	// RequestLevelError being nil is normal for successful requests
-	return i.Observations.RequestLevelError == nil
+	// JSONRPC Error code set: request failed
+	if _, hasJSONRPCError := i.GetJSONRPCErrorCode(); hasJSONRPCError {
+		return false
+	}
+
+	// Successful request
+	return true
 }
 
 // GetRequestErrorType returns the error type if request failed or empty string if successful.
+// GetRequestErrorType returns the error type if request failed or empty string if successful.
+// If no request-level error exists, it checks the last endpoint observation for validation errors.
 func (i *CosmosSDKObservationInterpreter) GetRequestErrorType() string {
 	if i.Observations == nil {
 		i.Logger.ProbabilisticDebugInfo(polylog.ProbabilisticDebugInfoProb).Msg("SHOULD RARELY HAPPEN: Cannot get error type: nil observations")
 		return ""
 	}
 
-	// RequestLevelError being nil is normal for successful requests
-	if i.Observations.RequestLevelError == nil {
+	// Check for request-level error first
+	if i.Observations.RequestLevelError != nil {
+		return i.Observations.RequestLevelError.ErrorKind.String()
+	}
+
+	// If no request-level error, check endpoint observations for validation errors
+	endpointObservations := i.Observations.GetEndpointObservations()
+	if len(endpointObservations) == 0 {
 		return ""
 	}
 
-	return i.Observations.RequestLevelError.ErrorKind.String()
+	// Check the last endpoint observation for validation errors
+	lastEndpointObs := endpointObservations[len(endpointObservations)-1]
+	if lastEndpointObs.EndpointResponseValidationResult == nil {
+		return ""
+	}
+
+	// Return validation error if present
+	if lastEndpointObs.EndpointResponseValidationResult.ValidationError != nil {
+		return lastEndpointObs.EndpointResponseValidationResult.ValidationError.String()
+	}
+
+	return ""
 }
 
 // GetRPCType returns the RPC type from the backend service details.
@@ -129,6 +155,9 @@ func (i *CosmosSDKObservationInterpreter) GetRPCType() string {
 	return requestProfile.BackendServiceDetails.BackendServiceType.String()
 }
 
+// TODO_TECHDEBT(@adshmh): Update proto messages to make the HTTP Status code explicit on each request.
+// Removes the need for reasoning in the observations/metrics logic.
+//
 // GetRequestHTTPStatus returns the HTTP status code from the request error or endpoint responses.
 // Returns 200 if request was successful, 0 if observations are nil.
 func (i *CosmosSDKObservationInterpreter) GetRequestHTTPStatus() int32 {
@@ -266,4 +295,43 @@ func (i *CosmosSDKObservationInterpreter) GetEndpointDomain() string {
 	}
 
 	return domain
+}
+
+// GetJSONRPCErrorCode extracts the JSON-RPC error code from the last endpoint observation.
+// Returns (errorCode, true) if a JSON-RPC error is present in the user_jsonrpc_response
+// Returns (0, false) if no error is present or user_jsonrpc_response is nil
+func (i *CosmosSDKObservationInterpreter) GetJSONRPCErrorCode() (int, bool) {
+	if i.Observations == nil {
+		i.Logger.ProbabilisticDebugInfo(polylog.ProbabilisticDebugInfoProb).Msg("SHOULD RARELY HAPPEN: Cannot get JSONRPC error code: nil observations")
+		return 0, false
+	}
+
+	// Get endpoint observations
+	endpointObservations := i.Observations.GetEndpointObservations()
+	if len(endpointObservations) == 0 {
+		return 0, false
+	}
+
+	// Use only the last observation (latest response)
+	lastObs := endpointObservations[len(endpointObservations)-1]
+
+	// Check if the endpoint response validation result exists
+	if lastObs.EndpointResponseValidationResult == nil {
+		return 0, false
+	}
+
+	// Get the user JSON-RPC response
+	userJsonrpcResponse := lastObs.EndpointResponseValidationResult.GetUserJsonrpcResponse()
+	if userJsonrpcResponse == nil {
+		return 0, false
+	}
+
+	// Check if there's an error in the JSON-RPC response
+	jsonrpcError := userJsonrpcResponse.GetError()
+	if jsonrpcError == nil {
+		return 0, false
+	}
+
+	// Return the error code
+	return int(jsonrpcError.GetCode()), true
 }

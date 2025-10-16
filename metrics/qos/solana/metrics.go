@@ -61,6 +61,9 @@ var (
 		},
 		[]string{"chain_id", "service_id", "request_origin", "request_method", "success", "error_type", "http_status_code", "endpoint_domain"},
 	)
+
+	// TODO_TECHDEBT(@adshmh): Add a new metric to export JSONRPC responses error codes:
+	// Consistent with Cosmos and EVM metrics.
 )
 
 // PublishMetrics:

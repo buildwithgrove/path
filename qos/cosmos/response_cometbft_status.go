@@ -135,6 +135,7 @@ func (r *responseCometBFTStatus) GetObservation() qosobservations.CosmosEndpoint
 			ResponseValidationType: qosobservations.CosmosResponseValidationType_COSMOS_RESPONSE_VALIDATION_TYPE_JSONRPC,
 			HttpStatusCode:         int32(r.jsonrpcResponse.GetRecommendedHTTPStatusCode()),
 			ValidationError:        nil, // No validation error for successfully processed responses
+			UserJsonrpcResponse:    r.jsonrpcResponse.GetObservation(),
 			ParsedResponse: &qosobservations.CosmosEndpointResponseValidationResult_ResponseCometBftStatus{
 				ResponseCometBftStatus: &qosobservations.CosmosResponseCometBFTStatus{
 					ChainId:           r.cosmosSDKChainID,

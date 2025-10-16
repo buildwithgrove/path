@@ -206,6 +206,8 @@ func convertToProtoBackendServiceType(rpcType sharedtypes.RPCType) qosobservatio
 		return qosobservations.BackendServiceType_BACKEND_SERVICE_TYPE_JSONRPC
 	case sharedtypes.RPCType_REST:
 		return qosobservations.BackendServiceType_BACKEND_SERVICE_TYPE_REST
+	case sharedtypes.RPCType_COMET_BFT:
+		return qosobservations.BackendServiceType_BACKEND_SERVICE_TYPE_COMETBFT
 	default:
 		return qosobservations.BackendServiceType_BACKEND_SERVICE_TYPE_UNSPECIFIED
 	}
