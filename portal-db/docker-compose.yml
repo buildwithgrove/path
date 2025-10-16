@@ -51,10 +51,10 @@ services:
       # 003_grove_backend.sql: Grove backend queries
       - ./schema/003_grove_backend.sql:/docker-entrypoint-initdb.d/003_grove_backend.sql:ro
 
-      # 2. LOCAL DEV ONLY: mount set_authenticator_password.sql: Set authenticator password
+      # 2. LOCAL DEV ONLY: mount local_development_only_set_authenticator_password.sql: Set authenticator password
       #   - Required to set the authenticator role's password to 'authenticator_password' for the local development environment.
       #   - In production environments, the password will be set by an admin outside of SQL migration files.
-      - ./api/scripts/set_authenticator_password.sql:/docker-entrypoint-initdb.d/999_set_authenticator_password.sql:ro
+      - ./api/scripts/local_development_only_set_authenticator_password.sql:/docker-entrypoint-initdb.d/999_set_authenticator_password.sql:ro
 
     healthcheck:
       # Health check to ensure database is ready before starting PostgREST

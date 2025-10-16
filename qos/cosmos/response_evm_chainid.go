@@ -93,6 +93,7 @@ func (r responseEVMChainID) GetObservation() qosobservations.CosmosEndpointObser
 			ResponseValidationType: qosobservations.CosmosResponseValidationType_COSMOS_RESPONSE_VALIDATION_TYPE_JSONRPC,
 			HttpStatusCode:         int32(r.jsonrpcResponse.GetRecommendedHTTPStatusCode()),
 			ValidationError:        nil, // No validation error for successfully processed responses
+			UserJsonrpcResponse:    r.jsonrpcResponse.GetObservation(),
 			ParsedResponse: &qosobservations.CosmosEndpointResponseValidationResult_ResponseEvmJsonrpcChainId{
 				ResponseEvmJsonrpcChainId: &qosobservations.CosmosResponseEVMJSONRPCChainID{
 					HttpStatusCode: int32(r.getHTTPStatusCode()),

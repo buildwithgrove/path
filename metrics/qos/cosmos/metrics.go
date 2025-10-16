@@ -14,11 +14,13 @@ const (
 	pathProcess = "path"
 
 	// The list of metrics being tracked for Cosmos SDK QoS
-	requestsTotalMetric = "cosmos_sdk_requests_total"
+	requestsTotalMetric      = "cosmos_sdk_requests_total"
+	jsonrpcErrorsTotalMetric = "cosmos_jsonrpc_errors_total"
 )
 
 func init() {
 	prometheus.MustRegister(requestsTotal)
+	prometheus.MustRegister(jsonrpcErrorsTotal)
 }
 
 var (
@@ -63,6 +65,35 @@ var (
 		},
 		[]string{"cosmos_chain_id", "evm_chain_id", "service_id", "request_origin", "rpc_type", "request_method", "success", "error_type", "http_status_code", "endpoint_domain"},
 	)
+
+	// TODO_TECHDEBT(@adshmh): Consider using buckets of JSONRPC error codes as the number of distinct values could be a Prometheus metric cardinality concern.
+	//
+	// jsonrpcErrorsTotal tracks JSON-RPC errors returned by endpoints for specific request methods.
+	// This metric captures the relationship between request methods, endpoint domains, and JSON-RPC error codes
+	// to help identify patterns in endpoint-specific failures and method-specific issues.
+	//
+	// Labels:
+	//   - cosmos_chain_id: Target Cosmos chain identifier
+	//   - evm_chain_id: Target EVM chain identifier for Cosmos chains with native EVM support, e.g. XRPLEVM, etc...
+	//   - service_id: Service ID of the Cosmos SDK QoS instance
+	//   - request_method: JSON-RPC method name that generated the error (e.g., "health", "status")
+	//   - endpoint_domain: eTLD+1 of endpoint URL for provider analysis (extracted from endpoint_addr)
+	//   - jsonrpc_error_code: The JSON-RPC error code returned by the endpoint (e.g., "-32601", "-32602")
+	//
+	// Use to analyze:
+	//   - Error patterns by JSON-RPC method and endpoint provider
+	//   - Endpoint reliability for specific method types
+	//   - Most common JSON-RPC error codes across the network
+	//   - Provider-specific error rates and patterns
+	//   - Method compatibility issues across different endpoint providers
+	jsonrpcErrorsTotal = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Subsystem: pathProcess,
+			Name:      jsonrpcErrorsTotalMetric,
+			Help:      "Total JSON-RPC errors returned by endpoints, categorized by request method, endpoint domain, and error code",
+		},
+		[]string{"cosmos_chain_id", "evm_chain_id", "service_id", "request_method", "endpoint_domain", "jsonrpc_error_code"},
+	)
 )
 
 // PublishMetrics:
@@ -86,6 +117,8 @@ func PublishMetrics(logger polylog.Logger, observations *qos.CosmosRequestObserv
 
 	methods := extractRequestMethods(logger, interpreter)
 
+	// TODO_TECHDEBT(@adshmh): Refactor this block once separate proto messages for single and batch JSONRPC requests are added.
+	//
 	for _, method := range methods {
 		// Increment request counters with all corresponding labels
 		requestsTotal.With(
@@ -100,6 +133,25 @@ func PublishMetrics(logger polylog.Logger, observations *qos.CosmosRequestObserv
 				"error_type":       interpreter.GetRequestErrorType(),
 				"http_status_code": fmt.Sprintf("%d", interpreter.GetRequestHTTPStatus()),
 				"endpoint_domain":  interpreter.GetEndpointDomain(),
+			},
+		).Inc()
+
+		// Check if the endpoint's JSONRPC response indicates an error.
+		jsonrpcResponseErrorCode, jsonrpcResponseHasError := interpreter.GetJSONRPCErrorCode()
+		// No JSONRPC response error: skip.
+		if !jsonrpcResponseHasError {
+			continue
+		}
+
+		// Export the JSONRPC Error Code.
+		jsonrpcErrorsTotal.With(
+			prometheus.Labels{
+				"cosmos_chain_id":    interpreter.GetCosmosChainID(),
+				"evm_chain_id":       interpreter.GetEVMChainID(),
+				"service_id":         interpreter.GetServiceID(),
+				"request_method":     method,
+				"endpoint_domain":    interpreter.GetEndpointDomain(),
+				"jsonrpc_error_code": fmt.Sprintf("%d", jsonrpcResponseErrorCode),
 			},
 		).Inc()
 	}

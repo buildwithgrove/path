@@ -57,6 +57,11 @@ func unmarshalRESTRequestEndpointResponse(
 	// Reference: https://docs.cosmos.network/api#tag/Service/operation/Status
 	case apiPathCosmosStatus:
 		response, err := responseValidatorCosmosStatus(logger, endpointResponseBz)
+		// TODO_TECHDEBT(@adshmh): use an "error response" type here to mark a response validation error.
+		// This is needed to:
+		// - Support sanctions on endpoints based on RESTful API requests.
+		// - Export metrics on invalid responses to RESTful API requests.
+		//
 		if err != nil {
 			// For Cosmos SDK status endpoint, return a generic response if the response is not valid.
 			return responseRESTUnrecognized{

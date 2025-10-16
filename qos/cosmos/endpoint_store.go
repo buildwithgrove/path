@@ -131,11 +131,11 @@ func applyObservation(
 		applyEVMChainIDObservation(endpoint, response.ResponseEvmJsonrpcChainId)
 		endpointWasMutated = true
 
-	// Unrecognized response observation
-	case *qosobservations.CosmosEndpointResponseValidationResult_ResponseUnrecognized:
-		applyUnrecognizedResponseObservation(endpoint, response.ResponseUnrecognized)
-		endpointWasMutated = true
-
+		// TODO_TECHDEBT(@adshmh): Introduce and use a new response type to:
+		// - Capture invalid endpoint responses to RESTful API requests
+		// - Support sanctions on endpoints based on above.
+		// - Export metrics to show endpoints characteristics re RESTful API requests.
+		//
 	}
 
 	return endpointWasMutated
@@ -209,11 +209,4 @@ func parseBlockHeightResponse(response string) uint64 {
 		return 0
 	}
 	return parsed
-}
-
-// applyUnrecognizedResponseObservation updates the invalid response check for unrecognized responses.
-func applyUnrecognizedResponseObservation(endpoint *endpoint, unrecognizedResponse *qosobservations.UnrecognizedResponse) {
-	endpoint.hasReturnedInvalidResponse = true
-	now := time.Now()
-	endpoint.invalidResponseLastObserved = &now
 }

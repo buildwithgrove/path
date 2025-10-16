@@ -2,6 +2,23 @@
 
 This Go SDK provides a type-safe client for the Portal DB API, generated using [oapi-codegen](https://github.com/oapi-codegen/oapi-codegen).
 
+## Table of Contents
+
+- [Portal DB Go SDK](#portal-db-go-sdk)
+  - [Table of Contents](#table-of-contents)
+  - [Installation](#installation)
+  - [Quick Start](#quick-start)
+  - [Authentication](#authentication)
+  - [Query Features](#query-features)
+    - [Filtering and Selection](#filtering-and-selection)
+    - [Specific Resource Lookup](#specific-resource-lookup)
+  - [RPC Functions](#rpc-functions)
+  - [Error Handling](#error-handling)
+  - [Complete Example](#complete-example)
+  - [Development](#development)
+  - [Generated Files](#generated-files)
+  - [Related Documentation](#related-documentation)
+
 ## Installation
 
 ```bash
@@ -9,6 +26,9 @@ go get github.com/buildwithgrove/path/portal-db/sdk/go
 ```
 
 ## Quick Start
+
+<details>
+<summary>Click to expand Quick Start example</summary>
 
 ```go
 package main
@@ -43,9 +63,14 @@ func main() {
 }
 ```
 
+</details>
+
 ## Authentication
 
 For authenticated endpoints, add your JWT token to requests:
+
+<details>
+<summary>Click to expand Authentication example</summary>
 
 ```go
 import (
@@ -90,11 +115,16 @@ func authenticatedExample() {
 }
 ```
 
+</details>
+
 ## Query Features
 
 The SDK supports PostgREST's powerful query features for filtering, selecting, and pagination:
 
 ### Filtering and Selection
+
+<details>
+<summary>Click to expand Filtering and Selection example</summary>
 
 ```go
 // Filter active services with specific fields
@@ -113,7 +143,12 @@ if resp.StatusCode() == 200 && resp.JSON200 != nil {
 }
 ```
 
+</details>
+
 ### Specific Resource Lookup
+
+<details>
+<summary>Click to expand Specific Resource Lookup example</summary>
 
 ```go
 // Get a specific service by ID
@@ -130,9 +165,14 @@ if resp.StatusCode() == 200 && resp.JSON200 != nil {
 }
 ```
 
+</details>
+
 ## RPC Functions
 
 Access custom database functions via the RPC endpoint:
+
+<details>
+<summary>Click to expand RPC Functions example</summary>
 
 ```go
 // Get current user info from JWT claims
@@ -151,7 +191,12 @@ if resp.StatusCode() == 200 {
 }
 ```
 
+</details>
+
 ## Error Handling
+
+<details>
+<summary>Click to expand Error Handling example</summary>
 
 ```go
 resp, err := client.GetNetworksWithResponse(ctx, &portaldb.GetNetworksParams{})
@@ -175,6 +220,23 @@ default:
     // Other status codes
     fmt.Printf("Unexpected status: %d\n", resp.StatusCode())
 }
+```
+
+</details>
+
+## Complete Example
+
+A complete working example is available in the [`example/`](./example) directory:
+
+- [`example/main.go`](./example/main.go) - Demonstrates basic SDK usage
+- [`example/go.mod`](./example/go.mod) - Module configuration with local replace directive
+
+**To run:**
+
+```bash
+# Make sure Portal DB API is running on http://localhost:3000
+cd example
+go run main.go
 ```
 
 ## Development

@@ -59,6 +59,7 @@ func (r *responseCometBFTHealth) GetObservation() qosobservations.CosmosEndpoint
 			ResponseValidationType: qosobservations.CosmosResponseValidationType_COSMOS_RESPONSE_VALIDATION_TYPE_JSONRPC,
 			HttpStatusCode:         int32(r.userJSONRPCResponse.GetRecommendedHTTPStatusCode()),
 			ValidationError:        nil, // No validation error for successfully processed responses
+			UserJsonrpcResponse:    r.userJSONRPCResponse.GetObservation(),
 			ParsedResponse: &qosobservations.CosmosEndpointResponseValidationResult_ResponseCometBftHealth{
 				ResponseCometBftHealth: &qosobservations.CosmosResponseCometBFTHealth{
 					HealthStatus: r.healthy,
