@@ -45,6 +45,7 @@ TO authenticated_user;
 -- Grant access to public tables used by the UI (read-only, contains no sensitive data)
 GRANT SELECT ON TABLE
     services,
+    service_endpoints,
     portal_plans
 TO authenticated_user;
 
