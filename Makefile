@@ -32,6 +32,9 @@ help: ## Prints all the targets in all the Makefiles
 	@echo "$(BOLD)=== 📋 Information & Discovery ===$(RESET)"
 	@grep -h -E '^(help|help-unclassified):.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "$(CYAN)%-40s$(RESET) %s\n", $$1, $$2}'
 	@echo ""
+	@echo "$(BOLD)=== 🗄️ Portal Database Makefile Targets ===$(RESET)"
+	@grep -h -E '^(portal_db_help):.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "$(CYAN)%-40s$(RESET) %s\n", $$1, $$2}'
+	@echo ""
 	@echo "$(BOLD)=== 🔨 Build & Run ===$(RESET)"
 	@grep -h -E '^path_(build|run):.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "$(CYAN)%-40s$(RESET) %s\n", $$1, $$2}'
 	@echo ""
@@ -53,9 +56,6 @@ help: ## Prints all the targets in all the Makefiles
 	@echo ""
 	@echo "$(BOLD)=== ✋ Manual Testing ===$(RESET)"
 	@grep -h -E '^(get_disqualified_endpoints|grove_get_disqualified_endpoints|shannon_preliminary_services_test_help|shannon_preliminary_services_test|source_shannon_preliminary_services_helpers):.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "$(CYAN)%-40s$(RESET) %s\n", $$1, $$2}'
-	@echo ""
-	@echo "$(BOLD)=== 🗄️ Portal Database ===$(RESET)"
-	@grep -h -E '^(portal_db_help):.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "$(CYAN)%-40s$(RESET) %s\n", $$1, $$2}'
 	@echo ""
 	@echo "$(BOLD)=== 📦 Protocol Buffers ===$(RESET)"
 	@grep -h -E '^proto.*:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "$(CYAN)%-40s$(RESET) %s\n", $$1, $$2}'
@@ -156,3 +156,26 @@ include ./makefiles/debug.mk
 include ./makefiles/claude.mk
 include ./makefiles/release.mk
 include ./makefiles/helpers.mk
+
+###############################
+###  Global Error Handling  ###
+###############################
+
+# Catch-all rule for undefined targets
+# This must be defined AFTER includes so color variables are available
+# and it acts as a fallback for any undefined target
+%:
+	@echo ""
+	@echo "$(RED)❌ Error: Unknown target '$(BOLD)$@$(RESET)$(RED)'$(RESET)"
+	@echo ""
+	@if echo "$@" | grep -q "^postgrest"; then \
+		echo "$(YELLOW)💡 Hint: Portal DB targets should be run from the portal-db directory:$(RESET)"; \
+		echo "   $(CYAN)cd ./portal-db && make $@$(RESET)"; \
+		echo "   Or see: $(CYAN)make portal_db_help$(RESET)"; \
+	else \
+		echo "$(YELLOW)💡 Available targets:$(RESET)"; \
+		echo "   Run $(CYAN)make help$(RESET) to see all available targets"; \
+		echo "   Run $(CYAN)make help-unclassified$(RESET) to see unclassified targets"; \
+	fi
+	@echo ""
+	@exit 1

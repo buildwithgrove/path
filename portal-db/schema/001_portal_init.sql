@@ -90,6 +90,7 @@ CREATE TABLE portal_accounts (
     portal_account_user_limit INT CHECK (portal_account_user_limit >= 0),
     portal_account_user_limit_interval plan_interval,
     portal_account_user_limit_rps INT CHECK (portal_account_user_limit_rps >= 0),
+    portal_account_user_limit_notification_thresholds INTEGER[],
     billing_type VARCHAR(20),
     stripe_subscription_id VARCHAR(255),
     gcp_account_id VARCHAR(255),
@@ -205,6 +206,7 @@ CREATE TABLE portal_applications (
     portal_application_user_limit INT CHECK (portal_application_user_limit >= 0),
     portal_application_user_limit_interval plan_interval,
     portal_application_user_limit_rps INT CHECK (portal_application_user_limit_rps >= 0),
+    portal_application_user_limit_notification_thresholds INTEGER[],
     portal_application_description VARCHAR(255),
     favorite_service_ids VARCHAR[],
     secret_key_hash VARCHAR(255), -- TODO_IMPROVE: Never store plain text secrets - use proper hashing

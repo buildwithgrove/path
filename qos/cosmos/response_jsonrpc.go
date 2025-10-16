@@ -64,6 +64,14 @@ func unmarshalJSONRPCRequestEndpointResponse(
 		data,
 	)
 
+	// Log JSONRPC responses indicating an error.
+	if jsonrpcResponse.Error != nil {
+		logger.With(
+			"jsonrpc_response_error", jsonrpcResponse.Error,
+			"jsonrpc_request", jsonrpcReq,
+		).Debug().Msg("JSONRPC error response returned for the request")
+	}
+
 	// TODO_TECHDEBT(@adshmh): Separate User-response, which could be a generic response indicating an endpoint error, from the parsed response.
 	// Endpoint response failed validation.
 	// Return a generic response to the user.
@@ -139,6 +147,8 @@ func unmarshalAsJSONRPCResponse(
 		), jsonrpc.Request{}, &validationErr
 	}
 
+	// TODO_TECHDEBT(@adshmh): Remove this once proto messages are separated for single and batch JSONRPC requests.
+	//
 	jsonrpcReq, ok := findJsonRpcRequestByID(jsonrpcReqs, jsonrpcResponse.ID)
 	if !ok {
 		validationErr := qosobservations.CosmosResponseValidationError_COSMOS_RESPONSE_VALIDATION_ERROR_FORMAT_MISMATCH
