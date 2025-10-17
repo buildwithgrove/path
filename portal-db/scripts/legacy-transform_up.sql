@@ -67,6 +67,24 @@ SELECT
 FROM legacy_extract.accounts a
 LEFT JOIN legacy_extract.account_integrations ai ON a.id = ai.account_id;
 
+-- Update portal_accounts with notification thresholds from account_notifications
+UPDATE public.portal_accounts pa
+SET portal_account_user_limit_notification_thresholds = (
+    SELECT ARRAY_AGG(threshold_value)
+    FROM (
+        SELECT CASE 
+            WHEN event = 'quarter' THEN 25
+            WHEN event = 'half' THEN 50
+            WHEN event = 'threeQuarters' THEN 75
+            WHEN event = 'full' THEN 100
+        END as threshold_value
+        FROM legacy_extract.account_notifications an
+        CROSS JOIN UNNEST(an.events) AS event
+        WHERE an.account_id = pa.portal_account_id
+    ) AS thresholds
+    WHERE threshold_value IS NOT NULL
+);
+
 -- Transform the legacy users to the new users table
 INSERT INTO public.portal_users (
     portal_user_id,
@@ -94,9 +112,9 @@ INSERT INTO public.rbac (
     permissions
 )
 VALUES 
-    (DEFAULT, 'LEGACY_ADMIN', ARRAY[]::VARCHAR[]),
-    (DEFAULT, 'LEGACY_OWNER', ARRAY[]::VARCHAR[]),
-    (DEFAULT, 'LEGACY_MEMBER', ARRAY[]::VARCHAR[]);
+    (DEFAULT, 'LEGACY_OWNER', ARRAY['LEGACY_READ', 'LEGACY_WRITE', 'LEGACY_DELETE']::VARCHAR[]),
+    (DEFAULT, 'LEGACY_ADMIN', ARRAY['LEGACY_READ', 'LEGACY_WRITE']::VARCHAR[]),
+    (DEFAULT, 'LEGACY_MEMBER', ARRAY['LEGACY_READ']::VARCHAR[]);
 
 -- Transform the legacy account_users table into the new portal_account_rbac
 -- Join on email since we're using new auto-generated portal_user_id values
