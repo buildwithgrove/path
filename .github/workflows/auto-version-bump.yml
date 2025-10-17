@@ -26,6 +26,15 @@ jobs:
           RELEASE_BRANCHES: main
           INITIAL_VERSION: 0.4.0
 
+      - name: Create nested module tag for Portal DB Go SDK
+        run: |
+          VERSION="${{ steps.tag_version.outputs.new_tag }}"
+          NESTED_TAG="portal-db/sdk/go/${VERSION}"
+          git tag "${NESTED_TAG}"
+          git push origin "${NESTED_TAG}"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Create GitHub Release
         uses: ncipollo/release-action@v1
         with:
