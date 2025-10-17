@@ -10,6 +10,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    outputs:
+      new_tag: ${{ steps.tag_version.outputs.new_tag }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -26,18 +28,64 @@ jobs:
           RELEASE_BRANCHES: main
           INITIAL_VERSION: 0.4.0
 
-      - name: Create nested module tag for Portal DB Go SDK
-        run: |
-          VERSION="${{ steps.tag_version.outputs.new_tag }}"
-          NESTED_TAG="portal-db/sdk/go/${VERSION}"
-          git tag "${NESTED_TAG}"
-          git push origin "${NESTED_TAG}"
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Create GitHub Release
         uses: ncipollo/release-action@v1
         with:
           tag: ${{ steps.tag_version.outputs.new_tag }}
           name: Release ${{ steps.tag_version.outputs.new_tag }}
           generateReleaseNotes: true
+
+  publish-go-sdk:
+    name: Publish Portal DB Go SDK
+    needs: [version-and-release]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Create nested module tag for Go SDK
+        run: |
+          VERSION="${{ needs.version-and-release.outputs.new_tag }}"
+          NESTED_TAG="portal-db/sdk/go/${VERSION}"
+          git tag "${NESTED_TAG}"
+          git push origin "${NESTED_TAG}"
+          echo "Created Go SDK tag: ${NESTED_TAG}"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  publish-typescript-sdk:
+    name: Publish Portal DB TypeScript SDK
+    needs: [version-and-release]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Update package.json version
+        run: |
+          VERSION="${{ needs.version-and-release.outputs.new_tag }}"
+          # Strip the 'v' prefix from version tag
+          VERSION_NUMBER="${VERSION#v}"
+          cd portal-db/sdk/typescript
+          # Update version in package.json using npm
+          npm version "${VERSION_NUMBER}" --no-git-tag-version
+          echo "Updated package.json to version ${VERSION_NUMBER}"
+
+      - name: Publish to NPM
+        run: |
+          cd portal-db/sdk/typescript
+          npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

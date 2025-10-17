@@ -1,14 +1,25 @@
 {
-  "name": "@grove/portal-db-sdk",
-  "version": "1.0.0",
+  "name": "@buildwithgrove/portal-db-ts-sdk",
   "description": "TypeScript SDK for Grove Portal DB API",
   "type": "module",
   "main": "client.ts",
   "types": "types.ts",
+  "files": [
+    "client.ts",
+    "types.ts",
+    "README.md"
+  ],
   "scripts": {
     "type-check": "tsc --noEmit"
   },
-  "keywords": ["grove", "portal", "db", "api", "sdk", "typescript"],
+  "keywords": [
+    "grove",
+    "portal",
+    "db",
+    "api",
+    "sdk",
+    "typescript"
+  ],
   "author": "Grove Team",
   "license": "MIT",
   "dependencies": {
