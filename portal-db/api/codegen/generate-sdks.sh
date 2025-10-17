@@ -1,19 +1,19 @@
 #!/bin/bash
 
-# Generate Go SDK from OpenAPI specification
-# This script generates a Go SDK for the Portal DB API
+# Generate Go and TypeScript SDKs from OpenAPI specification
+# This script generates both Go and TypeScript SDKs for the Portal DB API
 # - Go SDK: Uses oapi-codegen for client and models generation  
+# - TypeScript SDK: Uses openapi-typescript for type generation and openapi-fetch for runtime client
 
 set -e
 
 # Configuration
 OPENAPI_DIR="../openapi"
-OPENAPI_V2_FILE="$OPENAPI_DIR/openapi-v2.json"
 OPENAPI_V3_FILE="$OPENAPI_DIR/openapi.json"
 GO_OUTPUT_DIR="../../sdk/go"
+TS_OUTPUT_DIR="../../sdk/typescript"
 CONFIG_MODELS="./codegen-models.yaml"
 CONFIG_CLIENT="./codegen-client.yaml"
-POSTGREST_URL="http://localhost:3000"
 
 # Colors for output
 RED='\033[0;31m'
@@ -22,11 +22,12 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-echo "🔧 Generating Go SDK from OpenAPI specification..."
+echo "🔧 Generating Go and TypeScript SDKs from OpenAPI specification..."
 
 # ============================================================================
 # PHASE 1: ENVIRONMENT VALIDATION
 # ============================================================================
+# Validate that all required tools are installed before proceeding
 
 echo ""
 echo -e "${BLUE}📋 Phase 1: Environment Validation${NC}"
@@ -55,17 +56,26 @@ fi
 
 echo -e "${GREEN}✅ oapi-codegen is available: $(oapi-codegen -version 2>/dev/null || echo 'installed')${NC}"
 
-# Check if PostgREST is running
-echo "🌐 Checking PostgREST availability..."
-if ! curl -s --connect-timeout 5 "$POSTGREST_URL" >/dev/null 2>&1; then
-    echo -e "${RED}❌ PostgREST is not accessible at $POSTGREST_URL${NC}"
-    echo "   Please ensure PostgREST is running:"
-    echo "   cd .. && docker compose up -d"
-    echo "   cd api && docker compose up -d"
+# Check if Node.js and npm are installed for TypeScript SDK generation
+if ! command -v node >/dev/null 2>&1; then
+    echo -e "${RED}❌ Node.js is not installed. Please install Node.js first.${NC}"
+    echo "   - Mac: brew install node"
+    echo "   - Or download from: https://nodejs.org/"
     exit 1
 fi
 
-echo -e "${GREEN}✅ PostgREST is accessible at $POSTGREST_URL${NC}"
+echo -e "${GREEN}✅ Node.js is installed: $(node --version)${NC}"
+
+if ! command -v npm >/dev/null 2>&1; then
+    echo -e "${RED}❌ npm is not installed. Please install npm first.${NC}"
+    exit 1
+fi
+
+echo -e "${GREEN}✅ npm is installed: $(npm --version)${NC}"
+
+# Check if openapi-typescript is available
+# We use npx which handles installation automatically if needed
+echo -e "${GREEN}✅ Using npx for openapi-typescript (will auto-install if needed)${NC}"
 
 # Check if configuration files exist
 for config_file in "$CONFIG_MODELS" "$CONFIG_CLIENT"; do
@@ -79,81 +89,25 @@ done
 echo -e "${GREEN}✅ Configuration files found: models, client${NC}"
 
 # ============================================================================
-# PHASE 2: SPEC RETRIEVAL & CONVERSION
+# PHASE 2: OPENAPI SPEC GENERATION
 # ============================================================================
 
 echo ""
-echo -e "${BLUE}📋 Phase 2: Spec Retrieval & Conversion${NC}"
+echo -e "${BLUE}📋 Phase 2: OpenAPI Spec Generation${NC}"
 
-# Create openapi directory if it doesn't exist
-mkdir -p "$OPENAPI_DIR"
-
-# Clean any existing files to start fresh
-echo "🧹 Cleaning previous OpenAPI files..."
-rm -f "$OPENAPI_V2_FILE" "$OPENAPI_V3_FILE"
-
-# Generate JWT token for authenticated access to get all endpoints
-echo "🔑 Generating JWT token for authenticated OpenAPI spec..."
-JWT_TOKEN=$(cd ../scripts && ./gen-jwt.sh portal_db_admin 2>/dev/null | grep -A1 "🎟️  Token:" | tail -1)
-
-if [ -z "$JWT_TOKEN" ]; then
-    echo "⚠️  Could not generate JWT token, fetching public endpoints only..."
-    AUTH_HEADER=""
-else
-    echo "✅ JWT token generated, will fetch all endpoints (public + protected)"
-    AUTH_HEADER="Authorization: Bearer $JWT_TOKEN"
-fi
-
-# Fetch OpenAPI spec from PostgREST (Swagger 2.0 format)
-echo "📥 Fetching OpenAPI specification from PostgREST..."
-if ! curl -s "$POSTGREST_URL" -H "Accept: application/openapi+json" ${AUTH_HEADER:+-H "$AUTH_HEADER"} > "$OPENAPI_V2_FILE"; then
-    echo -e "${RED}❌ Failed to fetch OpenAPI specification from $POSTGREST_URL${NC}"
+# Generate OpenAPI specification using the dedicated script
+echo "📝 Generating OpenAPI specification..."
+if ! ./generate-openapi.sh; then
+    echo -e "${RED}❌ Failed to generate OpenAPI specification${NC}"
     exit 1
 fi
 
-# Verify the file was created and has content
-if [ ! -f "$OPENAPI_V2_FILE" ] || [ ! -s "$OPENAPI_V2_FILE" ]; then
-    echo -e "${RED}❌ OpenAPI specification file is empty or missing${NC}"
-    exit 1
-fi
-
-echo -e "${GREEN}✅ Swagger 2.0 specification saved to: $OPENAPI_V2_FILE${NC}"
-
-# Convert Swagger 2.0 to OpenAPI 3.x
-echo "🔄 Converting Swagger 2.0 to OpenAPI 3.x..."
-
-# Check if swagger2openapi is available
-if ! command -v swagger2openapi >/dev/null 2>&1; then
-    echo "📦 Installing swagger2openapi converter..."
-    if command -v npm >/dev/null 2>&1; then
-        npm install -g swagger2openapi
-    else
-        echo -e "${RED}❌ npm not found. Please install Node.js and npm first.${NC}"
-        echo "   - Mac: brew install node"
-        echo "   - Or download from: https://nodejs.org/"
-        exit 1
-    fi
-fi
-
-if ! swagger2openapi "$OPENAPI_V2_FILE" -o "$OPENAPI_V3_FILE"; then
-    echo -e "${RED}❌ Failed to convert Swagger 2.0 to OpenAPI 3.x${NC}"
-    exit 1
-fi
-
-# Fix boolean format issues in the converted spec (in place)
-echo "🔧 Fixing boolean format issues..."
-sed -i.bak 's/"format": "boolean",//g' "$OPENAPI_V3_FILE"
-rm -f "${OPENAPI_V3_FILE}.bak"
-
-# Remove the temporary Swagger 2.0 file since we only need the OpenAPI 3.x version
-echo "🧹 Cleaning temporary Swagger 2.0 file..."
-rm -f "$OPENAPI_V2_FILE"
-
-echo -e "${GREEN}✅ OpenAPI 3.x specification ready: $OPENAPI_V3_FILE${NC}"
+echo -e "${GREEN}✅ OpenAPI specification ready: $OPENAPI_V3_FILE${NC}"
 
 # ============================================================================
 # PHASE 3: SDK GENERATION
 # ============================================================================
+# Generate both Go and TypeScript SDKs from the OpenAPI specification
 
 echo ""
 echo -e "${BLUE}📋 Phase 3: SDK Generation${NC}"
@@ -180,9 +134,29 @@ fi
 
 echo -e "${GREEN}✅ Go SDK generated successfully in separate files${NC}"
 
+echo ""
+echo "🔷 Generating TypeScript SDK with openapi-typescript..."
+
+# Create TypeScript output directory if it doesn't exist
+mkdir -p "$TS_OUTPUT_DIR"
+
+# Clean previous generated TypeScript files
+echo "🧹 Cleaning previous TypeScript generated files..."
+rm -f "$TS_OUTPUT_DIR/types.ts"
+
+# Generate TypeScript types using openapi-typescript
+echo "   Generating TypeScript types from OpenAPI spec..."
+if ! npx --yes openapi-typescript "$OPENAPI_V3_FILE" -o "$TS_OUTPUT_DIR/types.ts"; then
+    echo -e "${RED}❌ Failed to generate TypeScript types${NC}"
+    exit 1
+fi
+
+echo -e "${GREEN}✅ TypeScript types generated successfully${NC}"
+
 # ============================================================================
 # PHASE 4: MODULE SETUP
 # ============================================================================
+# Initialize modules, install dependencies, and validate compilation
 
 echo ""
 echo -e "${BLUE}📋 Phase 4: Module Setup${NC}"
@@ -213,6 +187,167 @@ echo -e "${GREEN}✅ Generated code compiles successfully${NC}"
 # Return to scripts directory
 cd - >/dev/null
 
+# TypeScript module setup
+echo ""
+echo "🔷 Setting up TypeScript module..."
+
+# Navigate to TypeScript SDK directory
+cd "$TS_OUTPUT_DIR"
+
+# Create package.json if it doesn't exist
+if [ ! -f "package.json" ]; then
+    echo "📦 Creating package.json..."
+    cat > package.json << 'EOF'
+{
+  "name": "@buildwithgrove/portal-db-ts-sdk",
+  "version": "1.0.0",
+  "description": "TypeScript SDK for Grove Portal DB API",
+  "type": "module",
+  "main": "client.ts",
+  "types": "types.ts",
+  "files": [
+    "client.ts",
+    "types.ts",
+    "README.md"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/buildwithgrove/path.git",
+    "directory": "portal-db/sdk/typescript"
+  },
+  "homepage": "https://github.com/buildwithgrove/path/tree/main/portal-db/sdk/typescript",
+  "bugs": {
+    "url": "https://github.com/buildwithgrove/path/issues"
+  },
+  "scripts": {
+    "type-check": "tsc --noEmit"
+  },
+  "keywords": [
+    "grove",
+    "portal",
+    "db",
+    "api",
+    "sdk",
+    "typescript",
+    "postgrest",
+    "openapi",
+    "type-safe"
+  ],
+  "author": "Grove Team",
+  "license": "MIT",
+  "dependencies": {
+    "openapi-fetch": "^0.12.2"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0",
+    "openapi-typescript": "^7.4.3"
+  },
+  "peerDependencies": {
+    "typescript": ">=5.0.0"
+  }
+}
+EOF
+fi
+
+# Create a client.ts file that uses openapi-fetch
+if [ ! -f "client.ts" ]; then
+    echo "📝 Creating client.ts..."
+    cat > client.ts << 'EOF'
+/**
+ * Grove Portal DB API Client
+ * 
+ * This client uses openapi-fetch for type-safe API requests.
+ * It's lightweight with zero dependencies beyond native fetch.
+ * 
+ * @example
+ * ```typescript
+ * import createClient from './client';
+ * 
+ * const client = createClient({ baseUrl: 'http://localhost:3000' });
+ * 
+ * // GET request with full type safety
+ * const { data, error } = await client.GET('/portal_accounts');
+ * 
+ * // POST request with typed body
+ * const { data, error } = await client.POST('/portal_accounts', {
+ *   body: { 
+ *     portal_plan_type: 'PLAN_FREE',
+ *     // ... other fields
+ *   }
+ * });
+ * ```
+ */
+import createClient from 'openapi-fetch';
+import type { paths } from './types';
+
+export type { paths } from './types';
+
+/**
+ * Create a new API client instance
+ * 
+ * @param options - Client configuration options
+ * @param options.baseUrl - Base URL for the API (default: http://localhost:3000)
+ * @param options.headers - Default headers to include with every request
+ * @returns Type-safe API client
+ */
+export default function createPortalDBClient(options?: {
+  baseUrl?: string;
+  headers?: HeadersInit;
+}) {
+  return createClient<paths>({
+    baseUrl: options?.baseUrl || 'http://localhost:3000',
+    headers: options?.headers,
+  });
+}
+
+// Re-export for convenience
+export { createClient };
+EOF
+fi
+
+# Create tsconfig.json if it doesn't exist
+if [ ! -f "tsconfig.json" ]; then
+    echo "🔧 Creating tsconfig.json..."
+    cat > tsconfig.json << 'EOF'
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "ESNext",
+    "lib": ["ES2020", "DOM"],
+    "moduleResolution": "Bundler",
+    "noUncheckedIndexedAccess": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "strict": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "declaration": true,
+    "declarationMap": true
+  },
+  "include": ["*.ts"],
+  "exclude": ["node_modules", "dist"]
+}
+EOF
+fi
+
+echo -e "${GREEN}✅ TypeScript module setup completed${NC}"
+
+# Install dependencies if package-lock.json doesn't exist
+if [ ! -f "package-lock.json" ]; then
+    echo "📦 Installing dependencies..."
+    if npm install; then
+        echo -e "${GREEN}✅ Dependencies installed successfully${NC}"
+    else
+        echo -e "${YELLOW}⚠️  Failed to install dependencies, but SDK was generated${NC}"
+        echo "   Run 'npm install' in $TS_OUTPUT_DIR to install dependencies"
+    fi
+else
+    echo -e "${GREEN}✅ Dependencies already installed${NC}"
+fi
+
+# Return to scripts directory
+cd - >/dev/null
+
 # ============================================================================
 # SUCCESS SUMMARY
 # ============================================================================
@@ -223,6 +358,7 @@ echo ""
 echo -e "${BLUE}📁 Generated Files:${NC}"
 echo "   API Docs:     $OPENAPI_V3_FILE"
 echo "   Go SDK:       $GO_OUTPUT_DIR"
+echo "   TypeScript:   $TS_OUTPUT_DIR"
 echo ""
 echo -e "${BLUE}🐹 Go SDK:${NC}"
 echo "   Module:   github.com/buildwithgrove/path/portal-db/sdk/go"
@@ -232,6 +368,15 @@ echo "   • models.go       - Generated data models and types (updated)"
 echo "   • client.go       - Generated SDK client and methods (updated)"
 echo "   • go.mod          - Go module definition (permanent)"
 echo "   • README.md       - Documentation (permanent)"
+echo ""
+echo -e "${BLUE}🔷 TypeScript SDK:${NC}"
+echo "   Package:  @buildwithgrove/portal-db-ts-sdk"
+echo "   Runtime:  openapi-fetch (minimal dependency, uses native fetch)"
+echo "   Files:"
+echo "   • types.ts        - Generated TypeScript types from OpenAPI spec (updated)"
+echo "   • client.ts       - Typed fetch client wrapper (permanent)"
+echo "   • package.json    - Node.js package definition (permanent)"
+echo "   • tsconfig.json   - TypeScript configuration (permanent)"
 echo ""
 echo -e "${BLUE}📚 API Documentation:${NC}"
 echo "   • openapi.json    - OpenAPI 3.x specification (updated)"
@@ -244,9 +389,21 @@ echo "   2. Review generated client: cat $GO_OUTPUT_DIR/client.go | head -50"
 echo "   3. Import in your project: go get github.com/buildwithgrove/path/portal-db/sdk/go"
 echo "   4. Check documentation: cat $GO_OUTPUT_DIR/README.md"
 echo ""
+echo -e "${BLUE}TypeScript SDK:${NC}"
+echo "   1. Review generated types: cat $TS_OUTPUT_DIR/types.ts | head -50"
+echo "   2. Review client wrapper: cat $TS_OUTPUT_DIR/client.ts"
+echo "   3. Copy to your project or publish as npm package"
+echo "   4. Import client: import createClient from './client'"
+echo "   5. Use with type safety:"
+echo "      const client = createClient({ baseUrl: 'http://localhost:3000' });"
+echo "      const { data, error } = await client.GET('/portal_accounts');"
+echo ""
 echo -e "${BLUE}💡 Tips:${NC}"
 echo "   • Go: Full client with methods, types separated for readability"
-echo "   • SDK updates automatically when you run this script"
+echo "   • TypeScript: openapi-fetch provides full type safety with minimal overhead"
+echo "   • Both SDKs update automatically when you run this script"
 echo "   • Run after database schema changes to stay in sync"
+echo "   • TypeScript SDK uses openapi-fetch (1 dependency, tree-shakeable)"
+echo "   • All request/response types are inferred from the OpenAPI spec"
 echo ""
 echo -e "${GREEN}✨ Happy coding!${NC}"

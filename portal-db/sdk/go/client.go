@@ -264,6 +264,33 @@ type ClientInterface interface {
 
 	PostPortalPlansWithApplicationVndPgrstObjectPlusJSONNullsStrippedBody(ctx context.Context, params *PostPortalPlansParams, body PostPortalPlansApplicationVndPgrstObjectPlusJSONNullsStrippedRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// DeletePortalUsers request
+	DeletePortalUsers(ctx context.Context, params *DeletePortalUsersParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetPortalUsers request
+	GetPortalUsers(ctx context.Context, params *GetPortalUsersParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PatchPortalUsersWithBody request with any body
+	PatchPortalUsersWithBody(ctx context.Context, params *PatchPortalUsersParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	PatchPortalUsers(ctx context.Context, params *PatchPortalUsersParams, body PatchPortalUsersJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	PatchPortalUsersWithApplicationVndPgrstObjectPlusJSONBody(ctx context.Context, params *PatchPortalUsersParams, body PatchPortalUsersApplicationVndPgrstObjectPlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	PatchPortalUsersWithApplicationVndPgrstObjectPlusJSONNullsStrippedBody(ctx context.Context, params *PatchPortalUsersParams, body PatchPortalUsersApplicationVndPgrstObjectPlusJSONNullsStrippedRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PostPortalUsersWithBody request with any body
+	PostPortalUsersWithBody(ctx context.Context, params *PostPortalUsersParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	PostPortalUsers(ctx context.Context, params *PostPortalUsersParams, body PostPortalUsersJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	PostPortalUsersWithApplicationVndPgrstObjectPlusJSONBody(ctx context.Context, params *PostPortalUsersParams, body PostPortalUsersApplicationVndPgrstObjectPlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	PostPortalUsersWithApplicationVndPgrstObjectPlusJSONNullsStrippedBody(ctx context.Context, params *PostPortalUsersParams, body PostPortalUsersApplicationVndPgrstObjectPlusJSONNullsStrippedRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetPortalWorkersAccountData request
+	GetPortalWorkersAccountData(ctx context.Context, params *GetPortalWorkersAccountDataParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// GetRpcArmor request
 	GetRpcArmor(ctx context.Context, params *GetRpcArmorParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -288,9 +315,6 @@ type ClientInterface interface {
 
 	PostRpcDearmorWithApplicationVndPgrstObjectPlusJSONNullsStrippedBody(ctx context.Context, params *PostRpcDearmorParams, body PostRpcDearmorApplicationVndPgrstObjectPlusJSONNullsStrippedRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GetRpcGenRandomUuid request
-	GetRpcGenRandomUuid(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
-
 	// PostRpcGenRandomUuidWithBody request with any body
 	PostRpcGenRandomUuidWithBody(ctx context.Context, params *PostRpcGenRandomUuidParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -299,9 +323,6 @@ type ClientInterface interface {
 	PostRpcGenRandomUuidWithApplicationVndPgrstObjectPlusJSONBody(ctx context.Context, params *PostRpcGenRandomUuidParams, body PostRpcGenRandomUuidApplicationVndPgrstObjectPlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	PostRpcGenRandomUuidWithApplicationVndPgrstObjectPlusJSONNullsStrippedBody(ctx context.Context, params *PostRpcGenRandomUuidParams, body PostRpcGenRandomUuidApplicationVndPgrstObjectPlusJSONNullsStrippedRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// GetRpcGenSalt request
-	GetRpcGenSalt(ctx context.Context, params *GetRpcGenSaltParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// PostRpcGenSaltWithBody request with any body
 	PostRpcGenSaltWithBody(ctx context.Context, params *PostRpcGenSaltParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -1261,6 +1282,138 @@ func (c *Client) PostPortalPlansWithApplicationVndPgrstObjectPlusJSONNullsStripp
 	return c.Client.Do(req)
 }
 
+func (c *Client) DeletePortalUsers(ctx context.Context, params *DeletePortalUsersParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeletePortalUsersRequest(c.Server, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetPortalUsers(ctx context.Context, params *GetPortalUsersParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetPortalUsersRequest(c.Server, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PatchPortalUsersWithBody(ctx context.Context, params *PatchPortalUsersParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPatchPortalUsersRequestWithBody(c.Server, params, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PatchPortalUsers(ctx context.Context, params *PatchPortalUsersParams, body PatchPortalUsersJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPatchPortalUsersRequest(c.Server, params, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PatchPortalUsersWithApplicationVndPgrstObjectPlusJSONBody(ctx context.Context, params *PatchPortalUsersParams, body PatchPortalUsersApplicationVndPgrstObjectPlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPatchPortalUsersRequestWithApplicationVndPgrstObjectPlusJSONBody(c.Server, params, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PatchPortalUsersWithApplicationVndPgrstObjectPlusJSONNullsStrippedBody(ctx context.Context, params *PatchPortalUsersParams, body PatchPortalUsersApplicationVndPgrstObjectPlusJSONNullsStrippedRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPatchPortalUsersRequestWithApplicationVndPgrstObjectPlusJSONNullsStrippedBody(c.Server, params, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostPortalUsersWithBody(ctx context.Context, params *PostPortalUsersParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostPortalUsersRequestWithBody(c.Server, params, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostPortalUsers(ctx context.Context, params *PostPortalUsersParams, body PostPortalUsersJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostPortalUsersRequest(c.Server, params, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostPortalUsersWithApplicationVndPgrstObjectPlusJSONBody(ctx context.Context, params *PostPortalUsersParams, body PostPortalUsersApplicationVndPgrstObjectPlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostPortalUsersRequestWithApplicationVndPgrstObjectPlusJSONBody(c.Server, params, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostPortalUsersWithApplicationVndPgrstObjectPlusJSONNullsStrippedBody(ctx context.Context, params *PostPortalUsersParams, body PostPortalUsersApplicationVndPgrstObjectPlusJSONNullsStrippedRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostPortalUsersRequestWithApplicationVndPgrstObjectPlusJSONNullsStrippedBody(c.Server, params, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetPortalWorkersAccountData(ctx context.Context, params *GetPortalWorkersAccountDataParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetPortalWorkersAccountDataRequest(c.Server, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 func (c *Client) GetRpcArmor(ctx context.Context, params *GetRpcArmorParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetRpcArmorRequest(c.Server, params)
 	if err != nil {
@@ -1381,18 +1534,6 @@ func (c *Client) PostRpcDearmorWithApplicationVndPgrstObjectPlusJSONNullsStrippe
 	return c.Client.Do(req)
 }
 
-func (c *Client) GetRpcGenRandomUuid(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetRpcGenRandomUuidRequest(c.Server)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
 func (c *Client) PostRpcGenRandomUuidWithBody(ctx context.Context, params *PostRpcGenRandomUuidParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewPostRpcGenRandomUuidRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
@@ -1431,18 +1572,6 @@ func (c *Client) PostRpcGenRandomUuidWithApplicationVndPgrstObjectPlusJSONBody(c
 
 func (c *Client) PostRpcGenRandomUuidWithApplicationVndPgrstObjectPlusJSONNullsStrippedBody(ctx context.Context, params *PostRpcGenRandomUuidParams, body PostRpcGenRandomUuidApplicationVndPgrstObjectPlusJSONNullsStrippedRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewPostRpcGenRandomUuidRequestWithApplicationVndPgrstObjectPlusJSONNullsStrippedBody(c.Server, params, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) GetRpcGenSalt(ctx context.Context, params *GetRpcGenSaltParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetRpcGenSaltRequest(c.Server, params)
 	if err != nil {
 		return nil, err
 	}
@@ -3778,6 +3907,22 @@ func NewDeletePortalAccountsRequest(server string, params *DeletePortalAccountsP
 
 		}
 
+		if params.PortalAccountUserLimitNotificationThresholds != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "portal_account_user_limit_notification_thresholds", runtime.ParamLocationQuery, *params.PortalAccountUserLimitNotificationThresholds); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
 		if params.BillingType != nil {
 
 			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "billing_type", runtime.ParamLocationQuery, *params.BillingType); err != nil {
@@ -4053,6 +4198,22 @@ func NewGetPortalAccountsRequest(server string, params *GetPortalAccountsParams)
 		if params.PortalAccountUserLimitRps != nil {
 
 			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "portal_account_user_limit_rps", runtime.ParamLocationQuery, *params.PortalAccountUserLimitRps); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.PortalAccountUserLimitNotificationThresholds != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "portal_account_user_limit_notification_thresholds", runtime.ParamLocationQuery, *params.PortalAccountUserLimitNotificationThresholds); err != nil {
 				return nil, err
 			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
 				return nil, err
@@ -4460,6 +4621,22 @@ func NewPatchPortalAccountsRequestWithBody(server string, params *PatchPortalAcc
 		if params.PortalAccountUserLimitRps != nil {
 
 			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "portal_account_user_limit_rps", runtime.ParamLocationQuery, *params.PortalAccountUserLimitRps); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.PortalAccountUserLimitNotificationThresholds != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "portal_account_user_limit_notification_thresholds", runtime.ParamLocationQuery, *params.PortalAccountUserLimitNotificationThresholds); err != nil {
 				return nil, err
 			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
 				return nil, err
@@ -5450,6 +5627,22 @@ func NewDeletePortalApplicationsRequest(server string, params *DeletePortalAppli
 
 		}
 
+		if params.PortalApplicationUserLimitNotificationThresholds != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "portal_application_user_limit_notification_thresholds", runtime.ParamLocationQuery, *params.PortalApplicationUserLimitNotificationThresholds); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
 		if params.PortalApplicationDescription != nil {
 
 			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "portal_application_description", runtime.ParamLocationQuery, *params.PortalApplicationDescription); err != nil {
@@ -5709,6 +5902,22 @@ func NewGetPortalApplicationsRequest(server string, params *GetPortalApplication
 		if params.PortalApplicationUserLimitRps != nil {
 
 			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "portal_application_user_limit_rps", runtime.ParamLocationQuery, *params.PortalApplicationUserLimitRps); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.PortalApplicationUserLimitNotificationThresholds != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "portal_application_user_limit_notification_thresholds", runtime.ParamLocationQuery, *params.PortalApplicationUserLimitNotificationThresholds); err != nil {
 				return nil, err
 			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
 				return nil, err
@@ -6100,6 +6309,22 @@ func NewPatchPortalApplicationsRequestWithBody(server string, params *PatchPorta
 		if params.PortalApplicationUserLimitRps != nil {
 
 			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "portal_application_user_limit_rps", runtime.ParamLocationQuery, *params.PortalApplicationUserLimitRps); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.PortalApplicationUserLimitNotificationThresholds != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "portal_application_user_limit_notification_thresholds", runtime.ParamLocationQuery, *params.PortalApplicationUserLimitNotificationThresholds); err != nil {
 				return nil, err
 			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
 				return nil, err
@@ -7004,6 +7229,968 @@ func NewPostPortalPlansRequestWithBody(server string, params *PostPortalPlansPar
 	return req, nil
 }
 
+// NewDeletePortalUsersRequest generates requests for DeletePortalUsers
+func NewDeletePortalUsersRequest(server string, params *DeletePortalUsersParams) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/portal_users")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.PortalUserId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "portal_user_id", runtime.ParamLocationQuery, *params.PortalUserId); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.PortalUserEmail != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "portal_user_email", runtime.ParamLocationQuery, *params.PortalUserEmail); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.SignedUp != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "signed_up", runtime.ParamLocationQuery, *params.SignedUp); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.PortalAdmin != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "portal_admin", runtime.ParamLocationQuery, *params.PortalAdmin); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.DeletedAt != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "deleted_at", runtime.ParamLocationQuery, *params.DeletedAt); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.CreatedAt != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "created_at", runtime.ParamLocationQuery, *params.CreatedAt); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.UpdatedAt != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "updated_at", runtime.ParamLocationQuery, *params.UpdatedAt); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
+	req, err := http.NewRequest("DELETE", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+
+		if params.Prefer != nil {
+			var headerParam0 string
+
+			headerParam0, err = runtime.StyleParamWithLocation("simple", false, "Prefer", runtime.ParamLocationHeader, *params.Prefer)
+			if err != nil {
+				return nil, err
+			}
+
+			req.Header.Set("Prefer", headerParam0)
+		}
+
+	}
+
+	return req, nil
+}
+
+// NewGetPortalUsersRequest generates requests for GetPortalUsers
+func NewGetPortalUsersRequest(server string, params *GetPortalUsersParams) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/portal_users")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.PortalUserId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "portal_user_id", runtime.ParamLocationQuery, *params.PortalUserId); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.PortalUserEmail != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "portal_user_email", runtime.ParamLocationQuery, *params.PortalUserEmail); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.SignedUp != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "signed_up", runtime.ParamLocationQuery, *params.SignedUp); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.PortalAdmin != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "portal_admin", runtime.ParamLocationQuery, *params.PortalAdmin); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.DeletedAt != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "deleted_at", runtime.ParamLocationQuery, *params.DeletedAt); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.CreatedAt != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "created_at", runtime.ParamLocationQuery, *params.CreatedAt); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.UpdatedAt != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "updated_at", runtime.ParamLocationQuery, *params.UpdatedAt); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Select != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "select", runtime.ParamLocationQuery, *params.Select); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Order != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "order", runtime.ParamLocationQuery, *params.Order); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Offset != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "offset", runtime.ParamLocationQuery, *params.Offset); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Limit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "limit", runtime.ParamLocationQuery, *params.Limit); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+
+		if params.Range != nil {
+			var headerParam0 string
+
+			headerParam0, err = runtime.StyleParamWithLocation("simple", false, "Range", runtime.ParamLocationHeader, *params.Range)
+			if err != nil {
+				return nil, err
+			}
+
+			req.Header.Set("Range", headerParam0)
+		}
+
+		if params.RangeUnit != nil {
+			var headerParam1 string
+
+			headerParam1, err = runtime.StyleParamWithLocation("simple", false, "Range-Unit", runtime.ParamLocationHeader, *params.RangeUnit)
+			if err != nil {
+				return nil, err
+			}
+
+			req.Header.Set("Range-Unit", headerParam1)
+		}
+
+		if params.Prefer != nil {
+			var headerParam2 string
+
+			headerParam2, err = runtime.StyleParamWithLocation("simple", false, "Prefer", runtime.ParamLocationHeader, *params.Prefer)
+			if err != nil {
+				return nil, err
+			}
+
+			req.Header.Set("Prefer", headerParam2)
+		}
+
+	}
+
+	return req, nil
+}
+
+// NewPatchPortalUsersRequest calls the generic PatchPortalUsers builder with application/json body
+func NewPatchPortalUsersRequest(server string, params *PatchPortalUsersParams, body PatchPortalUsersJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewPatchPortalUsersRequestWithBody(server, params, "application/json", bodyReader)
+}
+
+// NewPatchPortalUsersRequestWithApplicationVndPgrstObjectPlusJSONBody calls the generic PatchPortalUsers builder with application/vnd.pgrst.object+json body
+func NewPatchPortalUsersRequestWithApplicationVndPgrstObjectPlusJSONBody(server string, params *PatchPortalUsersParams, body PatchPortalUsersApplicationVndPgrstObjectPlusJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewPatchPortalUsersRequestWithBody(server, params, "application/vnd.pgrst.object+json", bodyReader)
+}
+
+// NewPatchPortalUsersRequestWithApplicationVndPgrstObjectPlusJSONNullsStrippedBody calls the generic PatchPortalUsers builder with application/vnd.pgrst.object+json;nulls=stripped body
+func NewPatchPortalUsersRequestWithApplicationVndPgrstObjectPlusJSONNullsStrippedBody(server string, params *PatchPortalUsersParams, body PatchPortalUsersApplicationVndPgrstObjectPlusJSONNullsStrippedRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewPatchPortalUsersRequestWithBody(server, params, "application/vnd.pgrst.object+json;nulls=stripped", bodyReader)
+}
+
+// NewPatchPortalUsersRequestWithBody generates requests for PatchPortalUsers with any type of body
+func NewPatchPortalUsersRequestWithBody(server string, params *PatchPortalUsersParams, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/portal_users")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.PortalUserId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "portal_user_id", runtime.ParamLocationQuery, *params.PortalUserId); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.PortalUserEmail != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "portal_user_email", runtime.ParamLocationQuery, *params.PortalUserEmail); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.SignedUp != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "signed_up", runtime.ParamLocationQuery, *params.SignedUp); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.PortalAdmin != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "portal_admin", runtime.ParamLocationQuery, *params.PortalAdmin); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.DeletedAt != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "deleted_at", runtime.ParamLocationQuery, *params.DeletedAt); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.CreatedAt != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "created_at", runtime.ParamLocationQuery, *params.CreatedAt); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.UpdatedAt != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "updated_at", runtime.ParamLocationQuery, *params.UpdatedAt); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
+	req, err := http.NewRequest("PATCH", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	if params != nil {
+
+		if params.Prefer != nil {
+			var headerParam0 string
+
+			headerParam0, err = runtime.StyleParamWithLocation("simple", false, "Prefer", runtime.ParamLocationHeader, *params.Prefer)
+			if err != nil {
+				return nil, err
+			}
+
+			req.Header.Set("Prefer", headerParam0)
+		}
+
+	}
+
+	return req, nil
+}
+
+// NewPostPortalUsersRequest calls the generic PostPortalUsers builder with application/json body
+func NewPostPortalUsersRequest(server string, params *PostPortalUsersParams, body PostPortalUsersJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewPostPortalUsersRequestWithBody(server, params, "application/json", bodyReader)
+}
+
+// NewPostPortalUsersRequestWithApplicationVndPgrstObjectPlusJSONBody calls the generic PostPortalUsers builder with application/vnd.pgrst.object+json body
+func NewPostPortalUsersRequestWithApplicationVndPgrstObjectPlusJSONBody(server string, params *PostPortalUsersParams, body PostPortalUsersApplicationVndPgrstObjectPlusJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewPostPortalUsersRequestWithBody(server, params, "application/vnd.pgrst.object+json", bodyReader)
+}
+
+// NewPostPortalUsersRequestWithApplicationVndPgrstObjectPlusJSONNullsStrippedBody calls the generic PostPortalUsers builder with application/vnd.pgrst.object+json;nulls=stripped body
+func NewPostPortalUsersRequestWithApplicationVndPgrstObjectPlusJSONNullsStrippedBody(server string, params *PostPortalUsersParams, body PostPortalUsersApplicationVndPgrstObjectPlusJSONNullsStrippedRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewPostPortalUsersRequestWithBody(server, params, "application/vnd.pgrst.object+json;nulls=stripped", bodyReader)
+}
+
+// NewPostPortalUsersRequestWithBody generates requests for PostPortalUsers with any type of body
+func NewPostPortalUsersRequestWithBody(server string, params *PostPortalUsersParams, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/portal_users")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.Select != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "select", runtime.ParamLocationQuery, *params.Select); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	if params != nil {
+
+		if params.Prefer != nil {
+			var headerParam0 string
+
+			headerParam0, err = runtime.StyleParamWithLocation("simple", false, "Prefer", runtime.ParamLocationHeader, *params.Prefer)
+			if err != nil {
+				return nil, err
+			}
+
+			req.Header.Set("Prefer", headerParam0)
+		}
+
+	}
+
+	return req, nil
+}
+
+// NewGetPortalWorkersAccountDataRequest generates requests for GetPortalWorkersAccountData
+func NewGetPortalWorkersAccountDataRequest(server string, params *GetPortalWorkersAccountDataParams) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/portal_workers_account_data")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.PortalAccountId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "portal_account_id", runtime.ParamLocationQuery, *params.PortalAccountId); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.UserAccountName != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "user_account_name", runtime.ParamLocationQuery, *params.UserAccountName); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.PortalPlanType != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "portal_plan_type", runtime.ParamLocationQuery, *params.PortalPlanType); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.BillingType != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "billing_type", runtime.ParamLocationQuery, *params.BillingType); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.PortalAccountUserLimit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "portal_account_user_limit", runtime.ParamLocationQuery, *params.PortalAccountUserLimit); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.GcpEntitlementId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "gcp_entitlement_id", runtime.ParamLocationQuery, *params.GcpEntitlementId); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.OwnerEmail != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "owner_email", runtime.ParamLocationQuery, *params.OwnerEmail); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.OwnerUserId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "owner_user_id", runtime.ParamLocationQuery, *params.OwnerUserId); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Select != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "select", runtime.ParamLocationQuery, *params.Select); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Order != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "order", runtime.ParamLocationQuery, *params.Order); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Offset != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "offset", runtime.ParamLocationQuery, *params.Offset); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Limit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "limit", runtime.ParamLocationQuery, *params.Limit); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+
+		if params.Range != nil {
+			var headerParam0 string
+
+			headerParam0, err = runtime.StyleParamWithLocation("simple", false, "Range", runtime.ParamLocationHeader, *params.Range)
+			if err != nil {
+				return nil, err
+			}
+
+			req.Header.Set("Range", headerParam0)
+		}
+
+		if params.RangeUnit != nil {
+			var headerParam1 string
+
+			headerParam1, err = runtime.StyleParamWithLocation("simple", false, "Range-Unit", runtime.ParamLocationHeader, *params.RangeUnit)
+			if err != nil {
+				return nil, err
+			}
+
+			req.Header.Set("Range-Unit", headerParam1)
+		}
+
+		if params.Prefer != nil {
+			var headerParam2 string
+
+			headerParam2, err = runtime.StyleParamWithLocation("simple", false, "Prefer", runtime.ParamLocationHeader, *params.Prefer)
+			if err != nil {
+				return nil, err
+			}
+
+			req.Header.Set("Prefer", headerParam2)
+		}
+
+	}
+
+	return req, nil
+}
+
 // NewGetRpcArmorRequest generates requests for GetRpcArmor
 func NewGetRpcArmorRequest(server string, params *GetRpcArmorParams) (*http.Request, error) {
 	var err error
@@ -7248,33 +8435,6 @@ func NewPostRpcDearmorRequestWithBody(server string, params *PostRpcDearmorParam
 	return req, nil
 }
 
-// NewGetRpcGenRandomUuidRequest generates requests for GetRpcGenRandomUuid
-func NewGetRpcGenRandomUuidRequest(server string) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/rpc/gen_random_uuid")
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("GET", queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
 // NewPostRpcGenRandomUuidRequest calls the generic PostRpcGenRandomUuid builder with application/json body
 func NewPostRpcGenRandomUuidRequest(server string, params *PostRpcGenRandomUuidParams, body PostRpcGenRandomUuidJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
@@ -7347,51 +8507,6 @@ func NewPostRpcGenRandomUuidRequestWithBody(server string, params *PostRpcGenRan
 			req.Header.Set("Prefer", headerParam0)
 		}
 
-	}
-
-	return req, nil
-}
-
-// NewGetRpcGenSaltRequest generates requests for GetRpcGenSalt
-func NewGetRpcGenSaltRequest(server string, params *GetRpcGenSaltParams) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/rpc/gen_salt")
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	if params != nil {
-		queryValues := queryURL.Query()
-
-		if queryFrag, err := runtime.StyleParamWithLocation("form", true, "", runtime.ParamLocationQuery, params.Empty); err != nil {
-			return nil, err
-		} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
-			return nil, err
-		} else {
-			for k, v := range parsed {
-				for _, v2 := range v {
-					queryValues.Add(k, v2)
-				}
-			}
-		}
-
-		queryURL.RawQuery = queryValues.Encode()
-	}
-
-	req, err := http.NewRequest("GET", queryURL.String(), nil)
-	if err != nil {
-		return nil, err
 	}
 
 	return req, nil
@@ -10368,6 +11483,33 @@ type ClientWithResponsesInterface interface {
 
 	PostPortalPlansWithApplicationVndPgrstObjectPlusJSONNullsStrippedBodyWithResponse(ctx context.Context, params *PostPortalPlansParams, body PostPortalPlansApplicationVndPgrstObjectPlusJSONNullsStrippedRequestBody, reqEditors ...RequestEditorFn) (*PostPortalPlansResponse, error)
 
+	// DeletePortalUsersWithResponse request
+	DeletePortalUsersWithResponse(ctx context.Context, params *DeletePortalUsersParams, reqEditors ...RequestEditorFn) (*DeletePortalUsersResponse, error)
+
+	// GetPortalUsersWithResponse request
+	GetPortalUsersWithResponse(ctx context.Context, params *GetPortalUsersParams, reqEditors ...RequestEditorFn) (*GetPortalUsersResponse, error)
+
+	// PatchPortalUsersWithBodyWithResponse request with any body
+	PatchPortalUsersWithBodyWithResponse(ctx context.Context, params *PatchPortalUsersParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PatchPortalUsersResponse, error)
+
+	PatchPortalUsersWithResponse(ctx context.Context, params *PatchPortalUsersParams, body PatchPortalUsersJSONRequestBody, reqEditors ...RequestEditorFn) (*PatchPortalUsersResponse, error)
+
+	PatchPortalUsersWithApplicationVndPgrstObjectPlusJSONBodyWithResponse(ctx context.Context, params *PatchPortalUsersParams, body PatchPortalUsersApplicationVndPgrstObjectPlusJSONRequestBody, reqEditors ...RequestEditorFn) (*PatchPortalUsersResponse, error)
+
+	PatchPortalUsersWithApplicationVndPgrstObjectPlusJSONNullsStrippedBodyWithResponse(ctx context.Context, params *PatchPortalUsersParams, body PatchPortalUsersApplicationVndPgrstObjectPlusJSONNullsStrippedRequestBody, reqEditors ...RequestEditorFn) (*PatchPortalUsersResponse, error)
+
+	// PostPortalUsersWithBodyWithResponse request with any body
+	PostPortalUsersWithBodyWithResponse(ctx context.Context, params *PostPortalUsersParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostPortalUsersResponse, error)
+
+	PostPortalUsersWithResponse(ctx context.Context, params *PostPortalUsersParams, body PostPortalUsersJSONRequestBody, reqEditors ...RequestEditorFn) (*PostPortalUsersResponse, error)
+
+	PostPortalUsersWithApplicationVndPgrstObjectPlusJSONBodyWithResponse(ctx context.Context, params *PostPortalUsersParams, body PostPortalUsersApplicationVndPgrstObjectPlusJSONRequestBody, reqEditors ...RequestEditorFn) (*PostPortalUsersResponse, error)
+
+	PostPortalUsersWithApplicationVndPgrstObjectPlusJSONNullsStrippedBodyWithResponse(ctx context.Context, params *PostPortalUsersParams, body PostPortalUsersApplicationVndPgrstObjectPlusJSONNullsStrippedRequestBody, reqEditors ...RequestEditorFn) (*PostPortalUsersResponse, error)
+
+	// GetPortalWorkersAccountDataWithResponse request
+	GetPortalWorkersAccountDataWithResponse(ctx context.Context, params *GetPortalWorkersAccountDataParams, reqEditors ...RequestEditorFn) (*GetPortalWorkersAccountDataResponse, error)
+
 	// GetRpcArmorWithResponse request
 	GetRpcArmorWithResponse(ctx context.Context, params *GetRpcArmorParams, reqEditors ...RequestEditorFn) (*GetRpcArmorResponse, error)
 
@@ -10392,9 +11534,6 @@ type ClientWithResponsesInterface interface {
 
 	PostRpcDearmorWithApplicationVndPgrstObjectPlusJSONNullsStrippedBodyWithResponse(ctx context.Context, params *PostRpcDearmorParams, body PostRpcDearmorApplicationVndPgrstObjectPlusJSONNullsStrippedRequestBody, reqEditors ...RequestEditorFn) (*PostRpcDearmorResponse, error)
 
-	// GetRpcGenRandomUuidWithResponse request
-	GetRpcGenRandomUuidWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetRpcGenRandomUuidResponse, error)
-
 	// PostRpcGenRandomUuidWithBodyWithResponse request with any body
 	PostRpcGenRandomUuidWithBodyWithResponse(ctx context.Context, params *PostRpcGenRandomUuidParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostRpcGenRandomUuidResponse, error)
 
@@ -10403,9 +11542,6 @@ type ClientWithResponsesInterface interface {
 	PostRpcGenRandomUuidWithApplicationVndPgrstObjectPlusJSONBodyWithResponse(ctx context.Context, params *PostRpcGenRandomUuidParams, body PostRpcGenRandomUuidApplicationVndPgrstObjectPlusJSONRequestBody, reqEditors ...RequestEditorFn) (*PostRpcGenRandomUuidResponse, error)
 
 	PostRpcGenRandomUuidWithApplicationVndPgrstObjectPlusJSONNullsStrippedBodyWithResponse(ctx context.Context, params *PostRpcGenRandomUuidParams, body PostRpcGenRandomUuidApplicationVndPgrstObjectPlusJSONNullsStrippedRequestBody, reqEditors ...RequestEditorFn) (*PostRpcGenRandomUuidResponse, error)
-
-	// GetRpcGenSaltWithResponse request
-	GetRpcGenSaltWithResponse(ctx context.Context, params *GetRpcGenSaltParams, reqEditors ...RequestEditorFn) (*GetRpcGenSaltResponse, error)
 
 	// PostRpcGenSaltWithBodyWithResponse request with any body
 	PostRpcGenSaltWithBodyWithResponse(ctx context.Context, params *PostRpcGenSaltParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostRpcGenSaltResponse, error)
@@ -11143,6 +12279,117 @@ func (r PostPortalPlansResponse) StatusCode() int {
 	return 0
 }
 
+type DeletePortalUsersResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+}
+
+// Status returns HTTPResponse.Status
+func (r DeletePortalUsersResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DeletePortalUsersResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetPortalUsersResponse struct {
+	Body                                          []byte
+	HTTPResponse                                  *http.Response
+	JSON200                                       *[]PortalUsers
+	ApplicationvndPgrstObjectJSON200              *[]PortalUsers
+	ApplicationvndPgrstObjectJSONNullsStripped200 *[]PortalUsers
+}
+
+// Status returns HTTPResponse.Status
+func (r GetPortalUsersResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetPortalUsersResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type PatchPortalUsersResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+}
+
+// Status returns HTTPResponse.Status
+func (r PatchPortalUsersResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PatchPortalUsersResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type PostPortalUsersResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+}
+
+// Status returns HTTPResponse.Status
+func (r PostPortalUsersResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PostPortalUsersResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetPortalWorkersAccountDataResponse struct {
+	Body                                          []byte
+	HTTPResponse                                  *http.Response
+	JSON200                                       *[]PortalWorkersAccountData
+	ApplicationvndPgrstObjectJSON200              *[]PortalWorkersAccountData
+	ApplicationvndPgrstObjectJSONNullsStripped200 *[]PortalWorkersAccountData
+}
+
+// Status returns HTTPResponse.Status
+func (r GetPortalWorkersAccountDataResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetPortalWorkersAccountDataResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
 type GetRpcArmorResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -11227,27 +12474,6 @@ func (r PostRpcDearmorResponse) StatusCode() int {
 	return 0
 }
 
-type GetRpcGenRandomUuidResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-}
-
-// Status returns HTTPResponse.Status
-func (r GetRpcGenRandomUuidResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r GetRpcGenRandomUuidResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
 type PostRpcGenRandomUuidResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -11263,27 +12489,6 @@ func (r PostRpcGenRandomUuidResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r PostRpcGenRandomUuidResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type GetRpcGenSaltResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-}
-
-// Status returns HTTPResponse.Status
-func (r GetRpcGenSaltResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r GetRpcGenSaltResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -12253,6 +13458,99 @@ func (c *ClientWithResponses) PostPortalPlansWithApplicationVndPgrstObjectPlusJS
 	return ParsePostPortalPlansResponse(rsp)
 }
 
+// DeletePortalUsersWithResponse request returning *DeletePortalUsersResponse
+func (c *ClientWithResponses) DeletePortalUsersWithResponse(ctx context.Context, params *DeletePortalUsersParams, reqEditors ...RequestEditorFn) (*DeletePortalUsersResponse, error) {
+	rsp, err := c.DeletePortalUsers(ctx, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDeletePortalUsersResponse(rsp)
+}
+
+// GetPortalUsersWithResponse request returning *GetPortalUsersResponse
+func (c *ClientWithResponses) GetPortalUsersWithResponse(ctx context.Context, params *GetPortalUsersParams, reqEditors ...RequestEditorFn) (*GetPortalUsersResponse, error) {
+	rsp, err := c.GetPortalUsers(ctx, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetPortalUsersResponse(rsp)
+}
+
+// PatchPortalUsersWithBodyWithResponse request with arbitrary body returning *PatchPortalUsersResponse
+func (c *ClientWithResponses) PatchPortalUsersWithBodyWithResponse(ctx context.Context, params *PatchPortalUsersParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PatchPortalUsersResponse, error) {
+	rsp, err := c.PatchPortalUsersWithBody(ctx, params, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePatchPortalUsersResponse(rsp)
+}
+
+func (c *ClientWithResponses) PatchPortalUsersWithResponse(ctx context.Context, params *PatchPortalUsersParams, body PatchPortalUsersJSONRequestBody, reqEditors ...RequestEditorFn) (*PatchPortalUsersResponse, error) {
+	rsp, err := c.PatchPortalUsers(ctx, params, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePatchPortalUsersResponse(rsp)
+}
+
+func (c *ClientWithResponses) PatchPortalUsersWithApplicationVndPgrstObjectPlusJSONBodyWithResponse(ctx context.Context, params *PatchPortalUsersParams, body PatchPortalUsersApplicationVndPgrstObjectPlusJSONRequestBody, reqEditors ...RequestEditorFn) (*PatchPortalUsersResponse, error) {
+	rsp, err := c.PatchPortalUsersWithApplicationVndPgrstObjectPlusJSONBody(ctx, params, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePatchPortalUsersResponse(rsp)
+}
+
+func (c *ClientWithResponses) PatchPortalUsersWithApplicationVndPgrstObjectPlusJSONNullsStrippedBodyWithResponse(ctx context.Context, params *PatchPortalUsersParams, body PatchPortalUsersApplicationVndPgrstObjectPlusJSONNullsStrippedRequestBody, reqEditors ...RequestEditorFn) (*PatchPortalUsersResponse, error) {
+	rsp, err := c.PatchPortalUsersWithApplicationVndPgrstObjectPlusJSONNullsStrippedBody(ctx, params, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePatchPortalUsersResponse(rsp)
+}
+
+// PostPortalUsersWithBodyWithResponse request with arbitrary body returning *PostPortalUsersResponse
+func (c *ClientWithResponses) PostPortalUsersWithBodyWithResponse(ctx context.Context, params *PostPortalUsersParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostPortalUsersResponse, error) {
+	rsp, err := c.PostPortalUsersWithBody(ctx, params, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostPortalUsersResponse(rsp)
+}
+
+func (c *ClientWithResponses) PostPortalUsersWithResponse(ctx context.Context, params *PostPortalUsersParams, body PostPortalUsersJSONRequestBody, reqEditors ...RequestEditorFn) (*PostPortalUsersResponse, error) {
+	rsp, err := c.PostPortalUsers(ctx, params, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostPortalUsersResponse(rsp)
+}
+
+func (c *ClientWithResponses) PostPortalUsersWithApplicationVndPgrstObjectPlusJSONBodyWithResponse(ctx context.Context, params *PostPortalUsersParams, body PostPortalUsersApplicationVndPgrstObjectPlusJSONRequestBody, reqEditors ...RequestEditorFn) (*PostPortalUsersResponse, error) {
+	rsp, err := c.PostPortalUsersWithApplicationVndPgrstObjectPlusJSONBody(ctx, params, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostPortalUsersResponse(rsp)
+}
+
+func (c *ClientWithResponses) PostPortalUsersWithApplicationVndPgrstObjectPlusJSONNullsStrippedBodyWithResponse(ctx context.Context, params *PostPortalUsersParams, body PostPortalUsersApplicationVndPgrstObjectPlusJSONNullsStrippedRequestBody, reqEditors ...RequestEditorFn) (*PostPortalUsersResponse, error) {
+	rsp, err := c.PostPortalUsersWithApplicationVndPgrstObjectPlusJSONNullsStrippedBody(ctx, params, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostPortalUsersResponse(rsp)
+}
+
+// GetPortalWorkersAccountDataWithResponse request returning *GetPortalWorkersAccountDataResponse
+func (c *ClientWithResponses) GetPortalWorkersAccountDataWithResponse(ctx context.Context, params *GetPortalWorkersAccountDataParams, reqEditors ...RequestEditorFn) (*GetPortalWorkersAccountDataResponse, error) {
+	rsp, err := c.GetPortalWorkersAccountData(ctx, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetPortalWorkersAccountDataResponse(rsp)
+}
+
 // GetRpcArmorWithResponse request returning *GetRpcArmorResponse
 func (c *ClientWithResponses) GetRpcArmorWithResponse(ctx context.Context, params *GetRpcArmorParams, reqEditors ...RequestEditorFn) (*GetRpcArmorResponse, error) {
 	rsp, err := c.GetRpcArmor(ctx, params, reqEditors...)
@@ -12337,15 +13635,6 @@ func (c *ClientWithResponses) PostRpcDearmorWithApplicationVndPgrstObjectPlusJSO
 	return ParsePostRpcDearmorResponse(rsp)
 }
 
-// GetRpcGenRandomUuidWithResponse request returning *GetRpcGenRandomUuidResponse
-func (c *ClientWithResponses) GetRpcGenRandomUuidWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetRpcGenRandomUuidResponse, error) {
-	rsp, err := c.GetRpcGenRandomUuid(ctx, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseGetRpcGenRandomUuidResponse(rsp)
-}
-
 // PostRpcGenRandomUuidWithBodyWithResponse request with arbitrary body returning *PostRpcGenRandomUuidResponse
 func (c *ClientWithResponses) PostRpcGenRandomUuidWithBodyWithResponse(ctx context.Context, params *PostRpcGenRandomUuidParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostRpcGenRandomUuidResponse, error) {
 	rsp, err := c.PostRpcGenRandomUuidWithBody(ctx, params, contentType, body, reqEditors...)
@@ -12377,15 +13666,6 @@ func (c *ClientWithResponses) PostRpcGenRandomUuidWithApplicationVndPgrstObjectP
 		return nil, err
 	}
 	return ParsePostRpcGenRandomUuidResponse(rsp)
-}
-
-// GetRpcGenSaltWithResponse request returning *GetRpcGenSaltResponse
-func (c *ClientWithResponses) GetRpcGenSaltWithResponse(ctx context.Context, params *GetRpcGenSaltParams, reqEditors ...RequestEditorFn) (*GetRpcGenSaltResponse, error) {
-	rsp, err := c.GetRpcGenSalt(ctx, params, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseGetRpcGenSaltResponse(rsp)
 }
 
 // PostRpcGenSaltWithBodyWithResponse request with arbitrary body returning *PostRpcGenSaltResponse
@@ -13410,6 +14690,140 @@ func ParsePostPortalPlansResponse(rsp *http.Response) (*PostPortalPlansResponse,
 	return response, nil
 }
 
+// ParseDeletePortalUsersResponse parses an HTTP response from a DeletePortalUsersWithResponse call
+func ParseDeletePortalUsersResponse(rsp *http.Response) (*DeletePortalUsersResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DeletePortalUsersResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	return response, nil
+}
+
+// ParseGetPortalUsersResponse parses an HTTP response from a GetPortalUsersWithResponse call
+func ParseGetPortalUsersResponse(rsp *http.Response) (*GetPortalUsersResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetPortalUsersResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case rsp.Header.Get("Content-Type") == "application/json" && rsp.StatusCode == 200:
+		var dest []PortalUsers
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case rsp.Header.Get("Content-Type") == "application/vnd.pgrst.object+json" && rsp.StatusCode == 200:
+		var dest []PortalUsers
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationvndPgrstObjectJSON200 = &dest
+
+	case rsp.Header.Get("Content-Type") == "application/vnd.pgrst.object+json;nulls=stripped" && rsp.StatusCode == 200:
+		var dest []PortalUsers
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationvndPgrstObjectJSONNullsStripped200 = &dest
+
+	case rsp.StatusCode == 200:
+		// Content-type (text/csv) unsupported
+
+	}
+
+	return response, nil
+}
+
+// ParsePatchPortalUsersResponse parses an HTTP response from a PatchPortalUsersWithResponse call
+func ParsePatchPortalUsersResponse(rsp *http.Response) (*PatchPortalUsersResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PatchPortalUsersResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	return response, nil
+}
+
+// ParsePostPortalUsersResponse parses an HTTP response from a PostPortalUsersWithResponse call
+func ParsePostPortalUsersResponse(rsp *http.Response) (*PostPortalUsersResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PostPortalUsersResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	return response, nil
+}
+
+// ParseGetPortalWorkersAccountDataResponse parses an HTTP response from a GetPortalWorkersAccountDataWithResponse call
+func ParseGetPortalWorkersAccountDataResponse(rsp *http.Response) (*GetPortalWorkersAccountDataResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetPortalWorkersAccountDataResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case rsp.Header.Get("Content-Type") == "application/json" && rsp.StatusCode == 200:
+		var dest []PortalWorkersAccountData
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case rsp.Header.Get("Content-Type") == "application/vnd.pgrst.object+json" && rsp.StatusCode == 200:
+		var dest []PortalWorkersAccountData
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationvndPgrstObjectJSON200 = &dest
+
+	case rsp.Header.Get("Content-Type") == "application/vnd.pgrst.object+json;nulls=stripped" && rsp.StatusCode == 200:
+		var dest []PortalWorkersAccountData
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationvndPgrstObjectJSONNullsStripped200 = &dest
+
+	case rsp.StatusCode == 200:
+		// Content-type (text/csv) unsupported
+
+	}
+
+	return response, nil
+}
+
 // ParseGetRpcArmorResponse parses an HTTP response from a GetRpcArmorWithResponse call
 func ParseGetRpcArmorResponse(rsp *http.Response) (*GetRpcArmorResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -13474,22 +14888,6 @@ func ParsePostRpcDearmorResponse(rsp *http.Response) (*PostRpcDearmorResponse, e
 	return response, nil
 }
 
-// ParseGetRpcGenRandomUuidResponse parses an HTTP response from a GetRpcGenRandomUuidWithResponse call
-func ParseGetRpcGenRandomUuidResponse(rsp *http.Response) (*GetRpcGenRandomUuidResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &GetRpcGenRandomUuidResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	return response, nil
-}
-
 // ParsePostRpcGenRandomUuidResponse parses an HTTP response from a PostRpcGenRandomUuidWithResponse call
 func ParsePostRpcGenRandomUuidResponse(rsp *http.Response) (*PostRpcGenRandomUuidResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -13499,22 +14897,6 @@ func ParsePostRpcGenRandomUuidResponse(rsp *http.Response) (*PostRpcGenRandomUui
 	}
 
 	response := &PostRpcGenRandomUuidResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	return response, nil
-}
-
-// ParseGetRpcGenSaltResponse parses an HTTP response from a GetRpcGenSaltWithResponse call
-func ParseGetRpcGenSaltResponse(rsp *http.Response) (*GetRpcGenSaltResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &GetRpcGenSaltResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -13878,91 +15260,99 @@ func ParsePostServicesResponse(rsp *http.Response) (*PostServicesResponse, error
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"H4sIAAAAAAAC/+w9a3PcNpJ/BcW7Kjt145HiPKpOV/7gdZJdXxJHJdl3HxLXLERiZhCRAA2AkrUp/fct",
-	"kMMXCJIgAXLGNr8k1rDZ3UC/m3j85fk0iilBRHDv4i8vhgxGSCCW/hXiCAv5jwBxn+FYYEq8C+8X+TMm",
-	"OwBJAC7hDhOYPll5WD7+kCD24K08AiPkXRyQrDzu71EEJTbxEMsHXDBMdt7j48qj2y1H1pQOWHpIsQCx",
-	"JqXf5M8SpgV1+lY35pihLWKvaEI0I7lMHyLio5zCHsEM54FEBlGjgUgSeRe/e77E+YJQgrz3q1bKl1J2",
-	"3DHpVCH4C47JLkTP6M2fyBedTFDuevQMiYSRFwzFDHFERK4Ch98jTHAEw/KHdJ7kX5yGiYR9gXeEMvQs",
-	"SOIQ+1AgXn8cIbarPe0Y31VK4xRGqGWSQbJDg+1IZfUqxdKt7Smld2SEf9BSe5aiqpIM0BYmofAuPCxQ",
-	"JEWmYYLe/4RDgdiaIHFP2S3P/7HBgUSis+UKRJXelrIISnL+HjLoC8TAHWQPmU/oIk3ZDhL8r3SMfO0z",
-	"BAUKNlC00a9AaOkLHCEuYBSDeyz2QP4J/pXptDkbAQpRyUZdPtd0K0AGAApiLY6vgmc6Zqt/dQhOBdMy",
-	"hIlAu1S9RtLPiKlz9gZGCNAtEHsEquCt8ULFOIGqJXHQo2oVCJfSiykTMNxAPw1MG3YD/XW72OwkpaOl",
-	"/NZOugnoRAwdPCUcsX6GcqjJuGE0RIUm6xgpASbjIR3knxQTqYDZg1Y91YBq+bqhNESQDOKGr29wGGKy",
-	"22Tv6FmowUwwJ0eMDCoj9dgwo9dXGdn5sYERK1CTyEbSQERgEaII9XKjQE7CkfSOjFRsqsua9cCT8DV/",
-	"rFY50Hr/erR+R/CHBAEcSEltMWJgS1kau7OXQelkjhY2GgNJnWBRchvwVXlhuuktiWxSLbuD4WD2yje1",
-	"fMbJTYj9dRxCUoV0wzSL+XB+5UvupzQdYFcMasBNonYSKEYbntwUJqM1ousUDlThVIs6BM0WM2ohNMmg",
-	"TiQX5lnWY+Kzm4BOJybOuhlyztNs7OjZh8rQ1AWDSk/ze3/hUAeeVEDHLyBUjo5uUyVD/JT09wQy6Coz",
-	"KKJ/4jY+socTqQlfb+EdZVigDUfsDvtog4PWcKuFNePs9/cjeDuVLoGOp4qp1YKusTeqvjUntyfiMrW8",
-	"dUXbNvA5+TNP8PUvOQ2KPRwaJ/s9b7tO+M0HYJD4t7/oeKo58hkSm1v0sNlDvm/m2v+AfI8CkMGBW/SQ",
-	"ptcVHAAmYi9zb7+r7azSmUy7K4QY+pBghlr9gg7UQW+vys2xExWpyDxT56pOdZu6Htpe8SrMMChQ3Rrq",
-	"WncFBQLpc4AJkNJBXHAQIyY1kZKgrT+iQe6U8YTDHdq0LD/4FX7EURKBFAjAMKT3KEjlhkna46m4lFbu",
-	"qxSmYr3fh7a+4NhtHvg7hTaEnpUBWZD+HScs5okpIkFM8VF79k1W8n91pGBVEAul7qDdpTZ1oC4NViGH",
-	"MVOWD+0hp4CYSC+OFnFyVrYwDG+gf3sCKlqykv9rk7CwvQqswDiVTsmH+ouBqlRBHZhOk5f5tbXk4dja",
-	"ytfQF/iu1XMcnlpkhQWhGyRg6yde+cwFEZ9GmOw2nLYHqyqII5JxItAmIVjwTYzYhqEQPjSzo1eUp9nc",
-	"4QWQvpBWEwj6e5C9tWrjWUvD3h6O76WO2LMrONhDFpSOBhF4E7aXTXpgF6o0/wq5gnQW/4s42hUndKBu",
-	"mfmQwBCLB2OJtMK7EErutAMaQUw0tdr/wRAH4PD48Dkbc3B4r7UfUMfqqNva4Hr24FaS7mr61WCmIU/v",
-	"CWIbGAQMcd7HRx3YMUMCioQbmZYOdBJmMrrdXOS/6vwt+iiMKd7tNthvj8fFc2tKMydTHIXI13RBMrYw",
-	"2YFXNEyi1Lj1upe+37WYW44z6/38jQYYpWr8ku3S//uUCJQt3Ks0q87+5NlUl0hjRmPExOH1uit8EAjq",
-	"p7foHf7uVRa0H7YZSIgq0TsSrOMd42KdAfzX6XDxPyQJQ/4iXfEQZyFkcqak0p75/G4GYjUQwRL0uEo1",
-	"5LkrFWk3wBk1ZEomxiqIBU+D9WM0LZ165BsyBmnIfzK09S68/zgrd6WdZU/5WYFwhNDd4e2UozEZvWgM",
-	"X39cKaGgfLaqrbt0N/d1rI4FMAL5aCk0aQ0XhYqjIQ8FYOVpVsc7E40Ot2MBjSYxWkxtFIcLS4+pITIt",
-	"mCo4PpHQ+LQC47MKizsRFO8XUs2ylKVrzgWl4p9IYKPIWAtOR3W8AJvYWgXZANUJlE8oTD69IPnsQuTO",
-	"BMjNhFe1xPTzrmuJZUinEdUA3LYyKkmNFk6Ook0qh+crr/HJ0plMmpgdC2YkgdHS0dMbLiIdnoacNECr",
-	"xkdI98IqMU8krIEErIVVpzdeWFU8rcKqABXCci6jqUQzk0QsBdE1/xnqwwsSX7W3oOxZSmLpCVEAbkLq",
-	"3/p7iAnIwcHTS+rfIgEiiAlBYgUE4iL9BxL++itvpXRH6l/KlAMBqEAXf5C3e8wB5gCCS4YjyB7Az+hh",
-	"/Udyfv6NH9+epf9A3qq7px7Bj78gshN77+Lb530NmApTzVaMpgGgfh6OYkgw4oAy4Cdc0AgxsGM0iTkQ",
-	"eyiADwm4QQAKAf09CoCg4DLbNPkyT7zVeap/3C0P7nj17urqxzdvN29f//rj9duXv15WJ8K8C77yxpxm",
-	"MYqQZnerG7E3PpfnP6hEBx8/YapZ3/+3Zrz1jxnOJaeobnNTcHPoOp1u6Z8oe345YoDREPH03JkYsQhz",
-	"Lq0g/VrKY+TjLfaVHcBNZZ5L6gbbmBtkf6IM4R2RZKVd/rN3a/Q/D9xtb4GANyF68UR55Qnw089H6oMN",
-	"Dp4M917ffK/RsebGtnGjlAi4sk2udXwpcGNwh7dcjax2yoYppufnOjvUn5VRGOQWhhwV7+VrC1T7Sk1K",
-	"t5upsWuw5Lzf3jRR5NckFPiZQAQSUVhS5g3SCiS1wMPm4HQ59o7l7qpubOrJHFaTOHMYGoWieeSF8ZC/",
-	"+64FX/PgCjucrUdPWCQxY0Kr6gc6D41qeoIaeOkKlPeeuHHbua7tENkwSAIabZIEB09lUjnubIo/yB9k",
-	"oiSzy03rT6MYMzUtm8nyQ++CdGVhRInYeyvvAUEmfdHAzQ4rr/fkhyGs17ZGjItS+v0NrXEqBW/EqeK9",
-	"J04qiJU3yZkPdl5m4tRz5WlPYnBXh3XE2VKNuqKr5puFJqOFvo84Bz4lgtFQyWVrTdjZq7K5M+XGNuSR",
-	"2XLvFuf2rLnyajNzruFYsue+kc1be9ZyY3WPujLJZlaryYtfVp6Cg/3lOxOVuvPA/x5hBug9AazYi5ll",
-	"zxwJgcnu6M2WUSiKIylMFeRrnYK0HS7Rs3I5Oy62uc6xoAAZgw9fYgneceyEXSzv8NDmifExkl3N6RFW",
-	"eVbvqQ9jA968yXTniQpGQ5jixAM7HW05sqCvxTJ3nOoJURVf1RGliq/wSni6gziUPqie4GctGzn9fY3+",
-	"9iMOzPTa1aEE5tScnSQwiuQMtjqkZJ3sE9XK69vQb4783NBCuoss7fqHNmvIgYBEU9ksWW6umjkFU/b6",
-	"T19iNTb4l1dPREj87ae33srzKY+o9AlXP17Lv//3+rc3z64uX3kr7/+vr72Vt5N/aFS5Z7v/yqtvIxuY",
-	"gGk2ozVTrhyozLVKaFc9lnnjhHLWQzmDXdZQW2Ci7Cc6PALvrn45dBkOcwbu94iA+KBkhUGBLcTh/Kah",
-	"njFgmxRoTwqY3uAWlR+u8i1nNVR3mNa0o8MSTJeOFDawZTRKU4LDEpI32SqMhv6XBx30J5b5WQX9kMqB",
-	"A0YvOD0uwEinP4XOROse/P45HbQaSDVZzf00TZPNgUqTLaFdmWzLFnzzRo1uGUnXVvr+ibXf++6sIzTI",
-	"LU+YTqu72+3E07pZ3RTtd+fab0raHeeWrCo7x3s2J6686sbvXuDjxKtamMrPIlB0Xr+rEn3MvsT/QH3d",
-	"xW6Ui51MxsEP1E+iysVhqSi8vRAxvzg7iyUcQ1ysKdudIXJ29/Xz9fkZjPF6L6Iw++S/pamBYBEeNueT",
-	"ALIAZO4CHNZyrrw7xHhGXeJYPwdP4bfo/Hy7/Sr9xh8jAmPsXXjfrM/X5zI6QrFPWT+T/9lll/zJgJmy",
-	"+jrwLry/p3f2McRjSngWRZ+fn2uu6Ps5WweaRNLq5A8xIi8vX4MKGHiaeobgMB9fSRnBHZfSeE0EozxG",
-	"foruvUR1Vl9IKoNLk70f0t/f5JCr2h2Jv+sXt5YgZ91XlD2uehHU7p17fN+YqW91ngq8OqxMrs+Y7fLY",
-	"fC6LeXv/uGoV6vGm7HDmgQFkdq+jAWB2sZ4pYHqZnQn57MZKA8isg2WsLtktlBptOR+0bL0InGZbk9V4",
-	"Onw9+wwEOxe629PXr4C3xdtYGi+d4cp7fv69JixAJjAM53QBMRT+vukELuXPJ+U581NOHtpkUTsIpSaR",
-	"U3O78eGmVWXKKR/veM39ZuWyV9cT+7WmSM0Ky+lnVeYEmg0UXYnBbzXw8TrefSOmSeAxvtzSAlmlArfA",
-	"UmkUWGCpJPMzp1GONtHkCljXuK6UalG2T0PZlgR0zgS0cd7KLFmoA6r2qWg/Exb5aB9yd0np5A61K0Fd",
-	"nOonG8EHZp0NhT7lHKA9v7dT2PmS/L7pNs70J55rmfW3bjHtyv0zEgcKV/KV8d6j5U71QdZldle6K5T5",
-	"amlrfOVmRGtUun2UMxcH4/ch5/qp08WuqmBRw89EDZeyYc6yoeXMv1mKB2e07UsIU1YsCgkzEu7Kielc",
-	"cFcdsbjhzzcbGJj5tij8SWYV7XWGvULPV2uYzbhxxTHVdDdLDT6wzODOvAp36w0sWx4tvJWr/K2wNfeC",
-	"W6HTn5DhYrya4xemQVvuLZkIP4u5Hera2TBWmFpOP7DCqRzkYo1LOcTFCt/YHp+KZ2yXr2F9R/tSZ3FQ",
-	"kd6Rc/NKfPHUi6dePPXiqT9fT730q47Xr+JH6lXx0+hT8Wl7VNN+7p4oKzFuTi2ZyZKZLJnJkpl8UTWk",
-	"VUPRdrXIVB7frHfLP5nGrdUykUkmudqx1Z7YaNC5Ld9z9FlIYWT0pyEVj/7wIZeorT4TqThtfYuK73h9",
-	"qsFHfaoKq6qmQZdq0crPUSuXmvwYNbnmJrtZa3Mn9N3V6CbsOKjV+8k4XlPi2kMbVOyLl/5CcoeRebPG",
-	"Bk4tD+mtUix1fP5ipX/Sh600cTvj+pKFjyhXuFN/w6fxEc56kD2cju/PVRFnR2NPwZ9tu88YvWXbz5zO",
-	"6PZfD4mqXVrj155Sbo1VPT/ZJcLijCJrpLZNwioudwH5mAtOprkBoN3n82GV/uLQF4e+OPTFoX/eDn3p",
-	"gR23B8aP2P/ip9P74tP3vaZdp3KcZGZQU2xJaJaEZkloloTmi6tQrTuXtktajhQczHvJ/JNqJFutfDmG",
-	"LCpd5sp1U/3t5csU2Dpq6+/ZHWWYelTWPviAVr2Fyh0quyhXwalcyWWJrXk/2Nw9uOHXnCmqnil0f2dt",
-	"0eVFl5f2w0m0HzKTnbnvYEHUWcOhnQf7TkMbboctBoe+ur9xsPjrxV9PWF0V5nIiyUtfsTTOHGavktqm",
-	"1bw8cjansuhhsX8GWURZ1402V7H/MoVpzC6WfGb3G1WvCxIsQauKmy6uH7p5EAhq7hp6P+DOnHw0T1ns",
-	"fwUy5rsVpJ1/M5nLH/g4qb9kO520h44uF1WATIT1wwHKWlz6q6cspJXz3yuv1iHMIrHnFiIrh5gLTbkt",
-	"vkd4f0fkKgV+l6R3bY1kQyXaO+MqXbfzbpwmqxeHDU55RyDoTF+b+PSpqObGs7qFPTqUZVW1OAxFv05d",
-	"S6jTcwjFAEz0Uz+Gk/cIlTHmcot38SZ1E5s9gkE6kk4BXu7iNIL94wB9eoJsjqhXor2DOnnJ6gZdFfEt",
-	"etj0OvzLXfwzengdnGJ2VRmEiThbxnHqWVZtlFJ+LRfud30PuM5e+bF4Y3xh3qC+rt6PPqiobKKq3ONp",
-	"ial+E74lsrGfI5uYjrhctqjMcm6AnJrKDdTlJb+5AjY1ratRvyjZJ6lkSw99zh5606TmaqQ7omzfTTdj",
-	"xKKlbkJgir66rWPt6qovzvVzieADs0etMp9EHtCeb1sr63yNb5PpHdH9tpvbapa/hWF4A/1b8yz/p+IN",
-	"ex9RUG/8MtrCmyjtMRVMJSy0xWXrKkpMx0v2cxUA765+Oexxzrjj4H6PCIgZlpCFmnKwhTjUaGWpfQaZ",
-	"/6J4n6TiLQXAMQqA0rLmLgAsKbsrALoZcVAAdBFwVwBM5GwNqoHF4X4ukX5k1lpT8NPLF3orhPEKPH+F",
-	"0DXXxhXCJBNdKRfMqwQHPsParksEw/fTFSgkYCLQJiFY8E2M2IahULp4K4YCGkFMuCUWek8Q28AgYIiP",
-	"xUWQuKfsdvwcQ1/gu7Gze4MEHC8YTHYbToeurCwwfEhgiMVDGYkQkdX12InYQxa4wsXvdhvsjx5ZnNyE",
-	"2C+K/tHRjK+5gCLhDjFln3THoRi7B7DUGbuQfMya+zqJY8oECsBNSP1bfw8xKb37ltEIiD0Cl9S/RQK8",
-	"yay66dmNKu3FeS/Oe3Hei/P+op330rc6Qt9q9nbVsbtUUzWnpu1JOU1GDDpRS0KyJCRLQrIkJEs16aKv",
-	"a9vOdev9+5q4n0Dz1qpn63A2U8SI3eXzJM3rwtsLEV+cnYXUh+GecnHxzfn5uff4/vHfAQAA///1LHFX",
-	"NBABAA==",
+	"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",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file
