@@ -222,6 +222,9 @@
             "$ref": "#/components/parameters/rowFilter.portal_accounts.portal_account_user_limit_rps"
           },
           {
+            "$ref": "#/components/parameters/rowFilter.portal_accounts.portal_account_user_limit_notification_thresholds"
+          },
+          {
             "$ref": "#/components/parameters/rowFilter.portal_accounts.billing_type"
           },
           {
@@ -360,6 +363,9 @@
             "$ref": "#/components/parameters/rowFilter.portal_accounts.portal_account_user_limit_rps"
           },
           {
+            "$ref": "#/components/parameters/rowFilter.portal_accounts.portal_account_user_limit_notification_thresholds"
+          },
+          {
             "$ref": "#/components/parameters/rowFilter.portal_accounts.billing_type"
           },
           {
@@ -419,6 +425,9 @@
           },
           {
             "$ref": "#/components/parameters/rowFilter.portal_accounts.portal_account_user_limit_rps"
+          },
+          {
+            "$ref": "#/components/parameters/rowFilter.portal_accounts.portal_account_user_limit_notification_thresholds"
           },
           {
             "$ref": "#/components/parameters/rowFilter.portal_accounts.billing_type"
@@ -818,6 +827,199 @@
         ]
       }
     },
+    "/portal_users": {
+      "get": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/rowFilter.portal_users.portal_user_id"
+          },
+          {
+            "$ref": "#/components/parameters/rowFilter.portal_users.portal_user_email"
+          },
+          {
+            "$ref": "#/components/parameters/rowFilter.portal_users.signed_up"
+          },
+          {
+            "$ref": "#/components/parameters/rowFilter.portal_users.portal_admin"
+          },
+          {
+            "$ref": "#/components/parameters/rowFilter.portal_users.deleted_at"
+          },
+          {
+            "$ref": "#/components/parameters/rowFilter.portal_users.created_at"
+          },
+          {
+            "$ref": "#/components/parameters/rowFilter.portal_users.updated_at"
+          },
+          {
+            "$ref": "#/components/parameters/select"
+          },
+          {
+            "$ref": "#/components/parameters/order"
+          },
+          {
+            "$ref": "#/components/parameters/range"
+          },
+          {
+            "$ref": "#/components/parameters/rangeUnit"
+          },
+          {
+            "$ref": "#/components/parameters/offset"
+          },
+          {
+            "$ref": "#/components/parameters/limit"
+          },
+          {
+            "$ref": "#/components/parameters/preferCount"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/portal_users"
+                  },
+                  "type": "array"
+                }
+              },
+              "application/vnd.pgrst.object+json;nulls=stripped": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/portal_users"
+                  },
+                  "type": "array"
+                }
+              },
+              "application/vnd.pgrst.object+json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/portal_users"
+                  },
+                  "type": "array"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/portal_users"
+                  },
+                  "type": "array"
+                }
+              }
+            }
+          },
+          "206": {
+            "description": "Partial Content"
+          }
+        },
+        "summary": "Users who can access the portal and belong to multiple accounts",
+        "tags": [
+          "portal_users"
+        ]
+      },
+      "post": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/select"
+          },
+          {
+            "$ref": "#/components/parameters/preferPost"
+          }
+        ],
+        "requestBody": {
+          "$ref": "#/components/requestBodies/portal_users"
+        },
+        "responses": {
+          "201": {
+            "description": "Created"
+          }
+        },
+        "summary": "Users who can access the portal and belong to multiple accounts",
+        "tags": [
+          "portal_users"
+        ]
+      },
+      "delete": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/rowFilter.portal_users.portal_user_id"
+          },
+          {
+            "$ref": "#/components/parameters/rowFilter.portal_users.portal_user_email"
+          },
+          {
+            "$ref": "#/components/parameters/rowFilter.portal_users.signed_up"
+          },
+          {
+            "$ref": "#/components/parameters/rowFilter.portal_users.portal_admin"
+          },
+          {
+            "$ref": "#/components/parameters/rowFilter.portal_users.deleted_at"
+          },
+          {
+            "$ref": "#/components/parameters/rowFilter.portal_users.created_at"
+          },
+          {
+            "$ref": "#/components/parameters/rowFilter.portal_users.updated_at"
+          },
+          {
+            "$ref": "#/components/parameters/preferReturn"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        },
+        "summary": "Users who can access the portal and belong to multiple accounts",
+        "tags": [
+          "portal_users"
+        ]
+      },
+      "patch": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/rowFilter.portal_users.portal_user_id"
+          },
+          {
+            "$ref": "#/components/parameters/rowFilter.portal_users.portal_user_email"
+          },
+          {
+            "$ref": "#/components/parameters/rowFilter.portal_users.signed_up"
+          },
+          {
+            "$ref": "#/components/parameters/rowFilter.portal_users.portal_admin"
+          },
+          {
+            "$ref": "#/components/parameters/rowFilter.portal_users.deleted_at"
+          },
+          {
+            "$ref": "#/components/parameters/rowFilter.portal_users.created_at"
+          },
+          {
+            "$ref": "#/components/parameters/rowFilter.portal_users.updated_at"
+          },
+          {
+            "$ref": "#/components/parameters/preferReturn"
+          }
+        ],
+        "requestBody": {
+          "$ref": "#/components/requestBodies/portal_users"
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        },
+        "summary": "Users who can access the portal and belong to multiple accounts",
+        "tags": [
+          "portal_users"
+        ]
+      }
+    },
     "/services": {
       "get": {
         "parameters": [
@@ -1107,6 +1309,103 @@
         "summary": "Supported blockchain services from the Pocket Network",
         "tags": [
           "services"
+        ]
+      }
+    },
+    "/portal_workers_account_data": {
+      "get": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/rowFilter.portal_workers_account_data.portal_account_id"
+          },
+          {
+            "$ref": "#/components/parameters/rowFilter.portal_workers_account_data.user_account_name"
+          },
+          {
+            "$ref": "#/components/parameters/rowFilter.portal_workers_account_data.portal_plan_type"
+          },
+          {
+            "$ref": "#/components/parameters/rowFilter.portal_workers_account_data.billing_type"
+          },
+          {
+            "$ref": "#/components/parameters/rowFilter.portal_workers_account_data.portal_account_user_limit"
+          },
+          {
+            "$ref": "#/components/parameters/rowFilter.portal_workers_account_data.gcp_entitlement_id"
+          },
+          {
+            "$ref": "#/components/parameters/rowFilter.portal_workers_account_data.owner_email"
+          },
+          {
+            "$ref": "#/components/parameters/rowFilter.portal_workers_account_data.owner_user_id"
+          },
+          {
+            "$ref": "#/components/parameters/select"
+          },
+          {
+            "$ref": "#/components/parameters/order"
+          },
+          {
+            "$ref": "#/components/parameters/range"
+          },
+          {
+            "$ref": "#/components/parameters/rangeUnit"
+          },
+          {
+            "$ref": "#/components/parameters/offset"
+          },
+          {
+            "$ref": "#/components/parameters/limit"
+          },
+          {
+            "$ref": "#/components/parameters/preferCount"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/portal_workers_account_data"
+                  },
+                  "type": "array"
+                }
+              },
+              "application/vnd.pgrst.object+json;nulls=stripped": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/portal_workers_account_data"
+                  },
+                  "type": "array"
+                }
+              },
+              "application/vnd.pgrst.object+json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/portal_workers_account_data"
+                  },
+                  "type": "array"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/portal_workers_account_data"
+                  },
+                  "type": "array"
+                }
+              }
+            }
+          },
+          "206": {
+            "description": "Partial Content"
+          }
+        },
+        "summary": "Account data for portal-workers billing operations with owner email. Filter using WHERE portal_plan_type = 'PLAN_UNLIMITED' AND billing_type = 'stripe'",
+        "tags": [
+          "portal_workers_account_data"
         ]
       }
     },
@@ -1624,6 +1923,9 @@
             "$ref": "#/components/parameters/rowFilter.portal_applications.portal_application_user_limit_rps"
           },
           {
+            "$ref": "#/components/parameters/rowFilter.portal_applications.portal_application_user_limit_notification_thresholds"
+          },
+          {
             "$ref": "#/components/parameters/rowFilter.portal_applications.portal_application_description"
           },
           {
@@ -1759,6 +2061,9 @@
             "$ref": "#/components/parameters/rowFilter.portal_applications.portal_application_user_limit_rps"
           },
           {
+            "$ref": "#/components/parameters/rowFilter.portal_applications.portal_application_user_limit_notification_thresholds"
+          },
+          {
             "$ref": "#/components/parameters/rowFilter.portal_applications.portal_application_description"
           },
           {
@@ -1815,6 +2120,9 @@
           },
           {
             "$ref": "#/components/parameters/rowFilter.portal_applications.portal_application_user_limit_rps"
+          },
+          {
+            "$ref": "#/components/parameters/rowFilter.portal_applications.portal_application_user_limit_notification_thresholds"
           },
           {
             "$ref": "#/components/parameters/rowFilter.portal_applications.portal_application_description"
@@ -2484,6 +2792,14 @@
           "type": "string"
         }
       },
+      "rowFilter.portal_accounts.portal_account_user_limit_notification_thresholds": {
+        "name": "portal_account_user_limit_notification_thresholds",
+        "required": false,
+        "in": "query",
+        "schema": {
+          "type": "string"
+        }
+      },
       "rowFilter.portal_accounts.billing_type": {
         "name": "billing_type",
         "required": false,
@@ -2625,6 +2941,64 @@
       },
       "rowFilter.portal_plans.plan_application_limit": {
         "name": "plan_application_limit",
+        "required": false,
+        "in": "query",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "rowFilter.portal_users.portal_user_id": {
+        "name": "portal_user_id",
+        "required": false,
+        "in": "query",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "rowFilter.portal_users.portal_user_email": {
+        "name": "portal_user_email",
+        "description": "Unique email address for the user",
+        "required": false,
+        "in": "query",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "rowFilter.portal_users.signed_up": {
+        "name": "signed_up",
+        "required": false,
+        "in": "query",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "rowFilter.portal_users.portal_admin": {
+        "name": "portal_admin",
+        "description": "Whether user has admin privileges across the portal",
+        "required": false,
+        "in": "query",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "rowFilter.portal_users.deleted_at": {
+        "name": "deleted_at",
+        "required": false,
+        "in": "query",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "rowFilter.portal_users.created_at": {
+        "name": "created_at",
+        "required": false,
+        "in": "query",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "rowFilter.portal_users.updated_at": {
+        "name": "updated_at",
         "required": false,
         "in": "query",
         "schema": {
@@ -2777,6 +3151,70 @@
           "type": "string"
         }
       },
+      "rowFilter.portal_workers_account_data.portal_account_id": {
+        "name": "portal_account_id",
+        "required": false,
+        "in": "query",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "rowFilter.portal_workers_account_data.user_account_name": {
+        "name": "user_account_name",
+        "required": false,
+        "in": "query",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "rowFilter.portal_workers_account_data.portal_plan_type": {
+        "name": "portal_plan_type",
+        "required": false,
+        "in": "query",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "rowFilter.portal_workers_account_data.billing_type": {
+        "name": "billing_type",
+        "required": false,
+        "in": "query",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "rowFilter.portal_workers_account_data.portal_account_user_limit": {
+        "name": "portal_account_user_limit",
+        "required": false,
+        "in": "query",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "rowFilter.portal_workers_account_data.gcp_entitlement_id": {
+        "name": "gcp_entitlement_id",
+        "required": false,
+        "in": "query",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "rowFilter.portal_workers_account_data.owner_email": {
+        "name": "owner_email",
+        "required": false,
+        "in": "query",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "rowFilter.portal_workers_account_data.owner_user_id": {
+        "name": "owner_user_id",
+        "required": false,
+        "in": "query",
+        "schema": {
+          "type": "string"
+        }
+      },
       "rowFilter.networks.network_id": {
         "name": "network_id",
         "required": false,
@@ -2917,6 +3355,14 @@
       },
       "rowFilter.portal_applications.portal_application_user_limit_rps": {
         "name": "portal_application_user_limit_rps",
+        "required": false,
+        "in": "query",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "rowFilter.portal_applications.portal_application_user_limit_notification_thresholds": {
+        "name": "portal_application_user_limit_notification_thresholds",
         "required": false,
         "in": "query",
         "schema": {
@@ -3071,6 +3517,31 @@
           }
         },
         "description": "networks"
+      },
+      "portal_users": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/portal_users"
+            }
+          },
+          "application/vnd.pgrst.object+json;nulls=stripped": {
+            "schema": {
+              "$ref": "#/components/schemas/portal_users"
+            }
+          },
+          "application/vnd.pgrst.object+json": {
+            "schema": {
+              "$ref": "#/components/schemas/portal_users"
+            }
+          },
+          "text/csv": {
+            "schema": {
+              "$ref": "#/components/schemas/portal_users"
+            }
+          }
+        },
+        "description": "portal_users"
       },
       "service_endpoints": {
         "content": {
@@ -3470,6 +3941,12 @@
           "portal_account_user_limit_rps": {
             "type": "integer"
           },
+          "portal_account_user_limit_notification_thresholds": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array"
+          },
           "billing_type": {
             "maxLength": 20,
             "type": "string"
@@ -3571,6 +4048,46 @@
         },
         "type": "object"
       },
+      "portal_users": {
+        "description": "Users who can access the portal and belong to multiple accounts",
+        "required": [
+          "portal_user_id",
+          "portal_user_email"
+        ],
+        "properties": {
+          "portal_user_id": {
+            "description": "Note:\nThis is a Primary Key.<pk/>",
+            "maxLength": 36,
+            "type": "string"
+          },
+          "portal_user_email": {
+            "description": "Unique email address for the user",
+            "maxLength": 255,
+            "type": "string"
+          },
+          "signed_up": {
+            "default": false,
+            "type": "boolean"
+          },
+          "portal_admin": {
+            "default": false,
+            "description": "Whether user has admin privileges across the portal",
+            "type": "boolean"
+          },
+          "deleted_at": {
+            "type": "string"
+          },
+          "created_at": {
+            "default": "CURRENT_TIMESTAMP",
+            "type": "string"
+          },
+          "updated_at": {
+            "default": "CURRENT_TIMESTAMP",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
       "services": {
         "description": "Supported blockchain services from the Pocket Network",
         "required": [
@@ -3651,6 +4168,46 @@
           },
           "updated_at": {
             "default": "CURRENT_TIMESTAMP",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "portal_workers_account_data": {
+        "description": "Account data for portal-workers billing operations with owner email. Filter using WHERE portal_plan_type = 'PLAN_UNLIMITED' AND billing_type = 'stripe'",
+        "properties": {
+          "portal_account_id": {
+            "description": "Note:\nThis is a Primary Key.<pk/>",
+            "maxLength": 36,
+            "type": "string"
+          },
+          "user_account_name": {
+            "maxLength": 42,
+            "type": "string"
+          },
+          "portal_plan_type": {
+            "description": "Note:\nThis is a Foreign Key to `portal_plans.portal_plan_type`.<fk table='portal_plans' column='portal_plan_type'/>",
+            "maxLength": 42,
+            "type": "string"
+          },
+          "billing_type": {
+            "maxLength": 20,
+            "type": "string"
+          },
+          "portal_account_user_limit": {
+            "type": "integer"
+          },
+          "gcp_entitlement_id": {
+            "maxLength": 255,
+            "type": "string"
+          },
+          "owner_email": {
+            "maxLength": 255,
+            "type": "string"
+          },
+          "owner_user_id": {
+            "description": "Note:\nThis is a Primary Key.<pk/>",
+            "maxLength": 36,
             "type": "string"
           }
         },
@@ -3758,7 +4315,7 @@
             "type": "string"
           },
           "emoji": {
-            "maxLength": 16,
+            "maxLength": 32,
             "type": "string"
           },
           "portal_application_user_limit": {
@@ -3774,6 +4331,12 @@
           },
           "portal_application_user_limit_rps": {
             "type": "integer"
+          },
+          "portal_application_user_limit_notification_thresholds": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array"
           },
           "portal_application_description": {
             "maxLength": 255,

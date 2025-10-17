@@ -203,6 +203,7 @@ export interface paths {
                     portal_account_user_limit?: components["parameters"]["rowFilter.portal_accounts.portal_account_user_limit"];
                     portal_account_user_limit_interval?: components["parameters"]["rowFilter.portal_accounts.portal_account_user_limit_interval"];
                     portal_account_user_limit_rps?: components["parameters"]["rowFilter.portal_accounts.portal_account_user_limit_rps"];
+                    portal_account_user_limit_notification_thresholds?: components["parameters"]["rowFilter.portal_accounts.portal_account_user_limit_notification_thresholds"];
                     billing_type?: components["parameters"]["rowFilter.portal_accounts.billing_type"];
                     /** @description Stripe subscription identifier for billing */
                     stripe_subscription_id?: components["parameters"]["rowFilter.portal_accounts.stripe_subscription_id"];
@@ -293,6 +294,7 @@ export interface paths {
                     portal_account_user_limit?: components["parameters"]["rowFilter.portal_accounts.portal_account_user_limit"];
                     portal_account_user_limit_interval?: components["parameters"]["rowFilter.portal_accounts.portal_account_user_limit_interval"];
                     portal_account_user_limit_rps?: components["parameters"]["rowFilter.portal_accounts.portal_account_user_limit_rps"];
+                    portal_account_user_limit_notification_thresholds?: components["parameters"]["rowFilter.portal_accounts.portal_account_user_limit_notification_thresholds"];
                     billing_type?: components["parameters"]["rowFilter.portal_accounts.billing_type"];
                     /** @description Stripe subscription identifier for billing */
                     stripe_subscription_id?: components["parameters"]["rowFilter.portal_accounts.stripe_subscription_id"];
@@ -335,6 +337,7 @@ export interface paths {
                     portal_account_user_limit?: components["parameters"]["rowFilter.portal_accounts.portal_account_user_limit"];
                     portal_account_user_limit_interval?: components["parameters"]["rowFilter.portal_accounts.portal_account_user_limit_interval"];
                     portal_account_user_limit_rps?: components["parameters"]["rowFilter.portal_accounts.portal_account_user_limit_rps"];
+                    portal_account_user_limit_notification_thresholds?: components["parameters"]["rowFilter.portal_accounts.portal_account_user_limit_notification_thresholds"];
                     billing_type?: components["parameters"]["rowFilter.portal_accounts.billing_type"];
                     /** @description Stripe subscription identifier for billing */
                     stripe_subscription_id?: components["parameters"]["rowFilter.portal_accounts.stripe_subscription_id"];
@@ -663,6 +666,163 @@ export interface paths {
         };
         trace?: never;
     };
+    "/portal_users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Users who can access the portal and belong to multiple accounts */
+        get: {
+            parameters: {
+                query?: {
+                    portal_user_id?: components["parameters"]["rowFilter.portal_users.portal_user_id"];
+                    /** @description Unique email address for the user */
+                    portal_user_email?: components["parameters"]["rowFilter.portal_users.portal_user_email"];
+                    signed_up?: components["parameters"]["rowFilter.portal_users.signed_up"];
+                    /** @description Whether user has admin privileges across the portal */
+                    portal_admin?: components["parameters"]["rowFilter.portal_users.portal_admin"];
+                    deleted_at?: components["parameters"]["rowFilter.portal_users.deleted_at"];
+                    created_at?: components["parameters"]["rowFilter.portal_users.created_at"];
+                    updated_at?: components["parameters"]["rowFilter.portal_users.updated_at"];
+                    /** @description Filtering Columns */
+                    select?: components["parameters"]["select"];
+                    /** @description Ordering */
+                    order?: components["parameters"]["order"];
+                    /** @description Limiting and Pagination */
+                    offset?: components["parameters"]["offset"];
+                    /** @description Limiting and Pagination */
+                    limit?: components["parameters"]["limit"];
+                };
+                header?: {
+                    /** @description Limiting and Pagination */
+                    Range?: components["parameters"]["range"];
+                    /** @description Limiting and Pagination */
+                    "Range-Unit"?: components["parameters"]["rangeUnit"];
+                    /** @description Preference */
+                    Prefer?: components["parameters"]["preferCount"];
+                };
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["portal_users"][];
+                        "application/vnd.pgrst.object+json;nulls=stripped": components["schemas"]["portal_users"][];
+                        "application/vnd.pgrst.object+json": components["schemas"]["portal_users"][];
+                        "text/csv": components["schemas"]["portal_users"][];
+                    };
+                };
+                /** @description Partial Content */
+                206: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        put?: never;
+        /** Users who can access the portal and belong to multiple accounts */
+        post: {
+            parameters: {
+                query?: {
+                    /** @description Filtering Columns */
+                    select?: components["parameters"]["select"];
+                };
+                header?: {
+                    /** @description Preference */
+                    Prefer?: components["parameters"]["preferPost"];
+                };
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: components["requestBodies"]["portal_users"];
+            responses: {
+                /** @description Created */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        /** Users who can access the portal and belong to multiple accounts */
+        delete: {
+            parameters: {
+                query?: {
+                    portal_user_id?: components["parameters"]["rowFilter.portal_users.portal_user_id"];
+                    /** @description Unique email address for the user */
+                    portal_user_email?: components["parameters"]["rowFilter.portal_users.portal_user_email"];
+                    signed_up?: components["parameters"]["rowFilter.portal_users.signed_up"];
+                    /** @description Whether user has admin privileges across the portal */
+                    portal_admin?: components["parameters"]["rowFilter.portal_users.portal_admin"];
+                    deleted_at?: components["parameters"]["rowFilter.portal_users.deleted_at"];
+                    created_at?: components["parameters"]["rowFilter.portal_users.created_at"];
+                    updated_at?: components["parameters"]["rowFilter.portal_users.updated_at"];
+                };
+                header?: {
+                    /** @description Preference */
+                    Prefer?: components["parameters"]["preferReturn"];
+                };
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description No Content */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        /** Users who can access the portal and belong to multiple accounts */
+        patch: {
+            parameters: {
+                query?: {
+                    portal_user_id?: components["parameters"]["rowFilter.portal_users.portal_user_id"];
+                    /** @description Unique email address for the user */
+                    portal_user_email?: components["parameters"]["rowFilter.portal_users.portal_user_email"];
+                    signed_up?: components["parameters"]["rowFilter.portal_users.signed_up"];
+                    /** @description Whether user has admin privileges across the portal */
+                    portal_admin?: components["parameters"]["rowFilter.portal_users.portal_admin"];
+                    deleted_at?: components["parameters"]["rowFilter.portal_users.deleted_at"];
+                    created_at?: components["parameters"]["rowFilter.portal_users.created_at"];
+                    updated_at?: components["parameters"]["rowFilter.portal_users.updated_at"];
+                };
+                header?: {
+                    /** @description Preference */
+                    Prefer?: components["parameters"]["preferReturn"];
+                };
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: components["requestBodies"]["portal_users"];
+            responses: {
+                /** @description No Content */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        trace?: never;
+    };
     "/services": {
         parameters: {
             query?: never;
@@ -851,6 +1011,76 @@ export interface paths {
                 };
             };
         };
+        trace?: never;
+    };
+    "/portal_workers_account_data": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Account data for portal-workers billing operations with owner email. Filter using WHERE portal_plan_type = 'PLAN_UNLIMITED' AND billing_type = 'stripe' */
+        get: {
+            parameters: {
+                query?: {
+                    portal_account_id?: components["parameters"]["rowFilter.portal_workers_account_data.portal_account_id"];
+                    user_account_name?: components["parameters"]["rowFilter.portal_workers_account_data.user_account_name"];
+                    portal_plan_type?: components["parameters"]["rowFilter.portal_workers_account_data.portal_plan_type"];
+                    billing_type?: components["parameters"]["rowFilter.portal_workers_account_data.billing_type"];
+                    portal_account_user_limit?: components["parameters"]["rowFilter.portal_workers_account_data.portal_account_user_limit"];
+                    gcp_entitlement_id?: components["parameters"]["rowFilter.portal_workers_account_data.gcp_entitlement_id"];
+                    owner_email?: components["parameters"]["rowFilter.portal_workers_account_data.owner_email"];
+                    owner_user_id?: components["parameters"]["rowFilter.portal_workers_account_data.owner_user_id"];
+                    /** @description Filtering Columns */
+                    select?: components["parameters"]["select"];
+                    /** @description Ordering */
+                    order?: components["parameters"]["order"];
+                    /** @description Limiting and Pagination */
+                    offset?: components["parameters"]["offset"];
+                    /** @description Limiting and Pagination */
+                    limit?: components["parameters"]["limit"];
+                };
+                header?: {
+                    /** @description Limiting and Pagination */
+                    Range?: components["parameters"]["range"];
+                    /** @description Limiting and Pagination */
+                    "Range-Unit"?: components["parameters"]["rangeUnit"];
+                    /** @description Preference */
+                    Prefer?: components["parameters"]["preferCount"];
+                };
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["portal_workers_account_data"][];
+                        "application/vnd.pgrst.object+json;nulls=stripped": components["schemas"]["portal_workers_account_data"][];
+                        "application/vnd.pgrst.object+json": components["schemas"]["portal_workers_account_data"][];
+                        "text/csv": components["schemas"]["portal_workers_account_data"][];
+                    };
+                };
+                /** @description Partial Content */
+                206: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/networks": {
@@ -1300,6 +1530,7 @@ export interface paths {
                     portal_application_user_limit?: components["parameters"]["rowFilter.portal_applications.portal_application_user_limit"];
                     portal_application_user_limit_interval?: components["parameters"]["rowFilter.portal_applications.portal_application_user_limit_interval"];
                     portal_application_user_limit_rps?: components["parameters"]["rowFilter.portal_applications.portal_application_user_limit_rps"];
+                    portal_application_user_limit_notification_thresholds?: components["parameters"]["rowFilter.portal_applications.portal_application_user_limit_notification_thresholds"];
                     portal_application_description?: components["parameters"]["rowFilter.portal_applications.portal_application_description"];
                     favorite_service_ids?: components["parameters"]["rowFilter.portal_applications.favorite_service_ids"];
                     /** @description Hashed secret key for application authentication */
@@ -1388,6 +1619,7 @@ export interface paths {
                     portal_application_user_limit?: components["parameters"]["rowFilter.portal_applications.portal_application_user_limit"];
                     portal_application_user_limit_interval?: components["parameters"]["rowFilter.portal_applications.portal_application_user_limit_interval"];
                     portal_application_user_limit_rps?: components["parameters"]["rowFilter.portal_applications.portal_application_user_limit_rps"];
+                    portal_application_user_limit_notification_thresholds?: components["parameters"]["rowFilter.portal_applications.portal_application_user_limit_notification_thresholds"];
                     portal_application_description?: components["parameters"]["rowFilter.portal_applications.portal_application_description"];
                     favorite_service_ids?: components["parameters"]["rowFilter.portal_applications.favorite_service_ids"];
                     /** @description Hashed secret key for application authentication */
@@ -1428,6 +1660,7 @@ export interface paths {
                     portal_application_user_limit?: components["parameters"]["rowFilter.portal_applications.portal_application_user_limit"];
                     portal_application_user_limit_interval?: components["parameters"]["rowFilter.portal_applications.portal_application_user_limit_interval"];
                     portal_application_user_limit_rps?: components["parameters"]["rowFilter.portal_applications.portal_application_user_limit_rps"];
+                    portal_application_user_limit_notification_thresholds?: components["parameters"]["rowFilter.portal_applications.portal_application_user_limit_notification_thresholds"];
                     portal_application_description?: components["parameters"]["rowFilter.portal_applications.portal_application_description"];
                     favorite_service_ids?: components["parameters"]["rowFilter.portal_applications.favorite_service_ids"];
                     /** @description Hashed secret key for application authentication */
@@ -1950,6 +2183,7 @@ export interface components {
             /** @enum {string} */
             portal_account_user_limit_interval?: "day" | "month" | "year";
             portal_account_user_limit_rps?: number;
+            portal_account_user_limit_notification_thresholds?: number[];
             billing_type?: string;
             /** @description Stripe subscription identifier for billing */
             stripe_subscription_id?: string;
@@ -1999,6 +2233,28 @@ export interface components {
             plan_rate_limit_rps?: number;
             plan_application_limit?: number;
         };
+        /** @description Users who can access the portal and belong to multiple accounts */
+        portal_users: {
+            /**
+             * @description Note:
+             *     This is a Primary Key.<pk/>
+             */
+            portal_user_id: string;
+            /** @description Unique email address for the user */
+            portal_user_email: string;
+            /** @default false */
+            signed_up: boolean;
+            /**
+             * @description Whether user has admin privileges across the portal
+             * @default false
+             */
+            portal_admin: boolean;
+            deleted_at?: string;
+            /** @default CURRENT_TIMESTAMP */
+            created_at: string;
+            /** @default CURRENT_TIMESTAMP */
+            updated_at: string;
+        };
         /** @description Supported blockchain services from the Pocket Network */
         services: {
             /**
@@ -2036,6 +2292,29 @@ export interface components {
             created_at: string;
             /** @default CURRENT_TIMESTAMP */
             updated_at: string;
+        };
+        /** @description Account data for portal-workers billing operations with owner email. Filter using WHERE portal_plan_type = 'PLAN_UNLIMITED' AND billing_type = 'stripe' */
+        portal_workers_account_data: {
+            /**
+             * @description Note:
+             *     This is a Primary Key.<pk/>
+             */
+            portal_account_id?: string;
+            user_account_name?: string;
+            /**
+             * @description Note:
+             *     This is a Foreign Key to `portal_plans.portal_plan_type`.<fk table='portal_plans' column='portal_plan_type'/>
+             */
+            portal_plan_type?: string;
+            billing_type?: string;
+            portal_account_user_limit?: number;
+            gcp_entitlement_id?: string;
+            owner_email?: string;
+            /**
+             * @description Note:
+             *     This is a Primary Key.<pk/>
+             */
+            owner_user_id?: string;
         };
         /** @description Supported blockchain networks (Pocket mainnet, testnet, etc.) */
         networks: {
@@ -2101,6 +2380,7 @@ export interface components {
             /** @enum {string} */
             portal_application_user_limit_interval?: "day" | "month" | "year";
             portal_application_user_limit_rps?: number;
+            portal_application_user_limit_notification_thresholds?: number[];
             portal_application_description?: string;
             favorite_service_ids?: string[];
             /** @description Hashed secret key for application authentication */
@@ -2170,6 +2450,7 @@ export interface components {
         "rowFilter.portal_accounts.portal_account_user_limit": string;
         "rowFilter.portal_accounts.portal_account_user_limit_interval": string;
         "rowFilter.portal_accounts.portal_account_user_limit_rps": string;
+        "rowFilter.portal_accounts.portal_account_user_limit_notification_thresholds": string;
         "rowFilter.portal_accounts.billing_type": string;
         /** @description Stripe subscription identifier for billing */
         "rowFilter.portal_accounts.stripe_subscription_id": string;
@@ -2191,6 +2472,15 @@ export interface components {
         /** @description Rate limit in requests per second */
         "rowFilter.portal_plans.plan_rate_limit_rps": string;
         "rowFilter.portal_plans.plan_application_limit": string;
+        "rowFilter.portal_users.portal_user_id": string;
+        /** @description Unique email address for the user */
+        "rowFilter.portal_users.portal_user_email": string;
+        "rowFilter.portal_users.signed_up": string;
+        /** @description Whether user has admin privileges across the portal */
+        "rowFilter.portal_users.portal_admin": string;
+        "rowFilter.portal_users.deleted_at": string;
+        "rowFilter.portal_users.created_at": string;
+        "rowFilter.portal_users.updated_at": string;
         "rowFilter.services.service_id": string;
         "rowFilter.services.service_name": string;
         /** @description Cost in compute units for each relay */
@@ -2211,6 +2501,14 @@ export interface components {
         "rowFilter.services.deleted_at": string;
         "rowFilter.services.created_at": string;
         "rowFilter.services.updated_at": string;
+        "rowFilter.portal_workers_account_data.portal_account_id": string;
+        "rowFilter.portal_workers_account_data.user_account_name": string;
+        "rowFilter.portal_workers_account_data.portal_plan_type": string;
+        "rowFilter.portal_workers_account_data.billing_type": string;
+        "rowFilter.portal_workers_account_data.portal_account_user_limit": string;
+        "rowFilter.portal_workers_account_data.gcp_entitlement_id": string;
+        "rowFilter.portal_workers_account_data.owner_email": string;
+        "rowFilter.portal_workers_account_data.owner_user_id": string;
         "rowFilter.networks.network_id": string;
         "rowFilter.organizations.organization_id": string;
         /** @description Name of the organization */
@@ -2231,6 +2529,7 @@ export interface components {
         "rowFilter.portal_applications.portal_application_user_limit": string;
         "rowFilter.portal_applications.portal_application_user_limit_interval": string;
         "rowFilter.portal_applications.portal_application_user_limit_rps": string;
+        "rowFilter.portal_applications.portal_application_user_limit_notification_thresholds": string;
         "rowFilter.portal_applications.portal_application_description": string;
         "rowFilter.portal_applications.favorite_service_ids": string;
         /** @description Hashed secret key for application authentication */
@@ -2262,6 +2561,15 @@ export interface components {
                 "application/vnd.pgrst.object+json;nulls=stripped": components["schemas"]["networks"];
                 "application/vnd.pgrst.object+json": components["schemas"]["networks"];
                 "text/csv": components["schemas"]["networks"];
+            };
+        };
+        /** @description portal_users */
+        portal_users: {
+            content: {
+                "application/json": components["schemas"]["portal_users"];
+                "application/vnd.pgrst.object+json;nulls=stripped": components["schemas"]["portal_users"];
+                "application/vnd.pgrst.object+json": components["schemas"]["portal_users"];
+                "text/csv": components["schemas"]["portal_users"];
             };
         };
         /** @description service_endpoints */
