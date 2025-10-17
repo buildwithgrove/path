@@ -1,5 +1,6 @@
 {
   "name": "@grovepath/portal-db-ts-sdk",
+  "version": "0.4.11",
   "description": "TypeScript SDK for Grove Portal DB API",
   "type": "module",
   "main": "client.ts",
