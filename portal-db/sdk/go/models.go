@@ -39,11 +39,6 @@ const (
 	PreferCountCountNone PreferCount = "count=none"
 )
 
-// Defines values for PreferParams.
-const (
-	PreferParamsParamsSingleObject PreferParams = "params=single-object"
-)
-
 // Defines values for PreferPost.
 const (
 	PreferPostResolutionIgnoreDuplicates PreferPost = "resolution=ignore-duplicates"
@@ -289,36 +284,6 @@ const (
 	GetPortalWorkersAccountDataParamsPreferCountNone GetPortalWorkersAccountDataParamsPrefer = "count=none"
 )
 
-// Defines values for PostRpcArmorParamsPrefer.
-const (
-	PostRpcArmorParamsPreferParamsSingleObject PostRpcArmorParamsPrefer = "params=single-object"
-)
-
-// Defines values for PostRpcDearmorParamsPrefer.
-const (
-	PostRpcDearmorParamsPreferParamsSingleObject PostRpcDearmorParamsPrefer = "params=single-object"
-)
-
-// Defines values for PostRpcGenRandomUuidParamsPrefer.
-const (
-	PostRpcGenRandomUuidParamsPreferParamsSingleObject PostRpcGenRandomUuidParamsPrefer = "params=single-object"
-)
-
-// Defines values for PostRpcGenSaltParamsPrefer.
-const (
-	PostRpcGenSaltParamsPreferParamsSingleObject PostRpcGenSaltParamsPrefer = "params=single-object"
-)
-
-// Defines values for PostRpcPgpArmorHeadersParamsPrefer.
-const (
-	PostRpcPgpArmorHeadersParamsPreferParamsSingleObject PostRpcPgpArmorHeadersParamsPrefer = "params=single-object"
-)
-
-// Defines values for PostRpcPgpKeyIdParamsPrefer.
-const (
-	ParamsSingleObject PostRpcPgpKeyIdParamsPrefer = "params=single-object"
-)
-
 // Defines values for DeleteServiceEndpointsParamsPrefer.
 const (
 	DeleteServiceEndpointsParamsPreferReturnMinimal        DeleteServiceEndpointsParamsPrefer = "return=minimal"
@@ -460,10 +425,11 @@ type PortalAccounts struct {
 	//
 	// Note:
 	// This is a Primary Key.<pk/>
-	PortalAccountId                string                                        `json:"portal_account_id"`
-	PortalAccountUserLimit         *int                                          `json:"portal_account_user_limit,omitempty"`
-	PortalAccountUserLimitInterval *PortalAccountsPortalAccountUserLimitInterval `json:"portal_account_user_limit_interval,omitempty"`
-	PortalAccountUserLimitRps      *int                                          `json:"portal_account_user_limit_rps,omitempty"`
+	PortalAccountId                              string                                        `json:"portal_account_id"`
+	PortalAccountUserLimit                       *int                                          `json:"portal_account_user_limit,omitempty"`
+	PortalAccountUserLimitInterval               *PortalAccountsPortalAccountUserLimitInterval `json:"portal_account_user_limit_interval,omitempty"`
+	PortalAccountUserLimitNotificationThresholds *[]int                                        `json:"portal_account_user_limit_notification_thresholds,omitempty"`
+	PortalAccountUserLimitRps                    *int                                          `json:"portal_account_user_limit_rps,omitempty"`
 
 	// PortalPlanType Note:
 	// This is a Foreign Key to `portal_plans.portal_plan_type`.<fk table='portal_plans' column='portal_plan_type'/>
@@ -510,11 +476,12 @@ type PortalApplications struct {
 
 	// PortalApplicationId Note:
 	// This is a Primary Key.<pk/>
-	PortalApplicationId                string                                                `json:"portal_application_id"`
-	PortalApplicationName              *string                                               `json:"portal_application_name,omitempty"`
-	PortalApplicationUserLimit         *int                                                  `json:"portal_application_user_limit,omitempty"`
-	PortalApplicationUserLimitInterval *PortalApplicationsPortalApplicationUserLimitInterval `json:"portal_application_user_limit_interval,omitempty"`
-	PortalApplicationUserLimitRps      *int                                                  `json:"portal_application_user_limit_rps,omitempty"`
+	PortalApplicationId                              string                                                `json:"portal_application_id"`
+	PortalApplicationName                            *string                                               `json:"portal_application_name,omitempty"`
+	PortalApplicationUserLimit                       *int                                                  `json:"portal_application_user_limit,omitempty"`
+	PortalApplicationUserLimitInterval               *PortalApplicationsPortalApplicationUserLimitInterval `json:"portal_application_user_limit_interval,omitempty"`
+	PortalApplicationUserLimitNotificationThresholds *[]int                                                `json:"portal_application_user_limit_notification_thresholds,omitempty"`
+	PortalApplicationUserLimitRps                    *int                                                  `json:"portal_application_user_limit_rps,omitempty"`
 
 	// SecretKeyHash Hashed secret key for application authentication
 	SecretKeyHash     *string `json:"secret_key_hash,omitempty"`
@@ -662,7 +629,7 @@ type Order = string
 type PreferCount string
 
 // PreferParams defines model for preferParams.
-type PreferParams string
+type PreferParams = string
 
 // PreferPost defines model for preferPost.
 type PreferPost string
@@ -739,6 +706,9 @@ type RowFilterPortalAccountsPortalAccountUserLimit = string
 // RowFilterPortalAccountsPortalAccountUserLimitInterval defines model for rowFilter.portal_accounts.portal_account_user_limit_interval.
 type RowFilterPortalAccountsPortalAccountUserLimitInterval = string
 
+// RowFilterPortalAccountsPortalAccountUserLimitNotificationThresholds defines model for rowFilter.portal_accounts.portal_account_user_limit_notification_thresholds.
+type RowFilterPortalAccountsPortalAccountUserLimitNotificationThresholds = string
+
 // RowFilterPortalAccountsPortalAccountUserLimitRps defines model for rowFilter.portal_accounts.portal_account_user_limit_rps.
 type RowFilterPortalAccountsPortalAccountUserLimitRps = string
 
@@ -798,6 +768,9 @@ type RowFilterPortalApplicationsPortalApplicationUserLimit = string
 
 // RowFilterPortalApplicationsPortalApplicationUserLimitInterval defines model for rowFilter.portal_applications.portal_application_user_limit_interval.
 type RowFilterPortalApplicationsPortalApplicationUserLimitInterval = string
+
+// RowFilterPortalApplicationsPortalApplicationUserLimitNotificationThresholds defines model for rowFilter.portal_applications.portal_application_user_limit_notification_thresholds.
+type RowFilterPortalApplicationsPortalApplicationUserLimitNotificationThresholds = string
 
 // RowFilterPortalApplicationsPortalApplicationUserLimitRps defines model for rowFilter.portal_applications.portal_application_user_limit_rps.
 type RowFilterPortalApplicationsPortalApplicationUserLimitRps = string
@@ -1199,15 +1172,16 @@ type PostPortalAccountRbacParamsPrefer string
 // DeletePortalAccountsParams defines parameters for DeletePortalAccounts.
 type DeletePortalAccountsParams struct {
 	// PortalAccountId Unique identifier for the portal account
-	PortalAccountId                *RowFilterPortalAccountsPortalAccountId                `form:"portal_account_id,omitempty" json:"portal_account_id,omitempty"`
-	OrganizationId                 *RowFilterPortalAccountsOrganizationId                 `form:"organization_id,omitempty" json:"organization_id,omitempty"`
-	PortalPlanType                 *RowFilterPortalAccountsPortalPlanType                 `form:"portal_plan_type,omitempty" json:"portal_plan_type,omitempty"`
-	UserAccountName                *RowFilterPortalAccountsUserAccountName                `form:"user_account_name,omitempty" json:"user_account_name,omitempty"`
-	InternalAccountName            *RowFilterPortalAccountsInternalAccountName            `form:"internal_account_name,omitempty" json:"internal_account_name,omitempty"`
-	PortalAccountUserLimit         *RowFilterPortalAccountsPortalAccountUserLimit         `form:"portal_account_user_limit,omitempty" json:"portal_account_user_limit,omitempty"`
-	PortalAccountUserLimitInterval *RowFilterPortalAccountsPortalAccountUserLimitInterval `form:"portal_account_user_limit_interval,omitempty" json:"portal_account_user_limit_interval,omitempty"`
-	PortalAccountUserLimitRps      *RowFilterPortalAccountsPortalAccountUserLimitRps      `form:"portal_account_user_limit_rps,omitempty" json:"portal_account_user_limit_rps,omitempty"`
-	BillingType                    *RowFilterPortalAccountsBillingType                    `form:"billing_type,omitempty" json:"billing_type,omitempty"`
+	PortalAccountId                              *RowFilterPortalAccountsPortalAccountId                              `form:"portal_account_id,omitempty" json:"portal_account_id,omitempty"`
+	OrganizationId                               *RowFilterPortalAccountsOrganizationId                               `form:"organization_id,omitempty" json:"organization_id,omitempty"`
+	PortalPlanType                               *RowFilterPortalAccountsPortalPlanType                               `form:"portal_plan_type,omitempty" json:"portal_plan_type,omitempty"`
+	UserAccountName                              *RowFilterPortalAccountsUserAccountName                              `form:"user_account_name,omitempty" json:"user_account_name,omitempty"`
+	InternalAccountName                          *RowFilterPortalAccountsInternalAccountName                          `form:"internal_account_name,omitempty" json:"internal_account_name,omitempty"`
+	PortalAccountUserLimit                       *RowFilterPortalAccountsPortalAccountUserLimit                       `form:"portal_account_user_limit,omitempty" json:"portal_account_user_limit,omitempty"`
+	PortalAccountUserLimitInterval               *RowFilterPortalAccountsPortalAccountUserLimitInterval               `form:"portal_account_user_limit_interval,omitempty" json:"portal_account_user_limit_interval,omitempty"`
+	PortalAccountUserLimitRps                    *RowFilterPortalAccountsPortalAccountUserLimitRps                    `form:"portal_account_user_limit_rps,omitempty" json:"portal_account_user_limit_rps,omitempty"`
+	PortalAccountUserLimitNotificationThresholds *RowFilterPortalAccountsPortalAccountUserLimitNotificationThresholds `form:"portal_account_user_limit_notification_thresholds,omitempty" json:"portal_account_user_limit_notification_thresholds,omitempty"`
+	BillingType                                  *RowFilterPortalAccountsBillingType                                  `form:"billing_type,omitempty" json:"billing_type,omitempty"`
 
 	// StripeSubscriptionId Stripe subscription identifier for billing
 	StripeSubscriptionId *RowFilterPortalAccountsStripeSubscriptionId `form:"stripe_subscription_id,omitempty" json:"stripe_subscription_id,omitempty"`
@@ -1227,15 +1201,16 @@ type DeletePortalAccountsParamsPrefer string
 // GetPortalAccountsParams defines parameters for GetPortalAccounts.
 type GetPortalAccountsParams struct {
 	// PortalAccountId Unique identifier for the portal account
-	PortalAccountId                *RowFilterPortalAccountsPortalAccountId                `form:"portal_account_id,omitempty" json:"portal_account_id,omitempty"`
-	OrganizationId                 *RowFilterPortalAccountsOrganizationId                 `form:"organization_id,omitempty" json:"organization_id,omitempty"`
-	PortalPlanType                 *RowFilterPortalAccountsPortalPlanType                 `form:"portal_plan_type,omitempty" json:"portal_plan_type,omitempty"`
-	UserAccountName                *RowFilterPortalAccountsUserAccountName                `form:"user_account_name,omitempty" json:"user_account_name,omitempty"`
-	InternalAccountName            *RowFilterPortalAccountsInternalAccountName            `form:"internal_account_name,omitempty" json:"internal_account_name,omitempty"`
-	PortalAccountUserLimit         *RowFilterPortalAccountsPortalAccountUserLimit         `form:"portal_account_user_limit,omitempty" json:"portal_account_user_limit,omitempty"`
-	PortalAccountUserLimitInterval *RowFilterPortalAccountsPortalAccountUserLimitInterval `form:"portal_account_user_limit_interval,omitempty" json:"portal_account_user_limit_interval,omitempty"`
-	PortalAccountUserLimitRps      *RowFilterPortalAccountsPortalAccountUserLimitRps      `form:"portal_account_user_limit_rps,omitempty" json:"portal_account_user_limit_rps,omitempty"`
-	BillingType                    *RowFilterPortalAccountsBillingType                    `form:"billing_type,omitempty" json:"billing_type,omitempty"`
+	PortalAccountId                              *RowFilterPortalAccountsPortalAccountId                              `form:"portal_account_id,omitempty" json:"portal_account_id,omitempty"`
+	OrganizationId                               *RowFilterPortalAccountsOrganizationId                               `form:"organization_id,omitempty" json:"organization_id,omitempty"`
+	PortalPlanType                               *RowFilterPortalAccountsPortalPlanType                               `form:"portal_plan_type,omitempty" json:"portal_plan_type,omitempty"`
+	UserAccountName                              *RowFilterPortalAccountsUserAccountName                              `form:"user_account_name,omitempty" json:"user_account_name,omitempty"`
+	InternalAccountName                          *RowFilterPortalAccountsInternalAccountName                          `form:"internal_account_name,omitempty" json:"internal_account_name,omitempty"`
+	PortalAccountUserLimit                       *RowFilterPortalAccountsPortalAccountUserLimit                       `form:"portal_account_user_limit,omitempty" json:"portal_account_user_limit,omitempty"`
+	PortalAccountUserLimitInterval               *RowFilterPortalAccountsPortalAccountUserLimitInterval               `form:"portal_account_user_limit_interval,omitempty" json:"portal_account_user_limit_interval,omitempty"`
+	PortalAccountUserLimitRps                    *RowFilterPortalAccountsPortalAccountUserLimitRps                    `form:"portal_account_user_limit_rps,omitempty" json:"portal_account_user_limit_rps,omitempty"`
+	PortalAccountUserLimitNotificationThresholds *RowFilterPortalAccountsPortalAccountUserLimitNotificationThresholds `form:"portal_account_user_limit_notification_thresholds,omitempty" json:"portal_account_user_limit_notification_thresholds,omitempty"`
+	BillingType                                  *RowFilterPortalAccountsBillingType                                  `form:"billing_type,omitempty" json:"billing_type,omitempty"`
 
 	// StripeSubscriptionId Stripe subscription identifier for billing
 	StripeSubscriptionId *RowFilterPortalAccountsStripeSubscriptionId `form:"stripe_subscription_id,omitempty" json:"stripe_subscription_id,omitempty"`
@@ -1273,15 +1248,16 @@ type GetPortalAccountsParamsPrefer string
 // PatchPortalAccountsParams defines parameters for PatchPortalAccounts.
 type PatchPortalAccountsParams struct {
 	// PortalAccountId Unique identifier for the portal account
-	PortalAccountId                *RowFilterPortalAccountsPortalAccountId                `form:"portal_account_id,omitempty" json:"portal_account_id,omitempty"`
-	OrganizationId                 *RowFilterPortalAccountsOrganizationId                 `form:"organization_id,omitempty" json:"organization_id,omitempty"`
-	PortalPlanType                 *RowFilterPortalAccountsPortalPlanType                 `form:"portal_plan_type,omitempty" json:"portal_plan_type,omitempty"`
-	UserAccountName                *RowFilterPortalAccountsUserAccountName                `form:"user_account_name,omitempty" json:"user_account_name,omitempty"`
-	InternalAccountName            *RowFilterPortalAccountsInternalAccountName            `form:"internal_account_name,omitempty" json:"internal_account_name,omitempty"`
-	PortalAccountUserLimit         *RowFilterPortalAccountsPortalAccountUserLimit         `form:"portal_account_user_limit,omitempty" json:"portal_account_user_limit,omitempty"`
-	PortalAccountUserLimitInterval *RowFilterPortalAccountsPortalAccountUserLimitInterval `form:"portal_account_user_limit_interval,omitempty" json:"portal_account_user_limit_interval,omitempty"`
-	PortalAccountUserLimitRps      *RowFilterPortalAccountsPortalAccountUserLimitRps      `form:"portal_account_user_limit_rps,omitempty" json:"portal_account_user_limit_rps,omitempty"`
-	BillingType                    *RowFilterPortalAccountsBillingType                    `form:"billing_type,omitempty" json:"billing_type,omitempty"`
+	PortalAccountId                              *RowFilterPortalAccountsPortalAccountId                              `form:"portal_account_id,omitempty" json:"portal_account_id,omitempty"`
+	OrganizationId                               *RowFilterPortalAccountsOrganizationId                               `form:"organization_id,omitempty" json:"organization_id,omitempty"`
+	PortalPlanType                               *RowFilterPortalAccountsPortalPlanType                               `form:"portal_plan_type,omitempty" json:"portal_plan_type,omitempty"`
+	UserAccountName                              *RowFilterPortalAccountsUserAccountName                              `form:"user_account_name,omitempty" json:"user_account_name,omitempty"`
+	InternalAccountName                          *RowFilterPortalAccountsInternalAccountName                          `form:"internal_account_name,omitempty" json:"internal_account_name,omitempty"`
+	PortalAccountUserLimit                       *RowFilterPortalAccountsPortalAccountUserLimit                       `form:"portal_account_user_limit,omitempty" json:"portal_account_user_limit,omitempty"`
+	PortalAccountUserLimitInterval               *RowFilterPortalAccountsPortalAccountUserLimitInterval               `form:"portal_account_user_limit_interval,omitempty" json:"portal_account_user_limit_interval,omitempty"`
+	PortalAccountUserLimitRps                    *RowFilterPortalAccountsPortalAccountUserLimitRps                    `form:"portal_account_user_limit_rps,omitempty" json:"portal_account_user_limit_rps,omitempty"`
+	PortalAccountUserLimitNotificationThresholds *RowFilterPortalAccountsPortalAccountUserLimitNotificationThresholds `form:"portal_account_user_limit_notification_thresholds,omitempty" json:"portal_account_user_limit_notification_thresholds,omitempty"`
+	BillingType                                  *RowFilterPortalAccountsBillingType                                  `form:"billing_type,omitempty" json:"billing_type,omitempty"`
 
 	// StripeSubscriptionId Stripe subscription identifier for billing
 	StripeSubscriptionId *RowFilterPortalAccountsStripeSubscriptionId `form:"stripe_subscription_id,omitempty" json:"stripe_subscription_id,omitempty"`
@@ -1387,15 +1363,16 @@ type PostPortalApplicationRbacParamsPrefer string
 
 // DeletePortalApplicationsParams defines parameters for DeletePortalApplications.
 type DeletePortalApplicationsParams struct {
-	PortalApplicationId                *RowFilterPortalApplicationsPortalApplicationId                `form:"portal_application_id,omitempty" json:"portal_application_id,omitempty"`
-	PortalAccountId                    *RowFilterPortalApplicationsPortalAccountId                    `form:"portal_account_id,omitempty" json:"portal_account_id,omitempty"`
-	PortalApplicationName              *RowFilterPortalApplicationsPortalApplicationName              `form:"portal_application_name,omitempty" json:"portal_application_name,omitempty"`
-	Emoji                              *RowFilterPortalApplicationsEmoji                              `form:"emoji,omitempty" json:"emoji,omitempty"`
-	PortalApplicationUserLimit         *RowFilterPortalApplicationsPortalApplicationUserLimit         `form:"portal_application_user_limit,omitempty" json:"portal_application_user_limit,omitempty"`
-	PortalApplicationUserLimitInterval *RowFilterPortalApplicationsPortalApplicationUserLimitInterval `form:"portal_application_user_limit_interval,omitempty" json:"portal_application_user_limit_interval,omitempty"`
-	PortalApplicationUserLimitRps      *RowFilterPortalApplicationsPortalApplicationUserLimitRps      `form:"portal_application_user_limit_rps,omitempty" json:"portal_application_user_limit_rps,omitempty"`
-	PortalApplicationDescription       *RowFilterPortalApplicationsPortalApplicationDescription       `form:"portal_application_description,omitempty" json:"portal_application_description,omitempty"`
-	FavoriteServiceIds                 *RowFilterPortalApplicationsFavoriteServiceIds                 `form:"favorite_service_ids,omitempty" json:"favorite_service_ids,omitempty"`
+	PortalApplicationId                              *RowFilterPortalApplicationsPortalApplicationId                              `form:"portal_application_id,omitempty" json:"portal_application_id,omitempty"`
+	PortalAccountId                                  *RowFilterPortalApplicationsPortalAccountId                                  `form:"portal_account_id,omitempty" json:"portal_account_id,omitempty"`
+	PortalApplicationName                            *RowFilterPortalApplicationsPortalApplicationName                            `form:"portal_application_name,omitempty" json:"portal_application_name,omitempty"`
+	Emoji                                            *RowFilterPortalApplicationsEmoji                                            `form:"emoji,omitempty" json:"emoji,omitempty"`
+	PortalApplicationUserLimit                       *RowFilterPortalApplicationsPortalApplicationUserLimit                       `form:"portal_application_user_limit,omitempty" json:"portal_application_user_limit,omitempty"`
+	PortalApplicationUserLimitInterval               *RowFilterPortalApplicationsPortalApplicationUserLimitInterval               `form:"portal_application_user_limit_interval,omitempty" json:"portal_application_user_limit_interval,omitempty"`
+	PortalApplicationUserLimitRps                    *RowFilterPortalApplicationsPortalApplicationUserLimitRps                    `form:"portal_application_user_limit_rps,omitempty" json:"portal_application_user_limit_rps,omitempty"`
+	PortalApplicationUserLimitNotificationThresholds *RowFilterPortalApplicationsPortalApplicationUserLimitNotificationThresholds `form:"portal_application_user_limit_notification_thresholds,omitempty" json:"portal_application_user_limit_notification_thresholds,omitempty"`
+	PortalApplicationDescription                     *RowFilterPortalApplicationsPortalApplicationDescription                     `form:"portal_application_description,omitempty" json:"portal_application_description,omitempty"`
+	FavoriteServiceIds                               *RowFilterPortalApplicationsFavoriteServiceIds                               `form:"favorite_service_ids,omitempty" json:"favorite_service_ids,omitempty"`
 
 	// SecretKeyHash Hashed secret key for application authentication
 	SecretKeyHash     *RowFilterPortalApplicationsSecretKeyHash     `form:"secret_key_hash,omitempty" json:"secret_key_hash,omitempty"`
@@ -1413,15 +1390,16 @@ type DeletePortalApplicationsParamsPrefer string
 
 // GetPortalApplicationsParams defines parameters for GetPortalApplications.
 type GetPortalApplicationsParams struct {
-	PortalApplicationId                *RowFilterPortalApplicationsPortalApplicationId                `form:"portal_application_id,omitempty" json:"portal_application_id,omitempty"`
-	PortalAccountId                    *RowFilterPortalApplicationsPortalAccountId                    `form:"portal_account_id,omitempty" json:"portal_account_id,omitempty"`
-	PortalApplicationName              *RowFilterPortalApplicationsPortalApplicationName              `form:"portal_application_name,omitempty" json:"portal_application_name,omitempty"`
-	Emoji                              *RowFilterPortalApplicationsEmoji                              `form:"emoji,omitempty" json:"emoji,omitempty"`
-	PortalApplicationUserLimit         *RowFilterPortalApplicationsPortalApplicationUserLimit         `form:"portal_application_user_limit,omitempty" json:"portal_application_user_limit,omitempty"`
-	PortalApplicationUserLimitInterval *RowFilterPortalApplicationsPortalApplicationUserLimitInterval `form:"portal_application_user_limit_interval,omitempty" json:"portal_application_user_limit_interval,omitempty"`
-	PortalApplicationUserLimitRps      *RowFilterPortalApplicationsPortalApplicationUserLimitRps      `form:"portal_application_user_limit_rps,omitempty" json:"portal_application_user_limit_rps,omitempty"`
-	PortalApplicationDescription       *RowFilterPortalApplicationsPortalApplicationDescription       `form:"portal_application_description,omitempty" json:"portal_application_description,omitempty"`
-	FavoriteServiceIds                 *RowFilterPortalApplicationsFavoriteServiceIds                 `form:"favorite_service_ids,omitempty" json:"favorite_service_ids,omitempty"`
+	PortalApplicationId                              *RowFilterPortalApplicationsPortalApplicationId                              `form:"portal_application_id,omitempty" json:"portal_application_id,omitempty"`
+	PortalAccountId                                  *RowFilterPortalApplicationsPortalAccountId                                  `form:"portal_account_id,omitempty" json:"portal_account_id,omitempty"`
+	PortalApplicationName                            *RowFilterPortalApplicationsPortalApplicationName                            `form:"portal_application_name,omitempty" json:"portal_application_name,omitempty"`
+	Emoji                                            *RowFilterPortalApplicationsEmoji                                            `form:"emoji,omitempty" json:"emoji,omitempty"`
+	PortalApplicationUserLimit                       *RowFilterPortalApplicationsPortalApplicationUserLimit                       `form:"portal_application_user_limit,omitempty" json:"portal_application_user_limit,omitempty"`
+	PortalApplicationUserLimitInterval               *RowFilterPortalApplicationsPortalApplicationUserLimitInterval               `form:"portal_application_user_limit_interval,omitempty" json:"portal_application_user_limit_interval,omitempty"`
+	PortalApplicationUserLimitRps                    *RowFilterPortalApplicationsPortalApplicationUserLimitRps                    `form:"portal_application_user_limit_rps,omitempty" json:"portal_application_user_limit_rps,omitempty"`
+	PortalApplicationUserLimitNotificationThresholds *RowFilterPortalApplicationsPortalApplicationUserLimitNotificationThresholds `form:"portal_application_user_limit_notification_thresholds,omitempty" json:"portal_application_user_limit_notification_thresholds,omitempty"`
+	PortalApplicationDescription                     *RowFilterPortalApplicationsPortalApplicationDescription                     `form:"portal_application_description,omitempty" json:"portal_application_description,omitempty"`
+	FavoriteServiceIds                               *RowFilterPortalApplicationsFavoriteServiceIds                               `form:"favorite_service_ids,omitempty" json:"favorite_service_ids,omitempty"`
 
 	// SecretKeyHash Hashed secret key for application authentication
 	SecretKeyHash     *RowFilterPortalApplicationsSecretKeyHash     `form:"secret_key_hash,omitempty" json:"secret_key_hash,omitempty"`
@@ -1457,15 +1435,16 @@ type GetPortalApplicationsParamsPrefer string
 
 // PatchPortalApplicationsParams defines parameters for PatchPortalApplications.
 type PatchPortalApplicationsParams struct {
-	PortalApplicationId                *RowFilterPortalApplicationsPortalApplicationId                `form:"portal_application_id,omitempty" json:"portal_application_id,omitempty"`
-	PortalAccountId                    *RowFilterPortalApplicationsPortalAccountId                    `form:"portal_account_id,omitempty" json:"portal_account_id,omitempty"`
-	PortalApplicationName              *RowFilterPortalApplicationsPortalApplicationName              `form:"portal_application_name,omitempty" json:"portal_application_name,omitempty"`
-	Emoji                              *RowFilterPortalApplicationsEmoji                              `form:"emoji,omitempty" json:"emoji,omitempty"`
-	PortalApplicationUserLimit         *RowFilterPortalApplicationsPortalApplicationUserLimit         `form:"portal_application_user_limit,omitempty" json:"portal_application_user_limit,omitempty"`
-	PortalApplicationUserLimitInterval *RowFilterPortalApplicationsPortalApplicationUserLimitInterval `form:"portal_application_user_limit_interval,omitempty" json:"portal_application_user_limit_interval,omitempty"`
-	PortalApplicationUserLimitRps      *RowFilterPortalApplicationsPortalApplicationUserLimitRps      `form:"portal_application_user_limit_rps,omitempty" json:"portal_application_user_limit_rps,omitempty"`
-	PortalApplicationDescription       *RowFilterPortalApplicationsPortalApplicationDescription       `form:"portal_application_description,omitempty" json:"portal_application_description,omitempty"`
-	FavoriteServiceIds                 *RowFilterPortalApplicationsFavoriteServiceIds                 `form:"favorite_service_ids,omitempty" json:"favorite_service_ids,omitempty"`
+	PortalApplicationId                              *RowFilterPortalApplicationsPortalApplicationId                              `form:"portal_application_id,omitempty" json:"portal_application_id,omitempty"`
+	PortalAccountId                                  *RowFilterPortalApplicationsPortalAccountId                                  `form:"portal_account_id,omitempty" json:"portal_account_id,omitempty"`
+	PortalApplicationName                            *RowFilterPortalApplicationsPortalApplicationName                            `form:"portal_application_name,omitempty" json:"portal_application_name,omitempty"`
+	Emoji                                            *RowFilterPortalApplicationsEmoji                                            `form:"emoji,omitempty" json:"emoji,omitempty"`
+	PortalApplicationUserLimit                       *RowFilterPortalApplicationsPortalApplicationUserLimit                       `form:"portal_application_user_limit,omitempty" json:"portal_application_user_limit,omitempty"`
+	PortalApplicationUserLimitInterval               *RowFilterPortalApplicationsPortalApplicationUserLimitInterval               `form:"portal_application_user_limit_interval,omitempty" json:"portal_application_user_limit_interval,omitempty"`
+	PortalApplicationUserLimitRps                    *RowFilterPortalApplicationsPortalApplicationUserLimitRps                    `form:"portal_application_user_limit_rps,omitempty" json:"portal_application_user_limit_rps,omitempty"`
+	PortalApplicationUserLimitNotificationThresholds *RowFilterPortalApplicationsPortalApplicationUserLimitNotificationThresholds `form:"portal_application_user_limit_notification_thresholds,omitempty" json:"portal_application_user_limit_notification_thresholds,omitempty"`
+	PortalApplicationDescription                     *RowFilterPortalApplicationsPortalApplicationDescription                     `form:"portal_application_description,omitempty" json:"portal_application_description,omitempty"`
+	FavoriteServiceIds                               *RowFilterPortalApplicationsFavoriteServiceIds                               `form:"favorite_service_ids,omitempty" json:"favorite_service_ids,omitempty"`
 
 	// SecretKeyHash Hashed secret key for application authentication
 	SecretKeyHash     *RowFilterPortalApplicationsSecretKeyHash     `form:"secret_key_hash,omitempty" json:"secret_key_hash,omitempty"`
@@ -1735,11 +1714,8 @@ type PostRpcArmorApplicationVndPgrstObjectPlusJSONNullsStrippedBody struct {
 // PostRpcArmorParams defines parameters for PostRpcArmor.
 type PostRpcArmorParams struct {
 	// Prefer Preference
-	Prefer *PostRpcArmorParamsPrefer `json:"Prefer,omitempty"`
+	Prefer *PreferParams `json:"Prefer,omitempty"`
 }
-
-// PostRpcArmorParamsPrefer defines parameters for PostRpcArmor.
-type PostRpcArmorParamsPrefer string
 
 // GetRpcDearmorParams defines parameters for GetRpcDearmor.
 type GetRpcDearmorParams struct {
@@ -1764,11 +1740,8 @@ type PostRpcDearmorApplicationVndPgrstObjectPlusJSONNullsStrippedBody struct {
 // PostRpcDearmorParams defines parameters for PostRpcDearmor.
 type PostRpcDearmorParams struct {
 	// Prefer Preference
-	Prefer *PostRpcDearmorParamsPrefer `json:"Prefer,omitempty"`
+	Prefer *PreferParams `json:"Prefer,omitempty"`
 }
-
-// PostRpcDearmorParamsPrefer defines parameters for PostRpcDearmor.
-type PostRpcDearmorParamsPrefer string
 
 // PostRpcGenRandomUuidJSONBody defines parameters for PostRpcGenRandomUuid.
 type PostRpcGenRandomUuidJSONBody = map[string]interface{}
@@ -1782,15 +1755,7 @@ type PostRpcGenRandomUuidApplicationVndPgrstObjectPlusJSONNullsStrippedBody = ma
 // PostRpcGenRandomUuidParams defines parameters for PostRpcGenRandomUuid.
 type PostRpcGenRandomUuidParams struct {
 	// Prefer Preference
-	Prefer *PostRpcGenRandomUuidParamsPrefer `json:"Prefer,omitempty"`
-}
-
-// PostRpcGenRandomUuidParamsPrefer defines parameters for PostRpcGenRandomUuid.
-type PostRpcGenRandomUuidParamsPrefer string
-
-// GetRpcGenSaltParams defines parameters for GetRpcGenSalt.
-type GetRpcGenSaltParams struct {
-	Empty string `form:"" json:""`
+	Prefer *PreferParams `json:"Prefer,omitempty"`
 }
 
 // PostRpcGenSaltJSONBody defines parameters for PostRpcGenSalt.
@@ -1811,11 +1776,8 @@ type PostRpcGenSaltApplicationVndPgrstObjectPlusJSONNullsStrippedBody struct {
 // PostRpcGenSaltParams defines parameters for PostRpcGenSalt.
 type PostRpcGenSaltParams struct {
 	// Prefer Preference
-	Prefer *PostRpcGenSaltParamsPrefer `json:"Prefer,omitempty"`
+	Prefer *PreferParams `json:"Prefer,omitempty"`
 }
-
-// PostRpcGenSaltParamsPrefer defines parameters for PostRpcGenSalt.
-type PostRpcGenSaltParamsPrefer string
 
 // GetRpcPgpArmorHeadersParams defines parameters for GetRpcPgpArmorHeaders.
 type GetRpcPgpArmorHeadersParams struct {
@@ -1840,11 +1802,8 @@ type PostRpcPgpArmorHeadersApplicationVndPgrstObjectPlusJSONNullsStrippedBody st
 // PostRpcPgpArmorHeadersParams defines parameters for PostRpcPgpArmorHeaders.
 type PostRpcPgpArmorHeadersParams struct {
 	// Prefer Preference
-	Prefer *PostRpcPgpArmorHeadersParamsPrefer `json:"Prefer,omitempty"`
+	Prefer *PreferParams `json:"Prefer,omitempty"`
 }
-
-// PostRpcPgpArmorHeadersParamsPrefer defines parameters for PostRpcPgpArmorHeaders.
-type PostRpcPgpArmorHeadersParamsPrefer string
 
 // GetRpcPgpKeyIdParams defines parameters for GetRpcPgpKeyId.
 type GetRpcPgpKeyIdParams struct {
@@ -1869,11 +1828,8 @@ type PostRpcPgpKeyIdApplicationVndPgrstObjectPlusJSONNullsStrippedBody struct {
 // PostRpcPgpKeyIdParams defines parameters for PostRpcPgpKeyId.
 type PostRpcPgpKeyIdParams struct {
 	// Prefer Preference
-	Prefer *PostRpcPgpKeyIdParamsPrefer `json:"Prefer,omitempty"`
+	Prefer *PreferParams `json:"Prefer,omitempty"`
 }
-
-// PostRpcPgpKeyIdParamsPrefer defines parameters for PostRpcPgpKeyId.
-type PostRpcPgpKeyIdParamsPrefer string
 
 // DeleteServiceEndpointsParams defines parameters for DeleteServiceEndpoints.
 type DeleteServiceEndpointsParams struct {
