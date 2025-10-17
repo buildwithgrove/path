@@ -1,0 +1,9 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/oapi-codegen/oapi-codegen/HEAD/configuration-schema.json
+package: portaldb
+output: ../../sdk/go/models.go
+generate:
+  models: true
+  embedded-spec: false
+output-options:
+  skip-fmt: false
+  skip-prune: false

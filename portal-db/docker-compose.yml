@@ -41,12 +41,19 @@ services:
     volumes:
       # PostgreSQL data persistence (survives container restarts)
       - ./tmp/portal_db_data:/var/lib/postgresql/data
-      # Initialization scripts (run in alphabetical order on first startup)
+
+      # 1. Initialization scripts (run in alphabetical order on first startup)
       # Documentation: https://hub.docker.com/_/postgres#initialization-scripts
       # 001_portal_init.sql: Initial PostgreSQL schema
       - ./schema/001_portal_init.sql:/docker-entrypoint-initdb.d/001_portal_init.sql:ro
       # 002_postgrest_init.sql: PostgREST API setup (roles, permissions, JWT)
       - ./schema/002_postgrest_init.sql:/docker-entrypoint-initdb.d/002_postgrest_init.sql:ro
+
+      # 2. LOCAL DEV ONLY: mount local_development_only_set_authenticator_password.sql: Set authenticator password
+      #   - Required to set the authenticator role's password to 'authenticator_password' for the local development environment.
+      #   - In production environments, the password will be set by an admin outside of SQL migration files.
+      - ./api/scripts/local_development_only_set_authenticator_password.sql:/docker-entrypoint-initdb.d/999_set_authenticator_password.sql:ro
+
     healthcheck:
       # Health check to ensure database is ready before starting PostgREST
       test: ["CMD", "pg_isready", "-U", "postgres", "-d", "portal_db"]

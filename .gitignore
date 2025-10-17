@@ -85,3 +85,9 @@ pg_dump.sql
 
 # Benchmark Results
 bench_results
+
+# Node Modules (Portal DBTypeScript SDK)
+node_modules
+
+# JWKS file
+jwks.json

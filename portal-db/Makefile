@@ -166,6 +166,11 @@ postgrest-swagger-ui: postgrest-generate-openapi ## Start Swagger UI to view Ope
 		-v $(PWD)/api/openapi/openapi.json:/openapi.json:ro \
 		swaggerapi/swagger-ui
 
+.PHONY: postgrest-generate-sdks
+postgrest-generate-sdks: postgrest-generate-openapi ## Generate Go and TypeScript SDKs from OpenAPI specification
+	@echo "🔧 Generating Go and TypeScript SDKs from OpenAPI specification..."
+	cd api/codegen && ./generate-sdks.sh
+
 # ============================================================================
 # AUTHENTICATION & TESTING
 # ============================================================================
@@ -190,7 +195,7 @@ _require-portal-db:
 .PHONY: test-postgrest-auth
 test-postgrest-auth: _require-postgrest-api ## Test JWT authentication flow
 	@echo "🔐 Testing JWT authentication..."
-	cd api/scripts && ./test-postgrest-auth.sh
+	cd api/scripts && ./postgrest-test-auth.sh
 
 .PHONY: test-postgrest-portal-app-creation
 test-postgrest-portal-app-creation: _require-postgrest-api ## Test portal application creation and retrieval via authenticated Postgres flow
