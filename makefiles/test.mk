@@ -102,7 +102,3 @@ config_enable_grove_fallback: ## Enable fallback endpoints for all services in P
 	@echo "📝 Updating local/path/.config.yaml to send all traffic to fallback endpoints"
 	@yq eval '.shannon_config.gateway_config.service_fallback[].send_all_traffic = true' -i local/path/.config.yaml
 	@echo "✅ Fallback endpoints enabled for all services"
-
-# In order to allow passing the service IDs to the load test targets, this target is needed to avoid printing an error.
-%:
-	@:

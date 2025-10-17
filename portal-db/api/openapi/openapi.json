@@ -222,9 +222,6 @@
             "$ref": "#/components/parameters/rowFilter.portal_accounts.portal_account_user_limit_rps"
           },
           {
-            "$ref": "#/components/parameters/rowFilter.portal_accounts.portal_account_user_limit_notification_thresholds"
-          },
-          {
             "$ref": "#/components/parameters/rowFilter.portal_accounts.billing_type"
           },
           {
@@ -363,9 +360,6 @@
             "$ref": "#/components/parameters/rowFilter.portal_accounts.portal_account_user_limit_rps"
           },
           {
-            "$ref": "#/components/parameters/rowFilter.portal_accounts.portal_account_user_limit_notification_thresholds"
-          },
-          {
             "$ref": "#/components/parameters/rowFilter.portal_accounts.billing_type"
           },
           {
@@ -425,9 +419,6 @@
           },
           {
             "$ref": "#/components/parameters/rowFilter.portal_accounts.portal_account_user_limit_rps"
-          },
-          {
-            "$ref": "#/components/parameters/rowFilter.portal_accounts.portal_account_user_limit_notification_thresholds"
           },
           {
             "$ref": "#/components/parameters/rowFilter.portal_accounts.billing_type"
@@ -827,199 +818,6 @@
         ]
       }
     },
-    "/portal_users": {
-      "get": {
-        "parameters": [
-          {
-            "$ref": "#/components/parameters/rowFilter.portal_users.portal_user_id"
-          },
-          {
-            "$ref": "#/components/parameters/rowFilter.portal_users.portal_user_email"
-          },
-          {
-            "$ref": "#/components/parameters/rowFilter.portal_users.signed_up"
-          },
-          {
-            "$ref": "#/components/parameters/rowFilter.portal_users.portal_admin"
-          },
-          {
-            "$ref": "#/components/parameters/rowFilter.portal_users.deleted_at"
-          },
-          {
-            "$ref": "#/components/parameters/rowFilter.portal_users.created_at"
-          },
-          {
-            "$ref": "#/components/parameters/rowFilter.portal_users.updated_at"
-          },
-          {
-            "$ref": "#/components/parameters/select"
-          },
-          {
-            "$ref": "#/components/parameters/order"
-          },
-          {
-            "$ref": "#/components/parameters/range"
-          },
-          {
-            "$ref": "#/components/parameters/rangeUnit"
-          },
-          {
-            "$ref": "#/components/parameters/offset"
-          },
-          {
-            "$ref": "#/components/parameters/limit"
-          },
-          {
-            "$ref": "#/components/parameters/preferCount"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "items": {
-                    "$ref": "#/components/schemas/portal_users"
-                  },
-                  "type": "array"
-                }
-              },
-              "application/vnd.pgrst.object+json;nulls=stripped": {
-                "schema": {
-                  "items": {
-                    "$ref": "#/components/schemas/portal_users"
-                  },
-                  "type": "array"
-                }
-              },
-              "application/vnd.pgrst.object+json": {
-                "schema": {
-                  "items": {
-                    "$ref": "#/components/schemas/portal_users"
-                  },
-                  "type": "array"
-                }
-              },
-              "text/csv": {
-                "schema": {
-                  "items": {
-                    "$ref": "#/components/schemas/portal_users"
-                  },
-                  "type": "array"
-                }
-              }
-            }
-          },
-          "206": {
-            "description": "Partial Content"
-          }
-        },
-        "summary": "Users who can access the portal and belong to multiple accounts",
-        "tags": [
-          "portal_users"
-        ]
-      },
-      "post": {
-        "parameters": [
-          {
-            "$ref": "#/components/parameters/select"
-          },
-          {
-            "$ref": "#/components/parameters/preferPost"
-          }
-        ],
-        "requestBody": {
-          "$ref": "#/components/requestBodies/portal_users"
-        },
-        "responses": {
-          "201": {
-            "description": "Created"
-          }
-        },
-        "summary": "Users who can access the portal and belong to multiple accounts",
-        "tags": [
-          "portal_users"
-        ]
-      },
-      "delete": {
-        "parameters": [
-          {
-            "$ref": "#/components/parameters/rowFilter.portal_users.portal_user_id"
-          },
-          {
-            "$ref": "#/components/parameters/rowFilter.portal_users.portal_user_email"
-          },
-          {
-            "$ref": "#/components/parameters/rowFilter.portal_users.signed_up"
-          },
-          {
-            "$ref": "#/components/parameters/rowFilter.portal_users.portal_admin"
-          },
-          {
-            "$ref": "#/components/parameters/rowFilter.portal_users.deleted_at"
-          },
-          {
-            "$ref": "#/components/parameters/rowFilter.portal_users.created_at"
-          },
-          {
-            "$ref": "#/components/parameters/rowFilter.portal_users.updated_at"
-          },
-          {
-            "$ref": "#/components/parameters/preferReturn"
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "No Content"
-          }
-        },
-        "summary": "Users who can access the portal and belong to multiple accounts",
-        "tags": [
-          "portal_users"
-        ]
-      },
-      "patch": {
-        "parameters": [
-          {
-            "$ref": "#/components/parameters/rowFilter.portal_users.portal_user_id"
-          },
-          {
-            "$ref": "#/components/parameters/rowFilter.portal_users.portal_user_email"
-          },
-          {
-            "$ref": "#/components/parameters/rowFilter.portal_users.signed_up"
-          },
-          {
-            "$ref": "#/components/parameters/rowFilter.portal_users.portal_admin"
-          },
-          {
-            "$ref": "#/components/parameters/rowFilter.portal_users.deleted_at"
-          },
-          {
-            "$ref": "#/components/parameters/rowFilter.portal_users.created_at"
-          },
-          {
-            "$ref": "#/components/parameters/rowFilter.portal_users.updated_at"
-          },
-          {
-            "$ref": "#/components/parameters/preferReturn"
-          }
-        ],
-        "requestBody": {
-          "$ref": "#/components/requestBodies/portal_users"
-        },
-        "responses": {
-          "204": {
-            "description": "No Content"
-          }
-        },
-        "summary": "Users who can access the portal and belong to multiple accounts",
-        "tags": [
-          "portal_users"
-        ]
-      }
-    },
     "/services": {
       "get": {
         "parameters": [
@@ -1309,103 +1107,6 @@
         "summary": "Supported blockchain services from the Pocket Network",
         "tags": [
           "services"
-        ]
-      }
-    },
-    "/portal_workers_account_data": {
-      "get": {
-        "parameters": [
-          {
-            "$ref": "#/components/parameters/rowFilter.portal_workers_account_data.portal_account_id"
-          },
-          {
-            "$ref": "#/components/parameters/rowFilter.portal_workers_account_data.user_account_name"
-          },
-          {
-            "$ref": "#/components/parameters/rowFilter.portal_workers_account_data.portal_plan_type"
-          },
-          {
-            "$ref": "#/components/parameters/rowFilter.portal_workers_account_data.billing_type"
-          },
-          {
-            "$ref": "#/components/parameters/rowFilter.portal_workers_account_data.portal_account_user_limit"
-          },
-          {
-            "$ref": "#/components/parameters/rowFilter.portal_workers_account_data.gcp_entitlement_id"
-          },
-          {
-            "$ref": "#/components/parameters/rowFilter.portal_workers_account_data.owner_email"
-          },
-          {
-            "$ref": "#/components/parameters/rowFilter.portal_workers_account_data.owner_user_id"
-          },
-          {
-            "$ref": "#/components/parameters/select"
-          },
-          {
-            "$ref": "#/components/parameters/order"
-          },
-          {
-            "$ref": "#/components/parameters/range"
-          },
-          {
-            "$ref": "#/components/parameters/rangeUnit"
-          },
-          {
-            "$ref": "#/components/parameters/offset"
-          },
-          {
-            "$ref": "#/components/parameters/limit"
-          },
-          {
-            "$ref": "#/components/parameters/preferCount"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "items": {
-                    "$ref": "#/components/schemas/portal_workers_account_data"
-                  },
-                  "type": "array"
-                }
-              },
-              "application/vnd.pgrst.object+json;nulls=stripped": {
-                "schema": {
-                  "items": {
-                    "$ref": "#/components/schemas/portal_workers_account_data"
-                  },
-                  "type": "array"
-                }
-              },
-              "application/vnd.pgrst.object+json": {
-                "schema": {
-                  "items": {
-                    "$ref": "#/components/schemas/portal_workers_account_data"
-                  },
-                  "type": "array"
-                }
-              },
-              "text/csv": {
-                "schema": {
-                  "items": {
-                    "$ref": "#/components/schemas/portal_workers_account_data"
-                  },
-                  "type": "array"
-                }
-              }
-            }
-          },
-          "206": {
-            "description": "Partial Content"
-          }
-        },
-        "summary": "Account data for portal-workers billing operations with owner email. Filter using WHERE portal_plan_type = 'PLAN_UNLIMITED' AND billing_type = 'stripe'",
-        "tags": [
-          "portal_workers_account_data"
         ]
       }
     },
@@ -1923,9 +1624,6 @@
             "$ref": "#/components/parameters/rowFilter.portal_applications.portal_application_user_limit_rps"
           },
           {
-            "$ref": "#/components/parameters/rowFilter.portal_applications.portal_application_user_limit_notification_thresholds"
-          },
-          {
             "$ref": "#/components/parameters/rowFilter.portal_applications.portal_application_description"
           },
           {
@@ -2061,9 +1759,6 @@
             "$ref": "#/components/parameters/rowFilter.portal_applications.portal_application_user_limit_rps"
           },
           {
-            "$ref": "#/components/parameters/rowFilter.portal_applications.portal_application_user_limit_notification_thresholds"
-          },
-          {
             "$ref": "#/components/parameters/rowFilter.portal_applications.portal_application_description"
           },
           {
@@ -2120,9 +1815,6 @@
           },
           {
             "$ref": "#/components/parameters/rowFilter.portal_applications.portal_application_user_limit_rps"
-          },
-          {
-            "$ref": "#/components/parameters/rowFilter.portal_applications.portal_application_user_limit_notification_thresholds"
           },
           {
             "$ref": "#/components/parameters/rowFilter.portal_applications.portal_application_description"
@@ -2388,8 +2080,7 @@
             "name": "",
             "required": true,
             "schema": {
-              "type": "string",
-              "format": "bytea"
+              "type": "string"
             }
           }
         ],
@@ -2429,8 +2120,7 @@
             "name": "",
             "required": true,
             "schema": {
-              "type": "string",
-              "format": "text"
+              "type": "string"
             }
           }
         ],
@@ -2490,8 +2180,7 @@
             "name": "",
             "required": true,
             "schema": {
-              "type": "string",
-              "format": "text"
+              "type": "string"
             }
           }
         ],
@@ -2531,8 +2220,7 @@
             "name": "",
             "required": true,
             "schema": {
-              "type": "string",
-              "format": "bytea"
+              "type": "string"
             }
           }
         ],
@@ -2796,14 +2484,6 @@
           "type": "string"
         }
       },
-      "rowFilter.portal_accounts.portal_account_user_limit_notification_thresholds": {
-        "name": "portal_account_user_limit_notification_thresholds",
-        "required": false,
-        "in": "query",
-        "schema": {
-          "type": "string"
-        }
-      },
       "rowFilter.portal_accounts.billing_type": {
         "name": "billing_type",
         "required": false,
@@ -2945,64 +2625,6 @@
       },
       "rowFilter.portal_plans.plan_application_limit": {
         "name": "plan_application_limit",
-        "required": false,
-        "in": "query",
-        "schema": {
-          "type": "string"
-        }
-      },
-      "rowFilter.portal_users.portal_user_id": {
-        "name": "portal_user_id",
-        "required": false,
-        "in": "query",
-        "schema": {
-          "type": "string"
-        }
-      },
-      "rowFilter.portal_users.portal_user_email": {
-        "name": "portal_user_email",
-        "description": "Unique email address for the user",
-        "required": false,
-        "in": "query",
-        "schema": {
-          "type": "string"
-        }
-      },
-      "rowFilter.portal_users.signed_up": {
-        "name": "signed_up",
-        "required": false,
-        "in": "query",
-        "schema": {
-          "type": "string"
-        }
-      },
-      "rowFilter.portal_users.portal_admin": {
-        "name": "portal_admin",
-        "description": "Whether user has admin privileges across the portal",
-        "required": false,
-        "in": "query",
-        "schema": {
-          "type": "string"
-        }
-      },
-      "rowFilter.portal_users.deleted_at": {
-        "name": "deleted_at",
-        "required": false,
-        "in": "query",
-        "schema": {
-          "type": "string"
-        }
-      },
-      "rowFilter.portal_users.created_at": {
-        "name": "created_at",
-        "required": false,
-        "in": "query",
-        "schema": {
-          "type": "string"
-        }
-      },
-      "rowFilter.portal_users.updated_at": {
-        "name": "updated_at",
         "required": false,
         "in": "query",
         "schema": {
@@ -3155,70 +2777,6 @@
           "type": "string"
         }
       },
-      "rowFilter.portal_workers_account_data.portal_account_id": {
-        "name": "portal_account_id",
-        "required": false,
-        "in": "query",
-        "schema": {
-          "type": "string"
-        }
-      },
-      "rowFilter.portal_workers_account_data.user_account_name": {
-        "name": "user_account_name",
-        "required": false,
-        "in": "query",
-        "schema": {
-          "type": "string"
-        }
-      },
-      "rowFilter.portal_workers_account_data.portal_plan_type": {
-        "name": "portal_plan_type",
-        "required": false,
-        "in": "query",
-        "schema": {
-          "type": "string"
-        }
-      },
-      "rowFilter.portal_workers_account_data.billing_type": {
-        "name": "billing_type",
-        "required": false,
-        "in": "query",
-        "schema": {
-          "type": "string"
-        }
-      },
-      "rowFilter.portal_workers_account_data.portal_account_user_limit": {
-        "name": "portal_account_user_limit",
-        "required": false,
-        "in": "query",
-        "schema": {
-          "type": "string"
-        }
-      },
-      "rowFilter.portal_workers_account_data.gcp_entitlement_id": {
-        "name": "gcp_entitlement_id",
-        "required": false,
-        "in": "query",
-        "schema": {
-          "type": "string"
-        }
-      },
-      "rowFilter.portal_workers_account_data.owner_email": {
-        "name": "owner_email",
-        "required": false,
-        "in": "query",
-        "schema": {
-          "type": "string"
-        }
-      },
-      "rowFilter.portal_workers_account_data.owner_user_id": {
-        "name": "owner_user_id",
-        "required": false,
-        "in": "query",
-        "schema": {
-          "type": "string"
-        }
-      },
       "rowFilter.networks.network_id": {
         "name": "network_id",
         "required": false,
@@ -3359,14 +2917,6 @@
       },
       "rowFilter.portal_applications.portal_application_user_limit_rps": {
         "name": "portal_application_user_limit_rps",
-        "required": false,
-        "in": "query",
-        "schema": {
-          "type": "string"
-        }
-      },
-      "rowFilter.portal_applications.portal_application_user_limit_notification_thresholds": {
-        "name": "portal_application_user_limit_notification_thresholds",
         "required": false,
         "in": "query",
         "schema": {
@@ -3522,31 +3072,6 @@
         },
         "description": "networks"
       },
-      "portal_users": {
-        "content": {
-          "application/json": {
-            "schema": {
-              "$ref": "#/components/schemas/portal_users"
-            }
-          },
-          "application/vnd.pgrst.object+json;nulls=stripped": {
-            "schema": {
-              "$ref": "#/components/schemas/portal_users"
-            }
-          },
-          "application/vnd.pgrst.object+json": {
-            "schema": {
-              "$ref": "#/components/schemas/portal_users"
-            }
-          },
-          "text/csv": {
-            "schema": {
-              "$ref": "#/components/schemas/portal_users"
-            }
-          }
-        },
-        "description": "portal_users"
-      },
       "service_endpoints": {
         "content": {
           "application/json": {
@@ -3578,7 +3103,6 @@
             "schema": {
               "properties": {
                 "": {
-                  "format": "bytea",
                   "type": "string"
                 }
               },
@@ -3592,7 +3116,6 @@
             "schema": {
               "properties": {
                 "": {
-                  "format": "bytea",
                   "type": "string"
                 }
               },
@@ -3606,7 +3129,6 @@
             "schema": {
               "properties": {
                 "": {
-                  "format": "bytea",
                   "type": "string"
                 }
               },
@@ -3620,7 +3142,6 @@
             "schema": {
               "properties": {
                 "": {
-                  "format": "bytea",
                   "type": "string"
                 }
               },
@@ -3814,7 +3335,6 @@
             "schema": {
               "properties": {
                 "": {
-                  "format": "text",
                   "type": "string"
                 }
               },
@@ -3828,7 +3348,6 @@
             "schema": {
               "properties": {
                 "": {
-                  "format": "text",
                   "type": "string"
                 }
               },
@@ -3842,7 +3361,6 @@
             "schema": {
               "properties": {
                 "": {
-                  "format": "text",
                   "type": "string"
                 }
               },
@@ -3856,7 +3374,6 @@
             "schema": {
               "properties": {
                 "": {
-                  "format": "text",
                   "type": "string"
                 }
               },
@@ -3880,12 +3397,10 @@
         "properties": {
           "endpoint_id": {
             "description": "Note:\nThis is a Primary Key.<pk/>",
-            "format": "integer",
             "type": "integer"
           },
           "service_id": {
             "description": "Note:\nThis is a Foreign Key to `services.service_id`.<fk table='services' column='service_id'/>",
-            "format": "character varying",
             "maxLength": 42,
             "type": "string"
           },
@@ -3898,17 +3413,14 @@
               "WSS",
               "gRPC"
             ],
-            "format": "public.endpoint_type",
             "type": "string"
           },
           "created_at": {
             "default": "CURRENT_TIMESTAMP",
-            "format": "timestamp with time zone",
             "type": "string"
           },
           "updated_at": {
             "default": "CURRENT_TIMESTAMP",
-            "format": "timestamp with time zone",
             "type": "string"
           }
         },
@@ -3924,33 +3436,27 @@
           "portal_account_id": {
             "default": "gen_random_uuid()",
             "description": "Unique identifier for the portal account\n\nNote:\nThis is a Primary Key.<pk/>",
-            "format": "character varying",
             "maxLength": 36,
             "type": "string"
           },
           "organization_id": {
             "description": "Note:\nThis is a Foreign Key to `organizations.organization_id`.<fk table='organizations' column='organization_id'/>",
-            "format": "integer",
             "type": "integer"
           },
           "portal_plan_type": {
             "description": "Note:\nThis is a Foreign Key to `portal_plans.portal_plan_type`.<fk table='portal_plans' column='portal_plan_type'/>",
-            "format": "character varying",
             "maxLength": 42,
             "type": "string"
           },
           "user_account_name": {
-            "format": "character varying",
             "maxLength": 42,
             "type": "string"
           },
           "internal_account_name": {
-            "format": "character varying",
             "maxLength": 42,
             "type": "string"
           },
           "portal_account_user_limit": {
-            "format": "integer",
             "type": "integer"
           },
           "portal_account_user_limit_interval": {
@@ -3959,53 +3465,37 @@
               "month",
               "year"
             ],
-            "format": "public.plan_interval",
             "type": "string"
           },
           "portal_account_user_limit_rps": {
-            "format": "integer",
             "type": "integer"
           },
-          "portal_account_user_limit_notification_thresholds": {
-            "format": "integer[]",
-            "items": {
-              "type": "integer"
-            },
-            "type": "array"
-          },
           "billing_type": {
-            "format": "character varying",
             "maxLength": 20,
             "type": "string"
           },
           "stripe_subscription_id": {
             "description": "Stripe subscription identifier for billing",
-            "format": "character varying",
             "maxLength": 255,
             "type": "string"
           },
           "gcp_account_id": {
-            "format": "character varying",
             "maxLength": 255,
             "type": "string"
           },
           "gcp_entitlement_id": {
-            "format": "character varying",
             "maxLength": 255,
             "type": "string"
           },
           "deleted_at": {
-            "format": "timestamp with time zone",
             "type": "string"
           },
           "created_at": {
             "default": "CURRENT_TIMESTAMP",
-            "format": "timestamp with time zone",
             "type": "string"
           },
           "updated_at": {
             "default": "CURRENT_TIMESTAMP",
-            "format": "timestamp with time zone",
             "type": "string"
           }
         },
@@ -4021,29 +3511,24 @@
         "properties": {
           "id": {
             "description": "Note:\nThis is a Primary Key.<pk/>",
-            "format": "integer",
             "type": "integer"
           },
           "portal_application_id": {
             "description": "Note:\nThis is a Foreign Key to `portal_applications.portal_application_id`.<fk table='portal_applications' column='portal_application_id'/>",
-            "format": "character varying",
             "maxLength": 36,
             "type": "string"
           },
           "portal_user_id": {
             "description": "Note:\nThis is a Foreign Key to `portal_users.portal_user_id`.<fk table='portal_users' column='portal_user_id'/>",
-            "format": "character varying",
             "maxLength": 36,
             "type": "string"
           },
           "created_at": {
             "default": "CURRENT_TIMESTAMP",
-            "format": "timestamp with time zone",
             "type": "string"
           },
           "updated_at": {
             "default": "CURRENT_TIMESTAMP",
-            "format": "timestamp with time zone",
             "type": "string"
           }
         },
@@ -4057,18 +3542,15 @@
         "properties": {
           "portal_plan_type": {
             "description": "Note:\nThis is a Primary Key.<pk/>",
-            "format": "character varying",
             "maxLength": 42,
             "type": "string"
           },
           "portal_plan_type_description": {
-            "format": "character varying",
             "maxLength": 420,
             "type": "string"
           },
           "plan_usage_limit": {
             "description": "Maximum usage allowed within the interval",
-            "format": "integer",
             "type": "integer"
           },
           "plan_usage_limit_interval": {
@@ -4077,62 +3559,14 @@
               "month",
               "year"
             ],
-            "format": "public.plan_interval",
             "type": "string"
           },
           "plan_rate_limit_rps": {
             "description": "Rate limit in requests per second",
-            "format": "integer",
             "type": "integer"
           },
           "plan_application_limit": {
-            "format": "integer",
             "type": "integer"
-          }
-        },
-        "type": "object"
-      },
-      "portal_users": {
-        "description": "Users who can access the portal and belong to multiple accounts",
-        "required": [
-          "portal_user_id",
-          "portal_user_email"
-        ],
-        "properties": {
-          "portal_user_id": {
-            "description": "Note:\nThis is a Primary Key.<pk/>",
-            "format": "character varying",
-            "maxLength": 36,
-            "type": "string"
-          },
-          "portal_user_email": {
-            "description": "Unique email address for the user",
-            "format": "character varying",
-            "maxLength": 255,
-            "type": "string"
-          },
-          "signed_up": {
-            "default": false,
-            "type": "boolean"
-          },
-          "portal_admin": {
-            "default": false,
-            "description": "Whether user has admin privileges across the portal",
-            "type": "boolean"
-          },
-          "deleted_at": {
-            "format": "timestamp with time zone",
-            "type": "string"
-          },
-          "created_at": {
-            "default": "CURRENT_TIMESTAMP",
-            "format": "timestamp with time zone",
-            "type": "string"
-          },
-          "updated_at": {
-            "default": "CURRENT_TIMESTAMP",
-            "format": "timestamp with time zone",
-            "type": "string"
           }
         },
         "type": "object"
@@ -4147,36 +3581,30 @@
         "properties": {
           "service_id": {
             "description": "Note:\nThis is a Primary Key.<pk/>",
-            "format": "character varying",
             "maxLength": 42,
             "type": "string"
           },
           "service_name": {
-            "format": "character varying",
             "maxLength": 169,
             "type": "string"
           },
           "compute_units_per_relay": {
             "description": "Cost in compute units for each relay",
-            "format": "integer",
             "type": "integer"
           },
           "service_domains": {
             "description": "Valid domains for this service",
-            "format": "character varying[]",
             "items": {
               "type": "string"
             },
             "type": "array"
           },
           "service_owner_address": {
-            "format": "character varying",
             "maxLength": 50,
             "type": "string"
           },
           "network_id": {
             "description": "Note:\nThis is a Foreign Key to `networks.network_id`.<fk table='networks' column='network_id'/>",
-            "format": "character varying",
             "maxLength": 42,
             "type": "string"
           },
@@ -4201,83 +3629,28 @@
             "type": "boolean"
           },
           "svg_icon": {
-            "format": "text",
             "type": "string"
           },
           "public_endpoint_url": {
-            "format": "character varying",
             "maxLength": 169,
             "type": "string"
           },
           "status_endpoint_url": {
-            "format": "character varying",
             "maxLength": 169,
             "type": "string"
           },
           "status_query": {
-            "format": "text",
             "type": "string"
           },
           "deleted_at": {
-            "format": "timestamp with time zone",
             "type": "string"
           },
           "created_at": {
             "default": "CURRENT_TIMESTAMP",
-            "format": "timestamp with time zone",
             "type": "string"
           },
           "updated_at": {
             "default": "CURRENT_TIMESTAMP",
-            "format": "timestamp with time zone",
-            "type": "string"
-          }
-        },
-        "type": "object"
-      },
-      "portal_workers_account_data": {
-        "description": "Account data for portal-workers billing operations with owner email. Filter using WHERE portal_plan_type = 'PLAN_UNLIMITED' AND billing_type = 'stripe'",
-        "properties": {
-          "portal_account_id": {
-            "description": "Note:\nThis is a Primary Key.<pk/>",
-            "format": "character varying",
-            "maxLength": 36,
-            "type": "string"
-          },
-          "user_account_name": {
-            "format": "character varying",
-            "maxLength": 42,
-            "type": "string"
-          },
-          "portal_plan_type": {
-            "description": "Note:\nThis is a Foreign Key to `portal_plans.portal_plan_type`.<fk table='portal_plans' column='portal_plan_type'/>",
-            "format": "character varying",
-            "maxLength": 42,
-            "type": "string"
-          },
-          "billing_type": {
-            "format": "character varying",
-            "maxLength": 20,
-            "type": "string"
-          },
-          "portal_account_user_limit": {
-            "format": "integer",
-            "type": "integer"
-          },
-          "gcp_entitlement_id": {
-            "format": "character varying",
-            "maxLength": 255,
-            "type": "string"
-          },
-          "owner_email": {
-            "format": "character varying",
-            "maxLength": 255,
-            "type": "string"
-          },
-          "owner_user_id": {
-            "description": "Note:\nThis is a Primary Key.<pk/>",
-            "format": "character varying",
-            "maxLength": 36,
             "type": "string"
           }
         },
@@ -4291,7 +3664,6 @@
         "properties": {
           "network_id": {
             "description": "Note:\nThis is a Primary Key.<pk/>",
-            "format": "character varying",
             "maxLength": 42,
             "type": "string"
           }
@@ -4307,28 +3679,23 @@
         "properties": {
           "organization_id": {
             "description": "Note:\nThis is a Primary Key.<pk/>",
-            "format": "integer",
             "type": "integer"
           },
           "organization_name": {
             "description": "Name of the organization",
-            "format": "character varying",
             "maxLength": 69,
             "type": "string"
           },
           "deleted_at": {
             "description": "Soft delete timestamp",
-            "format": "timestamp with time zone",
             "type": "string"
           },
           "created_at": {
             "default": "CURRENT_TIMESTAMP",
-            "format": "timestamp with time zone",
             "type": "string"
           },
           "updated_at": {
             "default": "CURRENT_TIMESTAMP",
-            "format": "timestamp with time zone",
             "type": "string"
           }
         },
@@ -4345,23 +3712,19 @@
         "properties": {
           "id": {
             "description": "Note:\nThis is a Primary Key.<pk/>",
-            "format": "integer",
             "type": "integer"
           },
           "portal_account_id": {
             "description": "Note:\nThis is a Foreign Key to `portal_accounts.portal_account_id`.<fk table='portal_accounts' column='portal_account_id'/>",
-            "format": "character varying",
             "maxLength": 36,
             "type": "string"
           },
           "portal_user_id": {
             "description": "Note:\nThis is a Foreign Key to `portal_users.portal_user_id`.<fk table='portal_users' column='portal_user_id'/>",
-            "format": "character varying",
             "maxLength": 36,
             "type": "string"
           },
           "role_name": {
-            "format": "character varying",
             "maxLength": 20,
             "type": "string"
           },
@@ -4382,28 +3745,23 @@
           "portal_application_id": {
             "default": "gen_random_uuid()",
             "description": "Note:\nThis is a Primary Key.<pk/>",
-            "format": "character varying",
             "maxLength": 36,
             "type": "string"
           },
           "portal_account_id": {
             "description": "Note:\nThis is a Foreign Key to `portal_accounts.portal_account_id`.<fk table='portal_accounts' column='portal_account_id'/>",
-            "format": "character varying",
             "maxLength": 36,
             "type": "string"
           },
           "portal_application_name": {
-            "format": "character varying",
             "maxLength": 42,
             "type": "string"
           },
           "emoji": {
-            "format": "character varying",
             "maxLength": 16,
             "type": "string"
           },
           "portal_application_user_limit": {
-            "format": "integer",
             "type": "integer"
           },
           "portal_application_user_limit_interval": {
@@ -4412,27 +3770,16 @@
               "month",
               "year"
             ],
-            "format": "public.plan_interval",
             "type": "string"
           },
           "portal_application_user_limit_rps": {
-            "format": "integer",
             "type": "integer"
           },
-          "portal_application_user_limit_notification_thresholds": {
-            "format": "integer[]",
-            "items": {
-              "type": "integer"
-            },
-            "type": "array"
-          },
           "portal_application_description": {
-            "format": "character varying",
             "maxLength": 255,
             "type": "string"
           },
           "favorite_service_ids": {
-            "format": "character varying[]",
             "items": {
               "type": "string"
             },
@@ -4440,7 +3787,6 @@
           },
           "secret_key_hash": {
             "description": "Hashed secret key for application authentication",
-            "format": "character varying",
             "maxLength": 255,
             "type": "string"
           },
@@ -4449,17 +3795,14 @@
             "type": "boolean"
           },
           "deleted_at": {
-            "format": "timestamp with time zone",
             "type": "string"
           },
           "created_at": {
             "default": "CURRENT_TIMESTAMP",
-            "format": "timestamp with time zone",
             "type": "string"
           },
           "updated_at": {
             "default": "CURRENT_TIMESTAMP",
-            "format": "timestamp with time zone",
             "type": "string"
           }
         },
@@ -4475,28 +3818,23 @@
         "properties": {
           "service_fallback_id": {
             "description": "Note:\nThis is a Primary Key.<pk/>",
-            "format": "integer",
             "type": "integer"
           },
           "service_id": {
             "description": "Note:\nThis is a Foreign Key to `services.service_id`.<fk table='services' column='service_id'/>",
-            "format": "character varying",
             "maxLength": 42,
             "type": "string"
           },
           "fallback_url": {
-            "format": "character varying",
             "maxLength": 255,
             "type": "string"
           },
           "created_at": {
             "default": "CURRENT_TIMESTAMP",
-            "format": "timestamp with time zone",
             "type": "string"
           },
           "updated_at": {
             "default": "CURRENT_TIMESTAMP",
-            "format": "timestamp with time zone",
             "type": "string"
           }
         },

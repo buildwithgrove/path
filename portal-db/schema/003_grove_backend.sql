@@ -9,22 +9,26 @@
 -- ============================================================================
 
 -- View to get account data needed by portal-workers for billing operations
+--
 -- Returns accounts with owner email - generates proper types in SDK
+--
 -- Use WHERE clauses to filter by portal_plan_type and/or billing_type
 CREATE VIEW portal_workers_account_data AS
-SELECT 
+SELECT
     pa.portal_account_id,
     pa.user_account_name,
     pa.portal_plan_type,
     pa.billing_type,
     pa.portal_account_user_limit,
     pa.gcp_entitlement_id,
-    pu.portal_user_email as owner_email,
-    pu.portal_user_id as owner_user_id
+    pu.portal_user_email AS owner_email,
+    pu.portal_user_id AS owner_user_id
 FROM portal_accounts pa
-INNER JOIN portal_account_rbac par ON pa.portal_account_id = par.portal_account_id
-INNER JOIN portal_users pu ON par.portal_user_id = pu.portal_user_id
-WHERE 
+INNER JOIN portal_account_rbac par
+    ON pa.portal_account_id = par.portal_account_id
+INNER JOIN portal_users pu
+    ON par.portal_user_id = pu.portal_user_id
+WHERE
     pa.deleted_at IS NULL
     AND pu.deleted_at IS NULL
     AND par.role_name = 'LEGACY_OWNER';

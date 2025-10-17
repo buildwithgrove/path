@@ -36,32 +36,6 @@ EMAIL="john@doe.com"
 EXPIRES="1h"
 TOKEN_ONLY=false
 
-# Parse arguments
-while [[ $# -gt 0 ]]; do
-    case "$1" in
-        --token-only)
-            TOKEN_ONLY=true
-            shift
-            ;;
-        --expires)
-            EXPIRES="$2"
-            shift 2
-            ;;
-        --help|-h)
-            print_help
-            exit 0
-            ;;
-        *)
-            if [[ -z "$ROLE" || "$ROLE" == "portal_db_admin" ]]; then
-                ROLE="$1"
-            elif [[ "$EMAIL" == "john@doe.com" ]]; then
-                EMAIL="$1"
-            fi
-            shift
-            ;;
-    esac
-done
-
 # Show help
 print_help() {
     cat <<'EOF'
@@ -122,27 +96,24 @@ translate_role() {
     esac
 }
 
-# Map alias after parsing the arguments
-ROLE=$(translate_role "$ROLE")
-
 # Calculate expiration based on EXPIRES value
 calculate_expiration() {
     local duration="$1"
-    
+
     if [[ "$duration" == "never" ]]; then
         echo "never"
         return
     fi
-    
+
     # Extract number and unit (e.g., "24h" -> 24 and h)
     local num="${duration//[^0-9]/}"
     local unit="${duration//[0-9]/}"
-    
+
     # Default to hours if no unit specified
     if [[ -z "$unit" ]]; then
         unit="h"
     fi
-    
+
     case "$unit" in
         h)
             # Hours
@@ -158,6 +129,35 @@ calculate_expiration() {
             ;;
     esac
 }
+
+# Parse arguments
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --token-only)
+            TOKEN_ONLY=true
+            shift
+            ;;
+        --expires)
+            EXPIRES="$2"
+            shift 2
+            ;;
+        --help|-h)
+            print_help
+            exit 0
+            ;;
+        *)
+            if [[ -z "$ROLE" || "$ROLE" == "portal_db_admin" ]]; then
+                ROLE="$1"
+            elif [[ "$EMAIL" == "john@doe.com" ]]; then
+                EMAIL="$1"
+            fi
+            shift
+            ;;
+    esac
+done
+
+# Map alias after parsing the arguments
+ROLE=$(translate_role "$ROLE")
 
 EXP=$(calculate_expiration "$EXPIRES")
 

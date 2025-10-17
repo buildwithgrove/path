@@ -27,6 +27,7 @@ echo "🔧 Generating Go and TypeScript SDKs from OpenAPI specification..."
 # ============================================================================
 # PHASE 1: ENVIRONMENT VALIDATION
 # ============================================================================
+# Validate that all required tools are installed before proceeding
 
 echo ""
 echo -e "${BLUE}📋 Phase 1: Environment Validation${NC}"
@@ -72,8 +73,8 @@ fi
 
 echo -e "${GREEN}✅ npm is installed: $(npm --version)${NC}"
 
-# Check if openapi-typescript is installed (npx will auto-install if needed)
-# We'll use npx to run it, which handles installation automatically
+# Check if openapi-typescript is available
+# We use npx which handles installation automatically if needed
 echo -e "${GREEN}✅ Using npx for openapi-typescript (will auto-install if needed)${NC}"
 
 # Check if configuration files exist
@@ -106,6 +107,7 @@ echo -e "${GREEN}✅ OpenAPI specification ready: $OPENAPI_V3_FILE${NC}"
 # ============================================================================
 # PHASE 3: SDK GENERATION
 # ============================================================================
+# Generate both Go and TypeScript SDKs from the OpenAPI specification
 
 echo ""
 echo -e "${BLUE}📋 Phase 3: SDK Generation${NC}"
@@ -154,6 +156,7 @@ echo -e "${GREEN}✅ TypeScript types generated successfully${NC}"
 # ============================================================================
 # PHASE 4: MODULE SETUP
 # ============================================================================
+# Initialize modules, install dependencies, and validate compilation
 
 echo ""
 echo -e "${BLUE}📋 Phase 4: Module Setup${NC}"
@@ -196,16 +199,40 @@ if [ ! -f "package.json" ]; then
     echo "📦 Creating package.json..."
     cat > package.json << 'EOF'
 {
-  "name": "@grove/portal-db-sdk",
+  "name": "@buildwithgrove/portal-db-ts-sdk",
   "version": "1.0.0",
   "description": "TypeScript SDK for Grove Portal DB API",
   "type": "module",
   "main": "client.ts",
   "types": "types.ts",
+  "files": [
+    "client.ts",
+    "types.ts",
+    "README.md"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/buildwithgrove/path.git",
+    "directory": "portal-db/sdk/typescript"
+  },
+  "homepage": "https://github.com/buildwithgrove/path/tree/main/portal-db/sdk/typescript",
+  "bugs": {
+    "url": "https://github.com/buildwithgrove/path/issues"
+  },
   "scripts": {
     "type-check": "tsc --noEmit"
   },
-  "keywords": ["grove", "portal", "db", "api", "sdk", "typescript"],
+  "keywords": [
+    "grove",
+    "portal",
+    "db",
+    "api",
+    "sdk",
+    "typescript",
+    "postgrest",
+    "openapi",
+    "type-safe"
+  ],
   "author": "Grove Team",
   "license": "MIT",
   "dependencies": {
@@ -343,7 +370,7 @@ echo "   • go.mod          - Go module definition (permanent)"
 echo "   • README.md       - Documentation (permanent)"
 echo ""
 echo -e "${BLUE}🔷 TypeScript SDK:${NC}"
-echo "   Package:  @grove/portal-db-sdk"
+echo "   Package:  @buildwithgrove/portal-db-ts-sdk"
 echo "   Runtime:  openapi-fetch (minimal dependency, uses native fetch)"
 echo "   Files:"
 echo "   • types.ts        - Generated TypeScript types from OpenAPI spec (updated)"

@@ -5,7 +5,7 @@
 
 set -e
 
-# Color codes
+# Color codes for terminal output
 CYAN='\033[0;36m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -37,6 +37,7 @@ else
 fi
 
 # Wait for PostgREST to be ready
+echo -e "${BLUE}💡 Ensure you ran ${CYAN}make portal-db-up${RESET}"
 echo -e "${CYAN}⏳ Waiting for PostgREST to be ready at ${BOLD}$POSTGREST_URL${RESET}${CYAN}...${RESET}"
 max_attempts=30
 attempt=1
@@ -71,8 +72,8 @@ if curl -s -f -H "Accept: application/openapi+json" ${AUTH_HEADER:+-H "$AUTH_HEA
 
     # Convert Swagger 2.0 to OpenAPI 3.x
     echo -e "${BLUE}🔄 Converting Swagger 2.0 to OpenAPI 3.x...${RESET}"
-    
-    # Check if swagger2openapi is available
+
+    # Check if swagger2openapi is available (PostgREST outputs Swagger 2.0, we need OpenAPI 3.x for SDK generators)
     if ! command -v swagger2openapi >/dev/null 2>&1; then
         echo -e "${BLUE}📦 Installing swagger2openapi converter...${RESET}"
         if command -v npm >/dev/null 2>&1; then
@@ -90,10 +91,63 @@ if curl -s -f -H "Accept: application/openapi+json" ${AUTH_HEADER:+-H "$AUTH_HEA
         exit 1
     fi
 
-    # Fix boolean format issues in the converted spec
-    echo -e "${BLUE}🔧 Fixing boolean format issues...${RESET}"
-    sed -i.bak 's/"format": "boolean",//g' "$OUTPUT_FILE"
-    rm -f "${OUTPUT_FILE}.bak"
+    # Fix format issues in the converted spec
+    # PostgreSQL outputs custom format types that are invalid in OpenAPI (e.g., "character varying", "timestamp with time zone")
+    # We need to remove all non-standard OpenAPI formats while keeping valid ones like int32, int64, float, double, date, date-time
+    echo -e "${BLUE}🔧 Fixing invalid format fields...${RESET}"
+
+    # Use a Python/Node script to only keep valid OpenAPI formats
+    # Valid OpenAPI formats for strings: byte, binary, date, date-time, password, email, uuid, uri, hostname, ipv4, ipv6
+    # Valid OpenAPI formats for numbers: int32, int64, float, double
+    # Everything else should be removed
+
+    if command -v python3 >/dev/null 2>&1; then
+        python3 -c "
+import json
+import re
+
+# Valid OpenAPI format values
+VALID_FORMATS = {
+    'int32', 'int64', 'float', 'double',  # number formats
+    'byte', 'binary', 'date', 'date-time', 'password',  # string formats
+    'email', 'uuid', 'uri', 'hostname', 'ipv4', 'ipv6'  # more string formats
+}
+
+with open('$OUTPUT_FILE', 'r') as f:
+    spec = json.load(f)
+
+def clean_formats(obj):
+    if isinstance(obj, dict):
+        # Remove format if it's not in the valid list
+        if 'format' in obj and obj.get('format') not in VALID_FORMATS:
+            del obj['format']
+        # Recursively clean nested objects
+        for value in obj.values():
+            clean_formats(value)
+    elif isinstance(obj, list):
+        for item in obj:
+            clean_formats(item)
+
+clean_formats(spec)
+
+with open('$OUTPUT_FILE', 'w') as f:
+    json.dump(spec, f, indent=2)
+"
+    else
+        # Fallback to sed if Python is not available
+        sed -i.bak \
+            -e 's/"format": "boolean",//g' \
+            -e 's/"format": "integer",//g' \
+            -e 's/"format": "character varying[^"]*",//g' \
+            -e 's/"format": "timestamp[^"]*",//g' \
+            -e 's/"format": "text",//g' \
+            -e 's/"format": "jsonb",//g' \
+            -e 's/"format": "json",//g' \
+            -e 's/"format": "bytea",//g' \
+            -e 's/"format": "public\.[^"]*",//g' \
+            "$OUTPUT_FILE"
+        rm -f "${OUTPUT_FILE}.bak"
+    fi
 
     # Clean up temporary Swagger file
     rm -f "$SWAGGER_FILE"

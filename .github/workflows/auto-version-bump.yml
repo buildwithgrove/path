@@ -49,18 +49,26 @@ jobs:
 
       - name: Create nested module tag for Go SDK
         run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
           VERSION="${{ needs.version-and-release.outputs.new_tag }}"
           NESTED_TAG="portal-db/sdk/go/${VERSION}"
-          git tag "${NESTED_TAG}"
-          git push origin "${NESTED_TAG}"
-          echo "Created Go SDK tag: ${NESTED_TAG}"
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+          # Check if tag already exists
+          if git rev-parse "${NESTED_TAG}" >/dev/null 2>&1; then
+            echo "Tag ${NESTED_TAG} already exists, skipping creation"
+          else
+            git tag "${NESTED_TAG}"
+            git push origin "${NESTED_TAG}"
+            echo "Created Go SDK tag: ${NESTED_TAG}"
+          fi
 
   publish-typescript-sdk:
     name: Publish Portal DB TypeScript SDK
     needs: [version-and-release]
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -72,6 +80,11 @@ jobs:
         with:
           node-version: '20'
           registry-url: 'https://registry.npmjs.org'
+
+      - name: Install dependencies
+        run: |
+          cd portal-db/sdk/typescript
+          npm ci
 
       - name: Update package.json version
         run: |

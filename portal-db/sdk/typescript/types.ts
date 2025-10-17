@@ -203,7 +203,6 @@ export interface paths {
                     portal_account_user_limit?: components["parameters"]["rowFilter.portal_accounts.portal_account_user_limit"];
                     portal_account_user_limit_interval?: components["parameters"]["rowFilter.portal_accounts.portal_account_user_limit_interval"];
                     portal_account_user_limit_rps?: components["parameters"]["rowFilter.portal_accounts.portal_account_user_limit_rps"];
-                    portal_account_user_limit_notification_thresholds?: components["parameters"]["rowFilter.portal_accounts.portal_account_user_limit_notification_thresholds"];
                     billing_type?: components["parameters"]["rowFilter.portal_accounts.billing_type"];
                     /** @description Stripe subscription identifier for billing */
                     stripe_subscription_id?: components["parameters"]["rowFilter.portal_accounts.stripe_subscription_id"];
@@ -294,7 +293,6 @@ export interface paths {
                     portal_account_user_limit?: components["parameters"]["rowFilter.portal_accounts.portal_account_user_limit"];
                     portal_account_user_limit_interval?: components["parameters"]["rowFilter.portal_accounts.portal_account_user_limit_interval"];
                     portal_account_user_limit_rps?: components["parameters"]["rowFilter.portal_accounts.portal_account_user_limit_rps"];
-                    portal_account_user_limit_notification_thresholds?: components["parameters"]["rowFilter.portal_accounts.portal_account_user_limit_notification_thresholds"];
                     billing_type?: components["parameters"]["rowFilter.portal_accounts.billing_type"];
                     /** @description Stripe subscription identifier for billing */
                     stripe_subscription_id?: components["parameters"]["rowFilter.portal_accounts.stripe_subscription_id"];
@@ -337,7 +335,6 @@ export interface paths {
                     portal_account_user_limit?: components["parameters"]["rowFilter.portal_accounts.portal_account_user_limit"];
                     portal_account_user_limit_interval?: components["parameters"]["rowFilter.portal_accounts.portal_account_user_limit_interval"];
                     portal_account_user_limit_rps?: components["parameters"]["rowFilter.portal_accounts.portal_account_user_limit_rps"];
-                    portal_account_user_limit_notification_thresholds?: components["parameters"]["rowFilter.portal_accounts.portal_account_user_limit_notification_thresholds"];
                     billing_type?: components["parameters"]["rowFilter.portal_accounts.billing_type"];
                     /** @description Stripe subscription identifier for billing */
                     stripe_subscription_id?: components["parameters"]["rowFilter.portal_accounts.stripe_subscription_id"];
@@ -666,163 +663,6 @@ export interface paths {
         };
         trace?: never;
     };
-    "/portal_users": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Users who can access the portal and belong to multiple accounts */
-        get: {
-            parameters: {
-                query?: {
-                    portal_user_id?: components["parameters"]["rowFilter.portal_users.portal_user_id"];
-                    /** @description Unique email address for the user */
-                    portal_user_email?: components["parameters"]["rowFilter.portal_users.portal_user_email"];
-                    signed_up?: components["parameters"]["rowFilter.portal_users.signed_up"];
-                    /** @description Whether user has admin privileges across the portal */
-                    portal_admin?: components["parameters"]["rowFilter.portal_users.portal_admin"];
-                    deleted_at?: components["parameters"]["rowFilter.portal_users.deleted_at"];
-                    created_at?: components["parameters"]["rowFilter.portal_users.created_at"];
-                    updated_at?: components["parameters"]["rowFilter.portal_users.updated_at"];
-                    /** @description Filtering Columns */
-                    select?: components["parameters"]["select"];
-                    /** @description Ordering */
-                    order?: components["parameters"]["order"];
-                    /** @description Limiting and Pagination */
-                    offset?: components["parameters"]["offset"];
-                    /** @description Limiting and Pagination */
-                    limit?: components["parameters"]["limit"];
-                };
-                header?: {
-                    /** @description Limiting and Pagination */
-                    Range?: components["parameters"]["range"];
-                    /** @description Limiting and Pagination */
-                    "Range-Unit"?: components["parameters"]["rangeUnit"];
-                    /** @description Preference */
-                    Prefer?: components["parameters"]["preferCount"];
-                };
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["portal_users"][];
-                        "application/vnd.pgrst.object+json;nulls=stripped": components["schemas"]["portal_users"][];
-                        "application/vnd.pgrst.object+json": components["schemas"]["portal_users"][];
-                        "text/csv": components["schemas"]["portal_users"][];
-                    };
-                };
-                /** @description Partial Content */
-                206: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-            };
-        };
-        put?: never;
-        /** Users who can access the portal and belong to multiple accounts */
-        post: {
-            parameters: {
-                query?: {
-                    /** @description Filtering Columns */
-                    select?: components["parameters"]["select"];
-                };
-                header?: {
-                    /** @description Preference */
-                    Prefer?: components["parameters"]["preferPost"];
-                };
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: components["requestBodies"]["portal_users"];
-            responses: {
-                /** @description Created */
-                201: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-            };
-        };
-        /** Users who can access the portal and belong to multiple accounts */
-        delete: {
-            parameters: {
-                query?: {
-                    portal_user_id?: components["parameters"]["rowFilter.portal_users.portal_user_id"];
-                    /** @description Unique email address for the user */
-                    portal_user_email?: components["parameters"]["rowFilter.portal_users.portal_user_email"];
-                    signed_up?: components["parameters"]["rowFilter.portal_users.signed_up"];
-                    /** @description Whether user has admin privileges across the portal */
-                    portal_admin?: components["parameters"]["rowFilter.portal_users.portal_admin"];
-                    deleted_at?: components["parameters"]["rowFilter.portal_users.deleted_at"];
-                    created_at?: components["parameters"]["rowFilter.portal_users.created_at"];
-                    updated_at?: components["parameters"]["rowFilter.portal_users.updated_at"];
-                };
-                header?: {
-                    /** @description Preference */
-                    Prefer?: components["parameters"]["preferReturn"];
-                };
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description No Content */
-                204: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-            };
-        };
-        options?: never;
-        head?: never;
-        /** Users who can access the portal and belong to multiple accounts */
-        patch: {
-            parameters: {
-                query?: {
-                    portal_user_id?: components["parameters"]["rowFilter.portal_users.portal_user_id"];
-                    /** @description Unique email address for the user */
-                    portal_user_email?: components["parameters"]["rowFilter.portal_users.portal_user_email"];
-                    signed_up?: components["parameters"]["rowFilter.portal_users.signed_up"];
-                    /** @description Whether user has admin privileges across the portal */
-                    portal_admin?: components["parameters"]["rowFilter.portal_users.portal_admin"];
-                    deleted_at?: components["parameters"]["rowFilter.portal_users.deleted_at"];
-                    created_at?: components["parameters"]["rowFilter.portal_users.created_at"];
-                    updated_at?: components["parameters"]["rowFilter.portal_users.updated_at"];
-                };
-                header?: {
-                    /** @description Preference */
-                    Prefer?: components["parameters"]["preferReturn"];
-                };
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: components["requestBodies"]["portal_users"];
-            responses: {
-                /** @description No Content */
-                204: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-            };
-        };
-        trace?: never;
-    };
     "/services": {
         parameters: {
             query?: never;
@@ -1011,76 +851,6 @@ export interface paths {
                 };
             };
         };
-        trace?: never;
-    };
-    "/portal_workers_account_data": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Account data for portal-workers billing operations with owner email. Filter using WHERE portal_plan_type = 'PLAN_UNLIMITED' AND billing_type = 'stripe' */
-        get: {
-            parameters: {
-                query?: {
-                    portal_account_id?: components["parameters"]["rowFilter.portal_workers_account_data.portal_account_id"];
-                    user_account_name?: components["parameters"]["rowFilter.portal_workers_account_data.user_account_name"];
-                    portal_plan_type?: components["parameters"]["rowFilter.portal_workers_account_data.portal_plan_type"];
-                    billing_type?: components["parameters"]["rowFilter.portal_workers_account_data.billing_type"];
-                    portal_account_user_limit?: components["parameters"]["rowFilter.portal_workers_account_data.portal_account_user_limit"];
-                    gcp_entitlement_id?: components["parameters"]["rowFilter.portal_workers_account_data.gcp_entitlement_id"];
-                    owner_email?: components["parameters"]["rowFilter.portal_workers_account_data.owner_email"];
-                    owner_user_id?: components["parameters"]["rowFilter.portal_workers_account_data.owner_user_id"];
-                    /** @description Filtering Columns */
-                    select?: components["parameters"]["select"];
-                    /** @description Ordering */
-                    order?: components["parameters"]["order"];
-                    /** @description Limiting and Pagination */
-                    offset?: components["parameters"]["offset"];
-                    /** @description Limiting and Pagination */
-                    limit?: components["parameters"]["limit"];
-                };
-                header?: {
-                    /** @description Limiting and Pagination */
-                    Range?: components["parameters"]["range"];
-                    /** @description Limiting and Pagination */
-                    "Range-Unit"?: components["parameters"]["rangeUnit"];
-                    /** @description Preference */
-                    Prefer?: components["parameters"]["preferCount"];
-                };
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["portal_workers_account_data"][];
-                        "application/vnd.pgrst.object+json;nulls=stripped": components["schemas"]["portal_workers_account_data"][];
-                        "application/vnd.pgrst.object+json": components["schemas"]["portal_workers_account_data"][];
-                        "text/csv": components["schemas"]["portal_workers_account_data"][];
-                    };
-                };
-                /** @description Partial Content */
-                206: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
         trace?: never;
     };
     "/networks": {
@@ -1530,7 +1300,6 @@ export interface paths {
                     portal_application_user_limit?: components["parameters"]["rowFilter.portal_applications.portal_application_user_limit"];
                     portal_application_user_limit_interval?: components["parameters"]["rowFilter.portal_applications.portal_application_user_limit_interval"];
                     portal_application_user_limit_rps?: components["parameters"]["rowFilter.portal_applications.portal_application_user_limit_rps"];
-                    portal_application_user_limit_notification_thresholds?: components["parameters"]["rowFilter.portal_applications.portal_application_user_limit_notification_thresholds"];
                     portal_application_description?: components["parameters"]["rowFilter.portal_applications.portal_application_description"];
                     favorite_service_ids?: components["parameters"]["rowFilter.portal_applications.favorite_service_ids"];
                     /** @description Hashed secret key for application authentication */
@@ -1619,7 +1388,6 @@ export interface paths {
                     portal_application_user_limit?: components["parameters"]["rowFilter.portal_applications.portal_application_user_limit"];
                     portal_application_user_limit_interval?: components["parameters"]["rowFilter.portal_applications.portal_application_user_limit_interval"];
                     portal_application_user_limit_rps?: components["parameters"]["rowFilter.portal_applications.portal_application_user_limit_rps"];
-                    portal_application_user_limit_notification_thresholds?: components["parameters"]["rowFilter.portal_applications.portal_application_user_limit_notification_thresholds"];
                     portal_application_description?: components["parameters"]["rowFilter.portal_applications.portal_application_description"];
                     favorite_service_ids?: components["parameters"]["rowFilter.portal_applications.favorite_service_ids"];
                     /** @description Hashed secret key for application authentication */
@@ -1660,7 +1428,6 @@ export interface paths {
                     portal_application_user_limit?: components["parameters"]["rowFilter.portal_applications.portal_application_user_limit"];
                     portal_application_user_limit_interval?: components["parameters"]["rowFilter.portal_applications.portal_application_user_limit_interval"];
                     portal_application_user_limit_rps?: components["parameters"]["rowFilter.portal_applications.portal_application_user_limit_rps"];
-                    portal_application_user_limit_notification_thresholds?: components["parameters"]["rowFilter.portal_applications.portal_application_user_limit_notification_thresholds"];
                     portal_application_description?: components["parameters"]["rowFilter.portal_applications.portal_application_description"];
                     favorite_service_ids?: components["parameters"]["rowFilter.portal_applications.favorite_service_ids"];
                     /** @description Hashed secret key for application authentication */
@@ -2141,37 +1908,25 @@ export interface components {
         /** @description Available endpoint types for each service */
         service_endpoints: {
             /**
-             * Format: integer
              * @description Note:
              *     This is a Primary Key.<pk/>
              */
             endpoint_id: number;
             /**
-             * Format: character varying
              * @description Note:
              *     This is a Foreign Key to `services.service_id`.<fk table='services' column='service_id'/>
              */
             service_id: string;
-            /**
-             * Format: public.endpoint_type
-             * @enum {string}
-             */
+            /** @enum {string} */
             endpoint_type?: "cometBFT" | "cosmos" | "REST" | "JSON-RPC" | "WSS" | "gRPC";
-            /**
-             * Format: timestamp with time zone
-             * @default CURRENT_TIMESTAMP
-             */
+            /** @default CURRENT_TIMESTAMP */
             created_at: string;
-            /**
-             * Format: timestamp with time zone
-             * @default CURRENT_TIMESTAMP
-             */
+            /** @default CURRENT_TIMESTAMP */
             updated_at: string;
         };
         /** @description Multi-tenant accounts with plans and billing integration */
         portal_accounts: {
             /**
-             * Format: character varying
              * @description Unique identifier for the portal account
              *
              *     Note:
@@ -2180,172 +1935,84 @@ export interface components {
              */
             portal_account_id: string;
             /**
-             * Format: integer
              * @description Note:
              *     This is a Foreign Key to `organizations.organization_id`.<fk table='organizations' column='organization_id'/>
              */
             organization_id?: number;
             /**
-             * Format: character varying
              * @description Note:
              *     This is a Foreign Key to `portal_plans.portal_plan_type`.<fk table='portal_plans' column='portal_plan_type'/>
              */
             portal_plan_type: string;
-            /** Format: character varying */
             user_account_name?: string;
-            /** Format: character varying */
             internal_account_name?: string;
-            /** Format: integer */
             portal_account_user_limit?: number;
-            /**
-             * Format: public.plan_interval
-             * @enum {string}
-             */
+            /** @enum {string} */
             portal_account_user_limit_interval?: "day" | "month" | "year";
-            /** Format: integer */
             portal_account_user_limit_rps?: number;
-            /** Format: integer[] */
-            portal_account_user_limit_notification_thresholds?: number[];
-            /** Format: character varying */
             billing_type?: string;
-            /**
-             * Format: character varying
-             * @description Stripe subscription identifier for billing
-             */
+            /** @description Stripe subscription identifier for billing */
             stripe_subscription_id?: string;
-            /** Format: character varying */
             gcp_account_id?: string;
-            /** Format: character varying */
             gcp_entitlement_id?: string;
-            /** Format: timestamp with time zone */
             deleted_at?: string;
-            /**
-             * Format: timestamp with time zone
-             * @default CURRENT_TIMESTAMP
-             */
+            /** @default CURRENT_TIMESTAMP */
             created_at: string;
-            /**
-             * Format: timestamp with time zone
-             * @default CURRENT_TIMESTAMP
-             */
+            /** @default CURRENT_TIMESTAMP */
             updated_at: string;
         };
         /** @description User access controls for specific applications */
         portal_application_rbac: {
             /**
-             * Format: integer
              * @description Note:
              *     This is a Primary Key.<pk/>
              */
             id: number;
             /**
-             * Format: character varying
              * @description Note:
              *     This is a Foreign Key to `portal_applications.portal_application_id`.<fk table='portal_applications' column='portal_application_id'/>
              */
             portal_application_id: string;
             /**
-             * Format: character varying
              * @description Note:
              *     This is a Foreign Key to `portal_users.portal_user_id`.<fk table='portal_users' column='portal_user_id'/>
              */
             portal_user_id: string;
-            /**
-             * Format: timestamp with time zone
-             * @default CURRENT_TIMESTAMP
-             */
+            /** @default CURRENT_TIMESTAMP */
             created_at: string;
-            /**
-             * Format: timestamp with time zone
-             * @default CURRENT_TIMESTAMP
-             */
+            /** @default CURRENT_TIMESTAMP */
             updated_at: string;
         };
         /** @description Available subscription plans for Portal Accounts */
         portal_plans: {
             /**
-             * Format: character varying
              * @description Note:
              *     This is a Primary Key.<pk/>
              */
             portal_plan_type: string;
-            /** Format: character varying */
             portal_plan_type_description?: string;
-            /**
-             * Format: integer
-             * @description Maximum usage allowed within the interval
-             */
+            /** @description Maximum usage allowed within the interval */
             plan_usage_limit?: number;
-            /**
-             * Format: public.plan_interval
-             * @enum {string}
-             */
+            /** @enum {string} */
             plan_usage_limit_interval?: "day" | "month" | "year";
-            /**
-             * Format: integer
-             * @description Rate limit in requests per second
-             */
+            /** @description Rate limit in requests per second */
             plan_rate_limit_rps?: number;
-            /** Format: integer */
             plan_application_limit?: number;
-        };
-        /** @description Users who can access the portal and belong to multiple accounts */
-        portal_users: {
-            /**
-             * Format: character varying
-             * @description Note:
-             *     This is a Primary Key.<pk/>
-             */
-            portal_user_id: string;
-            /**
-             * Format: character varying
-             * @description Unique email address for the user
-             */
-            portal_user_email: string;
-            /** @default false */
-            signed_up: boolean;
-            /**
-             * @description Whether user has admin privileges across the portal
-             * @default false
-             */
-            portal_admin: boolean;
-            /** Format: timestamp with time zone */
-            deleted_at?: string;
-            /**
-             * Format: timestamp with time zone
-             * @default CURRENT_TIMESTAMP
-             */
-            created_at: string;
-            /**
-             * Format: timestamp with time zone
-             * @default CURRENT_TIMESTAMP
-             */
-            updated_at: string;
         };
         /** @description Supported blockchain services from the Pocket Network */
         services: {
             /**
-             * Format: character varying
              * @description Note:
              *     This is a Primary Key.<pk/>
              */
             service_id: string;
-            /** Format: character varying */
             service_name: string;
-            /**
-             * Format: integer
-             * @description Cost in compute units for each relay
-             */
+            /** @description Cost in compute units for each relay */
             compute_units_per_relay?: number;
-            /**
-             * Format: character varying[]
-             * @description Valid domains for this service
-             */
+            /** @description Valid domains for this service */
             service_domains: string[];
-            /** Format: character varying */
             service_owner_address?: string;
             /**
-             * Format: character varying
              * @description Note:
              *     This is a Foreign Key to `networks.network_id`.<fk table='networks' column='network_id'/>
              */
@@ -2360,62 +2027,19 @@ export interface components {
             quality_fallback_enabled: boolean;
             /** @default false */
             hard_fallback_enabled: boolean;
-            /** Format: text */
             svg_icon?: string;
-            /** Format: character varying */
             public_endpoint_url?: string;
-            /** Format: character varying */
             status_endpoint_url?: string;
-            /** Format: text */
             status_query?: string;
-            /** Format: timestamp with time zone */
             deleted_at?: string;
-            /**
-             * Format: timestamp with time zone
-             * @default CURRENT_TIMESTAMP
-             */
+            /** @default CURRENT_TIMESTAMP */
             created_at: string;
-            /**
-             * Format: timestamp with time zone
-             * @default CURRENT_TIMESTAMP
-             */
+            /** @default CURRENT_TIMESTAMP */
             updated_at: string;
-        };
-        /** @description Account data for portal-workers billing operations with owner email. Filter using WHERE portal_plan_type = 'PLAN_UNLIMITED' AND billing_type = 'stripe' */
-        portal_workers_account_data: {
-            /**
-             * Format: character varying
-             * @description Note:
-             *     This is a Primary Key.<pk/>
-             */
-            portal_account_id?: string;
-            /** Format: character varying */
-            user_account_name?: string;
-            /**
-             * Format: character varying
-             * @description Note:
-             *     This is a Foreign Key to `portal_plans.portal_plan_type`.<fk table='portal_plans' column='portal_plan_type'/>
-             */
-            portal_plan_type?: string;
-            /** Format: character varying */
-            billing_type?: string;
-            /** Format: integer */
-            portal_account_user_limit?: number;
-            /** Format: character varying */
-            gcp_entitlement_id?: string;
-            /** Format: character varying */
-            owner_email?: string;
-            /**
-             * Format: character varying
-             * @description Note:
-             *     This is a Primary Key.<pk/>
-             */
-            owner_user_id?: string;
         };
         /** @description Supported blockchain networks (Pocket mainnet, testnet, etc.) */
         networks: {
             /**
-             * Format: character varying
              * @description Note:
              *     This is a Primary Key.<pk/>
              */
@@ -2424,53 +2048,36 @@ export interface components {
         /** @description Companies or customer groups that can be attached to Portal Accounts */
         organizations: {
             /**
-             * Format: integer
              * @description Note:
              *     This is a Primary Key.<pk/>
              */
             organization_id: number;
-            /**
-             * Format: character varying
-             * @description Name of the organization
-             */
+            /** @description Name of the organization */
             organization_name: string;
-            /**
-             * Format: timestamp with time zone
-             * @description Soft delete timestamp
-             */
+            /** @description Soft delete timestamp */
             deleted_at?: string;
-            /**
-             * Format: timestamp with time zone
-             * @default CURRENT_TIMESTAMP
-             */
+            /** @default CURRENT_TIMESTAMP */
             created_at: string;
-            /**
-             * Format: timestamp with time zone
-             * @default CURRENT_TIMESTAMP
-             */
+            /** @default CURRENT_TIMESTAMP */
             updated_at: string;
         };
         /** @description User roles and permissions for specific portal accounts */
         portal_account_rbac: {
             /**
-             * Format: integer
              * @description Note:
              *     This is a Primary Key.<pk/>
              */
             id: number;
             /**
-             * Format: character varying
              * @description Note:
              *     This is a Foreign Key to `portal_accounts.portal_account_id`.<fk table='portal_accounts' column='portal_account_id'/>
              */
             portal_account_id: string;
             /**
-             * Format: character varying
              * @description Note:
              *     This is a Foreign Key to `portal_users.portal_user_id`.<fk table='portal_users' column='portal_user_id'/>
              */
             portal_user_id: string;
-            /** Format: character varying */
             role_name: string;
             /** @default false */
             user_joined_account: boolean;
@@ -2478,82 +2085,50 @@ export interface components {
         /** @description Applications created within portal accounts with their own rate limits and settings */
         portal_applications: {
             /**
-             * Format: character varying
              * @description Note:
              *     This is a Primary Key.<pk/>
              * @default gen_random_uuid()
              */
             portal_application_id: string;
             /**
-             * Format: character varying
              * @description Note:
              *     This is a Foreign Key to `portal_accounts.portal_account_id`.<fk table='portal_accounts' column='portal_account_id'/>
              */
             portal_account_id: string;
-            /** Format: character varying */
             portal_application_name?: string;
-            /** Format: character varying */
             emoji?: string;
-            /** Format: integer */
             portal_application_user_limit?: number;
-            /**
-             * Format: public.plan_interval
-             * @enum {string}
-             */
+            /** @enum {string} */
             portal_application_user_limit_interval?: "day" | "month" | "year";
-            /** Format: integer */
             portal_application_user_limit_rps?: number;
-            /** Format: integer[] */
-            portal_application_user_limit_notification_thresholds?: number[];
-            /** Format: character varying */
             portal_application_description?: string;
-            /** Format: character varying[] */
             favorite_service_ids?: string[];
-            /**
-             * Format: character varying
-             * @description Hashed secret key for application authentication
-             */
+            /** @description Hashed secret key for application authentication */
             secret_key_hash?: string;
             /** @default false */
             secret_key_required: boolean;
-            /** Format: timestamp with time zone */
             deleted_at?: string;
-            /**
-             * Format: timestamp with time zone
-             * @default CURRENT_TIMESTAMP
-             */
+            /** @default CURRENT_TIMESTAMP */
             created_at: string;
-            /**
-             * Format: timestamp with time zone
-             * @default CURRENT_TIMESTAMP
-             */
+            /** @default CURRENT_TIMESTAMP */
             updated_at: string;
         };
         /** @description Fallback URLs for services when primary endpoints fail */
         service_fallbacks: {
             /**
-             * Format: integer
              * @description Note:
              *     This is a Primary Key.<pk/>
              */
             service_fallback_id: number;
             /**
-             * Format: character varying
              * @description Note:
              *     This is a Foreign Key to `services.service_id`.<fk table='services' column='service_id'/>
              */
             service_id: string;
-            /** Format: character varying */
             fallback_url: string;
-            /**
-             * Format: timestamp with time zone
-             * @default CURRENT_TIMESTAMP
-             */
+            /** @default CURRENT_TIMESTAMP */
             created_at: string;
-            /**
-             * Format: timestamp with time zone
-             * @default CURRENT_TIMESTAMP
-             */
+            /** @default CURRENT_TIMESTAMP */
             updated_at: string;
         };
     };
@@ -2595,7 +2170,6 @@ export interface components {
         "rowFilter.portal_accounts.portal_account_user_limit": string;
         "rowFilter.portal_accounts.portal_account_user_limit_interval": string;
         "rowFilter.portal_accounts.portal_account_user_limit_rps": string;
-        "rowFilter.portal_accounts.portal_account_user_limit_notification_thresholds": string;
         "rowFilter.portal_accounts.billing_type": string;
         /** @description Stripe subscription identifier for billing */
         "rowFilter.portal_accounts.stripe_subscription_id": string;
@@ -2617,15 +2191,6 @@ export interface components {
         /** @description Rate limit in requests per second */
         "rowFilter.portal_plans.plan_rate_limit_rps": string;
         "rowFilter.portal_plans.plan_application_limit": string;
-        "rowFilter.portal_users.portal_user_id": string;
-        /** @description Unique email address for the user */
-        "rowFilter.portal_users.portal_user_email": string;
-        "rowFilter.portal_users.signed_up": string;
-        /** @description Whether user has admin privileges across the portal */
-        "rowFilter.portal_users.portal_admin": string;
-        "rowFilter.portal_users.deleted_at": string;
-        "rowFilter.portal_users.created_at": string;
-        "rowFilter.portal_users.updated_at": string;
         "rowFilter.services.service_id": string;
         "rowFilter.services.service_name": string;
         /** @description Cost in compute units for each relay */
@@ -2646,14 +2211,6 @@ export interface components {
         "rowFilter.services.deleted_at": string;
         "rowFilter.services.created_at": string;
         "rowFilter.services.updated_at": string;
-        "rowFilter.portal_workers_account_data.portal_account_id": string;
-        "rowFilter.portal_workers_account_data.user_account_name": string;
-        "rowFilter.portal_workers_account_data.portal_plan_type": string;
-        "rowFilter.portal_workers_account_data.billing_type": string;
-        "rowFilter.portal_workers_account_data.portal_account_user_limit": string;
-        "rowFilter.portal_workers_account_data.gcp_entitlement_id": string;
-        "rowFilter.portal_workers_account_data.owner_email": string;
-        "rowFilter.portal_workers_account_data.owner_user_id": string;
         "rowFilter.networks.network_id": string;
         "rowFilter.organizations.organization_id": string;
         /** @description Name of the organization */
@@ -2674,7 +2231,6 @@ export interface components {
         "rowFilter.portal_applications.portal_application_user_limit": string;
         "rowFilter.portal_applications.portal_application_user_limit_interval": string;
         "rowFilter.portal_applications.portal_application_user_limit_rps": string;
-        "rowFilter.portal_applications.portal_application_user_limit_notification_thresholds": string;
         "rowFilter.portal_applications.portal_application_description": string;
         "rowFilter.portal_applications.favorite_service_ids": string;
         /** @description Hashed secret key for application authentication */
@@ -2708,15 +2264,6 @@ export interface components {
                 "text/csv": components["schemas"]["networks"];
             };
         };
-        /** @description portal_users */
-        portal_users: {
-            content: {
-                "application/json": components["schemas"]["portal_users"];
-                "application/vnd.pgrst.object+json;nulls=stripped": components["schemas"]["portal_users"];
-                "application/vnd.pgrst.object+json": components["schemas"]["portal_users"];
-                "text/csv": components["schemas"]["portal_users"];
-            };
-        };
         /** @description service_endpoints */
         service_endpoints: {
             content: {
@@ -2729,19 +2276,15 @@ export interface components {
         Args: {
             content: {
                 "application/json": {
-                    /** Format: bytea */
                     "": string;
                 };
                 "application/vnd.pgrst.object+json;nulls=stripped": {
-                    /** Format: bytea */
                     "": string;
                 };
                 "application/vnd.pgrst.object+json": {
-                    /** Format: bytea */
                     "": string;
                 };
                 "text/csv": {
-                    /** Format: bytea */
                     "": string;
                 };
             };
@@ -2812,19 +2355,15 @@ export interface components {
         Args2: {
             content: {
                 "application/json": {
-                    /** Format: text */
                     "": string;
                 };
                 "application/vnd.pgrst.object+json;nulls=stripped": {
-                    /** Format: text */
                     "": string;
                 };
                 "application/vnd.pgrst.object+json": {
-                    /** Format: text */
                     "": string;
                 };
                 "text/csv": {
-                    /** Format: text */
                     "": string;
                 };
             };

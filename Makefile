@@ -164,18 +164,25 @@ include ./makefiles/helpers.mk
 # Catch-all rule for undefined targets
 # This must be defined AFTER includes so color variables are available
 # and it acts as a fallback for any undefined target
+#
+# Special handling: Allow service IDs to pass through silently when used as arguments
+# to test targets (e.g., "make e2e_test xrplevm" or "make load_test eth,poly")
 %:
-	@echo ""
-	@echo "$(RED)❌ Error: Unknown target '$(BOLD)$@$(RESET)$(RED)'$(RESET)"
-	@echo ""
-	@if echo "$@" | grep -q "^postgrest"; then \
-		echo "$(YELLOW)💡 Hint: Portal DB targets should be run from the portal-db directory:$(RESET)"; \
-		echo "   $(CYAN)cd ./portal-db && make $@$(RESET)"; \
-		echo "   Or see: $(CYAN)make portal_db_help$(RESET)"; \
+	@if echo "$(MAKECMDGOALS)" | grep -qE '(e2e_test|load_test|e2e_test_websocket|load_test_websocket|e2e_test_eth_fallback)'; then \
+		: ; \
 	else \
-		echo "$(YELLOW)💡 Available targets:$(RESET)"; \
-		echo "   Run $(CYAN)make help$(RESET) to see all available targets"; \
-		echo "   Run $(CYAN)make help-unclassified$(RESET) to see unclassified targets"; \
+		echo ""; \
+		echo "$(RED)❌ Error: Unknown target '$(BOLD)$@$(RESET)$(RED)'$(RESET)"; \
+		echo ""; \
+		if echo "$@" | grep -q "^postgrest"; then \
+			echo "$(YELLOW)💡 Hint: Portal DB targets should be run from the portal-db directory:$(RESET)"; \
+			echo "   $(CYAN)cd ./portal-db && make $@$(RESET)"; \
+			echo "   Or see: $(CYAN)make portal_db_help$(RESET)"; \
+		else \
+			echo "$(YELLOW)💡 Available targets:$(RESET)"; \
+			echo "   Run $(CYAN)make help$(RESET) to see all available targets"; \
+			echo "   Run $(CYAN)make help-unclassified$(RESET) to see unclassified targets"; \
+		fi; \
+		echo ""; \
+		exit 1; \
 	fi
-	@echo ""
-	@exit 1
