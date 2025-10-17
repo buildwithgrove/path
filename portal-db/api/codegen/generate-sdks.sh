@@ -199,7 +199,7 @@ if [ ! -f "package.json" ]; then
     echo "📦 Creating package.json..."
     cat > package.json << 'EOF'
 {
-  "name": "@buildwithgrove/portal-db-ts-sdk",
+  "name": "@grovepath/portal-db-ts-sdk",
   "version": "1.0.0",
   "description": "TypeScript SDK for Grove Portal DB API",
   "type": "module",
@@ -370,7 +370,7 @@ echo "   • go.mod          - Go module definition (permanent)"
 echo "   • README.md       - Documentation (permanent)"
 echo ""
 echo -e "${BLUE}🔷 TypeScript SDK:${NC}"
-echo "   Package:  @buildwithgrove/portal-db-ts-sdk"
+echo "   Package:  @grovepath/portal-db-ts-sdk"
 echo "   Runtime:  openapi-fetch (minimal dependency, uses native fetch)"
 echo "   Files:"
 echo "   • types.ts        - Generated TypeScript types from OpenAPI spec (updated)"
