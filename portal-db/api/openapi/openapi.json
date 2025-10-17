@@ -222,6 +222,9 @@
             "$ref": "#/components/parameters/rowFilter.portal_accounts.portal_account_user_limit_rps"
           },
           {
+            "$ref": "#/components/parameters/rowFilter.portal_accounts.portal_account_user_limit_notification_thresholds"
+          },
+          {
             "$ref": "#/components/parameters/rowFilter.portal_accounts.billing_type"
           },
           {
@@ -360,6 +363,9 @@
             "$ref": "#/components/parameters/rowFilter.portal_accounts.portal_account_user_limit_rps"
           },
           {
+            "$ref": "#/components/parameters/rowFilter.portal_accounts.portal_account_user_limit_notification_thresholds"
+          },
+          {
             "$ref": "#/components/parameters/rowFilter.portal_accounts.billing_type"
           },
           {
@@ -419,6 +425,9 @@
           },
           {
             "$ref": "#/components/parameters/rowFilter.portal_accounts.portal_account_user_limit_rps"
+          },
+          {
+            "$ref": "#/components/parameters/rowFilter.portal_accounts.portal_account_user_limit_notification_thresholds"
           },
           {
             "$ref": "#/components/parameters/rowFilter.portal_accounts.billing_type"
@@ -1914,6 +1923,9 @@
             "$ref": "#/components/parameters/rowFilter.portal_applications.portal_application_user_limit_rps"
           },
           {
+            "$ref": "#/components/parameters/rowFilter.portal_applications.portal_application_user_limit_notification_thresholds"
+          },
+          {
             "$ref": "#/components/parameters/rowFilter.portal_applications.portal_application_description"
           },
           {
@@ -2049,6 +2061,9 @@
             "$ref": "#/components/parameters/rowFilter.portal_applications.portal_application_user_limit_rps"
           },
           {
+            "$ref": "#/components/parameters/rowFilter.portal_applications.portal_application_user_limit_notification_thresholds"
+          },
+          {
             "$ref": "#/components/parameters/rowFilter.portal_applications.portal_application_description"
           },
           {
@@ -2105,6 +2120,9 @@
           },
           {
             "$ref": "#/components/parameters/rowFilter.portal_applications.portal_application_user_limit_rps"
+          },
+          {
+            "$ref": "#/components/parameters/rowFilter.portal_applications.portal_application_user_limit_notification_thresholds"
           },
           {
             "$ref": "#/components/parameters/rowFilter.portal_applications.portal_application_description"
@@ -2958,6 +2976,14 @@
           "type": "string"
         }
       },
+      "rowFilter.portal_accounts.portal_account_user_limit_notification_thresholds": {
+        "name": "portal_account_user_limit_notification_thresholds",
+        "required": false,
+        "in": "query",
+        "schema": {
+          "type": "string"
+        }
+      },
       "rowFilter.portal_accounts.billing_type": {
         "name": "billing_type",
         "required": false,
@@ -3513,6 +3539,14 @@
       },
       "rowFilter.portal_applications.portal_application_user_limit_rps": {
         "name": "portal_application_user_limit_rps",
+        "required": false,
+        "in": "query",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "rowFilter.portal_applications.portal_application_user_limit_notification_thresholds": {
+        "name": "portal_application_user_limit_notification_thresholds",
         "required": false,
         "in": "query",
         "schema": {
@@ -4112,6 +4146,13 @@
             "format": "integer",
             "type": "integer"
           },
+          "portal_account_user_limit_notification_thresholds": {
+            "format": "integer[]",
+            "items": {
+              "type": "integer"
+            },
+            "type": "array"
+          },
           "billing_type": {
             "format": "character varying",
             "maxLength": 20,
@@ -4557,6 +4598,13 @@
           "portal_application_user_limit_rps": {
             "format": "integer",
             "type": "integer"
+          },
+          "portal_application_user_limit_notification_thresholds": {
+            "format": "integer[]",
+            "items": {
+              "type": "integer"
+            },
+            "type": "array"
           },
           "portal_application_description": {
             "format": "character varying",

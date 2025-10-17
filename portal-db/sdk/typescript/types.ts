@@ -203,6 +203,7 @@ export interface paths {
                     portal_account_user_limit?: components["parameters"]["rowFilter.portal_accounts.portal_account_user_limit"];
                     portal_account_user_limit_interval?: components["parameters"]["rowFilter.portal_accounts.portal_account_user_limit_interval"];
                     portal_account_user_limit_rps?: components["parameters"]["rowFilter.portal_accounts.portal_account_user_limit_rps"];
+                    portal_account_user_limit_notification_thresholds?: components["parameters"]["rowFilter.portal_accounts.portal_account_user_limit_notification_thresholds"];
                     billing_type?: components["parameters"]["rowFilter.portal_accounts.billing_type"];
                     /** @description Stripe subscription identifier for billing */
                     stripe_subscription_id?: components["parameters"]["rowFilter.portal_accounts.stripe_subscription_id"];
@@ -293,6 +294,7 @@ export interface paths {
                     portal_account_user_limit?: components["parameters"]["rowFilter.portal_accounts.portal_account_user_limit"];
                     portal_account_user_limit_interval?: components["parameters"]["rowFilter.portal_accounts.portal_account_user_limit_interval"];
                     portal_account_user_limit_rps?: components["parameters"]["rowFilter.portal_accounts.portal_account_user_limit_rps"];
+                    portal_account_user_limit_notification_thresholds?: components["parameters"]["rowFilter.portal_accounts.portal_account_user_limit_notification_thresholds"];
                     billing_type?: components["parameters"]["rowFilter.portal_accounts.billing_type"];
                     /** @description Stripe subscription identifier for billing */
                     stripe_subscription_id?: components["parameters"]["rowFilter.portal_accounts.stripe_subscription_id"];
@@ -335,6 +337,7 @@ export interface paths {
                     portal_account_user_limit?: components["parameters"]["rowFilter.portal_accounts.portal_account_user_limit"];
                     portal_account_user_limit_interval?: components["parameters"]["rowFilter.portal_accounts.portal_account_user_limit_interval"];
                     portal_account_user_limit_rps?: components["parameters"]["rowFilter.portal_accounts.portal_account_user_limit_rps"];
+                    portal_account_user_limit_notification_thresholds?: components["parameters"]["rowFilter.portal_accounts.portal_account_user_limit_notification_thresholds"];
                     billing_type?: components["parameters"]["rowFilter.portal_accounts.billing_type"];
                     /** @description Stripe subscription identifier for billing */
                     stripe_subscription_id?: components["parameters"]["rowFilter.portal_accounts.stripe_subscription_id"];
@@ -1527,6 +1530,7 @@ export interface paths {
                     portal_application_user_limit?: components["parameters"]["rowFilter.portal_applications.portal_application_user_limit"];
                     portal_application_user_limit_interval?: components["parameters"]["rowFilter.portal_applications.portal_application_user_limit_interval"];
                     portal_application_user_limit_rps?: components["parameters"]["rowFilter.portal_applications.portal_application_user_limit_rps"];
+                    portal_application_user_limit_notification_thresholds?: components["parameters"]["rowFilter.portal_applications.portal_application_user_limit_notification_thresholds"];
                     portal_application_description?: components["parameters"]["rowFilter.portal_applications.portal_application_description"];
                     favorite_service_ids?: components["parameters"]["rowFilter.portal_applications.favorite_service_ids"];
                     /** @description Hashed secret key for application authentication */
@@ -1615,6 +1619,7 @@ export interface paths {
                     portal_application_user_limit?: components["parameters"]["rowFilter.portal_applications.portal_application_user_limit"];
                     portal_application_user_limit_interval?: components["parameters"]["rowFilter.portal_applications.portal_application_user_limit_interval"];
                     portal_application_user_limit_rps?: components["parameters"]["rowFilter.portal_applications.portal_application_user_limit_rps"];
+                    portal_application_user_limit_notification_thresholds?: components["parameters"]["rowFilter.portal_applications.portal_application_user_limit_notification_thresholds"];
                     portal_application_description?: components["parameters"]["rowFilter.portal_applications.portal_application_description"];
                     favorite_service_ids?: components["parameters"]["rowFilter.portal_applications.favorite_service_ids"];
                     /** @description Hashed secret key for application authentication */
@@ -1655,6 +1660,7 @@ export interface paths {
                     portal_application_user_limit?: components["parameters"]["rowFilter.portal_applications.portal_application_user_limit"];
                     portal_application_user_limit_interval?: components["parameters"]["rowFilter.portal_applications.portal_application_user_limit_interval"];
                     portal_application_user_limit_rps?: components["parameters"]["rowFilter.portal_applications.portal_application_user_limit_rps"];
+                    portal_application_user_limit_notification_thresholds?: components["parameters"]["rowFilter.portal_applications.portal_application_user_limit_notification_thresholds"];
                     portal_application_description?: components["parameters"]["rowFilter.portal_applications.portal_application_description"];
                     favorite_service_ids?: components["parameters"]["rowFilter.portal_applications.favorite_service_ids"];
                     /** @description Hashed secret key for application authentication */
@@ -2347,6 +2353,8 @@ export interface components {
             portal_account_user_limit_interval?: "day" | "month" | "year";
             /** Format: integer */
             portal_account_user_limit_rps?: number;
+            /** Format: integer[] */
+            portal_account_user_limit_notification_thresholds?: number[];
             /** Format: character varying */
             billing_type?: string;
             /**
@@ -2644,6 +2652,8 @@ export interface components {
             portal_application_user_limit_interval?: "day" | "month" | "year";
             /** Format: integer */
             portal_application_user_limit_rps?: number;
+            /** Format: integer[] */
+            portal_application_user_limit_notification_thresholds?: number[];
             /** Format: character varying */
             portal_application_description?: string;
             /** Format: character varying[] */
@@ -2734,6 +2744,7 @@ export interface components {
         "rowFilter.portal_accounts.portal_account_user_limit": string;
         "rowFilter.portal_accounts.portal_account_user_limit_interval": string;
         "rowFilter.portal_accounts.portal_account_user_limit_rps": string;
+        "rowFilter.portal_accounts.portal_account_user_limit_notification_thresholds": string;
         "rowFilter.portal_accounts.billing_type": string;
         /** @description Stripe subscription identifier for billing */
         "rowFilter.portal_accounts.stripe_subscription_id": string;
@@ -2812,6 +2823,7 @@ export interface components {
         "rowFilter.portal_applications.portal_application_user_limit": string;
         "rowFilter.portal_applications.portal_application_user_limit_interval": string;
         "rowFilter.portal_applications.portal_application_user_limit_rps": string;
+        "rowFilter.portal_applications.portal_application_user_limit_notification_thresholds": string;
         "rowFilter.portal_applications.portal_application_description": string;
         "rowFilter.portal_applications.favorite_service_ids": string;
         /** @description Hashed secret key for application authentication */
