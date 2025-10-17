@@ -117,10 +117,15 @@ COMMENT ON VIEW api.user_accounts_view IS 'Aggregated view of portal accounts wi
 -- PERMISSIONS
 -- ============================================================================
 
--- Grant SELECT access to authenticated_user role only
+-- Grant SELECT access to authenticated_user role (primary use case)
 GRANT SELECT ON api.user_accounts_view TO authenticated_user;
 
--- Revoke access from other roles to ensure only authenticated users can query
+-- Grant SELECT access to portal_db_admin for admin operations and OpenAPI spec generation
+-- The view's built-in WHERE clause with api.current_portal_user_id() will still
+-- enforce user-scoped access control, but admin role can query it for debugging and OpenAPI spec generation
+GRANT SELECT ON api.user_accounts_view TO portal_db_admin;
+
+-- Revoke access from other roles to ensure only authenticated users and admins can query
 REVOKE ALL ON api.user_accounts_view FROM PUBLIC;
 REVOKE ALL ON api.user_accounts_view FROM anon;
-
+REVOKE ALL ON api.user_accounts_view FROM portal_db_reader;
