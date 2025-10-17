@@ -1,0 +1,407 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": 169,
+  "links": [],
+  "panels": [
+    {
+      "datasource": {
+        "type": "victoriametrics-logs-datasource",
+        "uid": "depa5bgc9o6ipf"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "bars",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 0
+      },
+      "id": 3,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "12.0.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "victoriametrics-logs-datasource",
+            "uid": "depa5bgc9o6ipf"
+          },
+          "editorMode": "code",
+          "expr": "kubernetes.pod_namespace: \"middleware\" \nAND kubernetes.container_name: \"path-shannon-mainnet\" \nAND log.selected_endpoint_url:~\"$root_domain\"\nAND log.error_message:*\n| copy kubernetes.node_labels.failure-domain.beta.kubernetes.io/region as region\n| stats by (region, _msg) count() as error_count\n| sort by (error_count) desc",
+          "legendFormat": "{{region}} ({{_msg}})",
+          "queryType": "statsRange",
+          "refId": "A",
+          "step": ""
+        }
+      ],
+      "title": "Errors per region",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "victoriametrics-logs-datasource",
+        "uid": "depa5bgc9o6ipf"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "bars",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 0
+      },
+      "id": 2,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "12.0.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "victoriametrics-logs-datasource",
+            "uid": "depa5bgc9o6ipf"
+          },
+          "editorMode": "code",
+          "expr": "kubernetes.pod_namespace: \"middleware\" \nAND kubernetes.container_name: \"path-shannon-mainnet\" \nAND log.selected_endpoint_url:~\"$root_domain\"\nAND log.error_message:*\n| extract_regexp \"https?://[^/]*?(?P<root_domain>[^./]+\\\\.[^./:]+)(?:[:/]|$)\" from log.selected_endpoint_url\n| stats by (root_domain, _msg) count() as error_count\n| sort by (error_count) desc",
+          "legendFormat": "{{root_domain}} ({{_msg}})",
+          "queryType": "statsRange",
+          "refId": "A"
+        }
+      ],
+      "title": "Errors per domain",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "victoriametrics-logs-datasource",
+        "uid": "depa5bgc9o6ipf"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "log.level"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 90
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "log.service_id"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 135
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "log.selected_endpoint_url"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 249
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "error_details"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 548
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "message"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 456
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 16,
+        "w": 24,
+        "x": 0,
+        "y": 8
+      },
+      "id": 1,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true,
+        "sortBy": []
+      },
+      "pluginVersion": "12.0.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "victoriametrics-logs-datasource",
+            "uid": "depa5bgc9o6ipf"
+          },
+          "editorMode": "code",
+          "expr": "kubernetes.pod_namespace: \"middleware\" \nAND kubernetes.container_name: \"path-shannon-mainnet\" \nAND log.selected_endpoint_url:~\"$root_domain\"\nAND log.error_message:*\n| extract_regexp \"https?://[^/]*?(?P<root_domain>[^./]+\\\\.[^./:]+)(?:[:/]|$)\" from log.selected_endpoint_url\n| extract_regexp \"HTTP relay request failed: (?P<error_details>.*)\" from log.error_message\n| extract_regexp \"status code: (?P<status_code>[0-9]+)\" from error_details\n| copy kubernetes.node_labels.failure-domain.beta.kubernetes.io/region as region\n| copy _msg as message\n| fields root_domain, message, error_details, status_code, log.selected_endpoint_supplier, log.service_id, region",
+          "queryType": "instant",
+          "refId": "A"
+        }
+      ],
+      "title": "New panel",
+      "transformations": [
+        {
+          "id": "extractFields",
+          "options": {
+            "delimiter": ",",
+            "format": "json",
+            "keepTime": false,
+            "replace": true,
+            "source": "labels"
+          }
+        }
+      ],
+      "type": "table"
+    }
+  ],
+  "preload": false,
+  "schemaVersion": 41,
+  "tags": [],
+  "templating": {
+    "list": [
+      {
+        "allValue": "",
+        "allowCustomValue": false,
+        "current": {
+          "text": [
+            "All"
+          ],
+          "value": [
+            "$__all"
+          ]
+        },
+        "datasource": {
+          "type": "victoriametrics-logs-datasource",
+          "uid": "depa5bgc9o6ipf"
+        },
+        "definition": "kubernetes.pod_namespace: \"middleware\"  AND kubernetes.container_name: \"path-shannon-mainnet\"  AND log.selected_endpoint_url:* AND log.error_message:* | extract_regexp \"https?://[^/]*?(?P<root_domain>[^./]+\\\\.[^./:]+)(?:[:/]|$)\" from log.selected_endpoint_url",
+        "includeAll": true,
+        "multi": true,
+        "name": "root_domain",
+        "options": [],
+        "query": {
+          "field": "root_domain",
+          "limit": 25,
+          "query": "kubernetes.pod_namespace: \"middleware\"  AND kubernetes.container_name: \"path-shannon-mainnet\"  AND log.selected_endpoint_url:* AND log.error_message:* | extract_regexp \"https?://[^/]*?(?P<root_domain>[^./]+\\\\.[^./:]+)(?:[:/]|$)\" from log.selected_endpoint_url",
+          "refId": "VictoriaLogsVariableQueryEditor-VariableQuery",
+          "type": "fieldValue"
+        },
+        "refresh": 2,
+        "regex": "",
+        "type": "query"
+      }
+    ]
+  },
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "[TODO: move to overall dashboard] PATH mainnet error troubleshooting using VL",
+  "uid": "1c6d803b-1c4e-46d1-a7ab-acb46f2a2043",
+  "version": 16
+}

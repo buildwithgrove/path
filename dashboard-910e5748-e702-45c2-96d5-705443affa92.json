@@ -1,0 +1,1496 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": 173,
+  "links": [],
+  "panels": [
+    {
+      "description": "",
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "id": 19,
+      "options": {
+        "code": {
+          "language": "plaintext",
+          "showLineNumbers": false,
+          "showMiniMap": false
+        },
+        "content": "# 🚨 THIS DASHBOARD COSTS MONEY! 🚨 \n💸💸💸💸💸💸💸💸💸💸💸💸💸💸💸💸💸💸💸💸💸💸💸💸💸💸💸💸💸💸💸💸💸💸\n\n## ⚠️⚠️⚠️ **Every time you refresh this dashboard, it runs VERY EXPENSIVE queries on BigQuery** ⚠️⚠️⚠️\n\n💸💸💸💸💸💸💸💸💸💸💸💸💸💸💸💸💸💸💸💸💸💸💸💸💸💸💸💸💸💸💸💸💸💸\n### DO NOT set the TIME RANGE to values larger than 24 hours unless it's worth the 💰. Bias to just a few hours.",
+        "mode": "markdown"
+      },
+      "pluginVersion": "12.0.2",
+      "title": "** DISCLAIMER **",
+      "type": "text"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 7
+      },
+      "id": 6,
+      "panels": [],
+      "title": "Service Health",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "ad44f9fa-1c08-4eae-ad3a-3a12d9fe762d"
+      },
+      "description": "Source: Envoy Gateway\n\nDefinition: The % of non-5xx at the Envoy Gateway Level. \n\n** Success rate is governed by Uptime. **",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red"
+              },
+              {
+                "color": "#EAB839",
+                "value": 95
+              },
+              {
+                "color": "green",
+                "value": 99
+              }
+            ]
+          },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 5,
+        "x": 0,
+        "y": 8
+      },
+      "id": 1,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.0.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "ad44f9fa-1c08-4eae-ad3a-3a12d9fe762d"
+          },
+          "editorMode": "code",
+          "expr": "100 * (\n  sum (\n    increase(envoy_cluster_upstream_rq{envoy_cluster_name=~\"httproute/middleware/.*\", envoy_cluster_name!~\".*healthz.*\", envoy_response_code!~\"[5]..\"}[$__range])\n  )\n)\n/\nsum (\n  increase(envoy_cluster_upstream_rq{envoy_cluster_name=~\"httproute/middleware/.*\", envoy_cluster_name!~\".*healthz.*\"}[$__range])\n)",
+          "instant": false,
+          "legendFormat": "__auto",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Service Uptime",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "ad44f9fa-1c08-4eae-ad3a-3a12d9fe762d"
+      },
+      "description": "Source: Envoy\n\nDefinition: Average RPS of the Gateway.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text"
+              }
+            ]
+          },
+          "unit": "reqps"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 5,
+        "x": 5,
+        "y": 8
+      },
+      "id": 3,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.0.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "ad44f9fa-1c08-4eae-ad3a-3a12d9fe762d"
+          },
+          "editorMode": "code",
+          "expr": "sum (\n  rate(envoy_cluster_upstream_rq{envoy_cluster_name=~\"httproute/middleware/.*\", envoy_cluster_name!~\".*healthz.*\"}[$__range])\n)",
+          "instant": false,
+          "legendFormat": "__auto",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Average Requests Per Second (RPS)",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "ad44f9fa-1c08-4eae-ad3a-3a12d9fe762d"
+      },
+      "description": "Source: Envoy\n\nDefinition: The average 95th percentile latency calculated by Envoy Gateway.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "red",
+                "value": 200
+              }
+            ]
+          },
+          "unit": "ms"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 5,
+        "x": 10,
+        "y": 8
+      },
+      "id": 4,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.0.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "ad44f9fa-1c08-4eae-ad3a-3a12d9fe762d"
+          },
+          "editorMode": "code",
+          "expr": "histogram_quantile(0.95, sum(rate(envoy_cluster_upstream_rq_time_bucket{envoy_cluster_name=~\"httproute/middleware/.*\", envoy_cluster_name!~\".*healthz.*\"}[$__range])) by (le))",
+          "instant": false,
+          "legendFormat": "__auto",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Average Latency [P95] (ms)",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "ad44f9fa-1c08-4eae-ad3a-3a12d9fe762d"
+      },
+      "description": "Source: PATH (VictoriaMetrics)\n\nDefinition: Total Relays counted in Victoria Metrics by PATH.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text"
+              }
+            ]
+          },
+          "unit": "locale"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 5,
+        "x": 15,
+        "y": 8
+      },
+      "id": 10,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.0.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "ad44f9fa-1c08-4eae-ad3a-3a12d9fe762d"
+          },
+          "editorMode": "code",
+          "expr": "sum (increase(path_shannon_relays_total{container=\"path-shannon-mainnet\"}[$__range]))",
+          "instant": false,
+          "legendFormat": "__auto",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "PATH Relays",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "grafana-bigquery-datasource",
+        "uid": "devojocw1pptsa"
+      },
+      "description": "Source: DWH\n\nDefinition: Total Relays Captured in DWH.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text"
+              }
+            ]
+          },
+          "unit": "locale"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 4,
+        "x": 20,
+        "y": 8
+      },
+      "id": 9,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.0.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-bigquery-datasource",
+            "uid": "devojocw1pptsa"
+          },
+          "editorMode": "code",
+          "format": 1,
+          "location": "",
+          "project": "portal-prd-gke-all",
+          "rawQuery": true,
+          "rawSql": "SELECT \n  count(*)\nFROM `portal-prd-gke-all.RELAYS.D2` r\nWHERE \n  r.date BETWEEN DATE(TIMESTAMP_TRUNC(TIMESTAMP_SECONDS(${__from:date:seconds}), DAY)) AND DATE(TIMESTAMP_TRUNC(TIMESTAMP_SECONDS(${__to:date:seconds}), DAY))\n  AND r.ts BETWEEN TIMESTAMP_SECONDS(${__from:date:seconds}) AND TIMESTAMP_SECONDS(${__to:date:seconds})\n;",
+          "refId": "A",
+          "sql": {
+            "columns": [
+              {
+                "parameters": [],
+                "type": "function"
+              }
+            ],
+            "groupBy": [
+              {
+                "property": {
+                  "type": "string"
+                },
+                "type": "groupBy"
+              }
+            ],
+            "limit": 50
+          }
+        }
+      ],
+      "title": "DWH Relays",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "ad44f9fa-1c08-4eae-ad3a-3a12d9fe762d"
+      },
+      "description": "Source: Envoy\n\nDefinition: The % of non-5xx at the Envoy Gateway Level. \n\n** Success rate cannot exceed Uptime. **",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 8,
+        "x": 0,
+        "y": 14
+      },
+      "id": 2,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": false
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "12.0.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "ad44f9fa-1c08-4eae-ad3a-3a12d9fe762d"
+          },
+          "editorMode": "code",
+          "expr": "100 *\nsum(\n  rate(envoy_cluster_upstream_rq{\n    envoy_cluster_name=~\"httproute/middleware/.*\",\n    envoy_cluster_name!~\".*healthz.*\",\n    envoy_response_code!~\"[5]..\"\n  }[30s])\n)\n/\nclamp_min(\n  sum(\n    rate(envoy_cluster_upstream_rq{\n      envoy_cluster_name=~\"httproute/middleware/.*\",\n      envoy_cluster_name!~\".*healthz.*\"\n    }[30s])\n  ),\n  1\n)",
+          "instant": false,
+          "legendFormat": "__auto",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Service Uptime - 30s rolling avg",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "ad44f9fa-1c08-4eae-ad3a-3a12d9fe762d"
+      },
+      "description": "Source: Envoy",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text"
+              }
+            ]
+          },
+          "unit": "reqps"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 8,
+        "x": 8,
+        "y": 14
+      },
+      "id": 5,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": false
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "12.0.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "ad44f9fa-1c08-4eae-ad3a-3a12d9fe762d"
+          },
+          "editorMode": "code",
+          "expr": "sum(\n  rate(envoy_cluster_upstream_rq{\n    envoy_cluster_name=~\"httproute/middleware/.*\",\n    envoy_cluster_name!~\".*healthz.*\"\n  }[30s])\n)",
+          "instant": false,
+          "legendFormat": "__auto",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Requests Per Second (RPS) - 30s rolling avg",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "ad44f9fa-1c08-4eae-ad3a-3a12d9fe762d"
+      },
+      "description": "Source: Envoy",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "axisSoftMax": 5000,
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "max": 3000,
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              }
+            ]
+          },
+          "unit": "ms"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 8,
+        "x": 16,
+        "y": 14
+      },
+      "id": 8,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "right",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "12.0.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "ad44f9fa-1c08-4eae-ad3a-3a12d9fe762d"
+          },
+          "editorMode": "code",
+          "expr": "histogram_quantile(\n  0.75,\n  sum by (le)(\n    rate(envoy_cluster_upstream_rq_time_bucket{\n      envoy_cluster_name=~\"httproute/middleware/.*\",\n      envoy_cluster_name!~\".*healthz.*\"\n    }[30s])\n  )\n)",
+          "hide": false,
+          "instant": false,
+          "legendFormat": "p75",
+          "range": true,
+          "refId": "C"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "ad44f9fa-1c08-4eae-ad3a-3a12d9fe762d"
+          },
+          "editorMode": "code",
+          "expr": "histogram_quantile(\n  0.95,\n  sum by (le)(\n    rate(envoy_cluster_upstream_rq_time_bucket{\n      envoy_cluster_name=~\"httproute/middleware/.*\",\n      envoy_cluster_name!~\".*healthz.*\"\n    }[30s])\n  )\n)",
+          "instant": false,
+          "legendFormat": "p95",
+          "range": true,
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "ad44f9fa-1c08-4eae-ad3a-3a12d9fe762d"
+          },
+          "editorMode": "code",
+          "expr": "histogram_quantile(\n  0.99,\n  sum by (le)(\n    rate(envoy_cluster_upstream_rq_time_bucket{\n      envoy_cluster_name=~\"httproute/middleware/.*\",\n      envoy_cluster_name!~\".*healthz.*\"\n    }[30s])\n  )\n)",
+          "hide": true,
+          "instant": false,
+          "legendFormat": "p99",
+          "range": true,
+          "refId": "B"
+        }
+      ],
+      "title": "Service Latency",
+      "type": "timeseries"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 23
+      },
+      "id": 7,
+      "panels": [],
+      "title": "Success Rates",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "grafana-bigquery-datasource",
+        "uid": "devojocw1pptsa"
+      },
+      "description": "Source: DWH\n\nDefinition: Total Number of 5XX errors / Total Number of Requests \n\n** Removes 4XX from consideration **",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red"
+              },
+              {
+                "color": "yellow",
+                "value": 0.95
+              },
+              {
+                "color": "green",
+                "value": 0.99
+              }
+            ]
+          },
+          "unit": "percentunit"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 14,
+        "w": 8,
+        "x": 0,
+        "y": 24
+      },
+      "id": 11,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.0.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-bigquery-datasource",
+            "uid": "devojocw1pptsa"
+          },
+          "editorMode": "code",
+          "format": 1,
+          "location": "",
+          "project": "portal-prd-gke-all",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  SAFE_DIVIDE(\n    COUNT(CASE WHEN is_error = FALSE OR error_type = 'user' OR error_type IS NULL THEN 1 END),\n    COUNT(*)\n  ) AS success_rate\nFROM `portal-prd-gke-all.RELAYS.D2` r\nWHERE\n  r.date BETWEEN DATE(TIMESTAMP_TRUNC(TIMESTAMP_SECONDS(${__from:date:seconds}), DAY)) \n                  AND DATE(TIMESTAMP_TRUNC(TIMESTAMP_SECONDS(${__to:date:seconds}), DAY))\n  AND r.ts BETWEEN TIMESTAMP_SECONDS(${__from:date:seconds}) \n                   AND TIMESTAMP_SECONDS(${__to:date:seconds})\n;\n",
+          "refId": "A",
+          "sql": {
+            "columns": [
+              {
+                "parameters": [],
+                "type": "function"
+              }
+            ],
+            "groupBy": [
+              {
+                "property": {
+                  "type": "string"
+                },
+                "type": "groupBy"
+              }
+            ],
+            "limit": 50
+          }
+        }
+      ],
+      "title": "Overall Success Rate",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "grafana-bigquery-datasource",
+        "uid": "devojocw1pptsa"
+      },
+      "description": "Source: DWH\n\nDefinition: Success Rate by Service summarized each minute\n\n** MUST HAVE >10 RPS **",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "axisSoftMax": 1,
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "max": 1,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red"
+              },
+              {
+                "color": "yellow",
+                "value": 0.95
+              },
+              {
+                "color": "green",
+                "value": 0.99
+              }
+            ]
+          },
+          "unit": "percentunit"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 14,
+        "w": 15,
+        "x": 8,
+        "y": 24
+      },
+      "id": 12,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "right",
+          "showLegend": true
+        },
+        "timezone": [
+          "utc"
+        ],
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "12.0.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-bigquery-datasource",
+            "uid": "devojocw1pptsa"
+          },
+          "editorMode": "code",
+          "format": 0,
+          "location": "",
+          "project": "portal-prd-gke-all",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  TIMESTAMP_TRUNC(r.ts, MINUTE) AS time,\n  r.chain_id,\n  SAFE_DIVIDE(\n    COUNT(CASE WHEN is_error = FALSE OR error_type = 'user' OR error_type IS NULL THEN 1 END),\n    COUNT(*)\n  ) AS success_rate\nFROM `portal-prd-gke-all.RELAYS.D2` r\nWHERE\n  r.date BETWEEN DATE(TIMESTAMP_TRUNC(TIMESTAMP_SECONDS(${__from:date:seconds}), DAY)) \n                  AND DATE(TIMESTAMP_TRUNC(TIMESTAMP_SECONDS(${__to:date:seconds}), DAY))\n  AND r.ts BETWEEN TIMESTAMP_SECONDS(${__from:date:seconds}) \n                   AND TIMESTAMP_SECONDS(${__to:date:seconds})\n  AND r.chain_id <> ''\nGROUP BY \n  TIMESTAMP_TRUNC(r.ts, MINUTE),\n  r.chain_id\nHAVING\n  COUNT(*) >= 600\nORDER BY \n  time,\n  r.chain_id\n;",
+          "refId": "A",
+          "sql": {
+            "columns": [
+              {
+                "parameters": [],
+                "type": "function"
+              }
+            ],
+            "groupBy": [
+              {
+                "property": {
+                  "type": "string"
+                },
+                "type": "groupBy"
+              }
+            ],
+            "limit": 50
+          }
+        }
+      ],
+      "title": "Service Success Rates",
+      "transformations": [
+        {
+          "id": "partitionByValues",
+          "options": {
+            "fields": [
+              "chain_id"
+            ],
+            "keepFields": false,
+            "naming": {
+              "asLabels": true
+            }
+          }
+        }
+      ],
+      "type": "timeseries"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 38
+      },
+      "id": 15,
+      "panels": [],
+      "title": "Platform Usage",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "grafana-bigquery-datasource",
+        "uid": "devojocw1pptsa"
+      },
+      "description": "Source: DWH\n\nDefinition: % of all requests that are Paid.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red"
+              },
+              {
+                "color": "yellow",
+                "value": 0.75
+              },
+              {
+                "color": "green",
+                "value": 0.9
+              }
+            ]
+          },
+          "unit": "percentunit"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 39
+      },
+      "id": 14,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.0.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-bigquery-datasource",
+            "uid": "devojocw1pptsa"
+          },
+          "editorMode": "code",
+          "format": 1,
+          "location": "",
+          "project": "portal-prd-gke-all",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  SAFE_DIVIDE(\n    COUNT(CASE WHEN a.plan_type IN ('PLAN_UNLIMITED', 'ENTERPRISE') THEN 1 END),\n    COUNT(*)\n  ) AS enterprise_relay_percentage\nFROM `portal-prd-gke-all.RELAYS.D2` r\nJOIN `portal-prd-gke-all.PORTAL.accounts` a ON r.portal_account_id = a.id\nWHERE\n  r.date BETWEEN DATE(TIMESTAMP_TRUNC(TIMESTAMP_SECONDS(${__from:date:seconds}), DAY)) \n                  AND DATE(TIMESTAMP_TRUNC(TIMESTAMP_SECONDS(${__to:date:seconds}), DAY))\n  AND r.ts BETWEEN TIMESTAMP_SECONDS(${__from:date:seconds}) \n                   AND TIMESTAMP_SECONDS(${__to:date:seconds})\n  AND a.id IS NOT NULL\n  AND r.portal_account_id <> '47eadadd'\n;",
+          "refId": "A",
+          "sql": {
+            "columns": [
+              {
+                "parameters": [],
+                "type": "function"
+              }
+            ],
+            "groupBy": [
+              {
+                "property": {
+                  "type": "string"
+                },
+                "type": "groupBy"
+              }
+            ],
+            "limit": 50
+          }
+        }
+      ],
+      "title": "Paid Relay %",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "grafana-bigquery-datasource",
+        "uid": "devojocw1pptsa"
+      },
+      "description": "Source: DWH\n\nDefinition: Unique Accounts with relay activity.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text"
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 7,
+        "x": 8,
+        "y": 39
+      },
+      "id": 16,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.0.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-bigquery-datasource",
+            "uid": "devojocw1pptsa"
+          },
+          "editorMode": "code",
+          "format": 1,
+          "location": "",
+          "project": "portal-prd-gke-all",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  count( distinct(portal_account_id)),\nFROM `portal-prd-gke-all.RELAYS.D2` r\nWHERE\n  r.date BETWEEN DATE(TIMESTAMP_TRUNC(TIMESTAMP_SECONDS(${__from:date:seconds}), DAY)) \n                  AND DATE(TIMESTAMP_TRUNC(TIMESTAMP_SECONDS(${__to:date:seconds}), DAY))\n  AND r.ts BETWEEN TIMESTAMP_SECONDS(${__from:date:seconds}) \n                   AND TIMESTAMP_SECONDS(${__to:date:seconds})\n;",
+          "refId": "A",
+          "sql": {
+            "columns": [
+              {
+                "parameters": [],
+                "type": "function"
+              }
+            ],
+            "groupBy": [
+              {
+                "property": {
+                  "type": "string"
+                },
+                "type": "groupBy"
+              }
+            ],
+            "limit": 50
+          }
+        }
+      ],
+      "title": "Unique Users",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "grafana-bigquery-datasource",
+        "uid": "devojocw1pptsa"
+      },
+      "description": "Source: DWH\n\nDefinition: Estimated Revenue MTD.\n\n** DOES NOT RESPECT TIME SELECTORS **",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text"
+              }
+            ]
+          },
+          "unit": "currencyUSD"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 7,
+        "x": 15,
+        "y": 39
+      },
+      "id": 18,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.0.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-bigquery-datasource",
+            "uid": "devojocw1pptsa"
+          },
+          "editorMode": "code",
+          "format": 1,
+          "location": "",
+          "project": "portal-prd-gke-all",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  (5 * count(*) / 1000000) as est_revenue,\nFROM `portal-prd-gke-all.RELAYS.D2` r\nJOIN `portal-prd-gke-all.PORTAL.accounts` a on a.id = r.portal_account_id\nWHERE\n  r.date BETWEEN DATE_TRUNC(CURRENT_DATE(), MONTH) AND DATE_ADD(DATE_TRUNC(CURRENT_DATE(), MONTH), INTERVAL 1 MONTH)\n  AND a.plan_type = 'PLAN_UNLIMITED'\n  --remove GROVE INFRA, Radix, Kaia, Polygon\n  AND r.portal_account_id NOT IN ('47eadadd','c4848fd0','a936125b', '9d03358c')\n;",
+          "refId": "A",
+          "sql": {
+            "columns": [
+              {
+                "parameters": [],
+                "type": "function"
+              }
+            ],
+            "groupBy": [
+              {
+                "property": {
+                  "type": "string"
+                },
+                "type": "groupBy"
+              }
+            ],
+            "limit": 50
+          }
+        }
+      ],
+      "title": "Estimated Revenue (Month to Date)",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "grafana-bigquery-datasource",
+        "uid": "devojocw1pptsa"
+      },
+      "description": "Source: DWH\n\nDefinition: Total Relays by Plan type by summarized each minute.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text"
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 15,
+        "w": 8,
+        "x": 0,
+        "y": 47
+      },
+      "id": 13,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "right",
+          "showLegend": true
+        },
+        "timezone": [
+          "utc"
+        ],
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "12.0.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-bigquery-datasource",
+            "uid": "devojocw1pptsa"
+          },
+          "editorMode": "code",
+          "format": 0,
+          "location": "",
+          "project": "portal-prd-gke-all",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  TIMESTAMP_TRUNC(r.ts, MINUTE) AS time,\n  a.plan_type as plan,\n  count(*)\nFROM `portal-prd-gke-all.RELAYS.D2` r\nJOIN `portal-prd-gke-all.PORTAL.accounts` a ON r.portal_account_id = a.id\nWHERE\n  r.date BETWEEN DATE(TIMESTAMP_TRUNC(TIMESTAMP_SECONDS(${__from:date:seconds}), DAY)) \n                  AND DATE(TIMESTAMP_TRUNC(TIMESTAMP_SECONDS(${__to:date:seconds}), DAY))\n  AND r.ts BETWEEN TIMESTAMP_SECONDS(${__from:date:seconds}) \n                   AND TIMESTAMP_SECONDS(${__to:date:seconds})\n  AND a.id IS NOT NULL\n  AND r.portal_account_id <> '47eadadd'\nGROUP BY \n  time, \n  plan\nORDER BY \n  time\n;",
+          "refId": "A",
+          "sql": {
+            "columns": [
+              {
+                "parameters": [],
+                "type": "function"
+              }
+            ],
+            "groupBy": [
+              {
+                "property": {
+                  "type": "string"
+                },
+                "type": "groupBy"
+              }
+            ],
+            "limit": 50
+          }
+        }
+      ],
+      "title": "Relays by Plan Type",
+      "transformations": [
+        {
+          "id": "partitionByValues",
+          "options": {
+            "fields": [],
+            "keepFields": false,
+            "naming": {
+              "asLabels": true
+            }
+          }
+        }
+      ],
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "grafana-bigquery-datasource",
+        "uid": "devojocw1pptsa"
+      },
+      "description": "Source: DWH\n\nDefinition: Top 10 Accounts by Relays",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 15,
+        "w": 14,
+        "x": 8,
+        "y": 47
+      },
+      "id": 17,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true
+      },
+      "pluginVersion": "12.0.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-bigquery-datasource",
+            "uid": "devojocw1pptsa"
+          },
+          "editorMode": "code",
+          "format": 1,
+          "location": "",
+          "project": "portal-prd-gke-all",
+          "rawQuery": true,
+          "rawSql": "WITH account_data AS (\n  SELECT distinct(vau.portal_account_id), user_email, plan_type\n  FROM `portal-prd-gke-all.PORTAL.v_account_users` vau\n  WHERE vau.role_name='OWNER'\n)\nSELECT \n  ad.portal_account_id as account_id, \n  ad.user_email as email, \n  ad.plan_type as plan, \n  count(*) as relays\nFROM account_data ad\nJOIN `portal-prd-gke-all.RELAYS.D2` r ON ad.portal_account_id = r.portal_account_id\nWHERE\n  r.date BETWEEN DATE(TIMESTAMP_TRUNC(TIMESTAMP_SECONDS(${__from:date:seconds}), DAY)) \n                  AND DATE(TIMESTAMP_TRUNC(TIMESTAMP_SECONDS(${__to:date:seconds}), DAY))\n  AND r.ts BETWEEN TIMESTAMP_SECONDS(${__from:date:seconds}) \n                   AND TIMESTAMP_SECONDS(${__to:date:seconds})\n  -- filter out grove accounts\n  AND r.portal_account_id not in ('47eadadd', 'abb4dc00')\nGROUP BY \n  account_id, \n  email, \n  plan\n  ORDER BY \n  relays DESC\n  LIMIT 10\n;",
+          "refId": "A",
+          "sql": {
+            "columns": [
+              {
+                "parameters": [],
+                "type": "function"
+              }
+            ],
+            "groupBy": [
+              {
+                "property": {
+                  "type": "string"
+                },
+                "type": "groupBy"
+              }
+            ],
+            "limit": 50
+          }
+        }
+      ],
+      "title": "Top Accounts",
+      "type": "table"
+    }
+  ],
+  "preload": false,
+  "schemaVersion": 41,
+  "tags": [],
+  "templating": {
+    "list": []
+  },
+  "time": {
+    "from": "now-3h",
+    "to": "now"
+  },
+  "timepicker": {
+    "refresh_intervals": [
+      "1m",
+      "5m",
+      "15m",
+      "30m"
+    ]
+  },
+  "timezone": "utc",
+  "title": "Executive Dashboard",
+  "uid": "910e5748-e702-45c2-96d5-705443affa92",
+  "version": 69
+}
